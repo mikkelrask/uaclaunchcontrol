@@ -4,29 +4,20 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 
-const rawVersion = process.argv[2];
+/**
+ * Standard Semantic Versioning Bumper
+ * Usage: ./scripts/bump-version.mjs 0.2.0
+ */
 
-if (!rawVersion) {
-  console.error('Usage: bump-version.mjs <version> (e.g. 0.2.0 or E1M0.2)');
+const version = process.argv[2];
+
+if (!version || !/^\d+\.\d+\.\d+$/.test(version)) {
+  console.error('❌ Error: Please provide a valid SemVer version (e.g. 0.2.0)');
   process.exit(1);
 }
 
-// Map Doom-style version to technical semver for OS compatibility
-// E1M0.2 -> 0.2.0 (Episode 1, Milestone 0.2)
-let semver = rawVersion;
-if (rawVersion.startsWith('E1M')) {
-  const parts = rawVersion.replace('E1M', '').split('.');
-  if (parts.length === 1) semver = `${parts[0]}.0.0`;
-  else if (parts.length === 2) semver = `${parts[0]}.${parts[1]}.0`;
-}
-
-// Ensure technical semver is strictly digits for macOS
-if (!/^\d+\.\d+\.\d+$/.test(semver)) {
-  semver = '0.0.0';
-}
-
-const TAG = rawVersion;
-console.log(`🔧 Bumping to technical version ${semver} for Tag: ${TAG}...`);
+const TAG = `v${version}`;
+console.log(`🔧 Bumping to version ${version} (Tag: ${TAG})...`);
 
 // Helper to read/write JSON
 const updateJSON = (filePath, updater) => {
@@ -37,25 +28,29 @@ const updateJSON = (filePath, updater) => {
   fs.writeFileSync(abs, JSON.stringify(content, null, 2) + '\n');
 };
 
+// Update package.json
 updateJSON('package.json', json => {
-  json.version = semver;
+  json.version = version;
 });
 
 try {
   execSync('git add package.json scripts/bump-version.mjs');
   const status = execSync('git status --porcelain').toString().trim();
   if (status) {
-    execSync(`git commit -m "chore: bump to technical v${semver} for release ${TAG} 🚀"`);
+    execSync(`git commit -m "chore: bump version to ${version} 🚀"`);
   }
   
+  // Create tag with v prefix
   execSync(`git tag -a -f ${TAG} -m "Release ${TAG}"`);
+  
   const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
   
+  console.log(`📡 Pushing to origin ${branch} and tag ${TAG}...`);
   execSync(`git push origin ${branch} --force`);
   execSync(`git push origin ${TAG} --force`);
 
-  console.log(`🚀 Release ${TAG} (Technical: ${semver}) pushed.`);
+  console.log(`🚀 Version ${version} committed, tagged as ${TAG}, and pushed.`);
 } catch (error) {
-  console.error('❌ Error:', error.message);
+  console.error('❌ Error during bump:', error.message);
   process.exit(1);
 }
