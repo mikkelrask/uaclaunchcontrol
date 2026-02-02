@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: com.mikkelrask.uaclaunchcontrol
 productName: uaclaunchcontrol-electron
 directories:
   buildResources: build
@@ -33,7 +33,7 @@ linux:
     - AppImage
     - snap
     - deb
-  maintainer: electronjs.org
+  maintainer: mikkelrask
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
