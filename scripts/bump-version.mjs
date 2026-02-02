@@ -11,23 +11,10 @@ if (!rawVersion) {
   process.exit(1);
 }
 
-// Map Doom-style version to semver for package.json if needed
-// E1M0.2 -> 0.2.0
-let semver = rawVersion;
-if (rawVersion.startsWith('E1M')) {
-  const parts = rawVersion.replace('E1M', '').split('.');
-  if (parts.length === 1) semver = `${parts[0]}.0.0`;
-  else if (parts.length === 2) semver = `0.${parts[0]}.${parts[1]}`;
-  else semver = `${parts[0]}.${parts[1]}.${parts[2]}`;
-}
-
-// Fallback check: if it still doesn't look like semver, just use 0.0.0 and warn
-if (!/^\d+\.\d+\.\d+$/.test(semver)) {
-  console.warn(`⚠️  Version "${semver}" is not strict semver. Using 0.0.0 for package.json.`);
-  semver = '0.0.0';
-}
-
+// No more mapping! Use what the user says.
+const semver = rawVersion;
 const TAG = rawVersion;
+
 console.log(`🔧 Bumping to version ${semver} (Tag: ${TAG})...`);
 
 // Helper to read/write JSON
@@ -51,23 +38,23 @@ console.log('✅ Updated package.json version field');
 
 // Commit & tag
 try {
-  execSync('git add package.json');
+  execSync('git add package.json scripts/bump-version.mjs');
   // Check if there are changes to commit
   const status = execSync('git status --porcelain').toString().trim();
   if (status) {
     execSync(`git commit -m "chore: bump version to ${TAG} 🚀"`);
   }
   
-  execSync(`git tag -a ${TAG} -m "Release ${TAG}"`);
+  execSync(`git tag -a -f ${TAG} -m "Release ${TAG}"`);
   
   // Get current branch
   const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
   
   console.log(`📡 Pushing to origin ${branch} and tag ${TAG}...`);
-  execSync(`git push origin ${branch} --force`); // Initial migration might need force
-  execSync(`git push origin ${TAG}`);
+  execSync(`git push origin ${branch} --force`);
+  execSync(`git push origin ${TAG} --force`);
 
-  console.log(`🚀 Version ${TAG} (${semver}) committed, tagged, and pushed.`);
+  console.log(`🚀 Version ${TAG} committed, tagged, and pushed.`);
 } catch (error) {
   console.error('❌ Failed to commit/tag/push:', error.message);
   process.exit(1);
