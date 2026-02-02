@@ -15,8 +15,19 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
   const addFile = () => {
     if (!newFilePath.trim()) return
 
-    const fileName = newFilePath.split('/').pop() || newFilePath
-    const fileType = fileName.split('.').pop()?.toLowerCase() || 'unknown'
+    const fileName = newFilePath.split(/[\\/]/).pop() || newFilePath
+    const extension = fileName.split('.').pop()?.toUpperCase() || ''
+    let fileType = 'WAD'
+
+    if (extension === 'PK3' || extension === 'IPK3' || extension === 'ZIP') {
+      fileType = 'PK3'
+    } else if (extension === 'DEH' || extension === 'BEX') {
+      fileType = 'DEH'
+    } else if (extension === 'WAD') {
+      fileType = 'WAD'
+    } else {
+      fileType = extension || 'unknown'
+    }
 
     const newFile: IModFile = {
       id: -Math.random(), // Temporary negative ID for new files
@@ -39,7 +50,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
   const moveUp = (index: number) => {
     if (index <= 0) return
     const newFiles = [...files]
-    ;[newFiles[index - 1], newFiles[index]] = [newFiles[index], newFiles[index - 1]]
+      ;[newFiles[index - 1], newFiles[index]] = [newFiles[index], newFiles[index - 1]]
 
     // Update load order
     newFiles.forEach((file, idx) => {
@@ -52,7 +63,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
   const moveDown = (index: number) => {
     if (index >= files.length - 1) return
     const newFiles = [...files]
-    ;[newFiles[index], newFiles[index + 1]] = [newFiles[index + 1], newFiles[index]]
+      ;[newFiles[index], newFiles[index + 1]] = [newFiles[index + 1], newFiles[index]]
 
     // Update load order
     newFiles.forEach((file, idx) => {
