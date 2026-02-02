@@ -1,0 +1,203 @@
+import type { 
+  IDoomVersion, 
+  IMod, 
+  IModFile, 
+  InsertMod, 
+  IAppSettings 
+} from '@shared/schema';
+
+// Basic API base URL - needs to match the backend port
+const API_BASE = 'http://localhost:7666';
+
+// Helper function to handle API errors
+async function handleApiResponse<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get("content-type");
+  if (!response.ok) {
+    let errorMessage = `API error: ${response.status}`;
+    try {
+      if (contentType && contentType.includes("application/json")) {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } else {
+        const text = await response.text();
+        console.error("API non-json error:", text);
+      }
+    } catch (e) {
+      console.error("Failed to parse error response", e);
+    }
+    throw new Error(errorMessage);
+  }
+  
+  if (contentType && contentType.includes("application/json")) {
+    return response.json();
+  }
+  return {} as T;
+}
+
+// Client API service
+export const gameService = {
+  // DoomVersion operations
+  async getDoomVersions(): Promise<IDoomVersion[]> {
+    console.log(`[DEBUG] gameService.getDoomVersions calling: ${API_BASE}/api/versions`);
+    const response = await fetch(`${API_BASE}/api/versions`);
+    return handleApiResponse<IDoomVersion[]>(response);
+  },
+  
+  async getDoomVersion(id: number): Promise<IDoomVersion> {
+    const response = await fetch(`${API_BASE}/api/versions/${id}`);
+    return handleApiResponse<IDoomVersion>(response);
+  },
+  
+  async getDoomVersionBySlug(slug: string): Promise<IDoomVersion> {
+    const response = await fetch(`${API_BASE}/api/versions/bySlug/${slug}`);
+    return handleApiResponse<IDoomVersion>(response);
+  },
+  
+  async createDoomVersion(version: Omit<IDoomVersion, 'id'>): Promise<IDoomVersion> {
+    const response = await fetch(`${API_BASE}/api/versions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(version)
+    });
+    return handleApiResponse<IDoomVersion>(response);
+  },
+  
+  async updateDoomVersion(id: number, version: Partial<IDoomVersion>): Promise<IDoomVersion> {
+    const response = await fetch(`${API_BASE}/api/versions/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(version)
+    });
+    return handleApiResponse<IDoomVersion>(response);
+  },
+  
+  async deleteDoomVersion(id: number): Promise<void> {
+    const response = await fetch(`${API_BASE}/api/versions/${id}`, {
+      method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to delete version: ${response.status}`);
+    }
+  },
+  
+  // Mod operations
+  async getMods(versionSlug?: string, searchQuery?: string): Promise<IMod[]> {
+    const params = new URLSearchParams();
+    if (versionSlug) params.append('version', versionSlug);
+    if (searchQuery) params.append('search', searchQuery);
+  
+    const url = `${API_BASE}/api/mods?${params.toString()}`;
+    const response = await fetch(url);
+    return handleApiResponse<IMod[]>(response);
+  },
+  
+  async getMod(id: number): Promise<{ mod: IMod, files: IModFile[] }> {
+    const response = await fetch(`${API_BASE}/api/mods/${id}`);
+    return handleApiResponse<{ mod: IMod, files: IModFile[] }>(response);
+  },
+  
+  async createMod(mod: InsertMod, files: Omit<IModFile, 'id' | 'modId'>[] = []): Promise<IMod> {
+    const response = await fetch(`${API_BASE}/api/mods`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mod, files })
+    });
+    return handleApiResponse<IMod>(response);
+  },
+  
+  async updateMod(id: number, mod: Partial<IMod>, files?: Omit<IModFile, 'id' | 'modId'>[]): Promise<IMod> {
+    const response = await fetch(`${API_BASE}/api/mods/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mod, files })
+    });
+    return handleApiResponse<IMod>(response);
+  },
+  
+  async deleteMod(id: number): Promise<void> {
+    const response = await fetch(`${API_BASE}/api/mods/${id}`, {
+      method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to delete mod: ${response.status}`);
+    }
+  },
+  
+  async launchMod(id: number): Promise<{ success: boolean, message: string }> {
+    const response = await fetch(`${API_BASE}/api/mods/${id}/launch`, {
+      method: 'POST'
+    });
+    return handleApiResponse<{ success: boolean, message: string }>(response);
+  },
+  
+  // Move file 
+  async moveFile(filePath: string, newPath: string): Promise<{ success: boolean, message: string }> {
+    const response = await fetch(`${API_BASE}/api/move-file`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath, newPath })
+    });
+    return handleApiResponse<{ success: boolean, message: string }>(response);
+  },  
+
+  // Settings operations
+  async getSettings(): Promise<IAppSettings> {
+    const response = await fetch(`${API_BASE}/api/settings`);
+    return handleApiResponse<IAppSettings>(response);
+  },
+  
+  async updateSettings(settings: Partial<IAppSettings>): Promise<IAppSettings> {
+    const response = await fetch(`${API_BASE}/api/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings)
+    });
+    return handleApiResponse<IAppSettings>(response);
+  },
+  
+  // ModFile catalog operations
+  async getModFileCatalog(): Promise<IModFile[]> {
+    const response = await fetch(`${API_BASE}/api/mod-files/catalog`);
+    return handleApiResponse<IModFile[]>(response);
+  },
+  
+  async getModFilesByType(fileType: string): Promise<IModFile[]> {
+    const response = await fetch(`${API_BASE}/api/mod-files/catalog/by-type/${fileType}`);
+    return handleApiResponse<IModFile[]>(response);
+  },
+  
+  async addModFileToCatalog(file: Omit<IModFile, 'id' | 'modId'>): Promise<IModFile> {
+    const response = await fetch(`${API_BASE}/api/mod-files/catalog`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(file)
+    });
+    return handleApiResponse<IModFile>(response);
+  },
+  
+  // Dialog functions
+  showOpenDialog: async (options: any) => {
+    const response = await fetch(`${API_BASE}/api/dialog/open`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(options)
+    });
+    return handleApiResponse<any>(response);
+  },
+  
+  showSaveDialog: async (options: any) => {
+    const response = await fetch(`${API_BASE}/api/dialog/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(options)
+    });
+    return handleApiResponse<any>(response);
+  }
+};
+
+export async function getModFileCatalog(): Promise<IModFile[]> {
+  const response = await fetch(`${API_BASE}/api/mod-files/catalog`);
+  return handleApiResponse<IModFile[]>(response);
+}

@@ -12,44 +12,44 @@ import { Download, Star } from 'lucide-react';
 export const ModDBPage: React.FC = () => {
   const [activeVersion, setActiveVersion] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Fetch popular and latest mods
-  const { data: popularMods, isLoading: popularLoading } = useQuery({
+  const { data: popularMods, isLoading: popularLoading } = useQuery<ModDBSearchResult[]>({
     queryKey: ['/api/moddb/popular'],
     queryFn: moddbService.getPopularDoomMods,
   });
-  
-  const { data: latestMods, isLoading: latestLoading } = useQuery({
+
+  const { data: latestMods, isLoading: latestLoading } = useQuery<ModDBSearchResult[]>({
     queryKey: ['/api/moddb/latest'],
     queryFn: moddbService.getLatestDoomMods,
   });
-  
+
   // Search query
-  const { data: searchResults, isLoading: searchLoading } = useQuery({
+  const { data: searchResults, isLoading: searchLoading } = useQuery<ModDBSearchResult[]>({
     queryKey: ['/api/moddb/search', searchQuery],
     queryFn: () => moddbService.searchMods(searchQuery),
     enabled: searchQuery.length > 0,
   });
-  
+
   const handleVersionSelect = (version: string) => {
     setActiveVersion(version === activeVersion ? null : version);
   };
-  
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
-  
+
   const handleInstallMod = (mod: ModDBSearchResult) => {
     alert(`Installation feature coming soon! Would install ${mod.name}`);
   };
-  
+
   // Render a mod card
   const renderModCard = (mod: ModDBSearchResult) => (
     <Card key={mod.id} className="bg-[#1c1c1c] border-[#262626] overflow-hidden">
       <div className="h-40 relative">
-        <img 
-          src={mod.thumbnail || "https://via.placeholder.com/400x160.png?text=No+Image"} 
-          alt={mod.name} 
+        <img
+          src={mod.thumbnail || "https://via.placeholder.com/400x160.png?text=No+Image"}
+          alt={mod.name}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
@@ -67,7 +67,7 @@ export const ModDBPage: React.FC = () => {
           </div>
         </div>
         <p className="text-sm text-[#e6e6e6] line-clamp-2 mb-3">{mod.summary}</p>
-        <Button 
+        <Button
           className="w-full bg-[#d41c1c] hover:bg-[#b21616] font-mono"
           onClick={() => handleInstallMod(mod)}
         >
@@ -76,17 +76,17 @@ export const ModDBPage: React.FC = () => {
       </CardContent>
     </Card>
   );
-  
+
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar 
-        activeVersion={activeVersion} 
-        onVersionSelect={handleVersionSelect} 
+      <Sidebar
+        activeVersion={activeVersion}
+        onVersionSelect={handleVersionSelect}
       />
-      
+
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <Header onSearch={handleSearch} />
-        
+
         <div className="flex-1 overflow-y-auto p-4">
           {searchQuery ? (
             <div>
@@ -113,7 +113,7 @@ export const ModDBPage: React.FC = () => {
                 <TabsTrigger value="popular" className="data-[state=active]:bg-[#0c1c2a]">Popular Mods</TabsTrigger>
                 <TabsTrigger value="latest" className="data-[state=active]:bg-[#0c1c2a]">Latest Releases</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="popular">
                 <h2 className="text-2xl font-mono font-bold mb-4">Popular Doom Mods</h2>
                 {popularLoading ? (
@@ -128,7 +128,7 @@ export const ModDBPage: React.FC = () => {
                   </div>
                 )}
               </TabsContent>
-              
+
               <TabsContent value="latest">
                 <h2 className="text-2xl font-mono font-bold mb-4">Latest Doom Mods</h2>
                 {latestLoading ? (
