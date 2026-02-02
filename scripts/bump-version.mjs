@@ -11,51 +11,51 @@ if (!rawVersion) {
   process.exit(1);
 }
 
-// No more mapping! Use what the user says.
-const semver = rawVersion;
-const TAG = rawVersion;
+// Map Doom-style version to technical semver for OS compatibility
+// E1M0.2 -> 0.2.0 (Episode 1, Milestone 0.2)
+let semver = rawVersion;
+if (rawVersion.startsWith('E1M')) {
+  const parts = rawVersion.replace('E1M', '').split('.');
+  if (parts.length === 1) semver = `${parts[0]}.0.0`;
+  else if (parts.length === 2) semver = `${parts[0]}.${parts[1]}.0`;
+}
 
-console.log(`🔧 Bumping to version ${semver} (Tag: ${TAG})...`);
+// Ensure technical semver is strictly digits for macOS
+if (!/^\d+\.\d+\.\d+$/.test(semver)) {
+  semver = '0.0.0';
+}
+
+const TAG = rawVersion;
+console.log(`🔧 Bumping to technical version ${semver} for Tag: ${TAG}...`);
 
 // Helper to read/write JSON
 const updateJSON = (filePath, updater) => {
   const abs = path.resolve(filePath);
-  if (!fs.existsSync(abs)) {
-    console.warn(`⚠️ File ${filePath} not found, skipping.`);
-    return;
-  }
+  if (!fs.existsSync(abs)) return;
   const content = JSON.parse(fs.readFileSync(abs, 'utf-8'));
   updater(content);
   fs.writeFileSync(abs, JSON.stringify(content, null, 2) + '\n');
 };
 
-// Update root package.json
 updateJSON('package.json', json => {
   json.version = semver;
 });
 
-console.log('✅ Updated package.json version field');
-
-// Commit & tag
 try {
   execSync('git add package.json scripts/bump-version.mjs');
-  // Check if there are changes to commit
   const status = execSync('git status --porcelain').toString().trim();
   if (status) {
-    execSync(`git commit -m "chore: bump version to ${TAG} 🚀"`);
+    execSync(`git commit -m "chore: bump to technical v${semver} for release ${TAG} 🚀"`);
   }
   
   execSync(`git tag -a -f ${TAG} -m "Release ${TAG}"`);
-  
-  // Get current branch
   const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
   
-  console.log(`📡 Pushing to origin ${branch} and tag ${TAG}...`);
   execSync(`git push origin ${branch} --force`);
   execSync(`git push origin ${TAG} --force`);
 
-  console.log(`🚀 Version ${TAG} committed, tagged, and pushed.`);
+  console.log(`🚀 Release ${TAG} (Technical: ${semver}) pushed.`);
 } catch (error) {
-  console.error('❌ Failed to commit/tag/push:', error.message);
+  console.error('❌ Error:', error.message);
   process.exit(1);
 }

@@ -1,6 +1,6 @@
 {
   "name": "uaclaunchcontrol-electron",
-  "version": "E1M0.2",
+  "version": "0.2.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "author": "Mikkel Rask <mikkelrask@protonmail.com>",
