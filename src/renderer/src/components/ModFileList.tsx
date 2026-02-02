@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { IModFile } from '@shared/schema';
-import { Trash, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import React, { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { IModFile } from '@shared/schema'
+import { Trash, Plus, ChevronUp, ChevronDown } from 'lucide-react'
 
 interface ModFileListProps {
-  files: IModFile[];
-  onChange: (files: IModFile[]) => void;
+  files: IModFile[]
+  onChange: (files: IModFile[]) => void
 }
 
 export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => {
-  const [newFilePath, setNewFilePath] = useState('');
+  const [newFilePath, setNewFilePath] = useState('')
 
   const addFile = () => {
-    if (!newFilePath.trim()) return;
+    if (!newFilePath.trim()) return
 
-    const fileName = newFilePath.split('/').pop() || newFilePath;
-    const fileType = fileName.split('.').pop()?.toLowerCase() || 'unknown';
+    const fileName = newFilePath.split('/').pop() || newFilePath
+    const fileType = fileName.split('.').pop()?.toLowerCase() || 'unknown'
 
     const newFile: IModFile = {
       id: -Math.random(), // Temporary negative ID for new files
@@ -26,41 +26,41 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
       fileType,
       loadOrder: files.length,
       isRequired: true
-    };
+    }
 
-    onChange([...files, newFile]);
-    setNewFilePath('');
-  };
+    onChange([...files, newFile])
+    setNewFilePath('')
+  }
 
   const removeFile = (fileId: number) => {
-    onChange(files.filter(f => f.id !== fileId));
-  };
+    onChange(files.filter((f) => f.id !== fileId))
+  }
 
   const moveUp = (index: number) => {
-    if (index <= 0) return;
-    const newFiles = [...files];
-    [newFiles[index - 1], newFiles[index]] = [newFiles[index], newFiles[index - 1]];
+    if (index <= 0) return
+    const newFiles = [...files]
+    ;[newFiles[index - 1], newFiles[index]] = [newFiles[index], newFiles[index - 1]]
 
     // Update load order
     newFiles.forEach((file, idx) => {
-      file.loadOrder = idx;
-    });
+      file.loadOrder = idx
+    })
 
-    onChange(newFiles);
-  };
+    onChange(newFiles)
+  }
 
   const moveDown = (index: number) => {
-    if (index >= files.length - 1) return;
-    const newFiles = [...files];
-    [newFiles[index], newFiles[index + 1]] = [newFiles[index + 1], newFiles[index]];
+    if (index >= files.length - 1) return
+    const newFiles = [...files]
+    ;[newFiles[index], newFiles[index + 1]] = [newFiles[index + 1], newFiles[index]]
 
     // Update load order
     newFiles.forEach((file, idx) => {
-      file.loadOrder = idx;
-    });
+      file.loadOrder = idx
+    })
 
-    onChange(newFiles);
-  };
+    onChange(newFiles)
+  }
 
   return (
     <div className="bg-[#0c1c2a] p-3 rounded h-40 overflow-y-auto">
@@ -70,10 +70,20 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
         files.map((file, index) => (
           <div key={file.id} className="flex justify-between items-center mb-2 text-sm">
             <div className="flex items-center space-x-1">
-              <button type="button" onClick={() => moveUp(index)} disabled={index === 0} className="p-1 text-[#e6e6e6] hover:text-white disabled:opacity-30">
+              <button
+                type="button"
+                onClick={() => moveUp(index)}
+                disabled={index === 0}
+                className="p-1 text-[#e6e6e6] hover:text-white disabled:opacity-30"
+              >
                 <ChevronUp className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => moveDown(index)} disabled={index === files.length - 1} className="p-1 text-[#e6e6e6] hover:text-white disabled:opacity-30">
+              <button
+                type="button"
+                onClick={() => moveDown(index)}
+                disabled={index === files.length - 1}
+                className="p-1 text-[#e6e6e6] hover:text-white disabled:opacity-30"
+              >
                 <ChevronDown className="h-4 w-4" />
               </button>
               <span className="text-xs mr-2">{index + 1}.</span>
@@ -108,7 +118,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
         </Button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ModFileList;
+export default ModFileList

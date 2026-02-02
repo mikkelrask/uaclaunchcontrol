@@ -70,7 +70,7 @@ uaclaunchcontrol-electron/
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 - GZDoom installed on your system
 
@@ -93,6 +93,7 @@ npm run dev
 ```
 
 This will:
+
 - Start the Vite dev server for the renderer (port 5173)
 - Start the Electron app with the Express API server (port 7666)
 - Enable hot module replacement for the frontend
@@ -166,6 +167,7 @@ The Express server exposes the following REST API:
 ### TypeScript Configuration
 
 The project uses separate TypeScript configurations:
+
 - `tsconfig.node.json` - Main process and server code
 - `tsconfig.web.json` - Renderer process (includes `src/shared`)
 

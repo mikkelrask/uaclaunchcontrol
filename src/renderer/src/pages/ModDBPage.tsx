@@ -1,59 +1,61 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import Sidebar from '@/components/Sidebar';
-import Header from '@/components/Header';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { moddbService } from '@/lib/moddbService';
-import { ModDBSearchResult } from '@shared/schema';
-import { Download, Star } from 'lucide-react';
+import React, { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import Sidebar from '@/components/Sidebar'
+import Header from '@/components/Header'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { moddbService } from '@/lib/moddbService'
+import { ModDBSearchResult } from '@shared/schema'
+import { Download, Star } from 'lucide-react'
 
 export const ModDBPage: React.FC = () => {
-  const [activeVersion, setActiveVersion] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeVersion, setActiveVersion] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   // Fetch popular and latest mods
   const { data: popularMods, isLoading: popularLoading } = useQuery<ModDBSearchResult[]>({
     queryKey: ['/api/moddb/popular'],
-    queryFn: moddbService.getPopularDoomMods,
-  });
+    queryFn: moddbService.getPopularDoomMods
+  })
 
   const { data: latestMods, isLoading: latestLoading } = useQuery<ModDBSearchResult[]>({
     queryKey: ['/api/moddb/latest'],
-    queryFn: moddbService.getLatestDoomMods,
-  });
+    queryFn: moddbService.getLatestDoomMods
+  })
 
   // Search query
   const { data: searchResults, isLoading: searchLoading } = useQuery<ModDBSearchResult[]>({
     queryKey: ['/api/moddb/search', searchQuery],
     queryFn: () => moddbService.searchMods(searchQuery),
-    enabled: searchQuery.length > 0,
-  });
+    enabled: searchQuery.length > 0
+  })
 
   const handleVersionSelect = (version: string) => {
-    setActiveVersion(version === activeVersion ? null : version);
-  };
+    setActiveVersion(version === activeVersion ? null : version)
+  }
 
   const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
+    setSearchQuery(query)
+  }
 
   const handleInstallMod = (mod: ModDBSearchResult) => {
-    alert(`Installation feature coming soon! Would install ${mod.name}`);
-  };
+    alert(`Installation feature coming soon! Would install ${mod.name}`)
+  }
 
   // Render a mod card
   const renderModCard = (mod: ModDBSearchResult) => (
     <Card key={mod.id} className="bg-[#1c1c1c] border-[#262626] overflow-hidden">
       <div className="h-40 relative">
         <img
-          src={mod.thumbnail || "https://via.placeholder.com/400x160.png?text=No+Image"}
+          src={mod.thumbnail || 'https://via.placeholder.com/400x160.png?text=No+Image'}
           alt={mod.name}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-        <h3 className="absolute bottom-2 left-3 text-white font-mono text-lg font-bold">{mod.name}</h3>
+        <h3 className="absolute bottom-2 left-3 text-white font-mono text-lg font-bold">
+          {mod.name}
+        </h3>
       </div>
       <CardContent className="p-4">
         <div className="flex justify-between items-center mb-2">
@@ -75,14 +77,11 @@ export const ModDBPage: React.FC = () => {
         </Button>
       </CardContent>
     </Card>
-  );
+  )
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar
-        activeVersion={activeVersion}
-        onVersionSelect={handleVersionSelect}
-      />
+      <Sidebar activeVersion={activeVersion} onVersionSelect={handleVersionSelect} />
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <Header onSearch={handleSearch} />
@@ -90,12 +89,16 @@ export const ModDBPage: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-4">
           {searchQuery ? (
             <div>
-              <h2 className="text-2xl font-mono font-bold mb-4">Search Results for "{searchQuery}"</h2>
+              <h2 className="text-2xl font-mono font-bold mb-4">
+                Search Results for "{searchQuery}"
+              </h2>
               {searchLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {Array(4).fill(0).map((_, i) => (
-                    <Card key={i} className="h-64 bg-[#1c1c1c] animate-pulse" />
-                  ))}
+                  {Array(4)
+                    .fill(0)
+                    .map((_, i) => (
+                      <Card key={i} className="h-64 bg-[#1c1c1c] animate-pulse" />
+                    ))}
                 </div>
               ) : searchResults?.length === 0 ? (
                 <div className="text-center py-10">
@@ -110,17 +113,23 @@ export const ModDBPage: React.FC = () => {
           ) : (
             <Tabs defaultValue="popular" className="w-full">
               <TabsList className="mb-4 bg-[#162b3d]">
-                <TabsTrigger value="popular" className="data-[state=active]:bg-[#0c1c2a]">Popular Mods</TabsTrigger>
-                <TabsTrigger value="latest" className="data-[state=active]:bg-[#0c1c2a]">Latest Releases</TabsTrigger>
+                <TabsTrigger value="popular" className="data-[state=active]:bg-[#0c1c2a]">
+                  Popular Mods
+                </TabsTrigger>
+                <TabsTrigger value="latest" className="data-[state=active]:bg-[#0c1c2a]">
+                  Latest Releases
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="popular">
                 <h2 className="text-2xl font-mono font-bold mb-4">Popular Doom Mods</h2>
                 {popularLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Array(8).fill(0).map((_, i) => (
-                      <Card key={i} className="h-64 bg-[#1c1c1c] animate-pulse" />
-                    ))}
+                    {Array(8)
+                      .fill(0)
+                      .map((_, i) => (
+                        <Card key={i} className="h-64 bg-[#1c1c1c] animate-pulse" />
+                      ))}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -133,9 +142,11 @@ export const ModDBPage: React.FC = () => {
                 <h2 className="text-2xl font-mono font-bold mb-4">Latest Doom Mods</h2>
                 {latestLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Array(8).fill(0).map((_, i) => (
-                      <Card key={i} className="h-64 bg-[#1c1c1c] animate-pulse" />
-                    ))}
+                    {Array(8)
+                      .fill(0)
+                      .map((_, i) => (
+                        <Card key={i} className="h-64 bg-[#1c1c1c] animate-pulse" />
+                      ))}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -148,7 +159,7 @@ export const ModDBPage: React.FC = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ModDBPage;
+export default ModDBPage

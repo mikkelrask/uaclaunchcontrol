@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 0  # Fetch all history for all branches
+          fetch-depth: 0 # Fetch all history for all branches
           # IMPORTANT: For this to work with pushes to production, you need a PAT_TOKEN secret
           # or the default GITHUB_TOKEN might work if permissions are right.
           # The user's original used secrets.PAT_TOKEN.
@@ -30,14 +30,14 @@ jobs:
         run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
-      
+
       - name: Attempt merge with selected strategy
         id: merge_attempt
         continue-on-error: true
         run: |
           git fetch origin production
           git checkout production
-          
+
           # Apply different merge strategies based on input
           if [[ "${{ github.event.inputs.strategy }}" == "rebase" ]]; then
             echo "Using rebase strategy"
@@ -49,13 +49,13 @@ jobs:
             echo "Using standard merge strategy"
             git merge origin/main --allow-unrelated-histories -m "chore: merge main into production [skip ci]"
           fi
-      
+
       - name: Check if merge succeeded
         if: steps.merge_attempt.outcome == 'success'
         run: |
           # Use the token for pushing
           git push origin production
-      
+
       - name: Handle merge conflicts
         if: steps.merge_attempt.outcome == 'failure'
         run: |

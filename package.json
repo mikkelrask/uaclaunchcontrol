@@ -1,7 +1,7 @@
 {
-  "name": "uaclaunchcontrol-electron",
+  "name": "UAC-Launch-Control",
   "version": "0.2.0",
-  "description": "An Electron application with React and TypeScript",
+  "description": "Modded Rip and Tear on Easy mode",
   "main": "./out/main/index.js",
   "author": "Mikkel Rask <mikkelrask@protonmail.com>",
   "homepage": "https://github.com/mikkelrask/uaclaunchcontrol",

@@ -5,29 +5,29 @@ export const fileService = {
   // Upload a screenshot
   async uploadScreenshot(file: File): Promise<string> {
     // Create a form data object
-    const formData = new FormData();
-    formData.append('screenshot', file);
-    
+    const formData = new FormData()
+    formData.append('screenshot', file)
+
     // Make the request
     const res = await fetch('/api/upload/screenshot', {
       method: 'POST',
       body: formData,
       credentials: 'include'
-    });
-    
+    })
+
     if (!res.ok) {
-      throw new Error(`Failed to upload screenshot: ${res.statusText}`);
+      throw new Error(`Failed to upload screenshot: ${res.statusText}`)
     }
-    
-    const data = await res.json();
-    return data.path;
+
+    const data = await res.json()
+    return data.path
   },
-  
+
   // Get a simple file url for a path
   getFileUrl(path: string): string {
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
+      return path
     }
-    return `/api/files/${encodeURIComponent(path)}`;
+    return `/api/files/${encodeURIComponent(path)}`
   }
-};
+}

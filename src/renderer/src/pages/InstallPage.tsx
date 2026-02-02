@@ -1,126 +1,137 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useLocation } from 'wouter';
-import Sidebar from '@/components/Sidebar';
-import Header from '@/components/Header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useLocation } from 'wouter'
+import Sidebar from '@/components/Sidebar'
+import Header from '@/components/Header'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 // import ModFileList from '@/components/ModFileList';
-import { useToast } from '@/hooks/use-toast';
-import { gameService } from '@/lib/gameService';
-import { IMod, IModFile, IAppSettings } from '@shared/schema';
-import { slugify } from '@/lib/utils';
-import { ModFileSelector } from '@/components/ModFileSelector';
+import { useToast } from '@/hooks/use-toast'
+import { gameService } from '@/lib/gameService'
+import { IMod, IModFile, IAppSettings } from '@shared/schema'
+import { slugify } from '@/lib/utils'
+import { ModFileSelector } from '@/components/ModFileSelector'
 // import path from 'path';
-import { api } from "@/api";
+import { api } from '@/api'
 
 const formSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  doomVersionId: z.string().min(1, "Base game is required"),
-  sourcePort: z.string().min(1, "Source port is required"),
+  doomVersionId: z.string().min(1, 'Base game is required'),
+  sourcePort: z.string().min(1, 'Source port is required'),
   saveDirectory: z.string().optional(),
   moddbId: z.string().optional(),
   screenshotPath: z.string().optional(),
-  launchParameters: z.string().optional(),
-});
+  launchParameters: z.string().optional()
+})
 
 export const InstallPage: React.FC = () => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [, setLocation] = useLocation()
 
-  const [activeVersion] = useState<string | null>(null);
+  const [activeVersion] = useState<string | null>(null)
   // const [searchQuery] = useState('');
-  const [files, setFiles] = useState<Omit<IModFile, 'id' | 'modId'>[]>([]);
+  const [files, setFiles] = useState<Omit<IModFile, 'id' | 'modId'>[]>([])
   // const [currentFilePath, setCurrentFilePath] = useState<string>('');
 
   // Fetch doom versions
   const { data: versions = [] } = useQuery<any[]>({
     queryKey: ['/api/versions'],
     queryFn: api.getDoomVersions
-  });
+  })
 
   // Fetch settings with proper typing
   const { data: settings = { savegamesPath: '' } as IAppSettings } = useQuery<IAppSettings>({
     queryKey: ['/api/settings'],
     queryFn: gameService.getSettings
-  });
+  })
 
   // Setup form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      doomVersionId: "",
-      sourcePort: "GZDoom",
-      saveDirectory: "",
-      launchParameters: "",
-    },
-  });
+      title: '',
+      description: '',
+      doomVersionId: '',
+      sourcePort: 'GZDoom',
+      saveDirectory: '',
+      launchParameters: ''
+    }
+  })
 
   // Create mod mutation
   const createMutation = useMutation({
-    mutationFn: (data: { mod: Omit<IMod, 'id'>, files: Omit<IModFile, 'id' | 'modId'>[] }) =>
+    mutationFn: (data: { mod: Omit<IMod, 'id'>; files: Omit<IModFile, 'id' | 'modId'>[] }) =>
       gameService.createMod(data.mod, data.files),
     onSuccess: () => {
       toast({
         title: 'Success',
-        description: 'Mod installed successfully',
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/mods'] });
-      form.reset();
-      setFiles([]);
+        description: 'Mod installed successfully'
+      })
+      queryClient.invalidateQueries({ queryKey: ['/api/mods'] })
+      form.reset()
+      setFiles([])
       // Navigate to the Games page
-      setLocation('/');
+      setLocation('/')
     },
     onError: (error) => {
       toast({
         title: 'Error',
         description: `Failed to install mod: ${error}`,
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     }
-  });
+  })
 
   const handleVersionSelect = (version: string) => {
-    setLocation(`/?version=${encodeURIComponent(version)}`);
-  };
+    setLocation(`/?version=${encodeURIComponent(version)}`)
+  }
 
   const handleSearch = (query: string) => {
     // setSearchQuery(query); // Removed unused state
-    setLocation(`/?search=${encodeURIComponent(query)}`);
-  };
-
-
+    setLocation(`/?search=${encodeURIComponent(query)}`)
+  }
 
   const removeFile = (index: number) => {
-    const newFiles = [...files];
-    newFiles.splice(index, 1);
+    const newFiles = [...files]
+    newFiles.splice(index, 1)
 
     // Update load orders to maintain spacing
     const updatedFiles = newFiles.map((file, idx) => ({
       ...file,
       loadOrder: idx * 10
-    }));
+    }))
 
-    setFiles(updatedFiles);
-  };
+    setFiles(updatedFiles)
+  }
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     const fileData: IModFile[] = files.map((file, idx) => ({
       ...file,
       id: Date.now() + idx,
-      modId: 'temp', // Replace 'temp' with the actual mod id after creation if needed
-    }));
+      modId: 'temp' // Replace 'temp' with the actual mod id after creation if needed
+    }))
 
     const mod: Omit<IMod, 'id'> = {
       name: data.title,
@@ -133,53 +144,50 @@ export const InstallPage: React.FC = () => {
       screenshotPath: data.screenshotPath,
       launchParameters: data.launchParameters,
       files: fileData
-    };
+    }
 
-    console.log('[DEBUG] files state at submit:', files);
-    console.log('[DEBUG] fileData to process:', fileData);
+    console.log('[DEBUG] files state at submit:', files)
+    console.log('[DEBUG] fileData to process:', fileData)
 
     // Add new files to the mod file catalog before creating the mod
     try {
       // Fetch current catalog
-      const catalog = await api.getAvailableModFiles();
-      console.log('[DEBUG] Current catalog:', catalog);
-      console.log('[DEBUG] Files to process:', fileData);
+      const catalog = await api.getAvailableModFiles()
+      console.log('[DEBUG] Current catalog:', catalog)
+      console.log('[DEBUG] Files to process:', fileData)
       for (const file of fileData) {
-        const exists = catalog.some(f => f.filePath === file.filePath);
-        console.log(`[DEBUG] Checking file: ${file.filePath}, exists:`, exists);
+        const exists = catalog.some((f) => f.filePath === file.filePath)
+        console.log(`[DEBUG] Checking file: ${file.filePath}, exists:`, exists)
         if (!exists) {
-          console.log('[DEBUG] Adding to catalog:', file);
+          console.log('[DEBUG] Adding to catalog:', file)
           await api.addToCatalog({
             name: file.fileName,
             filePath: file.filePath,
             fileType: file.fileType,
             loadOrder: file.loadOrder,
             isRequired: file.isRequired
-          });
+          })
         }
       }
     } catch (err) {
       toast({
         title: 'Warning',
         description: 'Some mod files could not be added to the catalog.',
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     }
 
-    createMutation.mutate({ mod, files: fileData });
-  };
+    createMutation.mutate({ mod, files: fileData })
+  }
 
   // Wrapper to map Omit<IModFile, 'id' | 'modId'>[] to IModFile[]
   const handleFilesChange = (files: Omit<IModFile, 'id' | 'modId'>[]) => {
-    setFiles(files);
-  };
+    setFiles(files)
+  }
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar
-        activeVersion={activeVersion}
-        onVersionSelect={handleVersionSelect}
-      />
+      <Sidebar activeVersion={activeVersion} onVersionSelect={handleVersionSelect} />
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <Header onSearch={handleSearch} />
@@ -205,28 +213,32 @@ export const InstallPage: React.FC = () => {
                                 placeholder="Enter mod title"
                                 className="bg-[#0c1c2a] border-[#262626]"
                                 {...field} // Spread field props here
-                                onChange={e => {
-                                  const currentTitle = e.target.value; // Get full value from event
-                                  field.onChange(currentTitle); // Update title field state
+                                onChange={(e) => {
+                                  const currentTitle = e.target.value // Get full value from event
+                                  field.onChange(currentTitle) // Update title field state
 
                                   // Check if saveDirectory is empty or was auto-filled
-                                  const currentSaveDir = form.getValues('saveDirectory');
-                                  const isSaveDirEmpty = !currentSaveDir;
+                                  const currentSaveDir = form.getValues('saveDirectory')
+                                  const isSaveDirEmpty = !currentSaveDir
 
                                   // Fix: Ensure currentSaveDir exists before calling startsWith
-                                  const wasAutoFilled = settings.savegamesPath
-                                    && currentSaveDir // Check if currentSaveDir is truthy
-                                    && currentSaveDir.startsWith(settings.savegamesPath + '/')
-                                    && currentSaveDir.length > (settings.savegamesPath.length + 1);
+                                  const wasAutoFilled =
+                                    settings.savegamesPath &&
+                                    currentSaveDir && // Check if currentSaveDir is truthy
+                                    currentSaveDir.startsWith(settings.savegamesPath + '/') &&
+                                    currentSaveDir.length > settings.savegamesPath.length + 1
 
                                   // Only update if empty or previously auto-filled
                                   if (isSaveDirEmpty || wasAutoFilled) {
-                                    const sluggedTitle = slugify(currentTitle);
+                                    const sluggedTitle = slugify(currentTitle)
                                     const newSaveDir = settings.savegamesPath
                                       ? `${settings.savegamesPath}/${sluggedTitle}`
-                                      : sluggedTitle;
+                                      : sluggedTitle
                                     // Update saveDirectory state
-                                    form.setValue('saveDirectory', newSaveDir, { shouldValidate: true, shouldDirty: true });
+                                    form.setValue('saveDirectory', newSaveDir, {
+                                      shouldValidate: true,
+                                      shouldDirty: true
+                                    })
                                   }
                                 }}
                               />
@@ -280,10 +292,7 @@ export const InstallPage: React.FC = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Base Game</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                            >
+                            <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger className="bg-[#0c1c2a] border-[#262626]">
                                   <SelectValue placeholder="Select Doom Version" />
@@ -361,12 +370,11 @@ export const InstallPage: React.FC = () => {
 
                   <div>
                     <h3 className="text-lg font-mono mb-2">Mod Files</h3>
-                    <p className="text-sm text-[#e6e6e6] mb-2">Add the mod files in the order they should be loaded.</p>
+                    <p className="text-sm text-[#e6e6e6] mb-2">
+                      Add the mod files in the order they should be loaded.
+                    </p>
                     <div className="mb-4">
-                      <ModFileSelector
-                        value={files}
-                        onChange={handleFilesChange}
-                      />
+                      <ModFileSelector value={files} onChange={handleFilesChange} />
                     </div>
 
                     {files.length > 0 && (
@@ -374,13 +382,20 @@ export const InstallPage: React.FC = () => {
                         <h4 className="font-mono text-sm mb-2">Selected Files:</h4>
                         <ul className="space-y-2">
                           {files.map((file, index) => (
-                            <li key={index} className="flex items-center justify-between bg-[#0c1c2a] p-2 rounded">
+                            <li
+                              key={index}
+                              className="flex items-center justify-between bg-[#0c1c2a] p-2 rounded"
+                            >
                               <div>
                                 <span className="text-sm font-medium">{file.fileName}</span>
-                                <span className="text-xs text-[#a0a0a0] ml-2">({file.fileType})</span>
+                                <span className="text-xs text-[#a0a0a0] ml-2">
+                                  ({file.fileType})
+                                </span>
                               </div>
                               <div className="flex items-center">
-                                <span className="text-xs text-[#a0a0a0] mr-3">Load order: {file.loadOrder}</span>
+                                <span className="text-xs text-[#a0a0a0] mr-3">
+                                  Load order: {file.loadOrder}
+                                </span>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -413,7 +428,7 @@ export const InstallPage: React.FC = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default InstallPage;
+export default InstallPage

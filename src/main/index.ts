@@ -11,7 +11,7 @@ function createWindow(): void {
     height: 1080,
     show: false,
     autoHideMenuBar: true,
-    title: "UAC Launch Control",
+    title: 'UAC Launch Control',
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -20,7 +20,7 @@ function createWindow(): void {
   })
 
   // Maximize the window
-  mainWindow.maximize();
+  mainWindow.maximize()
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -45,7 +45,7 @@ function createWindow(): void {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
   // Start the Express server
-  await startServer();
+  await startServer()
 
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')

@@ -1,51 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { FolderOpenIcon, PlusIcon, TrashIcon } from 'lucide-react';
-import { gameService } from '@/lib/gameService';
-import type { IModFile } from '@shared/schema';
-import { useToast } from '@/hooks/use-toast';
-import { api } from "@/api";
+  SelectValue
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { FolderOpenIcon, PlusIcon, TrashIcon } from 'lucide-react'
+import { gameService } from '@/lib/gameService'
+import type { IModFile } from '@shared/schema'
+import { useToast } from '@/hooks/use-toast'
+import { api } from '@/api'
 
 interface ModFileSelectorProps {
-  value: Omit<IModFile, 'id' | 'modId'>[];
-  onChange: (files: Omit<IModFile, 'id' | 'modId'>[]) => void;
+  value: Omit<IModFile, 'id' | 'modId'>[]
+  onChange: (files: Omit<IModFile, 'id' | 'modId'>[]) => void
 }
 
 export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) {
-  const { toast } = useToast();
-  const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([]);
-
+  const { toast } = useToast()
+  const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
 
   // Load catalog files when component mounts
   useEffect(() => {
-    loadCatalogFiles();
-  }, []);
+    loadCatalogFiles()
+  }, [])
 
   const loadCatalogFiles = async () => {
     // setIsLoading(true);
     try {
-      console.log('Loading catalog files...');
-      const files = await gameService.getModFileCatalog();
-      console.log(`Loaded ${files.length} catalog files:`, files);
-      setCatalogFiles(Array.isArray(files) ? files : []);
+      console.log('Loading catalog files...')
+      const files = await gameService.getModFileCatalog()
+      console.log(`Loaded ${files.length} catalog files:`, files)
+      setCatalogFiles(Array.isArray(files) ? files : [])
     } catch (error) {
-      console.error('Failed to load catalog files:', error);
+      console.error('Failed to load catalog files:', error)
       toast({
         title: 'Error',
         description: 'Failed to load mod files from catalog',
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
       // setIsLoading(false);
     }
-  };
+  }
 
   const handleAddFile = () => {
     // Add a new empty file entry
@@ -55,73 +54,82 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
       fileType: 'WAD',
       loadOrder: value.length + 1,
       isRequired: true,
-      fileName: '', // Ensure fileName is present
-    };
-    onChange([...value, newFile]);
-  };
+      fileName: '' // Ensure fileName is present
+    }
+    onChange([...value, newFile])
+  }
 
   const handleMoveFileToModFolder = async (path: string) => {
-    const modPath = (await gameService.getSettings()).modsDirectory;
-    const filePath = path;
-    const newPath = `${modPath}/files/${filePath.split(/[\\/]/).pop()}`;
-    console.log(`Moving file (${filePath}) to mod folder: ${newPath}`);
+    const modPath = (await gameService.getSettings()).modsDirectory
+    const filePath = path
+    const newPath = `${modPath}/files/${filePath.split(/[\\/]/).pop()}`
+    console.log(`Moving file (${filePath}) to mod folder: ${newPath}`)
     try {
-      const result = await gameService.moveFile(filePath, newPath);
-      console.log('File moved successfully:', result);
+      const result = await gameService.moveFile(filePath, newPath)
+      console.log('File moved successfully:', result)
       toast({
         title: 'Success',
         description: 'File moved to mod folder successfully',
-        variant: 'default',
-      });
+        variant: 'default'
+      })
     } catch (error) {
-      console.error('Failed to move file:', error);
+      console.error('Failed to move file:', error)
       toast({
         title: 'Error',
         description: 'Failed to move file to mod folder',
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     }
-    return newPath;
-  };
+    return newPath
+  }
 
   const handleRemoveFile = (index: number) => {
     // Remove file at the given index
-    const newFiles = [...value];
-    newFiles.splice(index, 1);
+    const newFiles = [...value]
+    newFiles.splice(index, 1)
 
     // Update load order for remaining files
     const updatedFiles = newFiles.map((file, i) => ({
       ...file,
       loadOrder: i
-    }));
+    }))
 
-    onChange(updatedFiles);
-  };
+    onChange(updatedFiles)
+  }
 
-  const handleUpdateFile = (index: number, field: keyof Omit<IModFile, 'id' | 'modId'>, newValue: any) => {
+  const handleUpdateFile = (
+    index: number,
+    field: keyof Omit<IModFile, 'id' | 'modId'>,
+    newValue: any
+  ) => {
     // Update a specific field in a file
-    const newFiles = [...value];
+    const newFiles = [...value]
     newFiles[index] = {
       ...newFiles[index],
       [field]: newValue,
       // Always set fileName from name or filePath
-      fileName: field === 'name' ? newValue : (newFiles[index].name || (newFiles[index].filePath ? newFiles[index].filePath.split(/[\\/]/).pop() : '')),
-      filePath: field === 'filePath' ? newValue : (newFiles[index].filePath || (newFiles[index].filePath ? newFiles[index].filePath : '')),
+      fileName:
+        field === 'name'
+          ? newValue
+          : newFiles[index].name ||
+            (newFiles[index].filePath ? newFiles[index].filePath.split(/[\\/]/).pop() : ''),
+      filePath:
+        field === 'filePath'
+          ? newValue
+          : newFiles[index].filePath || (newFiles[index].filePath ? newFiles[index].filePath : ''),
       // Always set isRequired to true if undefined
-      isRequired: newFiles[index].isRequired !== undefined ? newFiles[index].isRequired : true,
-    };
-    onChange(newFiles);
-  };
-
-
+      isRequired: newFiles[index].isRequired !== undefined ? newFiles[index].isRequired : true
+    }
+    onChange(newFiles)
+  }
 
   const handleSelectCatalogFile = (index: number, catalogFileId: number) => {
     // Find the catalog file
-    const catalogFile = catalogFiles.find(f => f.id === parseInt(catalogFileId + '', 10));
-    if (!catalogFile) return;
+    const catalogFile = catalogFiles.find((f) => f.id === parseInt(catalogFileId + '', 10))
+    if (!catalogFile) return
 
     // Update the file with catalog data
-    const newFiles = [...value];
+    const newFiles = [...value]
     newFiles[index] = {
       ...newFiles[index],
       name: catalogFile.name,
@@ -129,36 +137,34 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
       fileType: catalogFile.fileType,
       fileName: catalogFile.fileName,
       isRequired: catalogFile.isRequired ?? true,
-      loadOrder: newFiles[index].loadOrder ?? 0,
-    };
-    onChange(newFiles);
-  };
+      loadOrder: newFiles[index].loadOrder ?? 0
+    }
+    onChange(newFiles)
+  }
 
   const handleBrowseFile = async (index: number) => {
     try {
       const result = await api.showOpenDialog({
         title: 'Select Mod File',
         properties: ['openFile'],
-        filters: [
-          { name: 'DOOM Files', extensions: ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip'] }
-        ]
-      });
+        filters: [{ name: 'DOOM Files', extensions: ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip'] }]
+      })
 
       // Check if a file was selected
       if (!result.canceled && result.filePaths.length > 0) {
-        const selectedFilePath = result.filePaths[0];
+        const selectedFilePath = result.filePaths[0]
         // Extract filename from path
-        const fileName = selectedFilePath.split(/[\\/]/).pop() || 'No file selected';
+        const fileName = selectedFilePath.split(/[\\/]/).pop() || 'No file selected'
 
         // Move the file to mod folder
-        const newFilePath = await handleMoveFileToModFolder(selectedFilePath);
+        const newFilePath = await handleMoveFileToModFolder(selectedFilePath)
 
-        console.log('Selected file:', selectedFilePath);
-        console.log('New file path:', newFilePath);
-        console.log('File name:', fileName);
+        console.log('Selected file:', selectedFilePath)
+        console.log('New file path:', newFilePath)
+        console.log('File name:', fileName)
 
         // Create a completely new files array to ensure React detects the change
-        const newFiles = [...value];
+        const newFiles = [...value]
         newFiles[index] = {
           ...newFiles[index],
           filePath: newFilePath,
@@ -169,24 +175,23 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
           isRequired: newFiles[index].isRequired !== undefined ? newFiles[index].isRequired : true,
           fileType: newFiles[index].fileType || 'WAD',
           loadOrder: newFiles[index].loadOrder ?? index
-        };
+        }
 
         // Call onChange with the new array
-        console.log('Updating files with:', newFiles);
-        onChange(newFiles);
-
+        console.log('Updating files with:', newFiles)
+        onChange(newFiles)
       } else {
-        console.log('No file selected or dialog canceled');
+        console.log('No file selected or dialog canceled')
       }
     } catch (error: any) {
-      console.error('Failed to open file dialog:', error);
+      console.error('Failed to open file dialog:', error)
       toast({
         title: 'Error',
         description: error.message || 'Failed to open file dialog',
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     }
-  };
+  }
 
   return (
     <div>
@@ -197,9 +202,11 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
           variant={'outline'}
           onClick={handleAddFile}
           className="border-[#262626]"
-          type="button" >
+          type="button"
+        >
           <PlusIcon className="h-4 w-4 mr-1" />
-          Add file</Button>
+          Add file
+        </Button>
       </div>
 
       {value.length === 0 ? (
@@ -261,9 +268,12 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
                   </SelectTrigger>
                   <SelectContent className="bg-[#162b3d] border-[#262626] max-h-[300px]">
                     {Array.isArray(catalogFiles) && catalogFiles.length === 0 ? (
-                      <SelectItem value="none" disabled>No catalog files</SelectItem>
+                      <SelectItem value="none" disabled>
+                        No catalog files
+                      </SelectItem>
                     ) : (
-                      Array.isArray(catalogFiles) && catalogFiles.map((catalogFile) => (
+                      Array.isArray(catalogFiles) &&
+                      catalogFiles.map((catalogFile) => (
                         <SelectItem key={catalogFile.id} value={catalogFile.id.toString()}>
                           {catalogFile.name}
                         </SelectItem>
@@ -279,7 +289,9 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
                   min={0}
                   placeholder="Order"
                   value={file.loadOrder || 0}
-                  onChange={(e) => handleUpdateFile(index, 'loadOrder', parseInt(e.target.value, 10))}
+                  onChange={(e) =>
+                    handleUpdateFile(index, 'loadOrder', parseInt(e.target.value, 10))
+                  }
                   className="bg-[#0c1c2a] border-[#262626]"
                 />
               </div>
@@ -297,5 +309,5 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
         </div>
       )}
     </div>
-  );
+  )
 }

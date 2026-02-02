@@ -1,99 +1,100 @@
-import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { FolderOpenIcon } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { gameService } from '@/lib/gameService';
-import type { IAppSettings } from '@shared/schema';
+import { useEffect, useState } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { FolderOpenIcon } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { gameService } from '@/lib/gameService'
+import type { IAppSettings } from '@shared/schema'
 
 interface SettingsModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
   const [settings, setSettings] = useState<IAppSettings>({
     gzDoomPath: '',
     savegamesPath: '',
     screenshotsPath: '',
     defaultSourcePort: 'gzdoom',
     theme: 'system'
-  });
+  })
 
   // Load settings when the modal opens
   useEffect(() => {
     if (open) {
-      loadSettings();
+      loadSettings()
     }
-  }, [open]);
+  }, [open])
 
   const loadSettings = async () => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      const loadedSettings = await gameService.getSettings();
-      console.log('Loaded settings:', loadedSettings);
-      setSettings(loadedSettings);
+      const loadedSettings = await gameService.getSettings()
+      console.log('Loaded settings:', loadedSettings)
+      setSettings(loadedSettings)
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      console.error('Failed to load settings:', error)
       toast({
         title: 'Error',
         description: 'Failed to load settings',
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleSaveSettings = async () => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      await gameService.updateSettings(settings);
+      await gameService.updateSettings(settings)
       toast({
         title: 'Success',
-        description: 'Settings saved successfully',
-      });
-      onOpenChange(false);
+        description: 'Settings saved successfully'
+      })
+      onOpenChange(false)
     } catch (error) {
-      console.error('Failed to save settings:', error);
+      console.error('Failed to save settings:', error)
       toast({
         title: 'Error',
         description: 'Failed to save settings',
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleBrowseFile = async (settingKey: keyof IAppSettings) => {
     try {
       const result = await gameService.showOpenDialog({
         properties: settingKey === 'gzDoomPath' ? ['openFile'] : ['openDirectory'],
-        filters: settingKey === 'gzDoomPath' ? [
-          { name: 'Executables', extensions: ['exe', ''] }
-        ] : undefined
-      });
-      
+        filters:
+          settingKey === 'gzDoomPath'
+            ? [{ name: 'Executables', extensions: ['exe', ''] }]
+            : undefined
+      })
+
       if (!result.canceled && result.filePaths.length > 0) {
         setSettings({
           ...settings,
           [settingKey]: result.filePaths[0]
-        });
+        })
       }
     } catch (error) {
-      console.error('Failed to open file dialog:', error);
+      console.error('Failed to open file dialog:', error)
       toast({
         title: 'Error',
         description: 'Failed to open file dialog',
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     }
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -101,7 +102,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="gzDoomPath">GZDoom Path</Label>
@@ -122,7 +123,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </Button>
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="savegamesPath">Savegames Path</Label>
             <div className="flex space-x-2">
@@ -142,7 +143,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               </Button>
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="screenshotsPath">Screenshots Path</Label>
             <div className="flex space-x-2">
@@ -163,7 +164,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </div>
           </div>
         </div>
-        
+
         <DialogFooter>
           <Button
             variant="outline"
@@ -182,5 +183,5 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

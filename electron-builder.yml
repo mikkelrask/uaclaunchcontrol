@@ -6,9 +6,9 @@ files:
   - out/**/*
   - package.json
   - resources/**/*
-  - "!src"
-  - "!legacy-app"
-  - "!dist"
+  - '!src'
+  - '!legacy-app'
+  - '!dist'
 asarUnpack:
   - resources/**
 win:

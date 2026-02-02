@@ -1,23 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { IMod, IModFile, IDoomVersion } from '@shared/schema';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { gameService } from '@/lib/gameService';
-import { useToast } from '@/hooks/use-toast';
-import ModFileList from './ModFileList';
-import LaunchOptions from './LaunchOptions';
-import { slugify } from '@/lib/utils';
+import React, { useState, useEffect } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { IMod, IModFile, IDoomVersion } from '@shared/schema'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { gameService } from '@/lib/gameService'
+import { useToast } from '@/hooks/use-toast'
+import ModFileList from './ModFileList'
+import LaunchOptions from './LaunchOptions'
+import { slugify } from '@/lib/utils'
 
 interface GameSettingsModalProps {
-  modId: number | null;
-  isOpen: boolean;
-  onClose: () => void;
-  doomVersions: IDoomVersion[] | undefined;
+  modId: string | null
+  isOpen: boolean
+  onClose: () => void
+  doomVersions: IDoomVersion[] | undefined
 }
 
 export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
@@ -26,144 +38,157 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   onClose,
   doomVersions
 }) => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
 
-  const [mod, setMod] = useState<IMod | null>(null);
-  const [files, setFiles] = useState<IModFile[]>([]);
+  const [mod, setMod] = useState<IMod | null>(null)
+  const [files, setFiles] = useState<IModFile[]>([])
 
   // Fetch mod details
   const { data, isLoading } = useQuery({
     queryKey: [`/api/mods/${modId}`],
-    enabled: !!modId && isOpen,
-  });
+    queryFn: () => (modId ? gameService.getMod(modId) : Promise.resolve(null)),
+    enabled: !!modId && isOpen
+  })
 
   // Update mod mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, mod, files }: { id: number, mod: Partial<IMod>, files: Omit<IModFile, 'id' | 'modId'>[] }) =>
-      gameService.updateMod(id, mod, files),
+    mutationFn: ({
+      id,
+      mod,
+      files
+    }: {
+      id: string
+      mod: Partial<IMod>
+      files: Omit<IModFile, 'id' | 'modId'>[]
+    }) => gameService.updateMod(id, mod, files),
     onSuccess: (updatedMod, variables) => {
       toast({
         title: 'Success',
-        description: 'Mod settings saved successfully',
-      });
+        description: 'Mod settings saved successfully'
+      })
       // Update both the list and the individual mod cache
-      queryClient.invalidateQueries({ queryKey: ['/api/mods'] });
-      queryClient.setQueryData([`/api/mods/${variables.id}`], { mod: updatedMod, files: variables.files });
-      onClose();
+      queryClient.invalidateQueries({ queryKey: ['/api/mods'] })
+      queryClient.setQueryData([`/api/mods/${variables.id}`], {
+        mod: updatedMod,
+        files: variables.files
+      })
+      onClose()
     },
     onError: (error) => {
       toast({
         title: 'Error',
         description: `Failed to save settings: ${error}`,
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     }
-  });
+  })
 
   // Delete mod mutation
   const deleteMutation = useMutation({
-    mutationFn: gameService.deleteMod,
+    mutationFn: (id: string) => gameService.deleteMod(id),
     onSuccess: () => {
       toast({
         title: 'Success',
-        description: 'Mod deleted successfully',
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/mods'] });
-      onClose();
+        description: 'Mod deleted successfully'
+      })
+      queryClient.invalidateQueries({ queryKey: ['/api/mods'] })
+      onClose()
     },
     onError: (error) => {
       toast({
         title: 'Error',
         description: `Failed to delete mod: ${error}`,
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     }
-  });
+  })
 
   // Launch mod mutation
   const launchMutation = useMutation({
-    mutationFn: gameService.launchMod,
+    mutationFn: (id: string) => gameService.launchMod(id),
     onSuccess: () => {
       toast({
         title: 'Game launched',
-        description: `${mod?.title} is now running`,
-      });
+        description: `${mod?.title} is now running`
+      })
     },
     onError: (error) => {
       toast({
         title: 'Launch failed',
         description: `Failed to launch game: ${error}`,
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     }
-  });
+  })
 
   // Initialize form state when data is loaded
   useEffect(() => {
     if (data && typeof data === 'object' && data !== null) {
       // Type-safe check if data has a 'mod' property
       if ('mod' in data && data.mod) {
-        setMod(data.mod as IMod);
+        setMod(data.mod as IMod)
       } else {
-        setMod(null);
+        setMod(null)
       }
 
       // Type-safe check if data has a 'files' property
       if ('files' in data && Array.isArray(data.files)) {
-        setFiles(data.files as IModFile[]);
+        setFiles(data.files as IModFile[])
       } else {
-        setFiles([]);
+        setFiles([])
       }
     }
-  }, [data]);
+  }, [data])
 
   const handleSave = () => {
-    if (!mod || !modId) return;
+    if (!mod || !modId) return
 
-    const filesWithoutIds = files.map(f => ({
+    const filesWithoutIds = files.map((f) => ({
       fileName: f.fileName,
       filePath: f.filePath,
       fileType: f.fileType,
       loadOrder: f.loadOrder,
       isRequired: f.isRequired
-    }));
+    }))
 
     updateMutation.mutate({
       id: modId,
       mod,
       files: filesWithoutIds
-    });
-  };
+    })
+  }
 
   const handleDelete = () => {
-    if (!modId) return;
+    if (!modId) return
     if (confirm('Are you sure you want to delete this mod?')) {
-      deleteMutation.mutate(modId);
+      deleteMutation.mutate(modId)
     }
-  };
+  }
 
   const handleLaunch = () => {
-    if (!modId) return;
-    launchMutation.mutate(modId);
-  };
+    if (!modId) return
+    launchMutation.mutate(modId)
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setMod(prev => prev ? { ...prev, [name]: value } : null);
-  };
+    const { name, value } = e.target
+    setMod((prev) => (prev ? { ...prev, [name]: value } : null))
+  }
 
   const handleSelectChange = (name: string, value: string) => {
-    setMod(prev => prev ? { ...prev, [name]: value } : null);
-  };
+    setMod((prev) => (prev ? { ...prev, [name]: value } : null))
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-[#162b3d] text-white border-[#262626] max-w-4xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-mono font-bold">{mod?.title}</DialogTitle>
+          <DialogTitle className="text-2xl font-mono font-bold">
+            {mod?.title || mod?.name || 'Mod Settings'}
+          </DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
@@ -173,7 +198,10 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
             <div className="space-y-4">
               <div className="mb-4">
                 <img
-                  src={mod?.screenshotPath || 'https://images.unsplash.com/photo-1634898010511-df5fe04d2252?auto=format&fit=crop&w=800&h=300&q=80'}
+                  src={
+                    mod?.screenshotPath ||
+                    'https://images.unsplash.com/photo-1634898010511-df5fe04d2252?auto=format&fit=crop&w=800&h=300&q=80'
+                  }
                   alt={mod?.title}
                   className="w-full h-64 object-cover rounded"
                 />
@@ -185,7 +213,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                   <Input
                     id="title"
                     name="title"
-                    value={mod?.title || ''}
+                    value={mod?.title || mod?.name || ''}
                     onChange={handleInputChange}
                     className="bg-[#0c1c2a] border-[#262626]"
                   />
@@ -218,7 +246,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                           <SelectValue placeholder="Select Doom Version" />
                         </SelectTrigger>
                         <SelectContent className="bg-[#162b3d] border-[#262626] text-white">
-                          {doomVersions?.map(version => (
+                          {doomVersions?.map((version) => (
                             <SelectItem key={version.id} value={version.id.toString()}>
                               {version.name}
                             </SelectItem>
@@ -243,7 +271,8 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                       <Input
                         id="saveDirectory"
                         name="saveDirectory"
-                        value={mod?.saveDirectory || `/home/runner/workspace/saves/${slugify(mod?.title || '')}`}
+                        value={mod?.saveDirectory || ''}
+                        placeholder={`e.g. ~/saves/${slugify(mod?.title || 'game')}`}
                         onChange={handleInputChange}
                         className="bg-[#162b3d] border-[#262626]"
                       />
@@ -259,7 +288,9 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
 
               <LaunchOptions
                 launchParameters={mod?.launchParameters || ''}
-                onChange={(params) => setMod(prev => prev ? { ...prev, launchParameters: params } : null)}
+                onChange={(params) =>
+                  setMod((prev) => (prev ? { ...prev, launchParameters: params } : null))
+                }
               />
             </div>
 
@@ -297,7 +328,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
         )}
       </DialogContent>
     </Dialog>
-  );
-};
+  )
+}
 
-export default GameSettingsModal;
+export default GameSettingsModal

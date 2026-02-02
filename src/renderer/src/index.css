@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @layer base {
   :root {
@@ -81,21 +81,21 @@
   body {
     @apply font-sans antialiased bg-[#0c1c2a] text-[#e6e6e6];
   }
-  
+
   /* Custom scrollbar for dark theme */
   ::-webkit-scrollbar {
     width: 10px;
   }
-  
+
   ::-webkit-scrollbar-track {
     background: #0c1c2a;
   }
-  
+
   ::-webkit-scrollbar-thumb {
     background: #162b3d;
     border-radius: 5px;
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
     background: #d41c1c;
   }
@@ -121,42 +121,43 @@
   .game-card {
     @apply bg-[#1c1c1c] rounded-lg overflow-hidden shadow-lg transition-all duration-200 ease-in-out relative;
   }
-  
+
   .game-card:hover {
     @apply -translate-y-1 shadow-2xl;
   }
-  
+
   .card-actions {
     @apply absolute bottom-0 left-0 w-full opacity-0 transition-all duration-300 ease-in-out bg-[rgba(12,28,42,0.85)] flex items-center justify-between p-2;
     bottom: -60px;
   }
-  
+
   .game-card:hover .card-actions {
     @apply opacity-100 bottom-0;
   }
-  
+
   .nav-tab {
     @apply relative transition-all duration-200 px-2;
   }
-  
+
   .nav-tab.active {
     @apply font-bold text-white;
   }
-  
+
   .nav-tab.active::after {
     content: '';
     @apply absolute -bottom-[10px] left-0 w-full h-1 bg-[#d41c1c];
   }
-  
+
   .nav-tab:not(.active) {
     @apply text-[#e6e6e6] hover:text-white;
   }
-  
+
   .sidebar-icon {
     @apply w-12 h-12 rounded-md flex items-center justify-center cursor-pointer transition-all duration-200;
   }
-  
-  .sidebar-icon:hover, .sidebar-icon.active {
+
+  .sidebar-icon:hover,
+  .sidebar-icon.active {
     @apply bg-[#162b3d] scale-105;
   }
 }
