@@ -1,5 +1,5 @@
 appId: com.mikkelrask.uaclaunchcontrol
-productName: uaclaunchcontrol-electron
+productName: uaclaunchcontrol
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: uaclaunchcontrol-electron
+  executableName: uaclaunchcontrol
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -31,7 +31,6 @@ dmg:
 linux:
   target:
     - AppImage
-    - snap
     - deb
   maintainer: mikkelrask
   category: Utility
@@ -42,5 +41,3 @@ publish:
   provider: github
   owner: mikkelrask
   repo: uaclaunchcontrol
-electronDownload:
-  mirror: https://npmmirror.com/mirrors/electron/
