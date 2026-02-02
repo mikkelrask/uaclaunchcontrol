@@ -1,5 +1,5 @@
 appId: com.mikkelrask.uaclaunchcontrol
-productName: uaclaunchcontrol
+productName: UAC Launch Control
 directories:
   buildResources: build
 files:
@@ -21,8 +21,6 @@ nsis:
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
@@ -31,6 +29,7 @@ dmg:
 linux:
   target:
     - AppImage
+    - snap
     - deb
   maintainer: mikkelrask
   category: Utility
