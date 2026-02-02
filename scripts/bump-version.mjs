@@ -4,15 +4,31 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 
-const version = process.argv[2];
+const rawVersion = process.argv[2];
 
-if (!version || !/^\d+\.\d+\.\d+$/.test(version)) {
-  console.error('Usage: bump-version.mjs <version> (e.g. 1.2.3)');
+if (!rawVersion) {
+  console.error('Usage: bump-version.mjs <version> (e.g. 0.2.0 or E1M0.2)');
   process.exit(1);
 }
 
-const TAG = `v${version}`;
-console.log(`🔧 Bumping to version ${version} (${TAG})...`);
+// Map Doom-style version to semver for package.json if needed
+// E1M0.2 -> 0.2.0
+let semver = rawVersion;
+if (rawVersion.startsWith('E1M')) {
+  const parts = rawVersion.replace('E1M', '').split('.');
+  if (parts.length === 1) semver = `${parts[0]}.0.0`;
+  else if (parts.length === 2) semver = `0.${parts[0]}.${parts[1]}`;
+  else semver = `${parts[0]}.${parts[1]}.${parts[2]}`;
+}
+
+// Fallback check: if it still doesn't look like semver, just use 0.0.0 and warn
+if (!/^\d+\.\d+\.\d+$/.test(semver)) {
+  console.warn(`⚠️  Version "${semver}" is not strict semver. Using 0.0.0 for package.json.`);
+  semver = '0.0.0';
+}
+
+const TAG = rawVersion;
+console.log(`🔧 Bumping to version ${semver} (Tag: ${TAG})...`);
 
 // Helper to read/write JSON
 const updateJSON = (filePath, updater) => {
@@ -28,7 +44,7 @@ const updateJSON = (filePath, updater) => {
 
 // Update root package.json
 updateJSON('package.json', json => {
-  json.version = version;
+  json.version = semver;
 });
 
 console.log('✅ Updated package.json version field');
@@ -36,16 +52,22 @@ console.log('✅ Updated package.json version field');
 // Commit & tag
 try {
   execSync('git add package.json');
-  execSync(`git commit -m "chore: bump version to v${version}"`);
-  execSync(`git tag ${TAG}`);
+  // Check if there are changes to commit
+  const status = execSync('git status --porcelain').toString().trim();
+  if (status) {
+    execSync(`git commit -m "chore: bump version to ${TAG} 🚀"`);
+  }
+  
+  execSync(`git tag -a ${TAG} -m "Release ${TAG}"`);
   
   // Get current branch
   const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
   
-  execSync(`git push origin ${branch}`);
+  console.log(`📡 Pushing to origin ${branch} and tag ${TAG}...`);
+  execSync(`git push origin ${branch} --force`); // Initial migration might need force
   execSync(`git push origin ${TAG}`);
 
-  console.log(`🚀 Version ${version} committed, tagged, and pushed to ${branch}.`);
+  console.log(`🚀 Version ${TAG} (${semver}) committed, tagged, and pushed.`);
 } catch (error) {
   console.error('❌ Failed to commit/tag/push:', error.message);
   process.exit(1);
