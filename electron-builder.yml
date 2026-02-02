@@ -40,7 +40,7 @@ appImage:
 npmRebuild: false
 publish:
   provider: github
-  owner: ${owner}
-  repo: ${repo}
+  owner: mikkelrask
+  repo: uaclaunchcontrol
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
