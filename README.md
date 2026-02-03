@@ -8,7 +8,11 @@ A modern desktop application for managing and launching Doom mods, built with El
 
 ## Overview
 
-UAC Launch Control is a powerful mod launcher for GZDoom and other Doom source ports. It provides an intuitive interface for organizing your Doom WADs, managing mod files, and launching games with custom configurations.
+UAC Launch Control is a mod launcher for **UZDoom/GZDoom/ZDoom** with big ambitions. It provides an intuitive interface for organizing your Doom WADs, managing mod files, and launching games with custom configurations. 
+
+No more having to remember the launch order of your mods, or making `.bat` launch scripts for each of your mods. 
+
+UAC Launch Control stores your mod-files in a locally stored catalogue, making it easy to mix-and-match different mods, to create your own custom "mod-pack". 
 
 ### Key Features
 
@@ -70,7 +74,7 @@ uaclaunchcontrol-electron/
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 18+ 
 - npm or yarn
 - GZDoom installed on your system
 
@@ -93,7 +97,6 @@ npm run dev
 ```
 
 This will:
-
 - Start the Vite dev server for the renderer (port 5173)
 - Start the Electron app with the Express API server (port 7666)
 - Enable hot module replacement for the frontend
@@ -167,7 +170,6 @@ The Express server exposes the following REST API:
 ### TypeScript Configuration
 
 The project uses separate TypeScript configurations:
-
 - `tsconfig.node.json` - Main process and server code
 - `tsconfig.web.json` - Renderer process (includes `src/shared`)
 
