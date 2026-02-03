@@ -70,12 +70,35 @@ export class FileService {
   // Launch a game with parameters
   async launchGame(executable: string, args: string[]): Promise<boolean> {
     try {
-      await execFilePromise(executable, args)
+      // Handle macOS .app bundles
+      const executablePath = this.resolveExecutablePath(executable);
+
+      await execFilePromise(executablePath, args)
       return true
     } catch (error) {
       console.error('Error launching game:', error)
       return false
     }
+  }
+
+  private resolveExecutablePath(userInput: string): string {
+    // Only needed on macOS
+    if (process.platform !== 'darwin') {
+      return userInput;
+    }
+
+    // If it ends with .app, convert to actual executable
+    if (userInput.endsWith('.app')) {
+      const appName = userInput.split('/').pop()!.replace('.app', '');
+      return `${userInput}/Contents/MacOS/${appName}`;
+    }
+
+    // If they just gave us a name like "gzdoom", assume it's in /Applications
+    if (!userInput.includes('/')) {
+      return `/Applications/${userInput}.app/Contents/MacOS/${userInput}`;
+    }
+
+    return userInput;
   }
 }
 
