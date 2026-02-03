@@ -6,9 +6,9 @@ files:
   - out/**/*
   - package.json
   - resources/**/*
-  - '!src'
-  - '!legacy-app'
-  - '!dist'
+  - "!src"
+  - "!legacy-app"
+  - "!dist"
 asarUnpack:
   - resources/**
 win:
@@ -29,10 +29,9 @@ dmg:
 linux:
   target:
     - AppImage
-    - snap
     - deb
   maintainer: mikkelrask
-  category: Utility
+  category: Game
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
