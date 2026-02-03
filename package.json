@@ -1,5 +1,5 @@
 {
-  "name": "UAC-Launch-Control",
+  "name": "uac-launch-control",
   "version": "0.2.0",
   "description": "Modded Rip and Tear on Easy mode",
   "main": "./out/main/index.js",
