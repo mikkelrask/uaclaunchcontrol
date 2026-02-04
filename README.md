@@ -6,14 +6,14 @@ A modern desktop application for managing and launching Doom mods, built with El
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
 
-![UAC Launch Control is Modded Rip and Tear on Easy Mode!](https://private-user-images.githubusercontent.com/35899030/544440880-28fe6666-7fcc-4115-be4d-cfae46c13f44.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NzAxNTcxMTcsIm5iZiI6MTc3MDE1NjgxNywicGF0aCI6Ii8zNTg5OTAzMC81NDQ0NDA4ODAtMjhmZTY2NjYtN2ZjYy00MTE1LWJlNGQtY2ZhZTQ2YzEzZjQ0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjAyMDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwMjAzVDIyMTMzN1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWFlZmFkNzgwYjU1MmIwMzY2MDg2MDAyYzczNWYyN2RmZTFmYmJlZGRmNTdkZWFhYWFhMDZmOTlmODNhMDFiZmYmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.-WJ7WQKVv-3YB_j5wYkhqiloEFAavjD1B_BLiy4yjrw)
+![UAC Launch Control is Modded Rip and Tear on Easy Mode!](https://private-user-images.githubusercontent.com/35899030/544440880-28fe6666-7fcc-4115-be4d-cfae46c13f44.png)
 ## Overview
 
-UAC Launch Control is a mod launcher for **UZDoom/GZDoom/ZDoom** with big ambitions. It provides an intuitive interface for organizing your Doom WADs, managing mod files, and launching games with custom configurations. 
+UAC Launch Control is a mod launcher for **UZDoom/GZDoom/ZDoom** with big ambitions. It provides an intuitive interface for organizing your Doom WADs, managing mod files, and launching games with custom configurations.
 
-No more having to remember the launch order of your mods, or making `.bat` launch scripts for each of your mods. 
+No more having to remember the launch order of your mods, or making `.bat` launch scripts for each of your mods.
 
-UAC Launch Control stores your mod-files in a locally stored catalogue, making it easy to mix-and-match different mods, to create your own custom "mod-pack" or "remix". 
+UAC Launch Control stores your mod-files in a locally stored catalogue, making it easy to mix-and-match different mods, to create your own custom "mod-pack" or "remix".
 
 ### Key Features
 
@@ -73,7 +73,7 @@ uaclaunchcontrol-electron/
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - pnpm, npm or yarn
 - UZDoom (or similar source port) installed on your system
 
