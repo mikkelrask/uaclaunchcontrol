@@ -6,22 +6,21 @@ A modern desktop application for managing and launching Doom mods, built with El
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
 
+![UAC Launch Control is Modded Rip and Tear on Easy Mode!](https://private-user-images.githubusercontent.com/35899030/544440880-28fe6666-7fcc-4115-be4d-cfae46c13f44.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NzAxNTcxMTcsIm5iZiI6MTc3MDE1NjgxNywicGF0aCI6Ii8zNTg5OTAzMC81NDQ0NDA4ODAtMjhmZTY2NjYtN2ZjYy00MTE1LWJlNGQtY2ZhZTQ2YzEzZjQ0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjAyMDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwMjAzVDIyMTMzN1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWFlZmFkNzgwYjU1MmIwMzY2MDg2MDAyYzczNWYyN2RmZTFmYmJlZGRmNTdkZWFhYWFhMDZmOTlmODNhMDFiZmYmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.-WJ7WQKVv-3YB_j5wYkhqiloEFAavjD1B_BLiy4yjrw)
 ## Overview
 
 UAC Launch Control is a mod launcher for **UZDoom/GZDoom/ZDoom** with big ambitions. It provides an intuitive interface for organizing your Doom WADs, managing mod files, and launching games with custom configurations. 
 
 No more having to remember the launch order of your mods, or making `.bat` launch scripts for each of your mods. 
 
-UAC Launch Control stores your mod-files in a locally stored catalogue, making it easy to mix-and-match different mods, to create your own custom "mod-pack". 
+UAC Launch Control stores your mod-files in a locally stored catalogue, making it easy to mix-and-match different mods, to create your own custom "mod-pack" or "remix". 
 
 ### Key Features
 
 - 🎮 **Mod Management**: Organize and launch Doom mods with ease
 - 📁 **File Catalog**: Maintain a catalog of mod files (WADs, PK3s, DEH patches)
-- 🎯 **Version Support**: Support for multiple Doom versions (Doom, Doom II, Final Doom, FreeDoom)
 - ⚙️ **Custom Launch Parameters**: Configure launch arguments per mod
-- 🖼️ **Visual Interface**: Modern, dark-themed UI with game cards and screenshots
-- 💾 **Persistent Storage**: All data stored in `~/.config/mrdoom`
+- 🎯 **"Bring your own Source port"**: UZDoom, GZDoom, Zandronum, and more to come
 
 ## Architecture
 
@@ -75,25 +74,21 @@ uaclaunchcontrol-electron/
 ### Prerequisites
 
 - Node.js 18+ 
-- npm or yarn
-- GZDoom installed on your system
+- pnpm, npm or yarn
+- UZDoom (or similar source port) installed on your system
 
-### Installation
-
-```bash
 # Clone the repository
-git clone https://github.com/yourusername/uaclaunchcontrol-electron.git
-cd uaclaunchcontrol-electron
+git clone https://github.com/mikkelrask/uaclaunchcontrol.git
+cd uaclaunchcontrol
 
 # Install dependencies
-npm install
-```
+pnpm install
 
 ### Development
 
 ```bash
 # Run in development mode (with hot reload)
-npm run dev
+pnpm dev
 ```
 
 This will:
@@ -101,26 +96,24 @@ This will:
 - Start the Electron app with the Express API server (port 7666)
 - Enable hot module replacement for the frontend
 
-### Building
-
-```bash
 # Build for your current platform
-npm run build
-
-# Platform-specific builds
-npm run build:win    # Windows
-npm run build:mac    # macOS
-npm run build:linux  # Linux
 ```
-
-Built applications will be in the `out/` directory.
+pnpm build
+```
+# Platform-specific builds
+```
+pnpm build:win    # Windows
+pnpm build:mac    # macOS
+pnpm build:linux  # Linux
+```
+Built applications will be in the `dist/` directory.
 
 ## Configuration
+Done via the application settings via the cog icon in the top right corner, but everything is also stored in plain text json files, so you can edit them manually if you want to.
 
 ### Storage Location
 
 All application data is stored in `~/.config/mrdoom/`:
-
 ```
 ~/.config/mrdoom/
 ├── settings.json           # App settings (paths, preferences)
@@ -130,7 +123,7 @@ All application data is stored in `~/.config/mrdoom/`:
 │   ├── 1.json
 │   ├── 2.json
 │   └── ...
-└── saves/                  # Game save files (optional)
+└── saves/mod-name/                  # Game save files (optional)
 ```
 
 ### Default Settings
@@ -195,7 +188,6 @@ This project was migrated from a Tauri-based implementation. Key changes:
 - Simplified build process (no Rust compilation required)
 - Maintained data compatibility (same JSON structure in `~/.config/mrdoom`)
 
-See [MIGRATION_REPORT.md](./MIGRATION_REPORT.md) for detailed migration notes.
 
 ## Recommended IDE Setup
 
@@ -207,7 +199,7 @@ See [MIGRATION_REPORT.md](./MIGRATION_REPORT.md) for detailed migration notes.
 
 ## License
 
-[Your License Here]
+This is free software. Do what you want with it. If you use it, buy me a beer. Or not. I don't drink, so 🤷
 
 ## Contributing
 
