@@ -1,12 +1,12 @@
 # UAC Launch Control
 
-A modern desktop application for managing and launching Doom mods, built with Electron, React, and TypeScript.
+A modern desktop application for managing and launching Doom mods, built with Electron, React, and TypeScript. It is _very much_ a WIP and early
 
 ![UAC Launch Control](https://img.shields.io/badge/Electron-Latest-47848F?logo=electron)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
 
-![UAC Launch Control is Modded Rip and Tear on Easy Mode!](https://private-user-images.githubusercontent.com/35899030/544440880-28fe6666-7fcc-4115-be4d-cfae46c13f44.png)
+![UAC Launch Control is Modded Rip and Tear on Easy Mode!](https://github.com/mikkelrask/uaclaunchcontrol/blob/main/IMG/macos-confirmed.png?raw=true)
 ## Overview
 
 UAC Launch Control is a mod launcher for **UZDoom/GZDoom/ZDoom** with big ambitions. It provides an intuitive interface for organizing your Doom WADs, managing mod files, and launching games with custom configurations.

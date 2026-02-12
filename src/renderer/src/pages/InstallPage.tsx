@@ -74,7 +74,7 @@ export const InstallPage: React.FC = () => {
       title: '',
       description: '',
       doomVersionId: '',
-      sourcePort: 'GZDoom',
+      sourcePort: '',
       saveDirectory: '',
       launchParameters: ''
     }
@@ -319,7 +319,7 @@ export const InstallPage: React.FC = () => {
                             <FormLabel>Source Port</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="GZDoom"
+                                placeholder={settings.gzDoomPath || ''}
                                 className="bg-[#0c1c2a] border-[#262626]"
                                 {...field}
                               />

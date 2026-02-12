@@ -2,7 +2,7 @@ import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { IDoomVersion } from '@shared/schema'
-import logo from '../icons/logo.png'
+import logo from '../icons/icon.png'
 import { api } from '@/api'
 
 interface SidebarProps {
