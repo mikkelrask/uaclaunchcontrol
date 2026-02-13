@@ -108,7 +108,15 @@ export const GamesPage: React.FC = () => {
             onManageGames={handleManageGames}
           />
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-white tracking-tight uppercase">
+                {activeVersion
+                  ? versions.find((v) => v.id === activeVersion)?.name || 'Unknown Version'
+                  : 'All Games'}
+              </h1>
+              <div className="h-1 w-20 bg-[#ff4b2b] mt-2 rounded-full shadow-[0_0_10px_rgba(255,75,43,0.5)]"></div>
+            </div>
             {isModsLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {Array(8)

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useId } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -13,22 +13,42 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
+import type { IDoomVersion } from '@shared/schema'
 
 interface SettingsDialogProps {
   isOpen: boolean
   onClose: () => void
 }
 
+// Convert local file path to proper file:// URL
+const toFileUrl = (filePath: string): string => {
+  if (!filePath) return ''
+  // Handle Windows paths with backslashes
+  const normalized = filePath.replace(/\\/g, '/')
+  // Encode spaces and special characters
+  const encoded = normalized
+    .split('/')
+    .map((p) => encodeURIComponent(p))
+    .join('/')
+  return `file:///${encoded}`
+}
+
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast()
+  const id = useId()
 
   // Settings state
   const [settings, setSettings] = useState({
     gzDoomPath: '',
     saveDirectory: '',
     modsDirectory: '',
-    screenshotsDirectory: ''
+    screenshotsDirectory: '',
+    wadFilesDirectory: ''
   })
+
+  // Doom versions state
+  const [doomVersions, setDoomVersions] = useState<IDoomVersion[]>([])
+  const [isLoadingVersions, setIsLoadingVersions] = useState(false)
 
   // Fetch settings from API when dialog opens
   useEffect(() => {
@@ -40,13 +60,32 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
           gzDoomPath: data.gzDoomPath || '',
           saveDirectory: data.savegamesPath || '',
           modsDirectory: data.modsDirectory || '',
-          screenshotsDirectory: data.screenshotsPath || ''
+          screenshotsDirectory: data.screenshotsPath || '',
+          wadFilesDirectory: data.wadFilesDirectory || ''
         })
       })
       .catch(() => {
         toast({ title: 'Error', description: 'Failed to load settings', variant: 'destructive' })
       })
-  }, [isOpen, toast])
+
+    // Fetch doom versions
+    setIsLoadingVersions(true)
+    api
+      .getDoomVersions()
+      .then((versions) => {
+        setDoomVersions(versions)
+      })
+      .catch(() => {
+        toast({
+          title: 'Error',
+          description: 'Failed to load doom versions',
+          variant: 'destructive'
+        })
+      })
+      .finally(() => {
+        setIsLoadingVersions(false)
+      })
+  }, [isOpen])
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,6 +96,44 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }))
   }
 
+  // Handle doom version field changes
+  const handleVersionChange = (index: number, field: keyof IDoomVersion, value: string) => {
+    setDoomVersions((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  const handleIconBrowse = async (index: number) => {
+    const version = doomVersions[index]
+    const result = await api.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }],
+      defaultPath: version.icon || undefined
+    })
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      const selectedIconPath = result.filePaths[0]
+      const iconFileName = selectedIconPath.split(/[\\/]/).pop() || 'icon.png'
+
+      // If wads directory is set, move the icon there
+      if (settings.wadFilesDirectory) {
+        const destPath = `${settings.wadFilesDirectory}/${iconFileName}`
+        try {
+          await api.moveFile(selectedIconPath, destPath)
+          handleVersionChange(index, 'icon', destPath)
+          toast({ title: 'Icon moved', description: `Icon moved to ${destPath}` })
+        } catch {
+          // If move fails, just use the selected path
+          handleVersionChange(index, 'icon', selectedIconPath)
+        }
+      } else {
+        handleVersionChange(index, 'icon', selectedIconPath)
+      }
+    }
+  }
+
   // Handle save
   const handleSave = async () => {
     try {
@@ -65,9 +142,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         savegamesPath: settings.saveDirectory,
         modsDirectory: settings.modsDirectory,
         screenshotsPath: settings.screenshotsDirectory,
+        wadFilesDirectory: settings.wadFilesDirectory,
         theme: 'dark' // or get from UI if you have a theme selector
       }
       await api.updateSettings(payload)
+
+      // Also save doom versions
+      await api.updateDoomVersions(doomVersions)
+
       toast({
         title: 'Settings Saved',
         description: 'Your settings have been saved successfully.'
@@ -114,7 +196,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               Paths
             </TabsTrigger>
             <TabsTrigger value="appearance" className="data-[state=active]:bg-[#1f3547]">
-              Appearance
+              Wad Settings
             </TabsTrigger>
             <TabsTrigger value="advanced" className="data-[state=active]:bg-[#1f3547]">
               Advanced
@@ -124,11 +206,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
           <TabsContent value="paths" className="space-y-4">
             <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
               <div>
-                <Label htmlFor="gzDoomPath" className="font-mono">
+                <Label htmlFor={`${id}-gzDoomPath`} className="font-mono">
                   GZDoom Executable
                 </Label>
                 <Input
-                  id="gzDoomPath"
+                  id={`${id}-gzDoomPath`}
                   name="gzDoomPath"
                   value={settings.gzDoomPath}
                   onChange={handleChange}
@@ -145,11 +227,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
             <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
               <div>
-                <Label htmlFor="saveDirectory" className="font-mono">
+                <Label htmlFor={`${id}-saveDirectory`} className="font-mono">
                   Save Files Directory
                 </Label>
                 <Input
-                  id="saveDirectory"
+                  id={`${id}-saveDirectory`}
                   name="saveDirectory"
                   value={settings.saveDirectory}
                   onChange={handleChange}
@@ -166,11 +248,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
             <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
               <div>
-                <Label htmlFor="modsDirectory" className="font-mono">
+                <Label htmlFor={`${id}-modsDirectory`} className="font-mono">
                   Mods Directory
                 </Label>
                 <Input
-                  id="modsDirectory"
+                  id={`${id}-modsDirectory`}
                   name="modsDirectory"
                   value={settings.modsDirectory}
                   onChange={handleChange}
@@ -187,11 +269,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
             <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
               <div>
-                <Label htmlFor="screenshotsDirectory" className="font-mono">
+                <Label htmlFor={`${id}-screenshotsDirectory`} className="font-mono">
                   Screenshots Directory
                 </Label>
                 <Input
-                  id="screenshotsDirectory"
+                  id={`${id}-screenshotsDirectory`}
                   name="screenshotsDirectory"
                   value={settings.screenshotsDirectory}
                   onChange={handleChange}
@@ -205,12 +287,104 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 Browse...
               </Button>
             </div>
+
+            <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
+              <div>
+                <Label htmlFor={`${id}-wadFilesDirectory`} className="font-mono">
+                  Wad Files Directory
+                </Label>
+                <Input
+                  id={`${id}-wadFilesDirectory`}
+                  name="wadFilesDirectory"
+                  value={settings.wadFilesDirectory}
+                  onChange={handleChange}
+                  className="bg-[#0c1c2a] border-[#262626] mt-1"
+                />
+              </div>
+              <Button
+                className="mt-7 bg-[#0c1c2a] hover:bg-[#1f3547]"
+                onClick={() => handleBrowse('wadFilesDirectory')}
+              >
+                Browse...
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="appearance" className="space-y-4">
-            <p className="text-[#e6e6e6]">
-              Appearance settings will be implemented in a future update.
-            </p>
+            {!settings.wadFilesDirectory ? (
+              <p className="text-[#e6e6e6]">
+                Set the Wad Files Directory in the Paths tab to configure individual wads.
+              </p>
+            ) : isLoadingVersions ? (
+              <p className="text-[#e6e6e6]">Loading wads...</p>
+            ) : doomVersions.length === 0 ? (
+              <p className="text-[#e6e6e6]">No wads found in the specified directory.</p>
+            ) : (
+              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                {doomVersions.map((version, index) => (
+                  <div
+                    key={version.id || index}
+                    className="bg-[#0c1c2a] border border-[#262626] rounded-md p-3 space-y-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      {version.icon ? (
+                        <div className="relative w-8 h-8">
+                          <img
+                            src={toFileUrl(version.icon)}
+                            alt={version.name}
+                            className="w-8 h-8 object-contain bg-[#162b3d] rounded"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 bg-[#162b3d] rounded flex items-center justify-center text-xs text-[#e6e6e6]">
+                          No img
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <Label className="text-xs text-[#e6e6e6]">Name</Label>
+                        <Input
+                          value={version.name}
+                          onChange={(e) => handleVersionChange(index, 'name', e.target.value)}
+                          className="bg-[#162b3d] border-[#262626] text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
+                      <div>
+                        <Label className="text-xs text-[#e6e6e6]">Executable</Label>
+                        <Input
+                          value={version.executable}
+                          onChange={(e) => handleVersionChange(index, 'executable', e.target.value)}
+                          className="bg-[#162b3d] border-[#262626] text-sm"
+                          placeholder="gzdoom"
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleIconBrowse(index)}
+                        className="mt-4 border-[#262626]"
+                      >
+                        Icon
+                      </Button>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs text-[#e6e6e6]">WAD File</Label>
+                      <Input
+                        value={version.defaultIwad}
+                        readOnly
+                        className="bg-[#0c1c2a] border-[#262626] text-sm text-[#888]"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-4">

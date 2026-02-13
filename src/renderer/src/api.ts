@@ -96,6 +96,26 @@ export const api = {
     const response = await fetch(`${API_BASE}/api/versions`)
     if (!response.ok) throw new Error('Failed to fetch Doom versions')
     return response.json()
+  },
+
+  updateDoomVersions: async (versions: unknown[]) => {
+    const response = await fetch(`${API_BASE}/api/versions`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(versions)
+    })
+    if (!response.ok) throw new Error('Failed to update Doom versions')
+    return response.json()
+  },
+
+  moveFile: async (filePath: string, newPath: string) => {
+    const response = await fetch(`${API_BASE}/api/move-file`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath, newPath })
+    })
+    if (!response.ok) throw new Error('Failed to move file')
+    return response.json()
   }
 
   // Other existing API methods...

@@ -82,6 +82,36 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     executable: 'gzdoom',
     parameters: '',
     defaultIwad: 'freedoom2.wad'
+  },
+  {
+    id: '7',
+    name: 'Heretic: Shadow of the Serpent',
+    slug: 'heretic',
+    args: '-iwad heretic.wad',
+    icon: 'heretic.png',
+    executable: 'gzdoom',
+    parameters: '',
+    defaultIwad: 'heretic.wad'
+  },
+  {
+    id: '8',
+    name: 'Hexen: Beyond Heretic',
+    slug: 'hexen',
+    args: '-iwad hexen.wad',
+    icon: 'hexen.png',
+    executable: 'gzdoom',
+    parameters: '',
+    defaultIwad: 'hexen.wad'
+  },
+  {
+    id: '9',
+    name: 'Hexen: Deathkings of the Dark Citadel',
+    slug: 'hexen-deathkings',
+    args: '-iwad hexdd.wad',
+    icon: 'hexdd.png',
+    executable: 'gzdoom',
+    parameters: '',
+    defaultIwad: 'hexdd.wad'
   }
 ]
 
@@ -149,14 +179,124 @@ export async function saveSettings(settings: Partial<IAppSettings>): Promise<IAp
   }
 }
 
+// Helper to escape spaces in path for command line
+function escapePathForCmd(filePath: string): string {
+  return filePath.replace(/ /g, '\\ ')
+}
+
+// Helper to generate a stable ID
+function generateStableId(baseName: string): string {
+  return `wad-${baseName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`
+}
+
 // === Doom Versions ===
 // Get all Doom versions (expects direct array in JSON)
 export async function getDoomVersions(): Promise<IDoomVersion[]> {
   try {
     initStorage() // Ensure file exists
-    const versions = await fs.readJSON(DOOM_VERSIONS_FILE)
-    // No need to extract from .versions property anymore
-    return versions as IDoomVersion[]
+    let versions: IDoomVersion[] = await fs.readJSON(DOOM_VERSIONS_FILE)
+
+    // Check if wadFilesDirectory is set in settings
+    const settings = await getSettings()
+    const wadDir = settings.wadFilesDirectory
+    const executable = settings.gzDoomPath || 'gzdoom'
+
+    // Check if versions already have full paths (saved previously)
+    const hasFullPaths = versions.some(
+      (v) => v.defaultIwad && (v.defaultIwad.includes('/') || v.defaultIwad.includes('\\'))
+    )
+    console.log(
+      '[DEBUG] getDoomVersions: hasFullPaths =',
+      hasFullPaths,
+      ', wadDir =',
+      wadDir,
+      ', versions count =',
+      versions.length
+    )
+    if (versions.length > 0) {
+      console.log('[DEBUG] First version defaultIwad:', versions[0].defaultIwad)
+    }
+
+    // If wads directory is set and we don't have full paths yet, compute them and save
+    if (wadDir && !hasFullPaths) {
+      const resolvedWadDir = resolvePath(wadDir)
+
+      // Check if directory exists
+      if (fs.existsSync(resolvedWadDir)) {
+        // Get list of .wad files in the directory
+        const files = await fs.readdir(resolvedWadDir)
+        const wadFiles = files.filter((f) => f.toLowerCase().endsWith('.wad'))
+
+        // Create a map of lowercase wad names to full paths
+        const wadFileMap = new Map<string, string>()
+        for (const wadFile of wadFiles) {
+          wadFileMap.set(wadFile.toLowerCase(), path.join(resolvedWadDir, wadFile))
+        }
+
+        // Update versions with full paths if wads exist, filter out missing ones
+        // Preserve original IDs from defaults
+        const idMap: Record<string, string> = {
+          'doom.wad': '1',
+          'doom2.wad': '2',
+          'tnt.wad': '3',
+          'plutonia.wad': '4',
+          'freedoom1.wad': '5',
+          'freedoom2.wad': '6'
+        }
+
+        const updatedVersions: IDoomVersion[] = []
+        for (const version of versions) {
+          if (version.defaultIwad) {
+            const lowerWadName = version.defaultIwad.toLowerCase()
+            if (wadFileMap.has(lowerWadName)) {
+              const fullPath = wadFileMap.get(lowerWadName)!
+              // Use full path with escaped spaces, preserve original ID
+              updatedVersions.push({
+                ...version,
+                id: idMap[lowerWadName] || version.id, // Preserve original ID
+                args: `-iwad ${escapePathForCmd(fullPath)}`,
+                defaultIwad: fullPath
+              })
+            }
+            // Skip versions whose wads aren't found
+          } else {
+            updatedVersions.push(version)
+          }
+        }
+
+        // Add any additional wads not in the defaults
+        for (const [wadName, wadPath] of wadFileMap) {
+          // Check if this wad is already in updatedVersions
+          const isAlreadyAdded = updatedVersions.some((v) => {
+            const vPath = v.defaultIwad?.toLowerCase()
+            return vPath === wadPath.toLowerCase() || vPath === wadName
+          })
+
+          if (!isAlreadyAdded) {
+            const baseName = wadName.replace('.wad', '')
+            updatedVersions.push({
+              id: generateStableId(baseName),
+              name: baseName,
+              slug: baseName.toLowerCase(),
+              args: `-iwad ${escapePathForCmd(wadPath)}`,
+              icon: '',
+              executable: executable,
+              parameters: '',
+              defaultIwad: wadPath
+            })
+          }
+        }
+
+        // Save the computed versions back to file
+        await fs.writeJSON(DOOM_VERSIONS_FILE, updatedVersions, { spaces: 2 })
+        console.log('[DEBUG] Saved doom versions with full paths to', DOOM_VERSIONS_FILE)
+
+        return updatedVersions
+      }
+    }
+
+    // Return versions as-is (either no wads directory, or already has full paths)
+    return versions
   } catch (error: any) {
     console.error('Error getting Doom versions:', error)
     return [] // Return empty array on error
@@ -171,6 +311,18 @@ export async function getDoomVersionBySlug(slug: string): Promise<IDoomVersion |
   } catch (error: any) {
     console.error(`Error getting Doom version by slug ${slug}:`, error)
     return undefined
+  }
+}
+
+// Save all Doom versions (overwrites the file with current state)
+export async function saveDoomVersions(versions: IDoomVersion[]): Promise<void> {
+  try {
+    initStorage() // Ensure file exists
+    await fs.writeJSON(DOOM_VERSIONS_FILE, versions, { spaces: 2 })
+    console.log('[DEBUG] Saved doom versions to', DOOM_VERSIONS_FILE)
+  } catch (error: any) {
+    console.error('Error saving Doom versions:', error)
+    throw new Error(`Failed to save Doom versions: ${error.message}`)
   }
 }
 

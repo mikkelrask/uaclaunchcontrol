@@ -61,6 +61,7 @@ export interface IAppSettings {
   savegamesPath?: string
   modsDirectory?: string
   screenshotsPath?: string
+  wadFilesDirectory?: string
   defaultSourcePort?: string
 }
 

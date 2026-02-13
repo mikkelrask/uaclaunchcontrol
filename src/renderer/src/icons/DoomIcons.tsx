@@ -5,6 +5,10 @@ import freedoom from './freedoom1.png'
 import freedoom2 from './freedoom2.png'
 import plutonia from './plutonia.png'
 import tnt from './tnt.png'
+import hexen from './hexen.png'
+import hexdd from './hexdd.png'
+import heretic from './heretic.png'
+import strife from './strife1.png'
 
 interface DoomIconProps {
   className?: string
@@ -34,6 +38,22 @@ export const TntIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
   <img src={tnt} alt="TNT Icon" title="TNT Evilution" className={className} />
 )
 
+export const HexenIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
+  <img src={hexen} alt="Hexen Icon" title="Hexen" className={className} />
+)
+
+export const HexenDDayIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
+  <img src={hexdd} alt="Hexen DDay Icon" title="Hexen: Deathkings of the Shadow Realm" className={className} />
+)
+
+export const HereticIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
+  <img src={heretic} alt="Heretic Icon" title="Heretic" className={className} />
+)
+
+export const StrifeIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
+  <img src={strife} alt="Strife Icon" title="Strife" className={className} />
+)
+
 interface DoomVersionIconProps {
   version: string
   className?: string
@@ -45,6 +65,7 @@ export const DoomVersionIcon: React.FC<DoomVersionIconProps> = ({ version, class
       return <DoomIcon className={className} />
     case 'doom2':
       return <Doom2Icon className={className} />
+    case 'freedoom1':
     case 'freedoom':
       return <FreeDoomIcon className={className} />
     case 'freedoom2':
@@ -53,6 +74,16 @@ export const DoomVersionIcon: React.FC<DoomVersionIconProps> = ({ version, class
       return <PlutoniaIcon className={className} />
     case 'tnt':
       return <TntIcon className={className} />
+    case 'heretic':
+      return <HereticIcon className={className} />
+    case 'hexen':
+      return <HexenIcon className={className} />
+    case 'hexen-deathkings':
+    case 'hexdd':
+      return <HexenDDayIcon className={className} />
+    case 'strife':
+    case 'strife1':
+      return <StrifeIcon className={className} />
     default:
       return <DoomIcon className={className} />
   }

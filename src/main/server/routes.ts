@@ -19,6 +19,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json(versions) // Ensure this sends the array directly
   })
 
+  app.put('/api/versions', async (req, res) => {
+    const versions = req.body
+    if (!Array.isArray(versions)) {
+      return res.status(400).json({ message: 'Expected an array of versions' })
+    }
+    try {
+      await storage.saveDoomVersions(versions)
+      return res.json({ success: true })
+    } catch (error) {
+      console.error('Error saving doom versions:', error)
+      return res.status(500).json({ message: 'Failed to save doom versions' })
+    }
+  })
+
   // === Move the mod file to the mod directory set in settings ===
   app.post('/api/move-file', async (req, res) => {
     console.log('POST /api/move-file received with body:', req.body)
