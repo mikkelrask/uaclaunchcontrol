@@ -58,10 +58,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const settings = await storage.getSettings()
       const modsDir = storage.resolvePath(settings.modsDirectory || storage.MODS_DIR)
       const filePath = path.join(modsDir, req.params.fileName)
-      
+
       console.log(`[DEBUG] Serving image request: ${req.params.fileName}`)
       console.log(`[DEBUG] Full disk path: ${filePath}`)
-      
+
       if (fs.existsSync(filePath)) {
         console.log(`[DEBUG] File exists, sending...`)
         const stream = fs.createReadStream(filePath)
@@ -94,9 +94,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     try {
       const fileName = await storage.downloadImage(url, modId)
-      res.json({ fileName })
+      return res.json({ fileName })
     } catch (error: any) {
-      res.status(500).json({ error: error.message })
+      return res.status(500).json({ error: error.message })
     }
   })
 

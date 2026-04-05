@@ -131,7 +131,7 @@ All application data is stored in `~/.config/mrdoom/`:
 ```json
 {
   "gzDoomPath": "gzdoom",
-  "theme": "dark",
+  "theme": "light",
   "savegamesPath": "~/.config/gzdoom/saves",
   "modsDirectory": "~/.config/mrdoom/mods",
   "screenshotsPath": "~/Pictures/MRDoom/screenshots",
@@ -178,17 +178,6 @@ The project uses separate TypeScript configurations:
 - CSS variables for theming in `src/renderer/src/index.css`
 - Custom components in `src/renderer/src/components/ui/`
 
-## Migration from Tauri
-
-This project was migrated from a Tauri-based implementation. Key changes:
-
-- Replaced Tauri's Rust backend with Electron's Node.js main process
-- Removed custom protocol handler (no longer needed)
-- Added CORS middleware for dev environment
-- Simplified build process (no Rust compilation required)
-- Maintained data compatibility (same JSON structure in `~/.config/mrdoom`)
-
-
 ## Recommended IDE Setup
 
 - [VSCode](https://code.visualstudio.com/)
@@ -199,11 +188,11 @@ This project was migrated from a Tauri-based implementation. Key changes:
 
 ## License
 
-This is free software. Do what you want with it. If you use it, buy me a beer. Or not. I don't drink, so 🤷
+This is free software.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a Pull Request or raise issues.
 
 ## Acknowledgments
 
