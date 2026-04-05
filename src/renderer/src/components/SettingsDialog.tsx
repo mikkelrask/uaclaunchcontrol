@@ -164,11 +164,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   }
 
-  // Handle folder browse
+  // Handle folder/file browse
   const handleBrowse = async (settingName: string) => {
     const currentPath = settings[settingName as keyof typeof settings] as string | undefined
+    const isFile = settingName === 'gzDoomPath'
+
     const result = await api.showOpenDialog({
-      properties: ['openDirectory'],
+      properties: isFile ? ['openFile'] : ['openDirectory'],
       defaultPath: currentPath
     })
 
@@ -182,28 +184,29 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#162b3d] border-[#262626] text-white max-w-2xl">
+      <DialogContent className="bg-app-secondary border-app text-app-primary max-w-2xl flex flex-col max-h-[95vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-2xl font-mono mb-2">Settings</DialogTitle>
-          <DialogDescription className="text-[#e6e6e6]">
+          <DialogDescription className="text-app-secondary">
             Configure your Doom launcher settings
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="paths" className="w-full mt-4">
-          <TabsList className="bg-[#0c1c2a] mb-4">
-            <TabsTrigger value="paths" className="data-[state=active]:bg-[#1f3547]">
+        <Tabs defaultValue="paths" className="flex flex-col flex-1 min-h-0 w-full mt-4">
+          <TabsList className="bg-app-primary mb-4 shrink-0">
+            <TabsTrigger value="paths" className="data-[state=active]:bg-app-hover">
               Paths
             </TabsTrigger>
-            <TabsTrigger value="appearance" className="data-[state=active]:bg-[#1f3547]">
+            <TabsTrigger value="appearance" className="data-[state=active]:bg-app-hover">
               Wad Settings
             </TabsTrigger>
-            <TabsTrigger value="advanced" className="data-[state=active]:bg-[#1f3547]">
+            <TabsTrigger value="advanced" className="data-[state=active]:bg-app-hover">
               Advanced
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="paths" className="space-y-4">
+          <div className="flex-1 overflow-y-auto pr-4 -mr-2 pb-2">
+            <TabsContent value="paths" className="space-y-4 mt-0">
             <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
               <div>
                 <Label htmlFor={`${id}-gzDoomPath`} className="font-mono">
@@ -214,11 +217,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   name="gzDoomPath"
                   value={settings.gzDoomPath}
                   onChange={handleChange}
-                  className="bg-[#0c1c2a] border-[#262626] mt-1"
+                  className="bg-app-primary border-app mt-1"
                 />
               </div>
               <Button
-                className="mt-7 bg-[#0c1c2a] hover:bg-[#1f3547]"
+                className="mt-7 bg-app-primary hover:bg-app-hover"
                 onClick={() => handleBrowse('gzDoomPath')}
               >
                 Browse...
@@ -235,11 +238,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   name="saveDirectory"
                   value={settings.saveDirectory}
                   onChange={handleChange}
-                  className="bg-[#0c1c2a] border-[#262626] mt-1"
+                  className="bg-app-primary border-app mt-1"
                 />
               </div>
               <Button
-                className="mt-7 bg-[#0c1c2a] hover:bg-[#1f3547]"
+                className="mt-7 bg-app-primary hover:bg-app-hover"
                 onClick={() => handleBrowse('saveDirectory')}
               >
                 Browse...
@@ -256,11 +259,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   name="modsDirectory"
                   value={settings.modsDirectory}
                   onChange={handleChange}
-                  className="bg-[#0c1c2a] border-[#262626] mt-1"
+                  className="bg-app-primary border-app mt-1"
                 />
               </div>
               <Button
-                className="mt-7 bg-[#0c1c2a] hover:bg-[#1f3547]"
+                className="mt-7 bg-app-primary hover:bg-app-hover"
                 onClick={() => handleBrowse('modsDirectory')}
               >
                 Browse...
@@ -277,11 +280,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   name="screenshotsDirectory"
                   value={settings.screenshotsDirectory}
                   onChange={handleChange}
-                  className="bg-[#0c1c2a] border-[#262626] mt-1"
+                  className="bg-app-primary border-app mt-1"
                 />
               </div>
               <Button
-                className="mt-7 bg-[#0c1c2a] hover:bg-[#1f3547]"
+                className="mt-7 bg-app-primary hover:bg-app-hover"
                 onClick={() => handleBrowse('screenshotsDirectory')}
               >
                 Browse...
@@ -298,11 +301,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   name="wadFilesDirectory"
                   value={settings.wadFilesDirectory}
                   onChange={handleChange}
-                  className="bg-[#0c1c2a] border-[#262626] mt-1"
+                  className="bg-app-primary border-app mt-1"
                 />
               </div>
               <Button
-                className="mt-7 bg-[#0c1c2a] hover:bg-[#1f3547]"
+                className="mt-7 bg-app-primary hover:bg-app-hover"
                 onClick={() => handleBrowse('wadFilesDirectory')}
               >
                 Browse...
@@ -310,21 +313,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             </div>
           </TabsContent>
 
-          <TabsContent value="appearance" className="space-y-4">
+          <TabsContent value="appearance" className="space-y-4 mt-0">
             {!settings.wadFilesDirectory ? (
-              <p className="text-[#e6e6e6]">
+              <p className="text-app-secondary">
                 Set the Wad Files Directory in the Paths tab to configure individual wads.
               </p>
             ) : isLoadingVersions ? (
-              <p className="text-[#e6e6e6]">Loading wads...</p>
+              <p className="text-app-secondary">Loading wads...</p>
             ) : doomVersions.length === 0 ? (
-              <p className="text-[#e6e6e6]">No wads found in the specified directory.</p>
+              <p className="text-app-secondary">No wads found in the specified directory.</p>
             ) : (
-              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              <div className="space-y-4 overflow-visible">
                 {doomVersions.map((version, index) => (
                   <div
                     key={version.id || index}
-                    className="bg-[#0c1c2a] border border-[#262626] rounded-md p-3 space-y-2"
+                    className="bg-app-primary border border-app rounded-md p-3 space-y-2"
                   >
                     <div className="flex items-center gap-2">
                       {version.icon ? (
@@ -332,34 +335,34 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           <img
                             src={toFileUrl(version.icon)}
                             alt={version.name}
-                            className="w-8 h-8 object-contain bg-[#162b3d] rounded"
+                            className="w-8 h-8 object-contain bg-app-secondary rounded"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none'
                             }}
                           />
                         </div>
                       ) : (
-                        <div className="w-8 h-8 bg-[#162b3d] rounded flex items-center justify-center text-xs text-[#e6e6e6]">
+                        <div className="w-8 h-8 bg-app-secondary rounded flex items-center justify-center text-xs text-app-secondary">
                           No img
                         </div>
                       )}
                       <div className="flex-1">
-                        <Label className="text-xs text-[#e6e6e6]">Name</Label>
+                        <Label className="text-xs text-app-secondary">Name</Label>
                         <Input
                           value={version.name}
                           onChange={(e) => handleVersionChange(index, 'name', e.target.value)}
-                          className="bg-[#162b3d] border-[#262626] text-sm"
+                          className="bg-app-secondary border-app text-sm"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-[1fr,auto] gap-2 items-center">
                       <div>
-                        <Label className="text-xs text-[#e6e6e6]">Executable</Label>
+                        <Label className="text-xs text-app-secondary">Executable</Label>
                         <Input
                           value={version.executable}
                           onChange={(e) => handleVersionChange(index, 'executable', e.target.value)}
-                          className="bg-[#162b3d] border-[#262626] text-sm"
+                          className="bg-app-secondary border-app text-sm"
                           placeholder="gzdoom"
                         />
                       </div>
@@ -367,18 +370,18 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         variant="outline"
                         size="sm"
                         onClick={() => handleIconBrowse(index)}
-                        className="mt-4 border-[#262626]"
+                        className="mt-4 border-app"
                       >
                         Icon
                       </Button>
                     </div>
 
                     <div>
-                      <Label className="text-xs text-[#e6e6e6]">WAD File</Label>
+                      <Label className="text-xs text-app-secondary">WAD File</Label>
                       <Input
                         value={version.defaultIwad}
                         readOnly
-                        className="bg-[#0c1c2a] border-[#262626] text-sm text-[#888]"
+                        className="bg-app-primary border-app text-sm text-app-muted"
                       />
                     </div>
                   </div>
@@ -387,24 +390,25 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             )}
           </TabsContent>
 
-          <TabsContent value="advanced" className="space-y-4">
-            <p className="text-[#e6e6e6]">
+          <TabsContent value="advanced" className="space-y-4 mt-0">
+            <p className="text-app-secondary">
               Advanced settings will be implemented in a future update.
             </p>
           </TabsContent>
+          </div>
         </Tabs>
 
-        <DialogFooter className="flex justify-between mt-4">
+        <DialogFooter className="flex justify-between mt-4 shrink-0 pt-4 border-t border-app">
           <Button
             variant="outline"
             onClick={onClose}
-            className="bg-transparent border-[#262626] hover:bg-[#1f3547] hover:text-white text-[#e6e6e6]"
+            className="bg-transparent border-app hover:bg-app-hover hover:text-app-primary text-app-secondary"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSave}
-            className="bg-[#d41c1c] hover:bg-[#b21616] text-white font-mono"
+            className="bg-accent-highlight hover:opacity-90 text-white font-mono"
           >
             Save Changes
           </Button>

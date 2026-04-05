@@ -45,23 +45,23 @@ export const LaunchOptions: React.FC<LaunchOptionsProps> = ({ launchParameters, 
           variant="outline"
           size="sm"
           onClick={handleEdit}
-          className="text-xs bg-[#0c1c2a] border-[#262626]"
+          className="text-xs bg-app-primary border-app"
         >
           {isEditing ? 'Save Parameters' : 'Add Additional Parameters'}
         </Button>
       </div>
 
-      <div className="bg-[#0c1c2a] p-3 rounded">
+      <div className="bg-app-primary p-3 rounded">
         {isEditing ? (
           <>
             <Textarea
               value={parameters}
               onChange={(e) => setParameters(e.target.value)}
-              className="bg-[#162b3d] border-[#262626] font-mono text-sm mb-2"
+              className="bg-app-secondary border-app font-mono text-sm mb-2"
               placeholder="Enter additional launch parameters..."
               rows={2}
             />
-            <div className="text-xs text-[#a0a0a0] mt-2">
+            <div className="text-xs text-app-muted mt-2">
               <p className="mb-1">Examples of common parameters:</p>
               <ul className="list-disc pl-5 space-y-1">
                 {getExampleParameters().map((example, index) => (
@@ -72,8 +72,8 @@ export const LaunchOptions: React.FC<LaunchOptionsProps> = ({ launchParameters, 
           </>
         ) : (
           <>
-            <p className="text-sm text-[#a0a0a0] mb-1">Current launch parameters:</p>
-            <code className="text-sm text-[#e6e6e6] font-mono block overflow-x-auto p-2 bg-[#162b3d] rounded border border-[#262626]">
+            <p className="text-sm text-app-muted mb-1">Current launch parameters:</p>
+            <code className="text-sm text-app-primary font-mono block overflow-x-auto p-2 bg-app-secondary rounded border border-app">
               {parameters || '<No custom parameters set>'}
             </code>
           </>

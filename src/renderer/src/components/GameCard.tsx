@@ -51,12 +51,18 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
       : mod.description
     : 'No description available'
 
+    const displayImagePath = mod.screenshotPath
+    ? (mod.screenshotPath.startsWith('http') || mod.screenshotPath.includes('/') || mod.screenshotPath.includes('\\')) 
+        ? mod.screenshotPath 
+        : `http://localhost:7666/images/${mod.screenshotPath}`
+    : imagePlaceholder
+
   return (
     <div className="game-card group cursor-pointer relative">
       {/* Using aspect-ratio to enforce 16:9 ratio for screenshots */}
       <div className="aspect-w-16 aspect-h-9 overflow-hidden relative">
         <img
-          src={mod.screenshotPath || imagePlaceholder}
+          src={displayImagePath}
           alt={mod.title}
           className="w-full h-full object-cover"
           onError={(e) => {
@@ -91,18 +97,18 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
       {/* Action buttons that appear on hover at the bottom */}
       <div
         className="absolute bottom-0 left-0 w-full opacity-0 group-hover:opacity-100 
-                    transition-opacity duration-300 bg-[rgba(12,28,42,0.85)] 
+                    transition-opacity duration-300 bg-app-popover/85 
                     flex items-center justify-between p-2"
       >
         <button
-          className="px-4 py-1 text-white font-mono rounded bg-[#d41c1c] hover:bg-[#b21616] transition-colors"
+          className="px-4 py-1 text-white font-mono rounded bg-accent-highlight hover:opacity-90 transition-colors"
           onClick={handleLaunch}
           disabled={launchMutation.isPending}
         >
           {launchMutation.isPending ? 'LAUNCHING...' : 'PLAY'}
         </button>
         <button
-          className="px-4 py-1 text-white font-mono rounded bg-[#0c1c2a] hover:bg-[#162b3d] transition-colors"
+          className="px-4 py-1 text-white font-mono rounded bg-app-primary hover:bg-app-hover transition-colors"
           onClick={handleSettings}
         >
           Settings

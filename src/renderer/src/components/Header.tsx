@@ -26,14 +26,14 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
   }
 
   return (
-    <header className="bg-[#162b3d] p-4 flex items-center justify-between border-b border-[#262626]">
+    <header className="bg-app-secondary p-4 flex items-center justify-between border-b border-app">
       {/* Search Bar */}
       <div className="relative w-96">
         <form onSubmit={handleSearch}>
           <input
             type="text"
             placeholder="SEARCH ..."
-            className="w-full bg-gray-200 text-[#1c1c1c] px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-[#d41c1c]"
+            className="w-full bg-app-primary text-app-primary px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-accent-highlight"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -64,20 +64,20 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
 
       {/* User Profile */}
       <div className="flex items-center space-x-2">
-        <div className="flex items-center bg-[#0c1c2a] rounded-md p-1">
-          <div className="w-8 h-8 rounded bg-[#d41c1c] flex items-center justify-center text-white">
+        <div className="flex items-center bg-app-primary rounded-md p-1">
+          <div className="w-8 h-8 rounded bg-accent-highlight flex items-center justify-center text-white">
             R
           </div>
           <span className="text-white font-mono ml-2 mr-1">ROBOTEARS</span>
-          <span className="text-xs text-[#e6e6e6]">LVL 71</span>
+          <span className="text-xs text-app-secondary">LVL 71</span>
         </div>
         <button
-          className="w-8 h-8 bg-[#0c1c2a] rounded flex items-center justify-center hover:bg-[#162b3d]"
+          className="w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover"
           onClick={openSettings}
         >
           <Settings className="h-5 w-5" />
         </button>
-        <button className="w-8 h-8 bg-[#0c1c2a] rounded flex items-center justify-center hover:bg-[#162b3d]">
+        <button className="w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover">
           <Menu className="h-5 w-5" />
         </button>
       </div>

@@ -1,6 +1,6 @@
 import { IModFile, IMod, IAppSettings } from '@shared/schema'
 
-const API_BASE = 'http://localhost:7666'
+export const API_BASE = 'http://localhost:7666'
 
 export const api = {
   // Settings operations
@@ -60,6 +60,20 @@ export const api = {
       throw error
     }
   },
+  updateInCatalog: async (id: number, updates: Partial<IModFile>): Promise<IModFile> => {
+    console.log(`[DEBUG] API updateInCatalog called for ID ${id} with:`, updates)
+    const response = await fetch(`${API_BASE}/api/mod-files/catalog/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to update file in catalog')
+    }
+
+    return response.json()
+  },
 
   // Mod operations
   createMod: async (mod: Omit<IMod, 'id'>): Promise<IMod> => {
@@ -115,6 +129,24 @@ export const api = {
       body: JSON.stringify({ filePath, newPath })
     })
     if (!response.ok) throw new Error('Failed to move file')
+    return response.json()
+  },
+  moveToModFolder: async (sourcePath: string): Promise<{ fullPath: string; relativePath: string }> => {
+    const response = await fetch(`${API_BASE}/api/mod-files/move`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourcePath })
+    })
+    if (!response.ok) throw new Error('Failed to move file to mod folder')
+    return response.json()
+  },
+  downloadImage: async (url: string, modId: string): Promise<{ fileName: string }> => {
+    const response = await fetch(`${API_BASE}/api/mod/download-image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, modId })
+    })
+    if (!response.ok) throw new Error('Failed to download image')
     return response.json()
   }
 

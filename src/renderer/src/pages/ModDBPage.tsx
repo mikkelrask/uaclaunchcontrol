@@ -45,7 +45,7 @@ export const ModDBPage: React.FC = () => {
 
   // Render a mod card
   const renderModCard = (mod: ModDBSearchResult) => (
-    <Card key={mod.id} className="bg-[#1c1c1c] border-[#262626] overflow-hidden">
+    <Card key={mod.id} className="bg-app-card border-app overflow-hidden">
       <div className="h-40 relative">
         <img
           src={mod.thumbnail || 'https://via.placeholder.com/400x160.png?text=No+Image'}
@@ -68,9 +68,9 @@ export const ModDBPage: React.FC = () => {
             <span className="text-sm">{mod.downloads.toLocaleString()}</span>
           </div>
         </div>
-        <p className="text-sm text-[#e6e6e6] line-clamp-2 mb-3">{mod.summary}</p>
+        <p className="text-sm text-app-primary line-clamp-2 mb-3">{mod.summary}</p>
         <Button
-          className="w-full bg-[#d41c1c] hover:bg-[#b21616] font-mono"
+          className="w-full bg-accent-highlight hover:opacity-90 font-mono"
           onClick={() => handleInstallMod(mod)}
         >
           INSTALL
@@ -97,12 +97,12 @@ export const ModDBPage: React.FC = () => {
                   {Array(4)
                     .fill(0)
                     .map((_, i) => (
-                      <Card key={i} className="h-64 bg-[#1c1c1c] animate-pulse" />
+                      <Card key={i} className="h-64 bg-app-card animate-pulse" />
                     ))}
                 </div>
               ) : searchResults?.length === 0 ? (
                 <div className="text-center py-10">
-                  <p className="text-[#e6e6e6]">No mods found matching your search.</p>
+                  <p className="text-app-primary">No mods found matching your search.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -112,11 +112,11 @@ export const ModDBPage: React.FC = () => {
             </div>
           ) : (
             <Tabs defaultValue="popular" className="w-full">
-              <TabsList className="mb-4 bg-[#162b3d]">
-                <TabsTrigger value="popular" className="data-[state=active]:bg-[#0c1c2a]">
+              <TabsList className="mb-4 bg-app-secondary">
+                <TabsTrigger value="popular" className="data-[state=active]:bg-app-primary">
                   Popular Mods
                 </TabsTrigger>
-                <TabsTrigger value="latest" className="data-[state=active]:bg-[#0c1c2a]">
+                <TabsTrigger value="latest" className="data-[state=active]:bg-app-primary">
                   Latest Releases
                 </TabsTrigger>
               </TabsList>
@@ -128,7 +128,7 @@ export const ModDBPage: React.FC = () => {
                     {Array(8)
                       .fill(0)
                       .map((_, i) => (
-                        <Card key={i} className="h-64 bg-[#1c1c1c] animate-pulse" />
+                        <Card key={i} className="h-64 bg-app-card animate-pulse" />
                       ))}
                   </div>
                 ) : (
@@ -145,7 +145,7 @@ export const ModDBPage: React.FC = () => {
                     {Array(8)
                       .fill(0)
                       .map((_, i) => (
-                        <Card key={i} className="h-64 bg-[#1c1c1c] animate-pulse" />
+                        <Card key={i} className="h-64 bg-app-card animate-pulse" />
                       ))}
                   </div>
                 ) : (

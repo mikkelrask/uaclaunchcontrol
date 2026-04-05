@@ -50,7 +50,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
   const moveUp = (index: number) => {
     if (index <= 0) return
     const newFiles = [...files]
-      ;[newFiles[index - 1], newFiles[index]] = [newFiles[index], newFiles[index - 1]]
+    ;[newFiles[index - 1], newFiles[index]] = [newFiles[index], newFiles[index - 1]]
 
     // Update load order
     newFiles.forEach((file, idx) => {
@@ -63,7 +63,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
   const moveDown = (index: number) => {
     if (index >= files.length - 1) return
     const newFiles = [...files]
-      ;[newFiles[index], newFiles[index + 1]] = [newFiles[index + 1], newFiles[index]]
+    ;[newFiles[index], newFiles[index + 1]] = [newFiles[index + 1], newFiles[index]]
 
     // Update load order
     newFiles.forEach((file, idx) => {
@@ -74,9 +74,9 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
   }
 
   return (
-    <div className="bg-[#0c1c2a] p-3 rounded h-40 overflow-y-auto">
+    <div className="bg-app-primary p-3 rounded h-40 overflow-y-auto">
       {files.length === 0 ? (
-        <div className="text-[#e6e6e6] text-center py-2">No mod files added</div>
+        <div className="text-app-primary text-center py-2">No mod files added</div>
       ) : (
         files.map((file, index) => (
           <div key={file.id} className="flex justify-between items-center mb-2 text-sm">
@@ -85,7 +85,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                 type="button"
                 onClick={() => moveUp(index)}
                 disabled={index === 0}
-                className="p-1 text-[#e6e6e6] hover:text-white disabled:opacity-30"
+                className="p-1 text-app-primary hover:text-app-primary disabled:opacity-30"
               >
                 <ChevronUp className="h-4 w-4" />
               </button>
@@ -93,7 +93,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                 type="button"
                 onClick={() => moveDown(index)}
                 disabled={index === files.length - 1}
-                className="p-1 text-[#e6e6e6] hover:text-white disabled:opacity-30"
+                className="p-1 text-app-primary hover:text-app-primary disabled:opacity-30"
               >
                 <ChevronDown className="h-4 w-4" />
               </button>
@@ -103,7 +103,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
             <button
               type="button"
               onClick={() => removeFile(file.id)}
-              className="text-xs bg-[#162b3d] p-1 rounded hover:bg-[#0c1c2a]"
+              className="text-xs bg-app-secondary p-1 rounded hover:bg-app-hover"
             >
               <Trash className="h-3 w-3" />
             </button>
@@ -116,14 +116,14 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
           value={newFilePath}
           onChange={(e) => setNewFilePath(e.target.value)}
           placeholder="Path to mod file (.wad, .pk3, etc.)"
-          className="text-xs bg-[#162b3d] border-[#262626]"
+          className="text-xs bg-app-secondary border-app"
         />
         <Button
           type="button"
           onClick={addFile}
           size="sm"
           variant="outline"
-          className="bg-[#162b3d] border-[#262626]"
+          className="bg-app-secondary border-app"
         >
           <Plus className="h-4 w-4" />
         </Button>

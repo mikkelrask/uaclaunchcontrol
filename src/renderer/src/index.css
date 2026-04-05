@@ -2,102 +2,160 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
+    /* Default theme (dark) - semantic variables */
+    --bg-primary: 222.2 84% 4.9%;
+    --bg-secondary: 217.2 32.6% 17.5%;
+    --bg-tertiary: 215 20.2% 65.1%;
+    --bg-card: 222.2 84% 4.9%;
+    --bg-popover: 222.2 84% 4.9%;
+    --bg-muted: 217.2 32.6% 17.5%;
+    --bg-sidebar: 222.2 84% 4.9%;
+    --bg-hover: 217.2 32.6% 17.5%;
+
+    --text-primary: 210 40% 98%;
+    --text-secondary: 215 20.2% 65.1%;
+    --text-muted: 215 20.2% 65.1%;
+    --text-sidebar: 210 40% 98%;
+    --text-card: 210 40% 98%;
+    --text-popover: 210 40% 98%;
+    --text-muted-foreground: 215 20.2% 65.1%;
+
+    --accent-primary: 210 40% 98%;
+    --accent-secondary: 217.2 32.6% 17.5%;
+    --accent-destructive: 0 62.8% 30.6%;
+    --accent-ring: 212.7 26.8% 83.9%;
+    --accent-highlight: 0 84.2% 60.2%;
+
+    --border-primary: 217.2 32.6% 17.5%;
+    --border-input: 217.2 32.6% 17.5%;
+    --border-sidebar: 217.2 32.6% 17.5%;
+
+    /* Tailwind mappings */
+    --background: var(--bg-primary);
+    --foreground: var(--text-primary);
+    --card: var(--bg-card);
+    --card-foreground: var(--text-card);
+    --popover: var(--bg-popover);
+    --popover-foreground: var(--text-popover);
+    --primary: var(--accent-primary);
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --secondary: var(--accent-secondary);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--bg-muted);
+    --muted-foreground: var(--text-muted-foreground);
+    --accent: var(--accent-secondary);
+    --accent-foreground: var(--text-primary);
+    --destructive: var(--accent-destructive);
+    --destructive-foreground: var(--text-primary);
+    --border: var(--border-primary);
+    --input: var(--border-input);
+    --ring: var(--accent-ring);
     --radius: 0.5rem;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
+    --sidebar-background: var(--bg-sidebar);
+    --sidebar-foreground: var(--text-sidebar);
+    --sidebar-primary: var(--accent-primary);
     --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 212.7 26.8% 83.9%;
+    --sidebar-accent: var(--accent-secondary);
+    --sidebar-accent-foreground: var(--text-primary);
+    --sidebar-border: var(--border-sidebar);
+    --sidebar-ring: var(--accent-ring);
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+  .light {
+    /* Semantic variables */
+    --bg-primary: 210 40% 98%;
+    --bg-secondary: 210 20% 96%;
+    --bg-tertiary: 215 16% 87%;
+    --bg-card: 0 0% 100%;
+    --bg-popover: 0 0% 100%;
+    --bg-muted: 210 20% 96%;
+    --bg-sidebar: 210 40% 98%;
+    --bg-hover: 210 20% 96%;
+
+    --text-primary: 222.2 84% 4.9%;
+    --text-secondary: 215.4 16.9% 45.9%;
+    --text-muted: 215.4 16.9% 45.9%;
+    --text-sidebar: 222.2 84% 4.9%;
+    --text-card: 222.2 84% 4.9%;
+    --text-popover: 222.2 84% 4.9%;
+    --text-muted-foreground: 215.4 16.9% 45.9%;
+
+    --accent-primary: 222.2 84% 4.9%;
+    --accent-secondary: 210 20% 96%;
+    --accent-destructive: 0 84.2% 60.2%;
+    --accent-ring: 222.2 47.4% 11.2%;
+    --accent-highlight: 0 72.2% 50.6%;
+
+    --border-primary: 214.3 31.8% 91.4%;
+    --border-input: 214.3 31.8% 91.4%;
+    --border-sidebar: 214.3 31.8% 91.4%;
+
+    /* Tailwind mappings */
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 84% 4.9%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215.4 16.9% 45.9%;
+    --accent: 210 20% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 47.4% 11.2%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 210 40% 98%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-primary: 222.2 84% 4.9%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 210 20% 96%;
+    --sidebar-accent-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 222.2 47.4% 11.2%;
   }
-}
 
-@layer base {
   * {
     border-color: hsl(var(--border));
   }
 
   body {
-    @apply font-sans antialiased bg-[#0c1c2a] text-[#e6e6e6];
+    @apply font-sans antialiased;
+    background: hsl(var(--bg-primary));
+    color: hsl(var(--text-primary));
   }
 
-  /* Custom scrollbar for dark theme */
+  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 10px;
   }
 
   ::-webkit-scrollbar-track {
-    background: #0c1c2a;
+    background: hsl(var(--bg-primary));
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #162b3d;
+    background: hsl(var(--bg-secondary));
     border-radius: 5px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #d41c1c;
+    background: hsl(var(--accent-highlight));
   }
 }
 
@@ -118,8 +176,57 @@
     left: 0;
   }
 
+  /* Semantic utility classes */
+  .bg-app-primary {
+    background: hsl(var(--bg-primary));
+  }
+  .bg-app-secondary {
+    background: hsl(var(--bg-secondary));
+  }
+  .bg-app-card {
+    background: hsl(var(--bg-card));
+  }
+  .bg-app-popover {
+    background: hsl(var(--bg-popover));
+  }
+  .bg-app-muted {
+    background: hsl(var(--bg-muted));
+  }
+  .bg-app-hover {
+    background: hsl(var(--bg-hover));
+  }
+
+  .text-app-primary {
+    color: hsl(var(--text-primary));
+  }
+  .text-app-secondary {
+    color: hsl(var(--text-secondary));
+  }
+  .text-app-muted {
+    color: hsl(var(--text-muted));
+  }
+
+  .border-app {
+    border-color: hsl(var(--border));
+  }
+  .border-app-input {
+    border-color: hsl(var(--border-input));
+  }
+
+  .bg-accent-highlight {
+    background: hsl(var(--accent-highlight));
+  }
+  .hover\:bg-accent-highlight:hover {
+    background: hsl(var(--accent-highlight));
+  }
+
+  .ring-accent {
+    --tw-ring-color: hsl(var(--ring));
+  }
+
   .game-card {
-    @apply bg-[#1c1c1c] rounded-lg overflow-hidden shadow-lg transition-all duration-200 ease-in-out relative;
+    @apply rounded-lg overflow-hidden shadow-lg transition-all duration-200 ease-in-out relative;
+    background: hsl(var(--bg-card));
   }
 
   .game-card:hover {
@@ -127,7 +234,8 @@
   }
 
   .card-actions {
-    @apply absolute bottom-0 left-0 w-full opacity-0 transition-all duration-300 ease-in-out bg-[rgba(12,28,42,0.85)] flex items-center justify-between p-2;
+    @apply absolute bottom-0 left-0 w-full opacity-0 transition-all duration-300 ease-in-out flex items-center justify-between p-2;
+    background: hsl(var(--bg-popover) / 0.85);
     bottom: -60px;
   }
 
@@ -140,16 +248,22 @@
   }
 
   .nav-tab.active {
-    @apply font-bold text-white;
+    @apply font-bold;
+    color: hsl(var(--text-primary));
   }
 
   .nav-tab.active::after {
     content: '';
-    @apply absolute -bottom-[10px] left-0 w-full h-1 bg-[#d41c1c];
+    @apply absolute -bottom-[10px] left-0 w-full h-1;
+    background: hsl(var(--accent-highlight));
   }
 
   .nav-tab:not(.active) {
-    @apply text-[#e6e6e6] hover:text-white;
+    color: hsl(var(--text-secondary));
+  }
+
+  .nav-tab:not(.active):hover {
+    color: hsl(var(--text-primary));
   }
 
   .sidebar-icon {
@@ -158,6 +272,7 @@
 
   .sidebar-icon:hover,
   .sidebar-icon.active {
-    @apply bg-[#162b3d] scale-105;
+    background: hsl(var(--bg-hover));
+    @apply scale-105;
   }
 }

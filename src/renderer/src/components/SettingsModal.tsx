@@ -21,7 +21,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     savegamesPath: '',
     screenshotsPath: '',
     defaultSourcePort: 'gzdoom',
-    theme: 'system'
+    theme: 'dark'
   })
 
   // Load settings when the modal opens
@@ -31,12 +31,22 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     }
   }, [open])
 
+  const applyTheme = (theme: string) => {
+    document.documentElement.classList.remove('dark', 'light')
+    if (theme !== 'system') {
+      document.documentElement.classList.add(theme)
+    }
+  }
+
   const loadSettings = async () => {
     setIsLoading(true)
     try {
       const loadedSettings = await gameService.getSettings()
       console.log('Loaded settings:', loadedSettings)
       setSettings(loadedSettings)
+      if (loadedSettings.theme) {
+        applyTheme(loadedSettings.theme)
+      }
     } catch (error) {
       console.error('Failed to load settings:', error)
       toast({
@@ -53,6 +63,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     setIsLoading(true)
     try {
       await gameService.updateSettings(settings)
+      applyTheme(settings.theme || 'dark')
       toast({
         title: 'Success',
         description: 'Settings saved successfully'
@@ -98,7 +109,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#162b3d] border-[#262626] text-white">
+      <DialogContent className="bg-[hsl(var(--bg-popover))] border-[hsl(var(--border))] text-[hsl(var(--text-popover))]">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
@@ -112,12 +123,12 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 value={settings.gzDoomPath || ''}
                 onChange={(e) => setSettings({ ...settings, gzDoomPath: e.target.value })}
                 placeholder="/usr/bin/gzdoom"
-                className="bg-[#0c1c2a] border-[#262626] flex-1"
+                className="bg-[hsl(var(--bg-primary))] border-[hsl(var(--border))] flex-1"
               />
               <Button
                 variant="outline"
                 onClick={() => handleBrowseFile('gzDoomPath')}
-                className="border-[#262626]"
+                className="border-[hsl(var(--border))]"
               >
                 <FolderOpenIcon className="h-4 w-4" />
               </Button>
@@ -132,12 +143,12 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 value={settings.savegamesPath || ''}
                 onChange={(e) => setSettings({ ...settings, savegamesPath: e.target.value })}
                 placeholder="~/.config/gzdoom/savegames"
-                className="bg-[#0c1c2a] border-[#262626] flex-1"
+                className="bg-[hsl(var(--bg-primary))] border-[hsl(var(--border))] flex-1"
               />
               <Button
                 variant="outline"
                 onClick={() => handleBrowseFile('savegamesPath')}
-                className="border-[#262626]"
+                className="border-[hsl(var(--border))]"
               >
                 <FolderOpenIcon className="h-4 w-4" />
               </Button>
@@ -152,16 +163,29 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 value={settings.screenshotsPath || ''}
                 onChange={(e) => setSettings({ ...settings, screenshotsPath: e.target.value })}
                 placeholder="~/.config/gzdoom/screenshots"
-                className="bg-[#0c1c2a] border-[#262626] flex-1"
+                className="bg-[hsl(var(--bg-primary))] border-[hsl(var(--border))] flex-1"
               />
               <Button
                 variant="outline"
                 onClick={() => handleBrowseFile('screenshotsPath')}
-                className="border-[#262626]"
+                className="border-[hsl(var(--border))]"
               >
                 <FolderOpenIcon className="h-4 w-4" />
               </Button>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="theme">Theme</Label>
+            <select
+              id="theme"
+              value={settings.theme || 'dark'}
+              onChange={(e) => setSettings({ ...settings, theme: e.target.value })}
+              className="flex h-10 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--bg-primary))] px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
+            >
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
           </div>
         </div>
 
@@ -169,13 +193,13 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="border-[#262626]"
+            className="border-[hsl(var(--border))]"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSaveSettings}
-            className="bg-[#d41c1c] hover:bg-[#b21616]"
+            className="bg-[hsl(var(--accent-highlight))] hover:opacity-90"
             disabled={isLoading}
           >
             {isLoading ? 'Saving...' : 'Save Settings'}

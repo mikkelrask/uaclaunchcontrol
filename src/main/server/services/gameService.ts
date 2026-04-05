@@ -87,7 +87,7 @@ export class GameService {
       if (!settings.gzDoomPath) {
         throw new Error('GZDoom executable path not set in settings.')
       }
-      const executable = settings.gzDoomPath
+      const executable = storage.resolvePath(settings.gzDoomPath)
 
       // Load Doom version for args
       const doomVersionId = String(mod.doomVersionId)
@@ -107,7 +107,22 @@ export class GameService {
           .sort((a, b) => (a.loadOrder ?? 0) - (b.loadOrder ?? 0))
           .forEach((file) => {
             if (file.filePath) {
-              const fullPath = path.resolve(file.filePath)
+              const isAbsolute =
+                path.isAbsolute(file.filePath) ||
+                file.filePath.startsWith('~') ||
+                file.filePath.startsWith('/') ||
+                file.filePath.includes(':')
+
+              console.log(`[DEBUG] Processing file: ${file.filePath}, isAbsolute: ${isAbsolute}`)
+
+              let fullPath: string
+              if (isAbsolute) {
+                fullPath = path.resolve(storage.resolvePath(file.filePath))
+              } else {
+                const modsDir = storage.resolvePath(settings.modsDirectory || '')
+                fullPath = path.join(modsDir, 'files', file.filePath)
+                console.log(`[DEBUG] Resolved relative file: ${file.filePath} -> ${fullPath} (modsDir: ${modsDir})`)
+              }
               fileArgs.push(fullPath)
             } else {
               console.warn(`Mod file ${file.id} for mod ${mod.id} is missing filePath.`)
@@ -117,7 +132,21 @@ export class GameService {
 
       // Add save directory: prefer mod.saveDirectory, else settings.savegamesPath
       const saveDir = mod.saveDirectory || settings.savegamesPath
-      const saveArgs: string[] = saveDir ? ['-savedir', saveDir] : []
+      let resolvedSaveDir = ''
+      if (saveDir) {
+        const isAbsolute =
+          path.isAbsolute(saveDir) ||
+          saveDir.startsWith('~') ||
+          saveDir.startsWith('/') ||
+          saveDir.includes(':')
+
+        if (isAbsolute) {
+          resolvedSaveDir = storage.resolvePath(saveDir)
+        } else {
+          resolvedSaveDir = path.join(storage.resolvePath(settings.savegamesPath || ''), saveDir)
+        }
+      }
+      const saveArgs: string[] = resolvedSaveDir ? ['-savedir', resolvedSaveDir] : []
 
       // Add custom launch parameters
       let customArgs: string[] = []
@@ -143,10 +172,23 @@ export class GameService {
       }
       // Only add -iwad if not already present in baseArgs
       if (iwad && !baseArgs.some((arg) => arg === '-iwad')) {
-        args.unshift('-iwad', iwad)
+        args.unshift('-iwad', storage.resolvePath(iwad))
       }
+
+      // Quote arguments that contain spaces for clearer logging and potential shell compatibility
+      const quotedArgs = args.map(arg => {
+        if (arg.includes(' ') && !arg.startsWith('"') && !arg.startsWith("'")) {
+          return `"${arg}"`
+        }
+        return arg
+      })
+
+      const quotedExecutable = (executable.includes(' ') && !executable.startsWith('"')) 
+        ? `"${executable}"` 
+        : executable
+
       // Log the full command for debugging
-      console.log('Launching command:', executable, args.join(' '))
+      console.log('Launching command:', quotedExecutable, quotedArgs.join(' '))
 
       // Launch the game using fileService
       const success = await fileService.launchGame(executable, args)

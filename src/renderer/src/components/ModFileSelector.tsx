@@ -15,8 +15,8 @@ import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 
 interface ModFileSelectorProps {
-  value: Omit<IModFile, 'id' | 'modId'>[]
-  onChange: (files: Omit<IModFile, 'id' | 'modId'>[]) => void
+  value: IModFile[]
+  onChange: (files: IModFile[]) => void
 }
 
 export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) {
@@ -48,30 +48,29 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
 
   const handleAddFile = () => {
     // Add a new empty file entry
-    const newFile: Omit<IModFile, 'id' | 'modId'> = {
+    const newFile: IModFile = {
+      id: Date.now(),
+      modId: '0',
       name: '',
       filePath: '',
       fileType: 'WAD',
-      loadOrder: value.length + 1,
+      loadOrder: value.length,
       isRequired: true,
       fileName: '' // Ensure fileName is present
     }
     onChange([...value, newFile])
   }
 
-  const handleMoveFileToModFolder = async (path: string) => {
-    const modPath = (await gameService.getSettings()).modsDirectory
-    const filePath = path
-    const newPath = `${modPath}/files/${filePath.split(/[\\/]/).pop()}`
-    console.log(`Moving file (${filePath}) to mod folder: ${newPath}`)
+  const handleMoveFileToModFolder = async (sourcePath: string) => {
     try {
-      const result = await gameService.moveFile(filePath, newPath)
-      console.log('File moved successfully:', result)
+      const result = await api.moveToModFolder(sourcePath)
+      console.log('[DEBUG] File moved successfully:', result)
       toast({
         title: 'Success',
         description: 'File moved to mod folder successfully',
         variant: 'default'
       })
+      return result.fullPath
     } catch (error) {
       console.error('Failed to move file:', error)
       toast({
@@ -79,8 +78,8 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
         description: 'Failed to move file to mod folder',
         variant: 'destructive'
       })
+      return sourcePath
     }
-    return newPath
   }
 
   const handleRemoveFile = (index: number) => {
@@ -97,11 +96,7 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
     onChange(updatedFiles)
   }
 
-  const handleUpdateFile = (
-    index: number,
-    field: keyof Omit<IModFile, 'id' | 'modId'>,
-    newValue: any
-  ) => {
+  const handleUpdateFile = (index: number, field: keyof IModFile, newValue: any) => {
     // Update a specific field in a file
     const newFiles = [...value]
     const updatedFile = {
@@ -113,7 +108,8 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
     updatedFile.fileName =
       field === 'name'
         ? newValue
-        : updatedFile.name || (updatedFile.filePath ? updatedFile.filePath.split(/[\\/]/).pop() : '')
+        : updatedFile.name ||
+          (updatedFile.filePath ? updatedFile.filePath.split(/[\\/]/).pop() : '')
 
     // Auto-detect file type if filePath changes
     if (field === 'filePath') {
@@ -144,12 +140,13 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
     const newFiles = [...value]
     newFiles[index] = {
       ...newFiles[index],
+      id: catalogFile.id,
       name: catalogFile.name,
       filePath: catalogFile.filePath,
       fileType: catalogFile.fileType,
       fileName: catalogFile.fileName,
       isRequired: catalogFile.isRequired ?? true,
-      loadOrder: newFiles[index].loadOrder ?? 0
+      loadOrder: newFiles[index].loadOrder ?? index
     }
     onChange(newFiles)
   }
@@ -182,6 +179,24 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
         // Move the file to mod folder
         const newFilePath = await handleMoveFileToModFolder(selectedFilePath)
 
+        // EAGERLY add to catalog as requested
+        let catalogId = Date.now()
+        try {
+          const savedCatalogFile = await api.addToCatalog({
+            name: fileName,
+            filePath: newFilePath,
+            fileType: detectedType,
+            fileName: fileName,
+            loadOrder: index,
+            isRequired: true
+          })
+          catalogId = savedCatalogFile.id
+          // Reload catalog files to show the new one in the dropdown
+          loadCatalogFiles()
+        } catch (err) {
+          console.error('Failed to add to catalog eagerly:', err)
+        }
+
         console.log('Selected file:', selectedFilePath)
         console.log('New file path:', newFilePath)
         console.log('File name:', fileName)
@@ -191,6 +206,7 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
         const newFiles = [...value]
         newFiles[index] = {
           ...newFiles[index],
+          id: catalogId,
           filePath: newFilePath,
           fileName: fileName,
           fileType: detectedType,
@@ -198,7 +214,7 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
           name: !newFiles[index].name ? fileName : newFiles[index].name,
           // Ensure other required fields
           isRequired: newFiles[index].isRequired !== undefined ? newFiles[index].isRequired : true,
-          loadOrder: newFiles[index].loadOrder ?? index
+          loadOrder: index
         }
 
         // Call onChange with the new array
@@ -225,7 +241,7 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
           size="sm"
           variant={'outline'}
           onClick={handleAddFile}
-          className="border-[#262626]"
+          className="border-app"
           type="button"
         >
           <PlusIcon className="h-4 w-4 mr-1" />
@@ -246,7 +262,7 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
                   placeholder="Pretty name"
                   value={file.name || ''}
                   onChange={(e) => handleUpdateFile(index, 'name', e.target.value)}
-                  className="bg-[#0c1c2a] border-[#262626]"
+                  className="bg-app-primary border-app"
                 />
               </div>
 
@@ -255,10 +271,10 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
                   value={file.fileType}
                   onValueChange={(value) => handleUpdateFile(index, 'fileType', value)}
                 >
-                  <SelectTrigger className="bg-[#0c1c2a] border-[#262626]">
+                  <SelectTrigger className="bg-app-primary border-app">
                     <SelectValue placeholder="Type" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#162b3d] border-[#262626]">
+                  <SelectContent className="bg-app-secondary border-app">
                     <SelectItem value="WAD">WAD</SelectItem>
                     <SelectItem value="PK3">PK3</SelectItem>
                     <SelectItem value="DEH">DEH</SelectItem>
@@ -271,12 +287,12 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
                   placeholder="File path"
                   value={file.filePath || ''}
                   onChange={(e) => handleUpdateFile(index, 'filePath', e.target.value)}
-                  className="bg-[#0c1c2a] border-[#262626] flex-1"
+                  className="bg-app-primary border-app flex-1"
                 />
                 <Button
                   variant="outline"
                   onClick={() => handleBrowseFile(index)}
-                  className="border-[#262626]"
+                  className="border-app"
                   type="button"
                 >
                   <FolderOpenIcon className="h-4 w-4" />
@@ -287,10 +303,10 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
                 <Select
                   onValueChange={(value) => handleSelectCatalogFile(index, parseInt(value, 10))}
                 >
-                  <SelectTrigger className="bg-[#0c1c2a] border-[#262626]">
+                  <SelectTrigger className="bg-app-primary border-app">
                     <SelectValue placeholder="Catalog" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#162b3d] border-[#262626] max-h-[300px]">
+                  <SelectContent className="bg-app-secondary border-app max-h-[300px]">
                     {Array.isArray(catalogFiles) && catalogFiles.length === 0 ? (
                       <SelectItem value="none" disabled>
                         No catalog files
@@ -307,18 +323,7 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
                 </Select>
               </div>
 
-              <div className="w-14">
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder="Order"
-                  value={file.loadOrder || 0}
-                  onChange={(e) =>
-                    handleUpdateFile(index, 'loadOrder', parseInt(e.target.value, 10))
-                  }
-                  className="bg-[#0c1c2a] border-[#262626]"
-                />
-              </div>
+              {/* Remove manual order input as requested, handled by InstallPage list order */}
 
               <Button
                 variant="ghost"

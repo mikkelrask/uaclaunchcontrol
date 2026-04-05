@@ -1,24 +1,26 @@
-import * as fs from 'fs-extra'
+import fs from 'fs-extra'
 import path from 'path'
 import os from 'os'
+import axios from 'axios'
 import { IAppSettings, IDoomVersion, IMod, IModFile } from '../../shared/schema'
 
 // Define storage paths (Aligned with local-structure.txt)
-const CONFIG_DIR = path.join(os.homedir(), '.config', 'mrdoom')
+const CONFIG_DIR = path.join(os.homedir(), '.config', 'uaclaunchcontrol')
 const DATA_DIR = path.join(CONFIG_DIR, 'data') // For extra data
 export const MODS_DIR = path.join(CONFIG_DIR, 'mods') // For mod {id}.json files
 const SETTINGS_FILE = path.join(CONFIG_DIR, 'settings.json') // Directly in CONFIG_DIR per local-structure.txt
 const DOOM_VERSIONS_FILE = path.join(CONFIG_DIR, 'doomVersions.json') // Directly in CONFIG_DIR per local-structure.txt
-const MOD_FILE_CATALOG = path.join(CONFIG_DIR, 'modFileCatalogue.json') // Correctly spelled with 'ue' in CONFIG_DIR
+const MOD_FILE_CATALOG = path.join(CONFIG_DIR, 'modFileCatalogue.json')
+export const IMAGES_DIR = path.join(CONFIG_DIR, 'images')
 
 // Default settings
 const DEFAULT_SETTINGS: IAppSettings = {
   gzDoomPath: 'gzdoom', // Default to assuming gzdoom is in PATH
   theme: 'dark',
-  savegamesPath: '~/.config/gzdoom/saves', // Add empty string defaults for optional properties
-  modsDirectory: '~/.config/mrdoom/mods',
-  screenshotsPath: '~/Pictures/MRDoom/screenshots',
-  defaultSourcePort: 'GZDoom'
+  savegamesPath: '~/.config/uaclaunchcontrol/saves', // Add empty string defaults for optional properties
+  modsDirectory: '~/.config/uaclaunchcontrol/mods',
+  screenshotsPath: '~/Pictures/UAC Launch Control/screenshots',
+  defaultSourcePort: 'uzdoom'
 }
 
 // Default Doom Versions
@@ -110,7 +112,7 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     args: '-iwad hexdd.wad',
     icon: 'hexdd.png',
     executable: 'gzdoom',
-    parameters: '',
+    parameters: '-iwad hexdd.wad',
     defaultIwad: 'hexdd.wad'
   }
 ]
@@ -385,6 +387,63 @@ export async function moveFile(filePath: string, newPath: string): Promise<strin
   }
 }
 
+// Special helper to move a file into the mods/files folder and return the relative path
+export async function moveToModFolder(
+  sourcePath: string
+): Promise<{ fullPath: string; relativePath: string }> {
+  try {
+    const settings = await getSettings()
+    const modsDir = resolvePath(settings.modsDirectory || path.join(CONFIG_DIR, 'mods'))
+    const fileName = path.basename(sourcePath)
+    const relativePath = path.join('files', fileName)
+    const fullPath = path.join(modsDir, relativePath)
+
+    await fs.ensureDir(path.join(modsDir, 'files'))
+    await fs.copy(resolvePath(sourcePath), fullPath, { overwrite: true })
+
+    console.log(`[DEBUG] Moved file to mod folder: ${fullPath} (relative: ${relativePath})`)
+    return { fullPath, relativePath }
+  } catch (error: any) {
+    console.error('Error moving file to mod folder:', error)
+    throw new Error(`Failed to move file to mod folder: ${error.message}`)
+  }
+}
+
+// Download an image from a URL and save it directly to the mods directory
+export async function downloadImage(url: string, modId: string): Promise<string> {
+  try {
+    const settings = await getSettings()
+    const modsDir = resolvePath(settings.modsDirectory || MODS_DIR)
+    await fs.ensureDir(modsDir)
+
+    const response = await axios.get(url, { responseType: 'arraybuffer' })
+    
+    // Better extension detection from Content-Type or URL
+    const contentType = response.headers['content-type']
+    let extension = ''
+    if (contentType === 'image/jpeg') extension = '.jpg'
+    else if (contentType === 'image/png') extension = '.png'
+    else if (contentType === 'image/webp') extension = '.webp'
+    else if (contentType === 'image/gif') extension = '.gif'
+    else {
+      extension = path.extname(new URL(url).pathname) || '.jpg'
+    }
+    
+    if (extension.length > 5) extension = '.jpg'
+
+    const fileName = `${modId}-poster${extension}`
+    const filePath = path.join(modsDir, fileName)
+
+    await fs.writeFile(filePath, response.data)
+
+    console.log(`[DEBUG] Image downloaded via axios and saved to: ${filePath}`)
+    return fileName // Return just the filename
+  } catch (error: any) {
+    console.error('Error downloading image:', error)
+    throw new Error(`Failed to download image: ${error.message}`)
+  }
+}
+
 // Add a mod file to the catalog
 export async function addModFileToCatalog(file: Omit<IModFile, 'id' | 'modId'>): Promise<IModFile> {
   try {
@@ -427,6 +486,33 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id' | 'modId'>):
   } catch (error: any) {
     console.error('Error adding mod file to catalog:', error)
     throw new Error(`Failed to add mod file to catalog: ${error.message}`)
+  }
+}
+
+// Update a mod file in the catalog
+export async function updateModFileInCatalog(
+  id: number | string,
+  updates: Partial<IModFile>
+): Promise<IModFile> {
+  try {
+    const catalog = await getModFileCatalog()
+    // Compare as strings to be safe against numeric/string ID mismatches
+    const index = catalog.findIndex((f) => String(f.id) === String(id))
+
+    if (index === -1) {
+      console.error(`[DEBUG] Catalog update failed: Mod file with ID ${id} not found in catalog. Content of catalog IDs:`, catalog.map(f => f.id))
+      throw new Error(`Mod file with ID ${id} not found in catalog`)
+    }
+
+    const updatedFile = { ...catalog[index], ...updates }
+    catalog[index] = updatedFile
+
+    await fs.writeJSON(MOD_FILE_CATALOG, catalog, { spaces: 2 })
+    console.log(`[DEBUG] Successfully updated mod file ${id} in catalog (new name: ${updates.name})`)
+    return updatedFile
+  } catch (error: any) {
+    console.error(`Error updating mod file ${id} in catalog:`, error)
+    throw new Error(`Failed to update mod file: ${error.message}`)
   }
 }
 

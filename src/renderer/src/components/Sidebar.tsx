@@ -17,9 +17,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeVersion, onVersionSelect
   })
 
   return (
-    <div className="w-20 bg-[#0c1c2a] h-full flex flex-col items-center py-6 border-r border-[#162b3d]">
+    <div className="w-20 bg-app-primary h-full flex flex-col items-center py-6 border-r border-app-secondary">
       {/* App Logo */}
-      <div className="w-12 h-12 mb-12 bg-[#162b3d] rounded-md flex items-center justify-center">
+      <div className="w-12 h-12 mb-12 bg-app-secondary rounded-md flex items-center justify-center">
         <img src={logo} alt="Logo" className="w-12 h-12" />
       </div>
 

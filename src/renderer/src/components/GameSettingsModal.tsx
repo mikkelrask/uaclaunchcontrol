@@ -184,7 +184,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#162b3d] text-white border-[#262626] max-w-4xl">
+      <DialogContent className="bg-app-secondary text-app-primary border-app max-w-4xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-mono font-bold">
             {mod?.title || mod?.name || 'Mod Settings'}
@@ -215,7 +215,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                     name="title"
                     value={mod?.title || mod?.name || ''}
                     onChange={handleInputChange}
-                    className="bg-[#0c1c2a] border-[#262626]"
+                    className="bg-app-primary border-app"
                   />
                 </div>
 
@@ -226,7 +226,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                     name="description"
                     value={mod?.description || ''}
                     onChange={handleInputChange}
-                    className="bg-[#0c1c2a] border-[#262626]"
+                    className="bg-app-primary border-app"
                     rows={3}
                   />
                 </div>
@@ -235,17 +235,17 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="text-lg font-mono mb-2">Game Configuration</h3>
-                  <div className="bg-[#0c1c2a] p-3 rounded space-y-2">
+                  <div className="bg-app-primary p-3 rounded space-y-2">
                     <div>
                       <Label htmlFor="doomVersionId">Base Game</Label>
                       <Select
                         value={mod?.doomVersionId?.toString() || ''}
                         onValueChange={(value) => handleSelectChange('doomVersionId', value)}
                       >
-                        <SelectTrigger className="bg-[#162b3d] border-[#262626]">
+                        <SelectTrigger className="bg-app-secondary border-app">
                           <SelectValue placeholder="Select Doom Version" />
                         </SelectTrigger>
-                        <SelectContent className="bg-[#162b3d] border-[#262626] text-white">
+                        <SelectContent className="bg-app-secondary border-app text-app-primary">
                           {doomVersions?.map((version) => (
                             <SelectItem key={version.id} value={version.id.toString()}>
                               {version.name}
@@ -262,7 +262,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                         name="sourcePort"
                         value={mod?.sourcePort || 'GZDoom'}
                         onChange={handleInputChange}
-                        className="bg-[#162b3d] border-[#262626]"
+                        className="bg-app-secondary border-app"
                       />
                     </div>
 
@@ -274,7 +274,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                         value={mod?.saveDirectory || ''}
                         placeholder={`e.g. ~/saves/${slugify(mod?.title || 'game')}`}
                         onChange={handleInputChange}
-                        className="bg-[#162b3d] border-[#262626]"
+                        className="bg-app-secondary border-app"
                       />
                     </div>
                   </div>
@@ -299,7 +299,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                 <Button
                   variant="outline"
                   onClick={handleDelete}
-                  className="bg-[#0c1c2a] hover:bg-[#162b3d] text-white border-[#262626]"
+                  className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
                   disabled={deleteMutation.isPending}
                 >
                   Delete Instance
@@ -310,14 +310,14 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                 <Button
                   variant="outline"
                   onClick={handleSave}
-                  className="mr-2 bg-[#0c1c2a] hover:bg-[#162b3d] text-white border-[#262626]"
+                  className="mr-2 bg-app-primary hover:bg-app-hover text-app-primary border-app"
                   disabled={updateMutation.isPending}
                 >
                   Save Changes
                 </Button>
                 <Button
                   onClick={handleLaunch}
-                  className="bg-[#d41c1c] hover:bg-[#b21616] text-white"
+                  className="bg-accent-highlight hover:opacity-90 text-white"
                   disabled={launchMutation.isPending}
                 >
                   PLAY

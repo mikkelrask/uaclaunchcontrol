@@ -3,6 +3,8 @@ import { createServer, type Server } from 'http'
 import { gameService } from './services/gameService'
 import * as storage from './storage'
 import * as express from 'express'
+import path from 'path'
+import fs from 'fs-extra'
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json())
@@ -47,6 +49,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error moving file:', error)
       return res.status(500).json({ message: 'Failed to move file' })
+    }
+  })
+
+  // Serve mod images dynamically from the configured mods directory
+  app.get('/images/:fileName', async (req, res) => {
+    try {
+      const settings = await storage.getSettings()
+      const modsDir = storage.resolvePath(settings.modsDirectory || storage.MODS_DIR)
+      const filePath = path.join(modsDir, req.params.fileName)
+      
+      console.log(`[DEBUG] Serving image request: ${req.params.fileName}`)
+      console.log(`[DEBUG] Full disk path: ${filePath}`)
+      
+      if (fs.existsSync(filePath)) {
+        console.log(`[DEBUG] File exists, sending...`)
+        const stream = fs.createReadStream(filePath)
+        // Set content type based on extension
+        const ext = path.extname(filePath).toLowerCase()
+        const mimeTypes = {
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.png': 'image/png',
+          '.webp': 'image/webp',
+          '.gif': 'image/gif'
+        }
+        res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream')
+        return stream.pipe(res)
+      } else {
+        console.warn(`[DEBUG] Image file NOT FOUND on disk: ${filePath}`)
+        return res.status(404).send('Image file not found on disk')
+      }
+    } catch (error) {
+      console.error(`[DEBUG] Exception serving image ${req.params.fileName}:`, error)
+      return res.status(500).send('Server error serving image')
+    }
+  })
+
+  // Download image route
+  app.post('/api/mod/download-image', async (req, res) => {
+    const { url, modId } = req.body
+    if (!url || !modId) {
+      return res.status(400).json({ error: 'Missing url or modId' })
+    }
+    try {
+      const fileName = await storage.downloadImage(url, modId)
+      res.json({ fileName })
+    } catch (error: any) {
+      res.status(500).json({ error: error.message })
     }
   })
 
@@ -204,6 +254,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error in POST /api/mod-files/catalog:', error)
       return res.status(500).json({ message: error.message || 'Failed to add file to catalog' })
+    }
+  })
+
+  app.post('/api/mod-files/move', async (req, res) => {
+    try {
+      const { sourcePath } = req.body
+      if (!sourcePath) return res.status(400).json({ message: 'Missing sourcePath' })
+      const result = await storage.moveToModFolder(sourcePath)
+      return res.json(result)
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message })
+    }
+  })
+
+  app.put('/api/mod-files/catalog/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10)
+      const updates = req.body
+
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid file ID' })
+      }
+
+      const updatedFile = await storage.updateModFileInCatalog(id, updates)
+      return res.json(updatedFile)
+    } catch (error: any) {
+      console.error(`Error in PUT /api/mod-files/catalog/${req.params.id}:`, error)
+      return res.status(500).json({ message: error.message || 'Failed to update file in catalog' })
     }
   })
 

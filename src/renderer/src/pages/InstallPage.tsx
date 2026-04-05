@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -52,7 +52,8 @@ export const InstallPage: React.FC = () => {
 
   const [activeVersion] = useState<string | null>(null)
   // const [searchQuery] = useState('');
-  const [files, setFiles] = useState<Omit<IModFile, 'id' | 'modId'>[]>([])
+  const [files, setFiles] = useState<IModFile[]>([])
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   // const [currentFilePath, setCurrentFilePath] = useState<string>('');
 
   // Fetch doom versions
@@ -74,11 +75,18 @@ export const InstallPage: React.FC = () => {
       title: '',
       description: '',
       doomVersionId: '',
-      sourcePort: '',
+      sourcePort: settings?.gzDoomPath || '',
       saveDirectory: '',
       launchParameters: ''
     }
   })
+
+  // Update sourcePort default when settings load
+  useEffect(() => {
+    if (settings?.gzDoomPath && !form.getValues('sourcePort')) {
+      form.setValue('sourcePort', settings.gzDoomPath)
+    }
+  }, [settings?.gzDoomPath])
 
   // Create mod mutation
   const createMutation = useMutation({
@@ -127,62 +135,119 @@ export const InstallPage: React.FC = () => {
   }
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    const fileData: IModFile[] = files.map((file, idx) => ({
-      ...file,
-      id: Date.now() + idx,
-      modId: 'temp' // Replace 'temp' with the actual mod id after creation if needed
-    }))
+    const fileData: IModFile[] = files.map((file, idx) => {
+      // Strip directory from filePath and saveDirectory for shareability
+      const pathValue = file.filePath || ''
+      const fileNameOnly = pathValue.split(/[\\/]/).pop() || pathValue
 
-    const mod: Omit<IMod, 'id'> = {
+      return {
+        ...file,
+        filePath: fileNameOnly, // Store only the filename
+        loadOrder: idx
+      }
+    })
+
+    const finalSaveDir = data.saveDirectory || settings?.savegamesPath || ''
+    // Strip parent directory from saveDirectory if it starts with the default path
+    let relativeSaveDir = finalSaveDir
+    if (settings?.savegamesPath && finalSaveDir.startsWith(settings.savegamesPath)) {
+      relativeSaveDir = finalSaveDir.replace(settings.savegamesPath, '').replace(/^[\\/]/, '')
+    }
+
+    // Use a single timestamp for both mod and image naming consistency
+    const uniqueId = Date.now().toString()
+
+    // Download screenshot if it's a URL
+    let localScreenshotPath = data.screenshotPath
+    if (data.screenshotPath && data.screenshotPath.startsWith('http')) {
+      try {
+        console.log(`[DEBUG] Downloading screenshot for mod: ${data.screenshotPath}`)
+        const result = await api.downloadImage(data.screenshotPath, uniqueId)
+        localScreenshotPath = result.fileName
+        console.log(`[DEBUG] Screenshot saved as: ${localScreenshotPath}`)
+      } catch (error) {
+        console.error('Failed to download screenshot, following with original URL:', error)
+      }
+    }
+
+    const mod: Omit<IMod, 'id'> & { id?: string } = {
+      id: uniqueId,
       name: data.title,
       title: data.title,
       description: data.description || '',
       doomVersionId: data.doomVersionId,
       sourcePort: data.sourcePort,
-      saveDirectory: data.saveDirectory || settings?.savegamesPath || '',
+      saveDirectory: relativeSaveDir,
       moddbId: data.moddbId ? parseInt(data.moddbId) : undefined,
-      screenshotPath: data.screenshotPath,
+      screenshotPath: localScreenshotPath,
       launchParameters: data.launchParameters,
       files: fileData
     }
 
+    console.log('[DEBUG] Final mod object for submission:', mod)
     console.log('[DEBUG] files state at submit:', files)
     console.log('[DEBUG] fileData to process:', fileData)
 
-    // Add new files to the mod file catalog before creating the mod
+    // Update catalog entries with any name changes
     try {
-      // Fetch current catalog
-      const catalog = await api.getAvailableModFiles()
-      console.log('[DEBUG] Current catalog:', catalog)
-      console.log('[DEBUG] Files to process:', fileData)
-      for (const file of fileData) {
-        const exists = catalog.some((f) => f.filePath === file.filePath)
-        console.log(`[DEBUG] Checking file: ${file.filePath}, exists:`, exists)
-        if (!exists) {
-          console.log('[DEBUG] Adding to catalog:', file)
-          await api.addToCatalog({
-            name: file.fileName,
-            filePath: file.filePath,
-            fileType: file.fileType,
-            loadOrder: file.loadOrder,
-            isRequired: file.isRequired
+      console.log(`[DEBUG] Attempting to update catalog for ${files.length} files`)
+      for (const file of files) {
+        if (file.id && Number(file.id) > 0) {
+          console.log(`[DEBUG] Updating catalog entry ${file.id} with name: ${file.name}`)
+          // Update the catalog title/pretty name
+          await api.updateInCatalog(file.id, {
+            name: file.name,
+            fileType: file.fileType
           })
+        } else {
+          console.log(`[DEBUG] Skipping catalog update for file with ID: ${file.id}`)
         }
       }
     } catch (err) {
-      toast({
-        title: 'Warning',
-        description: 'Some mod files could not be added to the catalog.',
-        variant: 'destructive'
-      })
+      console.warn('[DEBUG] Failed to update some catalog entries:', err)
     }
 
     createMutation.mutate({ mod, files: fileData })
   }
 
-  // Wrapper to map Omit<IModFile, 'id' | 'modId'>[] to IModFile[]
-  const handleFilesChange = (files: Omit<IModFile, 'id' | 'modId'>[]) => {
-    setFiles(files)
+  // Wrapper to update file list
+  const handleFilesChange = (newFiles: IModFile[]) => {
+    setFiles(newFiles)
+  }
+
+  // Native Drag and Drop handlers
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index)
+    e.dataTransfer.effectAllowed = 'move'
+    // Still set data for compatibility
+    e.dataTransfer.setData('text/plain', index.toString())
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault()
+    if (draggedIndex === null || draggedIndex === targetIndex) {
+      setDraggedIndex(null)
+      return
+    }
+
+    const newFiles = [...files]
+    const [draggedItem] = newFiles.splice(draggedIndex, 1)
+    newFiles.splice(targetIndex, 0, draggedItem)
+
+    // Update load orders based on new positions explicitly
+    const updatedFiles = newFiles.map((file, idx) => ({
+      ...file,
+      loadOrder: idx
+    }))
+
+    console.log('[DEBUG] Files reordered via DnD:', updatedFiles)
+    setFiles(updatedFiles)
+    setDraggedIndex(null)
   }
 
   return (
@@ -193,7 +258,7 @@ export const InstallPage: React.FC = () => {
         <Header onSearch={handleSearch} />
 
         <div className="flex-1 overflow-y-auto p-4">
-          <Card className="bg-[#162b3d] border-[#262626] mb-6">
+          <Card className="bg-app-secondary border-app mb-6">
             <CardHeader>
               <CardTitle>Install New Mod</CardTitle>
             </CardHeader>
@@ -211,7 +276,7 @@ export const InstallPage: React.FC = () => {
                             <FormControl>
                               <Input
                                 placeholder="Enter mod title"
-                                className="bg-[#0c1c2a] border-[#262626]"
+                                className="bg-app-primary border-app"
                                 {...field} // Spread field props here
                                 onChange={(e) => {
                                   const currentTitle = e.target.value // Get full value from event
@@ -257,7 +322,7 @@ export const InstallPage: React.FC = () => {
                             <FormControl>
                               <Textarea
                                 placeholder="Enter mod description"
-                                className="bg-[#0c1c2a] border-[#262626]"
+                                className="bg-app-primary border-app"
                                 {...field}
                               />
                             </FormControl>
@@ -275,7 +340,7 @@ export const InstallPage: React.FC = () => {
                             <FormControl>
                               <Input
                                 placeholder="Enter screenshot URL"
-                                className="bg-[#0c1c2a] border-[#262626]"
+                                className="bg-app-primary border-app"
                                 {...field}
                               />
                             </FormControl>
@@ -294,11 +359,11 @@ export const InstallPage: React.FC = () => {
                             <FormLabel>Base Game</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger className="bg-[#0c1c2a] border-[#262626]">
+                                <SelectTrigger className="bg-app-primary border-app">
                                   <SelectValue placeholder="Select Doom Version" />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent className="bg-[#162b3d] border-[#262626] text-white">
+                              <SelectContent className="bg-app-secondary border-app text-app-primary">
                                 {versions.map((version) => (
                                   <SelectItem key={version.id} value={version.id.toString()}>
                                     {version.name}
@@ -318,11 +383,7 @@ export const InstallPage: React.FC = () => {
                           <FormItem>
                             <FormLabel>Source Port</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder={settings.gzDoomPath || ''}
-                                className="bg-[#0c1c2a] border-[#262626]"
-                                {...field}
-                              />
+                              <Input className="bg-app-primary border-app" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -338,7 +399,7 @@ export const InstallPage: React.FC = () => {
                             <FormControl>
                               <Input
                                 placeholder={settings.savegamesPath || ''}
-                                className="bg-[#0c1c2a] border-[#262626]"
+                                className="bg-app-primary border-app"
                                 {...field}
                                 value={field.value || ''}
                               />
@@ -357,7 +418,7 @@ export const InstallPage: React.FC = () => {
                             <FormControl>
                               <Input
                                 placeholder="-skill 4 -warp 01"
-                                className="bg-[#0c1c2a] border-[#262626]"
+                                className="bg-app-primary border-app"
                                 {...field}
                               />
                             </FormControl>
@@ -370,7 +431,7 @@ export const InstallPage: React.FC = () => {
 
                   <div>
                     <h3 className="text-lg font-mono mb-2">Mod Files</h3>
-                    <p className="text-sm text-[#e6e6e6] mb-2">
+                    <p className="text-sm text-app-secondary mb-2">
                       Add the mod files in the order they should be loaded.
                     </p>
                     <div className="mb-4">
@@ -378,28 +439,36 @@ export const InstallPage: React.FC = () => {
                     </div>
 
                     {files.length > 0 && (
-                      <div className="mb-4 border border-[#262626] rounded-md p-2">
+                      <div className="mb-4 border border-app rounded-md p-2">
                         <h4 className="font-mono text-sm mb-2">Selected Files:</h4>
                         <ul className="space-y-2">
                           {files.map((file, index) => (
                             <li
-                              key={index}
-                              className="flex items-center justify-between bg-[#0c1c2a] p-2 rounded"
+                              key={`${file.id}-${index}`}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, index)}
+                              onDragOver={handleDragOver}
+                              onDrop={(e) => handleDrop(e, index)}
+                              onDragEnd={() => setDraggedIndex(null)}
+                              onDragEnter={(e) => e.preventDefault()}
+                              className={`flex items-center justify-between bg-app-primary p-2 rounded cursor-move transition-all duration-200 border border-transparent hover:border-accent-highlight/30 group select-none ${draggedIndex === index ? 'opacity-40 scale-95' : ''}`}
                             >
-                              <div>
-                                <span className="text-sm font-medium">{file.fileName}</span>
-                                <span className="text-xs text-[#a0a0a0] ml-2">
-                                  ({file.fileType})
-                                </span>
+                              <div className="flex items-center gap-3">
+                                <div className="text-app-muted text-xs font-mono w-4">
+                                  {index + 1}
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium">{file.name || file.fileName}</span>
+                                  <span className="text-xs text-app-muted ml-2">
+                                    ({file.fileType})
+                                  </span>
+                                </div>
                               </div>
                               <div className="flex items-center">
-                                <span className="text-xs text-[#a0a0a0] mr-3">
-                                  Load order: {file.loadOrder}
-                                </span>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-6 text-red-400 hover:text-red-300"
+                                  className="h-6 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
                                   onClick={() => removeFile(index)}
                                 >
                                   Remove
@@ -415,7 +484,7 @@ export const InstallPage: React.FC = () => {
                   <div className="flex justify-end">
                     <Button
                       type="submit"
-                      className="bg-[#d41c1c] hover:bg-[#b21616]"
+                      className="bg-accent-highlight hover:opacity-90"
                       disabled={!form.watch('title') || !form.watch('doomVersionId')}
                     >
                       {createMutation.isPending ? 'Installing...' : 'Install Mod'}

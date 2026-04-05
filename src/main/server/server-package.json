@@ -1,7 +1,7 @@
 {
-  "name": "mrdoom-server",
+  "name": "uaclaunchcontrol-server",
   "version": "0.1.2",
-  "description": "Server-side dependencies for the MRDOOM app",
+  "description": "Server-side dependencies for the UAC Launch Control app",
   "main": "index.ts",
   "type": "module",
   "scripts": {
