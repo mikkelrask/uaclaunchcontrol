@@ -430,7 +430,7 @@ export const InstallPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-mono mb-2">Mod Files</h3>
+                    <h3 className="text-lg font-sans mb-2">Mod Files</h3>
                     <p className="text-sm text-app-secondary mb-2">
                       Add the mod files in the order they should be loaded.
                     </p>
@@ -440,7 +440,7 @@ export const InstallPage: React.FC = () => {
 
                     {files.length > 0 && (
                       <div className="mb-4 border border-app rounded-md p-2">
-                        <h4 className="font-mono text-sm mb-2">Selected Files:</h4>
+                        <h4 className="font-sans text-sm mb-2">Selected Files:</h4>
                         <ul className="space-y-2">
                           {files.map((file, index) => (
                             <li
@@ -454,7 +454,7 @@ export const InstallPage: React.FC = () => {
                               className={`flex items-center justify-between bg-app-primary p-2 rounded cursor-move transition-all duration-200 border border-transparent hover:border-accent-highlight/30 group select-none ${draggedIndex === index ? 'opacity-40 scale-95' : ''}`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className="text-app-muted text-xs font-mono w-4">
+                                <div className="text-app-muted text-xs font-semibold font-mono w-4">
                                   {index + 1}
                                 </div>
                                 <div>

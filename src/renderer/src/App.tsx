@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { Switch, Route, Router } from 'wouter'
 import { useHashLocation } from 'wouter/use-hash-location'
 import { queryClient } from './lib/queryClient'
-import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/hooks/use-toast'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -11,6 +10,9 @@ import GamesPage from '@/pages/GamesPage'
 import ModDBPage from '@/pages/ModDBPage'
 import InstallPage from '@/pages/InstallPage'
 import NotFound from '@/pages/not-found'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/api'
+import { IAppSettings } from '@shared/schema'
 
 function AppRouter() {
   return (
@@ -27,6 +29,20 @@ function AppRouter() {
 
 function App() {
   const { toast } = useToast()
+
+  // Global settings query for theme sync
+  const { data: settings } = useQuery<IAppSettings>({
+    queryKey: ['/api/settings'],
+    queryFn: api.getSettings
+  })
+
+  // Apply theme globally whenever settings change
+  useEffect(() => {
+    if (settings?.theme) {
+      document.documentElement.classList.remove('dark', 'light')
+      document.documentElement.classList.add(settings.theme)
+    }
+  }, [settings?.theme])
 
   useEffect(() => {
     // Listen for version updates from the main process
@@ -58,12 +74,10 @@ function App() {
   }, [toast])
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <AppRouter />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <TooltipProvider>
+      <Toaster />
+      <AppRouter />
+    </TooltipProvider>
   )
 }
 

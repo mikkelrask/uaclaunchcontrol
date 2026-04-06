@@ -39,7 +39,7 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
 
       <div className="ml-auto">
         <button
-          className="text-sm font-mono flex items-center hover:text-app-primary"
+          className="text-sm font-sans text-muted flex items-center hover:text-app-primary"
           onClick={onManageGames}
         >
           Manage Games

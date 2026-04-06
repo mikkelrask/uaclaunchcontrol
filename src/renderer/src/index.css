@@ -69,13 +69,13 @@
   .light {
     /* Semantic variables */
     --bg-primary: 210 40% 98%;
-    --bg-secondary: 210 20% 96%;
-    --bg-tertiary: 215 16% 87%;
+    --bg-secondary: 210 20% 90%;
+    --bg-tertiary: 215 16% 80%;
     --bg-card: 0 0% 100%;
     --bg-popover: 0 0% 100%;
-    --bg-muted: 210 20% 96%;
+    --bg-muted: 210 20% 90%;
     --bg-sidebar: 210 40% 98%;
-    --bg-hover: 210 20% 96%;
+    --bg-hover: 210 20% 88%;
 
     --text-primary: 222.2 84% 4.9%;
     --text-secondary: 215.4 16.9% 45.9%;
@@ -86,14 +86,14 @@
     --text-muted-foreground: 215.4 16.9% 45.9%;
 
     --accent-primary: 222.2 84% 4.9%;
-    --accent-secondary: 210 20% 96%;
+    --accent-secondary: 210 20% 90%;
     --accent-destructive: 0 84.2% 60.2%;
     --accent-ring: 222.2 47.4% 11.2%;
     --accent-highlight: 0 72.2% 50.6%;
 
-    --border-primary: 214.3 31.8% 91.4%;
-    --border-input: 214.3 31.8% 91.4%;
-    --border-sidebar: 214.3 31.8% 91.4%;
+    --border-primary: 214.3 31.8% 85%;
+    --border-input: 214.3 31.8% 85%;
+    --border-sidebar: 214.3 31.8% 85%;
 
     /* Tailwind mappings */
     --background: 210 40% 98%;
@@ -150,8 +150,9 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--bg-secondary));
+    background: hsl(var(--bg-tertiary) / 0.4);
     border-radius: 5px;
+    border: 2px solid hsl(var(--bg-primary));
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -160,13 +161,14 @@
 }
 
 @layer components {
+
   /* Aspect ratio utilities */
   .aspect-w-16 {
     position: relative;
     padding-bottom: calc(9 / 16 * 100%);
   }
 
-  .aspect-w-16 > * {
+  .aspect-w-16>* {
     position: absolute;
     height: 100%;
     width: 100%;
@@ -180,18 +182,23 @@
   .bg-app-primary {
     background: hsl(var(--bg-primary));
   }
+
   .bg-app-secondary {
     background: hsl(var(--bg-secondary));
   }
+
   .bg-app-card {
     background: hsl(var(--bg-card));
   }
+
   .bg-app-popover {
     background: hsl(var(--bg-popover));
   }
+
   .bg-app-muted {
     background: hsl(var(--bg-muted));
   }
+
   .bg-app-hover {
     background: hsl(var(--bg-hover));
   }
@@ -199,9 +206,11 @@
   .text-app-primary {
     color: hsl(var(--text-primary));
   }
+
   .text-app-secondary {
     color: hsl(var(--text-secondary));
   }
+
   .text-app-muted {
     color: hsl(var(--text-muted));
   }
@@ -209,6 +218,7 @@
   .border-app {
     border-color: hsl(var(--border));
   }
+
   .border-app-input {
     border-color: hsl(var(--border-input));
   }
@@ -216,6 +226,7 @@
   .bg-accent-highlight {
     background: hsl(var(--accent-highlight));
   }
+
   .hover\:bg-accent-highlight:hover {
     background: hsl(var(--accent-highlight));
   }
@@ -248,7 +259,7 @@
   }
 
   .nav-tab.active {
-    @apply font-bold;
+    @apply font-sans font-bold;
     color: hsl(var(--text-primary));
   }
 

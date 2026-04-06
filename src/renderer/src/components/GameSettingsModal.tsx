@@ -186,7 +186,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-app-secondary text-app-primary border-app max-w-4xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-mono font-bold">
+          <DialogTitle className="text-2xl font-sans font-bold">
             {mod?.title || mod?.name || 'Mod Settings'}
           </DialogTitle>
         </DialogHeader>
@@ -234,7 +234,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-lg font-mono mb-2">Game Configuration</h3>
+                  <h3 className="text-lg font-sans mb-2">Game Configuration</h3>
                   <div className="bg-app-primary p-3 rounded space-y-2">
                     <div>
                       <Label htmlFor="doomVersionId">Base Game</Label>
@@ -281,7 +281,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-mono mb-2">Mod Files</h3>
+                  <h3 className="text-lg font-sans mb-2">Mod Files</h3>
                   <ModFileList files={files} onChange={setFiles} />
                 </div>
               </div>

@@ -17,47 +17,47 @@ interface DoomIconProps {
 }
 
 export const DoomIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
-  <img src={doom} alt="Doom Icon" title="DOOM" className={className} />
+  <img src={doom} alt="Doom Icon" title="DOOM" className={`${className} object-contain aspect-square`} />
 )
 
 export const Doom2Icon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
-  <img src={doom2} alt="Doom 2 Icon" title="DOOM II" className={className} />
+  <img src={doom2} alt="Doom 2 Icon" title="DOOM II" className={`${className} object-contain aspect-square`} />
 )
 
 export const FreeDoomIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
-  <img src={freedoom} alt="FreeDoom Icon" title="FREEDOOM: PHASE 1" className={className} />
+  <img src={freedoom} alt="FreeDoom Icon" title="FREEDOOM: PHASE 1" className={`${className} object-contain aspect-square`} />
 )
 
 export const FreeDoom2Icon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
-  <img src={freedoom2} alt="FreeDoom 2 Icon" title="FREEDOOM: PHASE 2" className={className} />
+  <img src={freedoom2} alt="FreeDoom 2 Icon" title="FREEDOOM: PHASE 2" className={`${className} object-contain aspect-square`} />
 )
 
 export const PlutoniaIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
-  <img src={plutonia} alt="Plutonia Icon" title="Plutonia Project" className={className} />
+  <img src={plutonia} alt="Plutonia Icon" title="Plutonia Project" className={`${className} object-contain aspect-square`} />
 )
 
 export const TntIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
-  <img src={tnt} alt="TNT Icon" title="TNT Evilution" className={className} />
+  <img src={tnt} alt="TNT Icon" title="TNT Evilution" className={`${className} object-contain aspect-square`} />
 )
 
 export const HexenIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
-  <img src={hexen} alt="Hexen Icon" title="Hexen" className={className} />
+  <img src={hexen} alt="Hexen Icon" title="Hexen" className={`${className} object-contain aspect-square`} />
 )
 
 export const HexenDDayIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
-  <img src={hexdd} alt="Hexen DDay Icon" title="Hexen: Deathkings of the Shadow Realm" className={className} />
+  <img src={hexdd} alt="Hexen DDay Icon" title="Hexen: Deathkings of the Shadow Realm" className={`${className} object-contain aspect-square`} />
 )
 
 export const HereticIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
-  <img src={heretic} alt="Heretic Icon" title="Heretic" className={className} />
+  <img src={heretic} alt="Heretic Icon" title="Heretic" className={`${className} object-contain aspect-square`} />
 )
 
 export const StrifeIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
-  <img src={strife} alt="Strife Icon" title="Strife" className={className} />
+  <img src={strife} alt="Strife Icon" title="Strife" className={`${className} object-contain aspect-square`} />
 )
 
 export const DefaultWadIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
-  <img src={defaultIcon} alt="Default WAD Icon" title="Doom Launcher" className={className} />
+  <img src={defaultIcon} alt="Default WAD Icon" title="Doom Launcher" className={`${className} object-contain aspect-square`} />
 )
 
 interface DoomVersionIconProps {
@@ -78,7 +78,7 @@ export const DoomVersionIcon: React.FC<DoomVersionIconProps> = ({
     return (
       <img
         src={toFileUrl(customIcon!)}
-        className={className || 'w-8 h-8 object-contain'}
+        className={`${className || 'w-8 h-8'} object-contain aspect-square`}
         onError={(e) => {
           e.currentTarget.style.display = 'none'
         }}

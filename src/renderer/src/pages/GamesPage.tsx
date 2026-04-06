@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'wouter'
 // import { useLocation } from 'wouter';
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
@@ -127,11 +128,19 @@ export const GamesPage: React.FC = () => {
               </div>
             ) : filteredMods?.length === 0 ? (
               <div className="text-center py-10">
-                <h3 className="text-2xl font-mono mb-2">No mods found</h3>
+                <h3 className="text-2xl font-sans mb-2">No mods found</h3>
                 <p className="text-app-secondary">
-                  {activeVersion
-                    ? `No mods installed for this Doom version.`
-                    : `No mods installed. Click "<a href="/install">INSTALL</a>" to add your first mod.`}
+                  {activeVersion ? (
+                    `No mods installed for this Doom version.`
+                  ) : (
+                    <>
+                      No mods installed. Click{' '}
+                      <Link href="/install" className="text-accent-highlight font-bold hover:underline">
+                        INSTALL
+                      </Link>{' '}
+                      to add your first mod.
+                    </>
+                  )}
                 </p>
               </div>
             ) : (
