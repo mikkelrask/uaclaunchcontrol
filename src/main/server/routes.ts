@@ -36,6 +36,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   })
 
   // === Move the mod file to the mod directory set in settings ===
+  app.get('/api/media', (req, res) => {
+    try {
+      const filePath = req.query.path as string
+      if (!filePath) {
+        return res.status(400).json({ error: 'Path is required' })
+      }
+      const resolved = storage.resolvePath(filePath)
+
+      if (!fs.existsSync(resolved)) {
+        console.warn(`[DEBUG] Media not found on disk: ${resolved}`)
+        return res.status(404).json({ error: 'File not found' })
+      }
+
+      const ext = path.extname(resolved).toLowerCase()
+      const mimeTypes: Record<string, string> = {
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp'
+      }
+
+      res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream')
+      return fs.createReadStream(resolved).pipe(res)
+    } catch (error: any) {
+      console.error('Error serving media:', error)
+      return res.status(500).json({ error: error.message })
+    }
+  })
+
   app.post('/api/move-file', async (req, res) => {
     console.log('POST /api/move-file received with body:', req.body)
     const { filePath, newPath } = req.body
@@ -318,6 +348,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { dialog, BrowserWindow } = await import('electron')
       const options = req.body || {}
+
+      if (options.defaultPath) {
+        console.log('[DEBUG] Dialog open: Raw defaultPath:', options.defaultPath)
+        options.defaultPath = storage.resolvePath(options.defaultPath)
+        console.log('[DEBUG] Dialog open: Resolved defaultPath:', options.defaultPath)
+      }
 
       // Get the focused window or the first window
       const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]

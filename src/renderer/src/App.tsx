@@ -1,8 +1,10 @@
+import { useEffect } from 'react'
 import { Switch, Route, Router } from 'wouter'
 import { useHashLocation } from 'wouter/use-hash-location'
 import { queryClient } from './lib/queryClient'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/toaster'
+import { useToast } from '@/hooks/use-toast'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 import GamesPage from '@/pages/GamesPage'
@@ -24,6 +26,37 @@ function AppRouter() {
 }
 
 function App() {
+  const { toast } = useToast()
+
+  useEffect(() => {
+    // Listen for version updates from the main process
+    if (window.api?.onVersionsUpdated) {
+      window.api.onVersionsUpdated((data) => {
+        console.log('[DEBUG] Versions updated, invalidating query...')
+        queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
+
+        // Show toasts if wads were added or removed
+        if (data?.added && data.added.length > 0) {
+          data.added.forEach((wad: any) => {
+            toast({
+              title: 'New WAD Found',
+              description: `Added "${wad.name}" to your library.`
+            })
+          })
+        }
+
+        if (data?.removed && data.removed.length > 0) {
+          data.removed.forEach((wad: any) => {
+            toast({
+              title: 'WAD Removed',
+              description: `Removed "${wad.name}" from your library.`
+            })
+          })
+        }
+      })
+    }
+  }, [toast])
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

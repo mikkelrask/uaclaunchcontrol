@@ -9,6 +9,8 @@ import hexen from './hexen.png'
 import hexdd from './hexdd.png'
 import heretic from './heretic.png'
 import strife from './strife1.png'
+import defaultIcon from './default.png'
+import { toFileUrl } from '@/lib/utils'
 
 interface DoomIconProps {
   className?: string
@@ -54,12 +56,36 @@ export const StrifeIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) =
   <img src={strife} alt="Strife Icon" title="Strife" className={className} />
 )
 
+export const DefaultWadIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
+  <img src={defaultIcon} alt="Default WAD Icon" title="Doom Launcher" className={className} />
+)
+
 interface DoomVersionIconProps {
   version: string
+  customIcon?: string
   className?: string
 }
 
-export const DoomVersionIcon: React.FC<DoomVersionIconProps> = ({ version, className }) => {
+export const DoomVersionIcon: React.FC<DoomVersionIconProps> = ({
+  version,
+  customIcon,
+  className
+}) => {
+  // Only treat as a custom file path if it contains slashes (is an absolute path)
+  const isCustomPath = customIcon && (customIcon.includes('/') || customIcon.includes('\\'))
+
+  if (isCustomPath) {
+    return (
+      <img
+        src={toFileUrl(customIcon!)}
+        className={className || 'w-8 h-8 object-contain'}
+        onError={(e) => {
+          e.currentTarget.style.display = 'none'
+        }}
+      />
+    )
+  }
+
   switch (version) {
     case 'doom':
       return <DoomIcon className={className} />
@@ -85,6 +111,6 @@ export const DoomVersionIcon: React.FC<DoomVersionIconProps> = ({ version, class
     case 'strife1':
       return <StrifeIcon className={className} />
     default:
-      return <DoomIcon className={className} />
+      return <DefaultWadIcon className={className} />
   }
 }

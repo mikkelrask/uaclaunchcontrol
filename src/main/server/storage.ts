@@ -2,10 +2,12 @@ import fs from 'fs-extra'
 import path from 'path'
 import os from 'os'
 import axios from 'axios'
+import chokidar from 'chokidar'
+import { BrowserWindow } from 'electron'
 import { IAppSettings, IDoomVersion, IMod, IModFile } from '../../shared/schema'
 
 // Define storage paths (Aligned with local-structure.txt)
-const CONFIG_DIR = path.join(os.homedir(), '.config', 'uaclaunchcontrol')
+const CONFIG_DIR = path.join(os.homedir(), '.config', 'uac')
 const DATA_DIR = path.join(CONFIG_DIR, 'data') // For extra data
 export const MODS_DIR = path.join(CONFIG_DIR, 'mods') // For mod {id}.json files
 const SETTINGS_FILE = path.join(CONFIG_DIR, 'settings.json') // Directly in CONFIG_DIR per local-structure.txt
@@ -17,10 +19,11 @@ export const IMAGES_DIR = path.join(CONFIG_DIR, 'images')
 const DEFAULT_SETTINGS: IAppSettings = {
   gzDoomPath: 'gzdoom', // Default to assuming gzdoom is in PATH
   theme: 'dark',
-  savegamesPath: '~/.config/uaclaunchcontrol/saves', // Add empty string defaults for optional properties
-  modsDirectory: '~/.config/uaclaunchcontrol/mods',
+  savegamesPath: '~/.config/uac/saves', // Add empty string defaults for optional properties
+  modsDirectory: '~/.config/uac/mods',
   screenshotsPath: '~/Pictures/UAC Launch Control/screenshots',
-  defaultSourcePort: 'uzdoom'
+  defaultSourcePort: 'uzdoom',
+  wadFilesDirectory: '~/.config/uac/wads'
 }
 
 // Default Doom Versions
@@ -117,8 +120,11 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
   }
 ]
 
+let isInitialized = false
 // Ensure config directories exist and create default files
 export function initStorage() {
+  if (isInitialized) return true
+  isInitialized = true
   try {
     fs.ensureDirSync(CONFIG_DIR)
     fs.ensureDirSync(DATA_DIR) // Ensure data directory exists
@@ -142,10 +148,16 @@ export function initStorage() {
       console.log(`Created default mod file catalog at ${MOD_FILE_CATALOG}`)
     }
 
+    // Sync Doom versions on startup
+    syncDoomVersions().then(() => {
+      startWadWatcher()
+    })
+
     console.log('Storage initialized successfully')
     return true
   } catch (error: any) {
     console.error('Failed to initialize storage:', error)
+    isInitialized = false // Reset on failure so it can try again
     return false
   }
 }
@@ -157,8 +169,22 @@ export async function getSettings(): Promise<IAppSettings> {
     console.log('[DEBUG] Reading settings from', SETTINGS_FILE)
     const settingsData = await fs.readJSON(SETTINGS_FILE)
     const settings: IAppSettings = { ...DEFAULT_SETTINGS, ...settingsData }
-    console.log('[DEBUG] Retrieved settings:', settings)
-    return settings
+    console.log('[DEBUG] Retrieved settings from file:', settings)
+
+    // Resolve tildes for all known path fields before sending to UI
+    const resolvedSettings: IAppSettings = {
+      ...settings,
+      gzDoomPath: settings.gzDoomPath ? resolvePath(settings.gzDoomPath) : settings.gzDoomPath,
+      savegamesPath: settings.savegamesPath ? resolvePath(settings.savegamesPath) : settings.savegamesPath,
+      modsDirectory: settings.modsDirectory ? resolvePath(settings.modsDirectory) : settings.modsDirectory,
+      screenshotsPath: settings.screenshotsPath ? resolvePath(settings.screenshotsPath) : settings.screenshotsPath,
+      wadFilesDirectory: settings.wadFilesDirectory
+        ? resolvePath(settings.wadFilesDirectory)
+        : settings.wadFilesDirectory
+    }
+
+    console.log('[DEBUG] Returning resolved settings to UI:', resolvedSettings)
+    return resolvedSettings
   } catch (error: any) {
     console.error('[DEBUG] Error getting settings:', error)
     return DEFAULT_SETTINGS
@@ -174,6 +200,15 @@ export async function saveSettings(settings: Partial<IAppSettings>): Promise<IAp
     console.log('[DEBUG] Saving settings to', SETTINGS_FILE, 'with data:', updatedSettings)
     await fs.writeJSON(SETTINGS_FILE, updatedSettings, { spaces: 2 })
     console.log('[DEBUG] Saved settings:', updatedSettings)
+
+    // If wadFilesDirectory changed, restart watcher
+    if (settings.wadFilesDirectory && settings.wadFilesDirectory !== currentSettings.wadFilesDirectory) {
+      console.log('[DEBUG] wadFilesDirectory changed, restarting watcher...')
+      stopWadWatcher()
+      await syncDoomVersions()
+      startWadWatcher()
+    }
+
     return updatedSettings
   } catch (error: any) {
     console.error('[DEBUG] Error saving settings:', error)
@@ -192,116 +227,192 @@ function generateStableId(baseName: string): string {
 }
 
 // === Doom Versions ===
-// Get all Doom versions (expects direct array in JSON)
+// Get all Doom versions
 export async function getDoomVersions(): Promise<IDoomVersion[]> {
   try {
     initStorage() // Ensure file exists
-    let versions: IDoomVersion[] = await fs.readJSON(DOOM_VERSIONS_FILE)
-
-    // Check if wadFilesDirectory is set in settings
-    const settings = await getSettings()
-    const wadDir = settings.wadFilesDirectory
-    const executable = settings.gzDoomPath || 'gzdoom'
-
-    // Check if versions already have full paths (saved previously)
-    const hasFullPaths = versions.some(
-      (v) => v.defaultIwad && (v.defaultIwad.includes('/') || v.defaultIwad.includes('\\'))
-    )
-    console.log(
-      '[DEBUG] getDoomVersions: hasFullPaths =',
-      hasFullPaths,
-      ', wadDir =',
-      wadDir,
-      ', versions count =',
-      versions.length
-    )
-    if (versions.length > 0) {
-      console.log('[DEBUG] First version defaultIwad:', versions[0].defaultIwad)
+    if (!fs.existsSync(DOOM_VERSIONS_FILE)) {
+      await syncDoomVersions()
     }
-
-    // If wads directory is set and we don't have full paths yet, compute them and save
-    if (wadDir && !hasFullPaths) {
-      const resolvedWadDir = resolvePath(wadDir)
-
-      // Check if directory exists
-      if (fs.existsSync(resolvedWadDir)) {
-        // Get list of .wad files in the directory
-        const files = await fs.readdir(resolvedWadDir)
-        const wadFiles = files.filter((f) => f.toLowerCase().endsWith('.wad'))
-
-        // Create a map of lowercase wad names to full paths
-        const wadFileMap = new Map<string, string>()
-        for (const wadFile of wadFiles) {
-          wadFileMap.set(wadFile.toLowerCase(), path.join(resolvedWadDir, wadFile))
-        }
-
-        // Update versions with full paths if wads exist, filter out missing ones
-        // Preserve original IDs from defaults
-        const idMap: Record<string, string> = {
-          'doom.wad': '1',
-          'doom2.wad': '2',
-          'tnt.wad': '3',
-          'plutonia.wad': '4',
-          'freedoom1.wad': '5',
-          'freedoom2.wad': '6'
-        }
-
-        const updatedVersions: IDoomVersion[] = []
-        for (const version of versions) {
-          if (version.defaultIwad) {
-            const lowerWadName = version.defaultIwad.toLowerCase()
-            if (wadFileMap.has(lowerWadName)) {
-              const fullPath = wadFileMap.get(lowerWadName)!
-              // Use full path with escaped spaces, preserve original ID
-              updatedVersions.push({
-                ...version,
-                id: idMap[lowerWadName] || version.id, // Preserve original ID
-                args: `-iwad ${escapePathForCmd(fullPath)}`,
-                defaultIwad: fullPath
-              })
-            }
-            // Skip versions whose wads aren't found
-          } else {
-            updatedVersions.push(version)
-          }
-        }
-
-        // Add any additional wads not in the defaults
-        for (const [wadName, wadPath] of wadFileMap) {
-          // Check if this wad is already in updatedVersions
-          const isAlreadyAdded = updatedVersions.some((v) => {
-            const vPath = v.defaultIwad?.toLowerCase()
-            return vPath === wadPath.toLowerCase() || vPath === wadName
-          })
-
-          if (!isAlreadyAdded) {
-            const baseName = wadName.replace('.wad', '')
-            updatedVersions.push({
-              id: generateStableId(baseName),
-              name: baseName,
-              slug: baseName.toLowerCase(),
-              args: `-iwad ${escapePathForCmd(wadPath)}`,
-              icon: '',
-              executable: executable,
-              parameters: '',
-              defaultIwad: wadPath
-            })
-          }
-        }
-
-        // Save the computed versions back to file
-        await fs.writeJSON(DOOM_VERSIONS_FILE, updatedVersions, { spaces: 2 })
-        console.log('[DEBUG] Saved doom versions with full paths to', DOOM_VERSIONS_FILE)
-
-        return updatedVersions
-      }
-    }
-
-    // Return versions as-is (either no wads directory, or already has full paths)
-    return versions
+    const versions: IDoomVersion[] = await fs.readJSON(DOOM_VERSIONS_FILE)
+    // Resolve tildes before sending to renderer
+    const resolved = versions.map((v) => ({
+      ...v,
+      icon: v.icon ? resolvePath(v.icon) : v.icon,
+      defaultIwad: v.defaultIwad ? resolvePath(v.defaultIwad) : v.defaultIwad
+    }))
+    console.log('[DEBUG] getDoomVersions: Returning resolved versions:', resolved.length)
+    return resolved
   } catch (error: any) {
     console.error('Error getting Doom versions:', error)
     return [] // Return empty array on error
+  }
+}
+
+let wadWatcher: any = null
+
+export function stopWadWatcher() {
+  if (wadWatcher) {
+    wadWatcher.close()
+    wadWatcher = null
+  }
+}
+
+export function startWadWatcher() {
+  console.log('[DEBUG] DEBUG: startWadWatcher called')
+  if (wadWatcher) {
+    console.log('[DEBUG] DEBUG: Watcher already exists, skipping')
+    return
+  }
+
+  getSettings().then((settings) => {
+    const rawDir = settings.wadFilesDirectory || path.join(CONFIG_DIR, 'wads')
+    const wadDir = resolvePath(rawDir)
+    console.log(`[DEBUG] DEBUG: Watcher starting for directory: ${wadDir} (from raw: ${rawDir})`)
+
+    try {
+      fs.ensureDirSync(wadDir)
+    } catch (e) {
+      console.error(`[DEBUG] DEBUG: Failed to ensure directory ${wadDir}:`, e)
+      return
+    }
+
+    wadWatcher = chokidar.watch(wadDir, {
+      persistent: true,
+      ignoreInitial: false,
+      usePolling: true,
+      interval: 100
+    })
+
+    wadWatcher.on('all', (event, filePath) => {
+      if (filePath.toLowerCase().endsWith('.wad')) {
+        console.log(`[DEBUG] WAD change detected (${event}): ${filePath}. Syncing...`)
+        syncDoomVersions({ notifyDelta: true })
+      }
+    })
+
+    wadWatcher.on('error', (error) => {
+      console.error(`[DEBUG] Chokidar watcher error:`, error)
+    })
+
+    console.log(`[DEBUG] Started WAD watcher on ${wadDir}`)
+  }).catch(err => {
+    console.error('[DEBUG] Error starting WAD watcher:', err)
+  })
+}
+
+// Sync Doom versions by scanning the WAD directory
+export async function syncDoomVersions(options: { notifyDelta?: boolean } = {}): Promise<IDoomVersion[]> {
+  try {
+    initStorage()
+    console.log('[DEBUG] syncDoomVersions starting...')
+    const settings = await getSettings()
+    const wadDir = resolvePath(settings.wadFilesDirectory || path.join(CONFIG_DIR, 'wads'))
+
+    // Load existing versions to detect changes
+    const oldVersions: IDoomVersion[] = await fs.readJSON(DOOM_VERSIONS_FILE).catch(() => [])
+    const executable = settings.gzDoomPath || 'gzdoom'
+
+    await fs.ensureDir(wadDir)
+    const files = await fs.readdir(wadDir)
+    const wadFiles = files.filter((f) => f.toLowerCase().endsWith('.wad'))
+
+    // Create a map of lowercase wad names to full paths
+    const wadFileMap = new Map<string, string>()
+    for (const wadFile of wadFiles) {
+      wadFileMap.set(wadFile.toLowerCase(), path.join(wadDir, wadFile))
+    }
+
+    const updatedVersions: IDoomVersion[] = []
+
+    // 1. Check default versions
+    for (const def of DEFAULT_DOOM_VERSIONS) {
+      const lowerWadName = def.defaultIwad.toLowerCase()
+      if (wadFileMap.has(lowerWadName)) {
+        const fullPath = wadFileMap.get(lowerWadName)!
+        // Find existing to preserve custom settings like name/icon overrides if any
+        // Note: traditionally defaults use their own defaults, but we should check
+        const existing = oldVersions.find((v) => v.id === def.id)
+
+        if (existing) {
+          updatedVersions.push({
+            ...existing,
+            defaultIwad: fullPath, // Update actual path
+            args: existing.args.includes('-iwad')
+              ? existing.args.replace(/-iwad\s+\"[^\"]+\"|-iwad\s+[^\s]+/, `-iwad ${escapePathForCmd(fullPath)}`)
+              : `-iwad ${escapePathForCmd(fullPath)} ${existing.args}`.trim()
+          })
+        } else {
+          updatedVersions.push({
+            ...def,
+            args: `-iwad ${escapePathForCmd(fullPath)}`,
+            defaultIwad: fullPath
+          })
+        }
+        wadFileMap.delete(lowerWadName) // Mark as handled
+      }
+    }
+
+    // 2. Add remaining WADs from disk
+    for (const [wadName, wadPath] of wadFileMap) {
+      const baseName = wadName.replace(/\.wad$/i, '')
+      const id = generateStableId(baseName)
+
+      // Check if this wad was already in the list
+      const existing = oldVersions.find((v) => v.id === id || v.defaultIwad === wadPath)
+
+      if (existing) {
+        updatedVersions.push({
+          ...existing,
+          defaultIwad: wadPath
+        })
+      } else {
+        updatedVersions.push({
+          id,
+          name: baseName,
+          slug: baseName.toLowerCase(),
+          args: `-iwad ${escapePathForCmd(wadPath)}`,
+          icon: '',
+          executable: executable,
+          parameters: '',
+          defaultIwad: wadPath
+        })
+      }
+    }
+
+    await fs.writeJSON(DOOM_VERSIONS_FILE, updatedVersions, { spaces: 2 })
+    console.log(`[DEBUG] syncDoomVersions: Synced ${updatedVersions.length} versions to ${DOOM_VERSIONS_FILE}`)
+
+    // Prepare resolved versions for the UI
+    const resolvedVersions = updatedVersions.map((v) => ({
+      ...v,
+      icon: v.icon ? resolvePath(v.icon) : v.icon,
+      defaultIwad: v.defaultIwad ? resolvePath(v.defaultIwad) : v.defaultIwad
+    }))
+
+    // Calculate changes if notification is requested
+    let delta = {}
+    if (options.notifyDelta) {
+      const oldIds = new Set(oldVersions.map((v) => v.id))
+      const newIds = new Set(resolvedVersions.map((v) => v.id))
+      const added = resolvedVersions.filter((v) => !oldIds.has(v.id))
+      const removed = oldVersions.map(v => ({
+        ...v,
+        icon: v.icon ? resolvePath(v.icon) : v.icon,
+        defaultIwad: v.defaultIwad ? resolvePath(v.defaultIwad) : v.defaultIwad
+      })).filter((v) => !newIds.has(v.id))
+      delta = { added, removed }
+    }
+
+    // Notify all windows that versions have been updated
+    BrowserWindow.getAllWindows().forEach((win) => {
+      win.webContents.send('doom-versions-updated', delta)
+    })
+
+    return resolvedVersions
+  } catch (error: any) {
+    console.error('Error syncing Doom versions:', error)
+    return []
   }
 }
 
@@ -322,6 +433,11 @@ export async function saveDoomVersions(versions: IDoomVersion[]): Promise<void> 
     initStorage() // Ensure file exists
     await fs.writeJSON(DOOM_VERSIONS_FILE, versions, { spaces: 2 })
     console.log('[DEBUG] Saved doom versions to', DOOM_VERSIONS_FILE)
+
+    // Notify all windows that versions have been updated
+    BrowserWindow.getAllWindows().forEach((win) => {
+      win.webContents.send('doom-versions-updated')
+    })
   } catch (error: any) {
     console.error('Error saving Doom versions:', error)
     throw new Error(`Failed to save Doom versions: ${error.message}`)
@@ -379,8 +495,8 @@ export async function moveFile(filePath: string, newPath: string): Promise<strin
     // Use copy then potentially delete (or just copy for now as per original code)
     await fs.copy(resolvedSource, resolvedDest)
 
-    console.log('Moved file ..')
-    return newPath
+    console.log('Moved file to', resolvedDest)
+    return resolvedDest
   } catch (error: any) {
     console.error('Error moving file:', error)
     throw new Error(`Failed to move file: ${error.message}`)
@@ -417,7 +533,7 @@ export async function downloadImage(url: string, modId: string): Promise<string>
     await fs.ensureDir(modsDir)
 
     const response = await axios.get(url, { responseType: 'arraybuffer' })
-    
+
     // Better extension detection from Content-Type or URL
     const contentType = response.headers['content-type']
     let extension = ''
@@ -428,7 +544,7 @@ export async function downloadImage(url: string, modId: string): Promise<string>
     else {
       extension = path.extname(new URL(url).pathname) || '.jpg'
     }
-    
+
     if (extension.length > 5) extension = '.jpg'
 
     const fileName = `${modId}-poster${extension}`

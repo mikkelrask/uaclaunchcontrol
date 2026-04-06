@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeVersion, onVersionSelect
               className={`sidebar-icon ${activeVersion === version.id ? 'active' : ''}`}
               onClick={() => onVersionSelect(version.id)}
             >
-              <DoomVersionIcon version={version.slug} />
+              <DoomVersionIcon version={version.slug} customIcon={version.icon} />
               <span className="sr-only">{version.name}</span>
             </div>
           ))

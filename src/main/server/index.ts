@@ -97,6 +97,9 @@ export async function startServer() {
   console.log('Starting Production Server...')
   console.log('Current working directory:', process.cwd())
 
+  // Ensure storage is initialized and watcher starts
+  storage.initStorage()
+
   const server = await registerRoutes(expressApp)
 
   expressApp.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

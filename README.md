@@ -15,12 +15,15 @@ No more having to remember the launch order of your mods, or making `.bat` launc
 
 UAC Launch Control stores your mod-files in a locally stored catalogue, making it easy to mix-and-match different mods, to create your own custom "mod-pack" or "remix".
 
-### Key Features
+#### Key Features
 
 - 🎮 **Mod Management**: Organize and launch Doom mods with ease
 - 📁 **File Catalog**: Maintain a catalog of mod files (WADs, PK3s, DEH patches)
 - ⚙️ **Custom Launch Parameters**: Configure launch arguments per mod
-- 🎯 **"Bring your own Source port"**: UZDoom, GZDoom, Zandronum, and more to come
+- 🎯 **"Bring your own Source port"**: UZDoom, GZDoom, Zandronum, and more
+- 🔄 **Real-time WAD Sync**: Automatically discovers WAD files in your wads directory and keeps them in sync with the UI
+- 🖼️ **Custom Icons**: Support for custom PNG/JPG icons for every WAD version
+- 🏠 **Tilde Support**: Full support for `~` in all configuration paths for better portability
 
 ## Architecture
 
@@ -30,44 +33,43 @@ UAC Launch Control stores your mod-files in a locally stored catalogue, making i
 - **Backend**: Express.js API server
 - **Desktop**: Electron (main + renderer processes)
 - **Build Tool**: electron-vite
+- **File Watching**: Chokidar for real-time filesystem synchronization
 - **State Management**: TanStack Query (React Query)
 - **UI Components**: Radix UI + shadcn/ui
 
 ### Application Structure
 
 ```
-uaclaunchcontrol-electron/
+uaclaunchcontrol/
 ├── src/
-│   ├── main/           # Electron main process
-│   │   ├── index.ts    # Main entry point
-│   │   └── server/     # Express API server
-│   │       ├── index.ts
-│   │       ├── routes.ts
-│   │       ├── storage.ts
-│   │       └── services/
-│   ├── preload/        # Electron preload scripts
-│   ├── renderer/       # React frontend
-│   │   └── src/
-│   │       ├── components/
-│   │       ├── pages/
-│   │       ├── lib/
-│   │       └── api.ts
-│   └── shared/         # Shared TypeScript types
-│       └── schema.ts
-├── resources/          # App icons and assets
-└── out/               # Build output
+├── main/           # Electron main process
+│   ├── index.ts    # Main entry point
+│   └── server/     # Express API server
+│       ├── index.ts
+│       ├── routes.ts
+│       ├── storage.ts    # Core storage and sync logic
+│       └── services/
+├── preload/        # Electron preload scripts
+├── renderer/       # React frontend
+│   └── src/
+│       ├── components/
+│       ├── pages/
+│       ├── lib/
+│       └── api.ts
+└── shared/         # Shared TypeScript types
+    └── schema.ts
 ```
 
 ### Data Flow
 
 1. **Electron Main Process** starts and initializes the Express API server on port `7666`
 2. **Express Server** manages:
-   - Settings (`~/.config/mrdoom/settings.json`)
-   - Doom versions (`~/.config/mrdoom/doomVersions.json`)
-   - Mod files (`~/.config/mrdoom/mods/*.json`)
-   - File catalog (`~/.config/mrdoom/modFileCatalogue.json`)
+   - Settings (`~/.config/uac/settings.json`)
+   - Doom versions (`~/.config/uac/doomVersions.json`)
+   - Mod files (`~/.config/uac/mods/*.json`)
+   - File catalog (`~/.config/uac/modFileCatalogue.json`)
 3. **Renderer Process** (React app) communicates with the API server via HTTP
-4. **CORS enabled** to allow renderer (localhost:5173 in dev) to communicate with API (localhost:7666)
+4. **Media Proxy**: Local images are served via `/api/media` to bypass Electron's `file://` security restrictions
 
 ## Getting Started
 
@@ -77,12 +79,14 @@ uaclaunchcontrol-electron/
 - pnpm, npm or yarn
 - UZDoom (or similar source port) installed on your system
 
+```bash
 # Clone the repository
 git clone https://github.com/mikkelrask/uaclaunchcontrol.git
 cd uaclaunchcontrol
 
 # Install dependencies
 pnpm install
+```
 
 ### Development
 
@@ -94,14 +98,15 @@ pnpm dev
 This will:
 - Start the Vite dev server for the renderer (port 5173)
 - Start the Electron app with the Express API server (port 7666)
-- Enable hot module replacement for the frontend
+- Start a file watcher on your WADs directory for real-time sync
 
+```bash
 # Build for your current platform
-```
 pnpm build
 ```
-# Platform-specific builds
-```
+
+### Platform-specific builds
+```bash
 pnpm build:win    # Windows
 pnpm build:mac    # macOS
 pnpm build:linux  # Linux
@@ -109,13 +114,13 @@ pnpm build:linux  # Linux
 Built applications will be in the `dist/` directory.
 
 ## Configuration
-Done via the application settings via the cog icon in the top right corner, but everything is also stored in plain text json files, so you can edit them manually if you want to.
+Done via the application settings via the cog icon in the top right corner, but everything is also stored in plain text json files, so you can edit them manually if you want to. All paths support tilde (`~`) expansion.
 
 ### Storage Location
 
-All application data is stored in `~/.config/mrdoom/`:
+All application data is stored in `~/.config/uac/`:
 ```
-~/.config/mrdoom/
+~/.config/uac/
 ├── settings.json           # App settings (paths, preferences)
 ├── doomVersions.json       # Configured Doom versions
 ├── modFileCatalogue.json   # Catalog of available mod files
@@ -131,11 +136,11 @@ All application data is stored in `~/.config/mrdoom/`:
 ```json
 {
   "gzDoomPath": "gzdoom",
-  "theme": "light",
-  "savegamesPath": "~/.config/gzdoom/saves",
-  "modsDirectory": "~/.config/mrdoom/mods",
-  "screenshotsPath": "~/Pictures/MRDoom/screenshots",
-  "defaultSourcePort": "GZDoom"
+  "theme": "dark",
+  "savegamesPath": "~/.config/uac/saves",
+  "modsDirectory": "~/.config/uac/mods",
+  "screenshotsPath": "~/Pictures/uac/screenshots",
+  "wadFilesDirectory": "~/.config/uac/wads"
 }
 ```
 
@@ -143,20 +148,21 @@ All application data is stored in `~/.config/mrdoom/`:
 
 The Express server exposes the following REST API:
 
-- `GET /api/versions` - List all Doom versions
+- `GET /api/versions` - List all resolved Doom versions
 - `GET /api/versions/:slug` - Get specific Doom version
 - `GET /api/mods` - List all mods
 - `GET /api/mods/:id` - Get specific mod with files
 - `POST /api/mods` - Create new mod
 - `PUT /api/mods/:id` - Update mod
 - `DELETE /api/mods/:id` - Delete mod
-- `GET /api/settings` - Get application settings
+- `GET /api/settings` - Get expanded application settings
 - `PUT /api/settings` - Update settings
 - `GET /api/mod-files/catalog` - Get mod file catalog
 - `POST /api/mod-files/catalog` - Add file to catalog
-- `POST /api/dialog/open` - Open native file/directory picker
-- `POST /api/move-file` - Move file to mods directory
+- `POST /api/dialog/open` - Open native picker (supports tildes)
+- `POST /api/move-file` - Move file and return absolute path
 - `POST /api/launch/:modId` - Launch a mod
+- `GET /api/media?path=...` - Safe media proxy for rendering local files
 
 ## Development Notes
 

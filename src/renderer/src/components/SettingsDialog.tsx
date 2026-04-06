@@ -14,24 +14,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import type { IDoomVersion } from '@shared/schema'
+import { DoomVersionIcon } from '@/icons/DoomIcons'
 
 interface SettingsDialogProps {
   isOpen: boolean
   onClose: () => void
 }
 
-// Convert local file path to proper file:// URL
-const toFileUrl = (filePath: string): string => {
-  if (!filePath) return ''
-  // Handle Windows paths with backslashes
-  const normalized = filePath.replace(/\\/g, '/')
-  // Encode spaces and special characters
-  const encoded = normalized
-    .split('/')
-    .map((p) => encodeURIComponent(p))
-    .join('/')
-  return `file:///${encoded}`
-}
+// remove local toFileUrl as it's now in utils
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast()
@@ -330,22 +320,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     className="bg-app-primary border border-app rounded-md p-3 space-y-2"
                   >
                     <div className="flex items-center gap-2">
-                      {version.icon ? (
-                        <div className="relative w-8 h-8">
-                          <img
-                            src={toFileUrl(version.icon)}
-                            alt={version.name}
-                            className="w-8 h-8 object-contain bg-app-secondary rounded"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none'
-                            }}
-                          />
+                       <div className="w-8 h-8 rounded shrink-0">
+                          <DoomVersionIcon version={version.slug} customIcon={version.icon} />
                         </div>
-                      ) : (
-                        <div className="w-8 h-8 bg-app-secondary rounded flex items-center justify-center text-xs text-app-secondary">
-                          No img
-                        </div>
-                      )}
                       <div className="flex-1">
                         <Label className="text-xs text-app-secondary">Name</Label>
                         <Input
