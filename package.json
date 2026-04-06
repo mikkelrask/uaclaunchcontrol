@@ -1,6 +1,6 @@
 {
   "name": "uac-launch-control",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Modded Rip and Tear on Easy mode",
   "main": "./out/main/index.js",
   "author": "Mikkel Rask <mikkelrask@protonmail.com>",
