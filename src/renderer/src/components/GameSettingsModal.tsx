@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast'
 import ModFileList from './ModFileList'
 import LaunchOptions from './LaunchOptions'
 import { slugify } from '@/lib/utils'
+import placeholder from '@renderer/assets/placeholder.png'
 
 interface GameSettingsModalProps {
   modId: string | null
@@ -199,8 +200,11 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
               <div className="mb-4">
                 <img
                   src={
-                    mod?.screenshotPath ||
-                    'https://images.unsplash.com/photo-1634898010511-df5fe04d2252?auto=format&fit=crop&w=800&h=300&q=80'
+                    mod?.screenshotPath
+                      ? (mod.screenshotPath.startsWith('http') || mod.screenshotPath.includes('/') || mod.screenshotPath.includes('\\'))
+                        ? mod.screenshotPath
+                        : `http://localhost:7666/images/${mod.screenshotPath}`
+                      : placeholder
                   }
                   alt={mod?.title}
                   className="w-full h-64 object-cover rounded"

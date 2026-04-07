@@ -290,7 +290,7 @@ export const InstallPage: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-4">
           <Card className="bg-app-secondary border-app mb-6">
             <CardHeader>
-              <CardTitle>Install New Mod</CardTitle>
+              <CardTitle>Set Launch Parameters</CardTitle>
             </CardHeader>
             <CardContent>
               <Form {...form}>
