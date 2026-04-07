@@ -109,7 +109,7 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
       field === 'name'
         ? newValue
         : updatedFile.name ||
-          (updatedFile.filePath ? updatedFile.filePath.split(/[\\/]/).pop() : '')
+        (updatedFile.filePath ? updatedFile.filePath.split(/[\\/]/).pop() : '')
 
     // Auto-detect file type if filePath changes
     if (field === 'filePath') {
@@ -235,108 +235,117 @@ export function ModFileSelector({ value = [], onChange }: ModFileSelectorProps) 
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Mod Files</h2>
-        <Button
-          size="sm"
-          variant={'outline'}
-          onClick={handleAddFile}
-          className="border-app"
-          type="button"
-        >
-          <PlusIcon className="h-4 w-4 mr-1" />
-          Add file
-        </Button>
+      <div className="flex items-center mb-4 mt-4">
+        <div className="flex flex-col w-full">
+          <h2 className="text-lg font-semibold">Mod Files</h2>
+          <p className="text-sm text-app-secondary mb-4">
+            Add the mod files in the order they should be loaded.
+          </p>
+        </div>
+        <div className="flex justify-end w-full">
+          <Button
+            size="sm"
+            variant={'default'}
+            onClick={handleAddFile}
+            className="border-app"
+            type="button"
+          >
+            <PlusIcon className="h-4 w-4 mr-1" />
+            Add file
+          </Button>
+        </div>
       </div>
 
-      {value.length === 0 ? (
-        <div className="text-center text-gray-400 py-4">
-          No mod files added. Click "Add File" to begin.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {value.map((file, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <div className="flex-1">
-                <Input
-                  placeholder="Pretty name"
-                  value={file.name || ''}
-                  onChange={(e) => handleUpdateFile(index, 'name', e.target.value)}
-                  className="bg-app-primary border-app"
-                />
-              </div>
+      {
+        value.length === 0 ? (
+          <div className="text-center text-gray-400 py-4">
+            No mod files added. Click "Add File" to begin.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {value.map((file, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Pretty name"
+                    value={file.name || ''}
+                    onChange={(e) => handleUpdateFile(index, 'name', e.target.value)}
+                    className="bg-app-primary border-app"
+                  />
+                </div>
 
-              <div className="w-24">
-                <Select
-                  value={file.fileType}
-                  onValueChange={(value) => handleUpdateFile(index, 'fileType', value)}
-                >
-                  <SelectTrigger className="bg-app-primary border-app">
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-app-secondary border-app">
-                    <SelectItem value="WAD">WAD</SelectItem>
-                    <SelectItem value="PK3">PK3</SelectItem>
-                    <SelectItem value="DEH">DEH</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="w-24">
+                  <Select
+                    value={file.fileType}
+                    onValueChange={(value) => handleUpdateFile(index, 'fileType', value)}
+                  >
+                    <SelectTrigger className="bg-app-primary border-app">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-app-secondary border-app">
+                      <SelectItem value="WAD">WAD</SelectItem>
+                      <SelectItem value="PK3">PK3</SelectItem>
+                      <SelectItem value="DEH">DEH</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="flex-1 flex gap-1">
-                <Input
-                  placeholder="File path"
-                  value={file.filePath || ''}
-                  onChange={(e) => handleUpdateFile(index, 'filePath', e.target.value)}
-                  className="bg-app-primary border-app flex-1"
-                />
+                <div className="flex-1 flex gap-1">
+                  <Input
+                    placeholder="File path"
+                    value={file.filePath || ''}
+                    onChange={(e) => handleUpdateFile(index, 'filePath', e.target.value)}
+                    className="bg-app-primary border-app flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => handleBrowseFile(index)}
+                    className="border-app"
+                    type="button"
+                  >
+                    <FolderOpenIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="w-24">
+                  <Select
+                    onValueChange={(value) => handleSelectCatalogFile(index, parseInt(value, 10))}
+                  >
+                    <SelectTrigger className="bg-app-primary border-app">
+                      <SelectValue placeholder="Catalog" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-app-secondary border-app max-h-[300px]">
+                      {Array.isArray(catalogFiles) && catalogFiles.length === 0 ? (
+                        <SelectItem value="none" disabled>
+                          No catalog files
+                        </SelectItem>
+                      ) : (
+                        Array.isArray(catalogFiles) &&
+                        catalogFiles.map((catalogFile) => (
+                          <SelectItem key={catalogFile.id} value={catalogFile.id.toString()}>
+                            {catalogFile.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Remove manual order input as requested, handled by InstallPage list order */}
+
                 <Button
-                  variant="outline"
-                  onClick={() => handleBrowseFile(index)}
-                  className="border-app"
+                  variant="ghost"
+                  onClick={() => handleRemoveFile(index)}
+                  className="text-red-500 hover:text-red-700 hover:bg-transparent"
                   type="button"
                 >
-                  <FolderOpenIcon className="h-4 w-4" />
+                  <TrashIcon className="h-4 w-4" />
                 </Button>
               </div>
-
-              <div className="w-24">
-                <Select
-                  onValueChange={(value) => handleSelectCatalogFile(index, parseInt(value, 10))}
-                >
-                  <SelectTrigger className="bg-app-primary border-app">
-                    <SelectValue placeholder="Catalog" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-app-secondary border-app max-h-[300px]">
-                    {Array.isArray(catalogFiles) && catalogFiles.length === 0 ? (
-                      <SelectItem value="none" disabled>
-                        No catalog files
-                      </SelectItem>
-                    ) : (
-                      Array.isArray(catalogFiles) &&
-                      catalogFiles.map((catalogFile) => (
-                        <SelectItem key={catalogFile.id} value={catalogFile.id.toString()}>
-                          {catalogFile.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Remove manual order input as requested, handled by InstallPage list order */}
-
-              <Button
-                variant="ghost"
-                onClick={() => handleRemoveFile(index)}
-                className="text-red-500 hover:text-red-700 hover:bg-transparent"
-                type="button"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        )
+      }
+    </div >
   )
 }

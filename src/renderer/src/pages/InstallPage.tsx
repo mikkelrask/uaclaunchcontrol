@@ -54,6 +54,7 @@ export const InstallPage: React.FC = () => {
   // const [searchQuery] = useState('');
   const [files, setFiles] = useState<IModFile[]>([])
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [insertionIndex, setInsertionIndex] = useState<number | null>(null)
   // const [currentFilePath, setCurrentFilePath] = useState<string>('');
 
   // Fetch doom versions
@@ -217,37 +218,66 @@ export const InstallPage: React.FC = () => {
 
   // Native Drag and Drop handlers
   const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index)
     e.dataTransfer.effectAllowed = 'move'
-    // Still set data for compatibility
     e.dataTransfer.setData('text/plain', index.toString())
+
+    // Wait a tick before hiding the source element so the browser 
+    // captures the original element's style for the drag ghost.
+    setTimeout(() => {
+      setDraggedIndex(index)
+    }, 0)
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent<HTMLElement>) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
+
+    const listElement = e.currentTarget
+
+    // Get all items to calculate where we are
+    const itemElements = Array.from(listElement.querySelectorAll('[data-drag-index]'))
+    if (itemElements.length === 0) {
+      setInsertionIndex(0)
+      return
+    }
+
+    let foundIndex = files.length
+    for (let i = 0; i < itemElements.length; i++) {
+      const itemRect = itemElements[i].getBoundingClientRect()
+      const itemMid = itemRect.top + itemRect.height / 2
+      if (e.clientY < itemMid) {
+        foundIndex = i
+        break
+      }
+    }
+
+    if (insertionIndex !== foundIndex) {
+      setInsertionIndex(foundIndex)
+    }
   }
 
-  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
-    if (draggedIndex === null || draggedIndex === targetIndex) {
-      setDraggedIndex(null)
+    if (draggedIndex === null || insertionIndex === null) {
+      handleDragEnd()
       return
     }
 
     const newFiles = [...files]
     const [draggedItem] = newFiles.splice(draggedIndex, 1)
-    newFiles.splice(targetIndex, 0, draggedItem)
 
-    // Update load orders based on new positions explicitly
-    const updatedFiles = newFiles.map((file, idx) => ({
-      ...file,
-      loadOrder: idx
-    }))
+    // If inserting after the original position, the index shifts by -1 after splice
+    const target = insertionIndex > draggedIndex ? insertionIndex - 1 : insertionIndex
+    newFiles.splice(target, 0, draggedItem)
 
-    console.log('[DEBUG] Files reordered via DnD:', updatedFiles)
+    const updatedFiles = newFiles.map((file, idx) => ({ ...file, loadOrder: idx }))
     setFiles(updatedFiles)
+    handleDragEnd()
+  }
+
+  const handleDragEnd = () => {
     setDraggedIndex(null)
+    setInsertionIndex(null)
   }
 
   return (
@@ -430,52 +460,64 @@ export const InstallPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-sans mb-2">Mod Files</h3>
-                    <p className="text-sm text-app-secondary mb-2">
-                      Add the mod files in the order they should be loaded.
-                    </p>
                     <div className="mb-4">
                       <ModFileSelector value={files} onChange={handleFilesChange} />
                     </div>
 
                     {files.length > 0 && (
                       <div className="mb-4 border border-app rounded-md p-2">
-                        <h4 className="font-sans text-sm mb-2">Selected Files:</h4>
-                        <ul className="space-y-2">
-                          {files.map((file, index) => (
-                            <li
-                              key={`${file.id}-${index}`}
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, index)}
-                              onDragOver={handleDragOver}
-                              onDrop={(e) => handleDrop(e, index)}
-                              onDragEnd={() => setDraggedIndex(null)}
-                              onDragEnter={(e) => e.preventDefault()}
-                              className={`flex items-center justify-between bg-app-primary p-2 rounded cursor-move transition-all duration-200 border border-transparent hover:border-accent-highlight/30 group select-none ${draggedIndex === index ? 'opacity-40 scale-95' : ''}`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="text-app-muted text-xs font-semibold font-mono w-4">
-                                  {index + 1}
-                                </div>
-                                <div>
-                                  <span className="text-sm font-medium">{file.name || file.fileName}</span>
-                                  <span className="text-xs text-app-muted ml-2">
-                                    ({file.fileType})
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => removeFile(index)}
+                        <h4 className="font-sans text-xs mb-3 text-app-muted font-bold tracking-widest uppercase">Load Order</h4>
+                        <ul
+                          className="space-y-2"
+                          onDragOver={handleDragOver}
+                          onDrop={handleDrop}
+                        >
+                          {files.map((file, index) => {
+                            const isDragged = draggedIndex === index
+                            const showPlaceholderBefore = insertionIndex === index && draggedIndex !== index
+
+                            return (
+                              <React.Fragment key={`${file.id}-${index}`}>
+                                {showPlaceholderBefore && (
+                                  <li className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+                                    <span className="text-accent-highlight font-sans text-sm tracking-widest uppercase opacity-60">
+                                      new placement
+                                    </span>
+                                  </li>
+                                )}
+
+                                <li
+                                  draggable
+                                  data-drag-index={index}
+                                  onDragStart={(e) => handleDragStart(e, index)}
+                                  onDragEnd={handleDragEnd}
+                                  className={`flex items-center justify-between bg-app-primary p-2 rounded cursor-grab active:cursor-grabbing transition-all duration-150 border select-none ${isDragged
+                                    ? 'hidden'
+                                    : 'border-transparent hover:border-accent-highlight/30 group'
+                                    }`}
                                 >
-                                  Remove
-                                </Button>
-                              </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-app-muted text-xs font-semibold font-mono w-4">
+                                      {index + 1}
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-sm font-medium">{file.name || file.fileName}</span>
+                                      <span className="text-xs text-app-muted">({file.fileType})</span>
+                                    </div>
+                                  </div>
+                                </li>
+                              </React.Fragment>
+                            )
+                          })}
+
+                          {/* Final placeholder if dragging to end */}
+                          {insertionIndex === files.length && draggedIndex !== files.length - 1 && (
+                            <li className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+                              <span className="text-sm text-accent-highlight font-sans tracking-widest uppercase opacity-60">
+                                new placement
+                              </span>
                             </li>
-                          ))}
+                          )}
                         </ul>
                       </div>
                     )}
