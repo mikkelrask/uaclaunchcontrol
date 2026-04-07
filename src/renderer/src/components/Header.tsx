@@ -41,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex space-x-12 text-xl font-sans">
+      <nav className="flex space-x-12 text-xl font-bold font-sans">
         <Link href="/">
           <span className={`nav-tab ${location === '/' ? 'active' : ''} cursor-pointer`}>
             GAMES
@@ -68,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
           <div className="w-8 h-8 rounded bg-accent-highlight flex items-center justify-center text-white">
             R
           </div>
-          <span className="text-white font-sans ml-2 mr-1">ROBOTEARS</span>
+          <span className="text-base font-sans ml-2 mr-1">ROBOTEARS</span>
           <span className="text-xs text-app-secondary">LVL 71</span>
         </div>
         <button
