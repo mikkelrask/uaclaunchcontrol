@@ -70,7 +70,7 @@ export const GamesPage: React.FC = () => {
   }
 
   const handleManageGames = () => {
-    alert('Manage Games feature coming soon!')
+    alert('Blue keycard required')
   }
 
   const handleSettingsClick = (id: string) => {
