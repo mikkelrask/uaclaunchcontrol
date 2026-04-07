@@ -51,10 +51,10 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
       : mod.description
     : 'No description available'
 
-    const displayImagePath = mod.screenshotPath
-    ? (mod.screenshotPath.startsWith('http') || mod.screenshotPath.includes('/') || mod.screenshotPath.includes('\\')) 
-        ? mod.screenshotPath 
-        : `http://localhost:7666/images/${mod.screenshotPath}`
+  const displayImagePath = mod.screenshotPath
+    ? (mod.screenshotPath.startsWith('http') || mod.screenshotPath.includes('/') || mod.screenshotPath.includes('\\'))
+      ? mod.screenshotPath
+      : `http://localhost:7666/images/${mod.screenshotPath}`
     : imagePlaceholder
 
   return (
@@ -101,14 +101,14 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
                     flex items-center justify-between p-2"
       >
         <button
-          className="px-4 py-1 text-white font-sans rounded bg-accent-highlight hover:opacity-90 transition-colors"
+          className="px-4 py-1 text-app-primary font-sans rounded bg-accent-highlight hover:opacity-90 transition-colors"
           onClick={handleLaunch}
           disabled={launchMutation.isPending}
         >
           {launchMutation.isPending ? 'LAUNCHING...' : 'PLAY'}
         </button>
         <button
-          className="px-4 py-1 text-white font-sans rounded bg-app-primary hover:bg-app-hover transition-colors"
+          className="px-4 py-1 text-app-primary font-sans rounded bg-app-primary hover:bg-app-hover transition-colors"
           onClick={handleSettings}
         >
           Settings
