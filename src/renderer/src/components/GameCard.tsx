@@ -108,7 +108,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
           {launchMutation.isPending ? 'LAUNCHING...' : 'PLAY'}
         </button>
         <button
-          className="px-4 py-1 text-white font-sans rounded bg-app-primary hover:bg-app-hover transition-colors"
+          className="px-4 py-1 text-app-primary font-sans rounded bg-app-primary hover:bg-app-hover transition-colors"
           onClick={handleSettings}
         >
           Settings
