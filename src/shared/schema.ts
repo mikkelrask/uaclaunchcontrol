@@ -46,6 +46,7 @@ export interface IDoomVersion {
   parameters: string
   defaultIwad: string
   icon: string
+  ignored?: boolean
 }
 
 export interface IResponseMessage {

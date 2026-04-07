@@ -796,9 +796,24 @@ export async function createDoomVersion(_data: any) {
   return null
 }
 
-export async function updateDoomVersion(_id: string | number, _data: any) {
-  // TODO: Implement updateDoomVersion
-  return null
+export async function updateDoomVersion(id: string, updates: Partial<IDoomVersion>): Promise<IDoomVersion> {
+  try {
+    const versions = await getDoomVersions()
+    const index = versions.findIndex((v) => v.id === id)
+
+    if (index === -1) {
+      throw new Error(`Doom version with ID ${id} not found`)
+    }
+
+    const updatedVersion = { ...versions[index], ...updates }
+    versions[index] = updatedVersion
+
+    await saveDoomVersions(versions)
+    return updatedVersion
+  } catch (error: any) {
+    console.error(`Error updating Doom version ${id}:`, error)
+    throw new Error(`Failed to update Doom version: ${error.message}`)
+  }
 }
 
 export async function deleteDoomVersion(_id: string | number) {

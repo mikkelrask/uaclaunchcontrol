@@ -1,4 +1,4 @@
-import { IModFile, IMod, IAppSettings } from '@shared/schema'
+import { IModFile, IMod, IAppSettings, IDoomVersion } from '@shared/schema'
 
 export const API_BASE = 'http://localhost:7666'
 
@@ -119,6 +119,16 @@ export const api = {
       body: JSON.stringify(versions)
     })
     if (!response.ok) throw new Error('Failed to update Doom versions')
+    return response.json()
+  },
+  
+  updateDoomVersion: async (id: string, updates: Partial<IDoomVersion>) => {
+    const response = await fetch(`${API_BASE}/api/versions/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    })
+    if (!response.ok) throw new Error('Failed to update Doom version')
     return response.json()
   },
 

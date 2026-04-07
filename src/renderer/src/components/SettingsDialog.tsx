@@ -15,6 +15,7 @@ import { queryClient } from '@/lib/queryClient'
 import type { IDoomVersion, IAppSettings } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { FolderOpen } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 
 interface SettingsDialogProps {
   isOpen: boolean
@@ -83,7 +84,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   }
 
   // Handle doom version field changes
-  const handleVersionChange = (index: number, field: keyof IDoomVersion, value: string) => {
+  const handleVersionChange = (index: number, field: keyof IDoomVersion, value: any) => {
     setDoomVersions((prev) => {
       const updated = [...prev]
       updated[index] = { ...updated[index], [field]: value }
@@ -418,7 +419,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                             />
                             <button
                               onClick={() => handleIconBrowse(selectedWadIndex)}
-                              className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-bold text-white transition-opacity uppercase"
+                              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-bold text-white transition-opacity uppercase"
                             >
                               Relocate Icon
                             </button>
@@ -449,6 +450,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                 placeholder="default: gzdoom"
                               />
                             </div>
+
                           </div>
                         </div>
 
@@ -468,6 +470,25 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                 }
                                 className="bg-app-primary border-app font-sans h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
                               />
+                            </div>
+                            <div className="pt-2">
+                              <div className="flex items-center justify-between pb-4">
+                                <div className="space-y-0.5">
+                                  <Label className="text-sm font-sans font-semibold text-app-primary">
+                                    Hide from Interface
+                                  </Label>
+                                  <p className="text-[11px] text-app-muted font-medium leading-tight">
+                                    Useful for data-only WADs like voice-overs.
+                                    Will be hidden from sidebar & mod install pages.
+                                  </p>
+                                </div>
+                                <Switch
+                                  checked={doomVersions[selectedWadIndex].ignored || false}
+                                  onCheckedChange={(checked) =>
+                                    handleVersionChange(selectedWadIndex, 'ignored', checked)
+                                  }
+                                />
+                              </div>
                             </div>
                             <div className="flex flex-col gap-2 overflow-hidden">
                               <span className="text-xs text-app-primary font-medium font-sans">

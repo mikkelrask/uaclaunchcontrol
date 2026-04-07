@@ -167,7 +167,7 @@ export const GamesPage: React.FC = () => {
           modId={selectedModId}
           isOpen={isSettingsModalOpen}
           onClose={handleCloseSettingsModal}
-          doomVersions={versions}
+          doomVersions={versions.filter((v) => !v.ignored)}
         />
       </div>
     </div>

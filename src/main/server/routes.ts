@@ -315,6 +315,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  // Update a Doom version (e.g., for ignoring/hiding)
+  app.put('/api/versions/:id', async (req, res) => {
+    try {
+      const { id } = req.params
+      const updates = req.body
+      console.log(`[API] PUT /api/versions/${id} - Updates:`, updates)
+      const updatedVersion = await storage.updateDoomVersion(id, updates)
+      res.json({ success: true, data: updatedVersion })
+    } catch (error: any) {
+      console.error(`[API] Error updating version ${req.params.id}:`, error)
+      res.status(500).json({ success: false, error: error.message })
+    }
+  })
+
   // === Settings API ===
   app.get('/api/settings', async (_req, res) => {
     try {

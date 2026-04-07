@@ -28,7 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeVersion, onVersionSelect
         {isLoading ? (
           <p>Loading...</p>
         ) : (
-          versions.map((version) => (
+          versions.filter((v) => !v.ignored).map((version) => (
             <div
               key={version.id}
               className={`sidebar-icon ${activeVersion === version.id ? 'active' : ''}`}

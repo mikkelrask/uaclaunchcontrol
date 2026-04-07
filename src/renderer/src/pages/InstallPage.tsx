@@ -394,7 +394,7 @@ export const InstallPage: React.FC = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent className="bg-app-secondary border-app text-app-primary">
-                                {versions.map((version) => (
+                                {versions.filter((v) => !v.ignored).map((version) => (
                                   <SelectItem key={version.id} value={version.id.toString()}>
                                     {version.name}
                                   </SelectItem>
