@@ -4,6 +4,7 @@ import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { useMutation } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
+import placeholder from '@renderer/assets/placeholder.png'
 
 interface GameCardProps {
   mod: IMod
@@ -41,8 +42,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
   }
 
   // Image fallback path if screenshot not available
-  const imagePlaceholder =
-    'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=400&h=225&q=80'
+  const imagePlaceholder = placeholder
 
   // Truncate description to a reasonable length for hover display
   const truncatedDescription = mod.description
@@ -74,7 +74,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
 
         {/* Game title and icon container - starts at the bottom */}
         <div
-          className="absolute inset-x-0 bottom-0 px-4 py-4 flex justify-between items-end 
+          className="absolute inset-x-0 bottom-0 px-4 py-4 flex justify-between items-end
                       transform transition-transform duration-300 group-hover:translate-y-[-130px] z-10"
         >
           {/* Game title */}
@@ -86,8 +86,8 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
 
         {/* Description panel that appears on hover */}
         <div
-          className="absolute inset-0 px-4 py-4 flex items-end justify-center 
-                      bg-black/60 opacity-0 group-hover:opacity-100 
+          className="absolute inset-0 px-4 py-4 flex items-end justify-center
+                      bg-black/60 opacity-0 group-hover:opacity-100
                       transition-opacity duration-300 pt-24 pb-16"
         >
           <p className="text-white text-sm">{truncatedDescription}</p>
@@ -96,19 +96,19 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
 
       {/* Action buttons that appear on hover at the bottom */}
       <div
-        className="absolute bottom-0 left-0 w-full opacity-0 group-hover:opacity-100 
-                    transition-opacity duration-300 bg-app-popover/85 
+        className="absolute bottom-0 left-0 w-full opacity-0 group-hover:opacity-100
+                    transition-opacity duration-300 bg-app-popover/85
                     flex items-center justify-between p-2"
       >
         <button
-          className="px-4 py-1 text-app-primary font-sans rounded bg-accent-highlight hover:opacity-90 transition-colors"
+          className="px-4 py-1 text-white font-sans rounded bg-accent-highlight hover:opacity-90 transition-colors"
           onClick={handleLaunch}
           disabled={launchMutation.isPending}
         >
           {launchMutation.isPending ? 'LAUNCHING...' : 'PLAY'}
         </button>
         <button
-          className="px-4 py-1 text-app-primary font-sans rounded bg-app-primary hover:bg-app-hover transition-colors"
+          className="px-4 py-1 text-white font-sans rounded bg-app-primary hover:bg-app-hover transition-colors"
           onClick={handleSettings}
         >
           Settings
