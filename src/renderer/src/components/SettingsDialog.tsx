@@ -33,7 +33,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     modsDirectory: '',
     screenshotsPath: '',
     wadFilesDirectory: '',
-    defaultSourcePort: 'gzdoom'
+    defaultSourcePort: 'gzdoom',
+    configPath: ''
   })
 
   // Doom versions state
@@ -46,20 +47,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     if (!isOpen) return
     api.getSettings().then((data) => {
       if (data) {
-        setSettings({
-          gzDoomPath: data.gzDoomPath || '',
-          theme: data.theme || 'dark',
-          savegamesPath: data.savegamesPath || '',
-          modsDirectory: data.modsDirectory || '',
-          screenshotsPath: data.screenshotsPath || '',
-          wadFilesDirectory: data.wadFilesDirectory || '',
-          defaultSourcePort: data.defaultSourcePort || 'gzdoom'
-        })
+        setSettings(prev => ({ ...prev, ...data }))
       }
     })
-    .catch(() => {
-      toast({ title: 'Error', description: 'Failed to load settings', variant: 'destructive' })
-    })
+      .catch(() => {
+        toast({ title: 'Error', description: 'Failed to load settings', variant: 'destructive' })
+      })
 
     // Fetch doom versions
     setIsLoadingVersions(true)
@@ -243,11 +236,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           variant="ghost"
                           size="sm"
                           onClick={() => setSettings(s => ({ ...s, theme: 'dark' }))}
-                          className={`h-8 font-sans text-xs transition-all ${
-                            settings.theme === 'dark'
-                              ? 'bg-accent-highlight text-white shadow-sm'
-                              : 'text-app-muted hover:text-app-primary'
-                          }`}
+                          className={`h-8 font-sans text-xs transition-all ${settings.theme === 'dark'
+                            ? 'bg-accent-highlight text-white shadow-sm'
+                            : 'text-app-muted hover:text-app-primary'
+                            }`}
                         >
                           DARK
                         </Button>
@@ -255,11 +247,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           variant="ghost"
                           size="sm"
                           onClick={() => setSettings(s => ({ ...s, theme: 'light' }))}
-                          className={`h-8 font-sans text-xs transition-all ${
-                            settings.theme === 'light'
-                              ? 'bg-accent-highlight text-white shadow-sm'
-                              : 'text-app-muted hover:text-app-primary'
-                          }`}
+                          className={`h-8 font-sans text-xs transition-all ${settings.theme === 'light'
+                            ? 'bg-accent-highlight text-white shadow-sm'
+                            : 'text-app-muted hover:text-app-primary'
+                            }`}
                         >
                           LIGHT
                         </Button>
@@ -271,18 +262,37 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       System Protocol
                     </Label>
                     <div className="p-4 bg-app-secondary border border-app rounded-lg flex flex-col gap-3 shadow-md">
-                       <span className="text-xs font-sans text-app-muted">Default Engine</span>
-                       <select
-                         value={settings.defaultSourcePort}
-                         onChange={(e) => setSettings(s => ({ ...s, defaultSourcePort: e.target.value }))}
-                         className="bg-app-primary border-app text-sm font-sans p-2 rounded-md outline-none text-app-primary focus:ring-2 ring-accent-highlight/30 h-10 w-full appearance-none transition-all hover:border-app-muted"
-                       >
-                          <option value="gzdoom">GZDOOM</option>
-                          <option value="uzdoom">UZDOOM</option>
-                          <option value="zandronum">ZANDRONUM</option>
-                       </select>
+                      <span className="text-xs font-sans text-app-muted">Default Engine</span>
+                      <select
+                        value={settings.defaultSourcePort}
+                        onChange={(e) => setSettings(s => ({ ...s, defaultSourcePort: e.target.value }))}
+                        className="bg-app-primary border-app text-sm font-sans p-2 rounded-md outline-none text-app-primary focus:ring-2 ring-accent-highlight/30 h-10 w-full appearance-none transition-all hover:border-app-muted"
+                      >
+                        <option value="gzdoom">GZDOOM</option>
+                        <option value="uzdoom">UZDOOM</option>
+                        <option value="zandronum">ZANDRONUM</option>
+                      </select>
                     </div>
                   </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
+                  TECHNICAL SPECIFICATIONS
+                </Label>
+                <div className="bg-app-secondary/50 p-4 rounded-xl border border-app border-dashed space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider">
+                      App Configuration
+                    </Label>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-app-primary text-app-muted font-mono border border-app">SYSTEM</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="bg-app-primary/40 border border-app font-sans h-10 px-3 text-sm flex-1 flex items-center text-app-muted opacity-80 rounded-md truncate">
+                      {settings.configPath}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-app-muted font-sans italic opacity-70">Internal master directory for settings, telemetry catalogues, and system state.</p>
                 </div>
               </div>
             </TabsContent>
@@ -355,32 +365,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
-                  TECHNICAL SPECIFICATIONS
-                </Label>
-                <div className="bg-app-secondary/50 p-4 rounded-xl border border-app border-dashed space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider">
-                      App Configuration
-                    </Label>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-app-primary text-app-muted font-mono border border-app">SYSTEM</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="bg-app-primary/40 border border-app font-sans h-10 px-3 text-sm flex-1 flex items-center text-app-muted opacity-80 rounded-md truncate">
-                      {settings.configPath}
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-app-muted font-sans italic opacity-70">Internal master directory for settings, telemetry catalogues, and system state.</p>
-                </div>
-              </div>
             </TabsContent>
 
             <TabsContent value="wad-config" className="flex-1 min-h-0 pt-0">
               {isLoadingVersions ? (
                 <div className="flex items-center justify-center h-full gap-3 text-app-secondary font-mono italic">
-                   <div className="w-2 h-2 rounded-full bg-accent-highlight animate-pulse" />
-                   CALIBRATING WAD REPOSITORIES...
+                  <div className="w-2 h-2 rounded-full bg-accent-highlight animate-pulse" />
+                  CALIBRATING WAD REPOSITORIES...
                 </div>
               ) : doomVersions.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
@@ -395,19 +386,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         <button
                           key={version.id || index}
                           onClick={() => setSelectedWadIndex(index)}
-                          className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left group shrink-0 border border-transparent ${
-                            selectedWadIndex === index
-                              ? 'bg-app-primary border-app shadow-sm outline-accent-highlight/30 outline-1'
-                              : 'hover:bg-app-primary/40'
-                          }`}
+                          className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left group shrink-0 border border-transparent ${selectedWadIndex === index
+                            ? 'bg-app-primary border-app shadow-sm outline-accent-highlight/30 outline-1'
+                            : 'hover:bg-app-primary/40'
+                            }`}
                         >
                           <div className="w-8 h-8 shrink-0 flex items-center justify-center overflow-hidden rounded bg-black/20 group-hover:bg-black/40 transition-colors">
                             <DoomVersionIcon version={version.slug} customIcon={version.icon} className="w-full h-full object-contain" />
                           </div>
                           <span
-                            className={`text-sm font-sans font-medium truncate flex-1 ${
-                              selectedWadIndex === index ? 'text-accent-highlight' : 'text-app-primary'
-                            }`}
+                            className={`text-sm font-sans font-medium truncate flex-1 ${selectedWadIndex === index ? 'text-accent-highlight' : 'text-app-primary'
+                              }`}
                           >
                             {version.name}
                           </span>

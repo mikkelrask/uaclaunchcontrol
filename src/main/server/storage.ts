@@ -875,6 +875,13 @@ export async function deleteModFile(_id: string | number): Promise<boolean | und
 
 // Migration helpers
 export async function checkLegacyConfig(): Promise<{ found: boolean; path: string | null }> {
+  // If the new config directory already has a settings file, it's considered populated.
+  // No need to check for legacy data – migration has already happened or the user started fresh.
+  const newConfigHasContent = fs.existsSync(path.join(CONFIG_DIR, 'settings.json'))
+  if (newConfigHasContent) {
+    return { found: false, path: null }
+  }
+
   for (const legacyPath of LEGACY_CONFIG_DIRS) {
     if (fs.existsSync(legacyPath)) {
       // Check if it has content (e.g., settings.json or mods folder)
