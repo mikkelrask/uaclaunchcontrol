@@ -4,6 +4,7 @@ import { useHashLocation } from 'wouter/use-hash-location'
 import { queryClient } from './lib/queryClient'
 import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/hooks/use-toast'
+import { ToastAction } from '@/components/ui/toast'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 import GamesPage from '@/pages/GamesPage'
@@ -71,6 +72,57 @@ function App() {
         }
       })
     }
+  }, [toast])
+
+  // Migration check on startup
+  useEffect(() => {
+    const checkAndPromptMigration = async () => {
+      try {
+        const info = await api.checkMigration()
+        if (info.found && info.path) {
+          toast({
+            title: 'Legacy Data Detected',
+            description: `We found old configuration in ${info.path}. Would you like to import it?`,
+            duration: 10000,
+            action: (
+              <ToastAction
+                altText="Import Data"
+                onClick={async () => {
+                  try {
+                    const result = await api.executeMigration(info.path!)
+                    if (result.success) {
+                      toast({
+                        title: 'Import Successful',
+                        description: 'Your legacy data has been migrated. Please restart the app.'
+                      })
+                      queryClient.invalidateQueries()
+                    } else {
+                      toast({
+                        title: 'Import Failed',
+                        description: 'Something went wrong during migration.',
+                        variant: 'destructive'
+                      })
+                    }
+                  } catch (err) {
+                    toast({
+                      title: 'Error',
+                      description: 'Failed to execute migration.',
+                      variant: 'destructive'
+                    })
+                  }
+                }}
+              >
+                Import
+              </ToastAction>
+            )
+          })
+        }
+      } catch (err) {
+        console.error('Migration check failed:', err)
+      }
+    }
+
+    checkAndPromptMigration()
   }, [toast])
 
   return (

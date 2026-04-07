@@ -148,6 +148,18 @@ export const api = {
     })
     if (!response.ok) throw new Error('Failed to download image')
     return response.json()
+  },
+  checkMigration: async (): Promise<{ found: boolean; path: string | null }> => {
+    const response = await fetch(`${API_BASE}/api/migration/check`)
+    return response.json()
+  },
+  executeMigration: async (sourcePath: string): Promise<{ success: boolean }> => {
+    const response = await fetch(`${API_BASE}/api/migration/execute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourcePath })
+    })
+    return response.json()
   }
 
   // Other existing API methods...

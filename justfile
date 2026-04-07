@@ -32,7 +32,7 @@ package-linux:
 
 # Create a new version release (e.g. just bump 0.2.1)
 bump version:
-    ./scripts/bump-version.mjs {{version}}
+    node scripts/bump-version.mjs {{version}}
 
 # Code hygiene and quality checks
 lint:

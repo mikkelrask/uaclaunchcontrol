@@ -15,6 +15,11 @@ const DOOM_VERSIONS_FILE = path.join(CONFIG_DIR, 'doomVersions.json') // Directl
 const MOD_FILE_CATALOG = path.join(CONFIG_DIR, 'modFileCatalogue.json')
 export const IMAGES_DIR = path.join(CONFIG_DIR, 'images')
 
+const LEGACY_CONFIG_DIRS = [
+  path.join(os.homedir(), '.config', 'mrdoom'),
+  path.join(os.homedir(), '.config', 'uaclaunchcontrol')
+]
+
 // Default settings
 const DEFAULT_SETTINGS: IAppSettings = {
   gzDoomPath: 'gzdoom', // Default to assuming gzdoom is in PATH
@@ -174,6 +179,7 @@ export async function getSettings(): Promise<IAppSettings> {
     // Resolve tildes for all known path fields before sending to UI
     const resolvedSettings: IAppSettings = {
       ...settings,
+      configPath: CONFIG_DIR,
       gzDoomPath: settings.gzDoomPath ? resolvePath(settings.gzDoomPath) : settings.gzDoomPath,
       savegamesPath: settings.savegamesPath ? resolvePath(settings.savegamesPath) : settings.savegamesPath,
       modsDirectory: settings.modsDirectory ? resolvePath(settings.modsDirectory) : settings.modsDirectory,
@@ -640,7 +646,9 @@ export async function saveMod(modData: IMod & { files: IModFile[] }): Promise<IM
   }
   try {
     initStorage() // Ensure mods directory exists
-    const modFilePath = path.join(MODS_DIR, `${modData.id}.json`)
+    const settings = await getSettings()
+    const targetModsDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
+    const modFilePath = path.join(targetModsDir, `${modData.id}.json`)
     // Data is already in the flat structure { ...IMod, files: [...] }
     await fs.writeJSON(modFilePath, modData, { spaces: 2 })
     // Return only the IMod part (without files) as per previous usage?
@@ -653,19 +661,20 @@ export async function saveMod(modData: IMod & { files: IModFile[] }): Promise<IM
   }
 }
 
-// Get all mods (reads flat {id}.json files)
 export async function getMods(): Promise<IMod[]> {
   try {
     initStorage() // Ensure mods directory exists
+    const settings = await getSettings()
+    const targetModsDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
     const mods: IMod[] = []
-    if (!fs.existsSync(MODS_DIR)) {
+    if (!fs.existsSync(targetModsDir)) {
       return mods
     }
-    const modFiles = await fs.readdir(MODS_DIR)
+    const modFiles = await fs.readdir(targetModsDir)
 
     for (const modFilename of modFiles) {
       if (modFilename.endsWith('.json')) {
-        const modFilePath = path.join(MODS_DIR, modFilename)
+        const modFilePath = path.join(targetModsDir, modFilename)
         try {
           // Read the flat mod data { ...IMod, files: [...] }
           const modData = await fs.readJSON(modFilePath)
@@ -684,11 +693,12 @@ export async function getMods(): Promise<IMod[]> {
   }
 }
 
-// Get a specific mod and its files (reads flat {id}.json)
 export async function getMod(modId: string): Promise<IMod & { files: IModFile[] }> {
   try {
     initStorage() // Ensure mods directory exists
-    const modFilePath = path.join(MODS_DIR, `${modId}.json`)
+    const settings = await getSettings()
+    const targetModsDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
+    const modFilePath = path.join(targetModsDir, `${modId}.json`)
     if (!fs.existsSync(modFilePath)) {
       throw new Error(`Mod ${modId} not found`)
     }
@@ -840,7 +850,9 @@ export async function updateMod(_id: string | number, _mod: any): Promise<IMod |
 
 export async function deleteMod(id: string | number): Promise<boolean | undefined> {
   try {
-    const modFilePath = path.join(MODS_DIR, `${id}.json`)
+    const settings = await getSettings()
+    const targetModsDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
+    const modFilePath = path.join(targetModsDir, `${id}.json`)
     console.log('[DEBUG] Attempting to delete mod file:', modFilePath)
     if (await fs.pathExists(modFilePath)) {
       await fs.remove(modFilePath)
@@ -859,4 +871,81 @@ export async function deleteMod(id: string | number): Promise<boolean | undefine
 export async function deleteModFile(_id: string | number): Promise<boolean | undefined> {
   // TODO: Implement deleteModFile
   return false
+}
+
+// Migration helpers
+export async function checkLegacyConfig(): Promise<{ found: boolean; path: string | null }> {
+  for (const legacyPath of LEGACY_CONFIG_DIRS) {
+    if (fs.existsSync(legacyPath)) {
+      // Check if it has content (e.g., settings.json or mods folder)
+      const hasContent = fs.existsSync(path.join(legacyPath, 'settings.json')) || 
+                         fs.existsSync(path.join(legacyPath, 'mods'))
+      if (hasContent) {
+        return { found: true, path: legacyPath }
+      }
+    }
+  }
+  return { found: false, path: null }
+}
+
+export async function executeMigration(sourcePath: string): Promise<boolean> {
+  try {
+    const resolvedSource = resolvePath(sourcePath)
+    if (!fs.existsSync(resolvedSource)) {
+      throw new Error(`Migration source not found: ${resolvedSource}`)
+    }
+
+    console.log(`[MIGRATION] Migrating from ${resolvedSource} to ${CONFIG_DIR}`)
+    
+    // Ensure new config dir exists
+    await fs.ensureDir(CONFIG_DIR)
+
+    // Copy everything from source to current CONFIG_DIR
+    await fs.copy(resolvedSource, CONFIG_DIR, {
+      overwrite: true,
+      errorOnExist: false
+    })
+
+    console.log(`[MIGRATION] Successfully migrated content to ${CONFIG_DIR}`)
+
+    // Patch internal JSON paths to point to the new uac directory
+    await patchLegacyPaths(CONFIG_DIR)
+
+    return true
+  } catch (error) {
+    console.error('[MIGRATION] Migration failed:', error)
+    return false
+  }
+}
+
+/**
+ * Recursively scans a directory for .json files and replaces legacy path strings
+ * with the new .config/uac standard.
+ */
+async function patchLegacyPaths(directory: string): Promise<void> {
+  try {
+    const files = await fs.readdir(directory)
+    for (const file of files) {
+      const fullPath = path.join(directory, file)
+      const stats = await fs.stat(fullPath)
+
+      if (stats.isDirectory()) {
+        await patchLegacyPaths(fullPath)
+      } else if (file.endsWith('.json')) {
+        const content = await fs.readFile(fullPath, 'utf-8')
+        let patched = content
+
+        // Replace all known legacy paths with the new standard
+        patched = patched.replace(/\.config\/mrdoom/g, '.config/uac')
+        patched = patched.replace(/\.config\/uaclaunchcontrol/g, '.config/uac')
+
+        if (patched !== content) {
+          await fs.writeFile(fullPath, patched)
+          console.log(`[MIGRATION] Patched legacy paths in ${fullPath}`)
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`[MIGRATION] Error patching paths in ${directory}:`, error)
+  }
 }

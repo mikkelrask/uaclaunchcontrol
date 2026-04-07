@@ -354,6 +354,26 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   ))}
                 </div>
               </div>
+
+              <div className="space-y-4">
+                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
+                  TECHNICAL SPECIFICATIONS
+                </Label>
+                <div className="bg-app-secondary/50 p-4 rounded-xl border border-app border-dashed space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider">
+                      App Configuration
+                    </Label>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-app-primary text-app-muted font-mono border border-app">SYSTEM</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="bg-app-primary/40 border border-app font-sans h-10 px-3 text-sm flex-1 flex items-center text-app-muted opacity-80 rounded-md truncate">
+                      {settings.configPath}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-app-muted font-sans italic opacity-70">Internal master directory for settings, telemetry catalogues, and system state.</p>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="wad-config" className="flex-1 min-h-0 pt-0">

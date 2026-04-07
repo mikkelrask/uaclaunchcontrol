@@ -63,6 +63,7 @@ export interface IAppSettings {
   screenshotsPath?: string
   wadFilesDirectory?: string
   defaultSourcePort?: string
+  configPath?: string
 }
 
 // ModDB API response types

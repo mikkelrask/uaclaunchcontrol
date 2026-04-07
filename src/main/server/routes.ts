@@ -370,5 +370,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  // === Migration API ===
+  app.get('/api/migration/check', async (_req, res) => {
+    try {
+      const info = await storage.checkLegacyConfig()
+      return res.json(info)
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message })
+    }
+  })
+
+  app.post('/api/migration/execute', async (req, res) => {
+    try {
+      const { sourcePath } = req.body
+      if (!sourcePath) return res.status(400).json({ error: 'Missing sourcePath' })
+      const success = await storage.executeMigration(sourcePath)
+      return res.json({ success })
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message })
+    }
+  })
+
   return httpServer
 }
