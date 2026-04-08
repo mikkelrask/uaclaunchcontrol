@@ -55,30 +55,30 @@ export const GamesPage: React.FC = () => {
   })
 
   // Event handlers
-  const handleVersionSelect = (version: string) => {
+  const handleVersionSelect = (version: string): void => {
     setActiveVersion(version === activeVersion ? null : version)
     setSearchQuery('') // Clear search query when switching versions
   }
 
-  const handleSearch = (query: string) => {
+  const handleSearch = (query: string): void => {
     setSearchQuery(query)
     setActiveVersion(null) // Clear active version when searching
   }
 
-  const handleViewModeChange = (mode: ViewMode) => {
+  const handleViewModeChange = (mode: ViewMode): void => {
     setViewMode(mode)
   }
 
-  const handleManageGames = () => {
+  const handleManageGames = (): void => {
     alert('Blue keycard required')
   }
 
-  const handleSettingsClick = (id: string) => {
+  const handleSettingsClick = (id: string): void => {
     setSelectedModId(id)
     setIsSettingsModalOpen(true)
   }
 
-  const handleCloseSettingsModal = () => {
+  const handleCloseSettingsModal = (): void => {
     setIsSettingsModalOpen(false)
     setSelectedModId(null)
   }
@@ -135,7 +135,10 @@ export const GamesPage: React.FC = () => {
                   ) : (
                     <>
                       No mods installed. Click{' '}
-                      <Link href="/install" className="text-accent-highlight font-bold hover:underline">
+                      <Link
+                        href="/install"
+                        className="text-accent-highlight font-bold hover:underline"
+                      >
                         INSTALL
                       </Link>{' '}
                       to add your first mod.

@@ -21,8 +21,10 @@ import { IMod, IModFile, IDoomVersion } from '@shared/schema'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
+import { api } from '@/api'
 import ModFileList from './ModFileList'
 import LaunchOptions from './LaunchOptions'
+import { FolderOpen } from 'lucide-react'
 import { slugify } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
 
@@ -142,7 +144,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
     }
   }, [data])
 
-  const handleSave = () => {
+  const handleSave = (): void => {
     if (!mod || !modId) return
 
     const filesWithoutIds = files.map((f) => ({
@@ -160,24 +162,26 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
     })
   }
 
-  const handleDelete = () => {
+  const handleDelete = (): void => {
     if (!modId) return
     if (confirm('Are you sure you want to delete this mod?')) {
       deleteMutation.mutate(modId)
     }
   }
 
-  const handleLaunch = () => {
+  const handleLaunch = (): void => {
     if (!modId) return
     launchMutation.mutate(modId)
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ): void => {
     const { name, value } = e.target
     setMod((prev) => (prev ? { ...prev, [name]: value } : null))
   }
 
-  const handleSelectChange = (name: string, value: string) => {
+  const handleSelectChange = (name: string, value: string): void => {
     setMod((prev) => (prev ? { ...prev, [name]: value } : null))
   }
 
@@ -197,18 +201,56 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
         ) : (
           <>
             <div className="space-y-4">
-              <div className="mb-4">
-                <img
-                  src={
-                    mod?.screenshotPath
-                      ? (mod.screenshotPath.startsWith('http') || mod.screenshotPath.includes('/') || mod.screenshotPath.includes('\\'))
-                        ? mod.screenshotPath
-                        : `http://localhost:7666/images/${mod.screenshotPath}`
-                      : placeholder
-                  }
-                  alt={mod?.title}
-                  className="w-full h-64 object-cover rounded"
-                />
+              <div className="mb-4 group relative">
+                <button
+                  type="button"
+                  className="w-full h-64 rounded overflow-hidden relative"
+                  onClick={async () => {
+                    const result = await api.showOpenDialog({
+                      title: 'Select Screenshot',
+                      properties: ['openFile'],
+                      filters: [
+                        { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }
+                      ]
+                    })
+                    if (!result.canceled && result.filePaths.length > 0) {
+                      try {
+                        const { fileName } = await api.uploadScreenshot(result.filePaths[0])
+                        setMod((prev) => (prev ? { ...prev, screenshotPath: fileName } : null))
+                        toast({
+                          title: 'Screenshot updated',
+                          description: 'New screenshot saved. Click Save to apply.'
+                        })
+                      } catch (error) {
+                        toast({
+                          title: 'Error',
+                          description: `Failed to upload screenshot: ${error}`,
+                          variant: 'destructive'
+                        })
+                      }
+                    }
+                  }}
+                >
+                  <img
+                    src={
+                      mod?.screenshotPath
+                        ? mod.screenshotPath.startsWith('http') ||
+                          mod.screenshotPath.includes('/') ||
+                          mod.screenshotPath.includes('\\')
+                          ? mod.screenshotPath
+                          : `http://localhost:7666/images/${mod.screenshotPath}`
+                        : placeholder
+                    }
+                    alt={mod?.title}
+                    className="w-full h-64 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <span className="text-white text-sm font-medium flex items-center gap-2">
+                      <FolderOpen className="h-5 w-5" />
+                      Change Screenshot
+                    </span>
+                  </div>
+                </button>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
