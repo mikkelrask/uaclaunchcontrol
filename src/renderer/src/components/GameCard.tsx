@@ -33,11 +33,11 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
     }
   })
 
-  const handleLaunch = () => {
+  const handleLaunch = (): void => {
     launchMutation.mutate(mod.id)
   }
 
-  const handleSettings = () => {
+  const handleSettings = (): void => {
     onSettingsClick(mod.id)
   }
 
@@ -52,7 +52,9 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
     : 'No description available'
 
   const displayImagePath = mod.screenshotPath
-    ? (mod.screenshotPath.startsWith('http') || mod.screenshotPath.includes('/') || mod.screenshotPath.includes('\\'))
+    ? mod.screenshotPath.startsWith('http') ||
+      mod.screenshotPath.includes('/') ||
+      mod.screenshotPath.includes('\\')
       ? mod.screenshotPath
       : `http://localhost:7666/images/${mod.screenshotPath}`
     : imagePlaceholder
@@ -81,7 +83,11 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
           <h3 className="text-white font-sans lg:text-lg font-bold">{mod.title}</h3>
 
           {/* Version icon */}
-          <DoomVersionIcon version={doomVersion.slug} className="w-7 h-7" />
+          <DoomVersionIcon
+            version={doomVersion.slug}
+            customIcon={doomVersion.icon}
+            className="w-7 h-7"
+          />
         </div>
 
         {/* Description panel that appears on hover */}
@@ -101,6 +107,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
                     flex items-center justify-between p-2"
       >
         <button
+          type="button"
           className="px-4 py-1 text-white font-sans rounded bg-accent-highlight hover:opacity-90 transition-colors"
           onClick={handleLaunch}
           disabled={launchMutation.isPending}
@@ -108,6 +115,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
           {launchMutation.isPending ? 'LAUNCHING...' : 'PLAY'}
         </button>
         <button
+          type="button"
           className="px-4 py-1 text-app-primary font-sans rounded bg-app-primary hover:bg-app-hover transition-colors"
           onClick={handleSettings}
         >
