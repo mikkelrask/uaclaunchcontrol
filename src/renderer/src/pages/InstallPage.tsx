@@ -41,7 +41,6 @@ const formSchema = z.object({
   doomVersionId: z.string().min(1, 'Base game is required'),
   sourcePort: z.string().min(1, 'Source port is required'),
   saveDirectory: z.string().optional(),
-  moddbId: z.string().optional(),
   screenshotPath: z.string().optional(),
   launchParameters: z.string().optional()
 })
@@ -123,18 +122,18 @@ export const InstallPage: React.FC = () => {
     setLocation(`/?search=${encodeURIComponent(query)}`)
   }
 
-  const removeFile = (index: number) => {
-    const newFiles = [...files]
-    newFiles.splice(index, 1)
-
-    // Update load orders to maintain spacing
-    const updatedFiles = newFiles.map((file, idx) => ({
-      ...file,
-      loadOrder: idx * 10
-    }))
-
-    setFiles(updatedFiles)
-  }
+  // const removeFile = (index: number) => {
+  //   const newFiles = [...files]
+  //   newFiles.splice(index, 1)
+  //
+  //   // Update load orders to maintain spacing
+  //   const updatedFiles = newFiles.map((file, idx) => ({
+  //     ...file,
+  //     loadOrder: idx * 10
+  //   }))
+  //
+  //   setFiles(updatedFiles)
+  // }
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     const fileData: IModFile[] = files.map((file, idx) => {
@@ -180,7 +179,6 @@ export const InstallPage: React.FC = () => {
       doomVersionId: data.doomVersionId,
       sourcePort: data.sourcePort,
       saveDirectory: relativeSaveDir,
-      moddbId: data.moddbId ? parseInt(data.moddbId) : undefined,
       screenshotPath: localScreenshotPath,
       launchParameters: data.launchParameters,
       files: fileData
