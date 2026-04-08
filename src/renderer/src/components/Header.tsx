@@ -12,16 +12,16 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent): void => {
     e.preventDefault()
-    onSearch(searchQuery, true) // Pass `true` to indicate searching all mods
+    onSearch(searchQuery, true)
   }
 
-  const openSettings = () => {
+  const openSettings = (): void => {
     setIsSettingsOpen(true)
   }
 
-  const closeSettings = () => {
+  const closeSettings = (): void => {
     setIsSettingsOpen(false)
   }
 

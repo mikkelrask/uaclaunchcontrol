@@ -4,7 +4,7 @@ import os from 'os'
 import axios from 'axios'
 import chokidar from 'chokidar'
 import { BrowserWindow } from 'electron'
-import { IAppSettings, IDoomVersion, IMod, IModFile } from '../../shared/schema'
+import { IAppSettings, IDoomVersion, IMod, IModFile, InsertMod } from '../../shared/schema'
 
 // Define storage paths (Aligned with local-structure.txt)
 const CONFIG_DIR = path.join(os.homedir(), '.config', 'uac')
@@ -127,13 +127,22 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
 
 let isInitialized = false
 // Ensure config directories exist and create default files
-export function initStorage() {
+export function initStorage(): boolean {
   if (isInitialized) return true
   isInitialized = true
   try {
     fs.ensureDirSync(CONFIG_DIR)
     fs.ensureDirSync(DATA_DIR) // Ensure data directory exists
     fs.ensureDirSync(MODS_DIR) // Ensure mods directory exists
+
+    // Check for legacy config BEFORE creating new files
+    const legacyConfig = checkLegacyConfigSync()
+    if (legacyConfig.found) {
+      console.log(`Legacy config found at ${legacyConfig.path}, waiting for migration...`)
+      // Don't create default files yet - let the UI prompt for migration
+      console.log('Storage initialized successfully (waiting for migration)')
+      return true
+    }
 
     // Create settings file with defaults if it doesn't exist
     if (!fs.existsSync(SETTINGS_FILE)) {
@@ -160,11 +169,31 @@ export function initStorage() {
 
     console.log('Storage initialized successfully')
     return true
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to initialize storage:', error)
     isInitialized = false // Reset on failure so it can try again
     return false
   }
+}
+
+// Synchronous version for use during init
+function checkLegacyConfigSync(): { found: boolean; path: string | null } {
+  const newConfigHasContent = fs.existsSync(path.join(CONFIG_DIR, 'settings.json'))
+  if (newConfigHasContent) {
+    return { found: false, path: null }
+  }
+
+  for (const legacyPath of LEGACY_CONFIG_DIRS) {
+    if (fs.existsSync(legacyPath)) {
+      const hasContent =
+        fs.existsSync(path.join(legacyPath, 'settings.json')) ||
+        fs.existsSync(path.join(legacyPath, 'mods'))
+      if (hasContent) {
+        return { found: true, path: legacyPath }
+      }
+    }
+  }
+  return { found: false, path: null }
 }
 
 // Get application settings
@@ -181,9 +210,15 @@ export async function getSettings(): Promise<IAppSettings> {
       ...settings,
       configPath: CONFIG_DIR,
       gzDoomPath: settings.gzDoomPath ? resolvePath(settings.gzDoomPath) : settings.gzDoomPath,
-      savegamesPath: settings.savegamesPath ? resolvePath(settings.savegamesPath) : settings.savegamesPath,
-      modsDirectory: settings.modsDirectory ? resolvePath(settings.modsDirectory) : settings.modsDirectory,
-      screenshotsPath: settings.screenshotsPath ? resolvePath(settings.screenshotsPath) : settings.screenshotsPath,
+      savegamesPath: settings.savegamesPath
+        ? resolvePath(settings.savegamesPath)
+        : settings.savegamesPath,
+      modsDirectory: settings.modsDirectory
+        ? resolvePath(settings.modsDirectory)
+        : settings.modsDirectory,
+      screenshotsPath: settings.screenshotsPath
+        ? resolvePath(settings.screenshotsPath)
+        : settings.screenshotsPath,
       wadFilesDirectory: settings.wadFilesDirectory
         ? resolvePath(settings.wadFilesDirectory)
         : settings.wadFilesDirectory
@@ -191,7 +226,7 @@ export async function getSettings(): Promise<IAppSettings> {
 
     console.log('[DEBUG] Returning resolved settings to UI:', resolvedSettings)
     return resolvedSettings
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DEBUG] Error getting settings:', error)
     return DEFAULT_SETTINGS
   }
@@ -208,7 +243,10 @@ export async function saveSettings(settings: Partial<IAppSettings>): Promise<IAp
     console.log('[DEBUG] Saved settings:', updatedSettings)
 
     // If wadFilesDirectory changed, restart watcher
-    if (settings.wadFilesDirectory && settings.wadFilesDirectory !== currentSettings.wadFilesDirectory) {
+    if (
+      settings.wadFilesDirectory &&
+      settings.wadFilesDirectory !== currentSettings.wadFilesDirectory
+    ) {
       console.log('[DEBUG] wadFilesDirectory changed, restarting watcher...')
       stopWadWatcher()
       await syncDoomVersions()
@@ -216,9 +254,11 @@ export async function saveSettings(settings: Partial<IAppSettings>): Promise<IAp
     }
 
     return updatedSettings
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[DEBUG] Error saving settings:', error)
-    throw new Error(`Failed to save settings: ${error.message}`)
+    throw new Error(
+      `Failed to save settings: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
 
@@ -249,66 +289,72 @@ export async function getDoomVersions(): Promise<IDoomVersion[]> {
     }))
     console.log('[DEBUG] getDoomVersions: Returning resolved versions:', resolved.length)
     return resolved
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting Doom versions:', error)
     return [] // Return empty array on error
   }
 }
 
-let wadWatcher: any = null
+import type { FSWatcher } from 'chokidar'
 
-export function stopWadWatcher() {
+let wadWatcher: FSWatcher | null = null
+
+export function stopWadWatcher(): void {
   if (wadWatcher) {
     wadWatcher.close()
     wadWatcher = null
   }
 }
 
-export function startWadWatcher() {
+export function startWadWatcher(): void {
   console.log('[DEBUG] DEBUG: startWadWatcher called')
   if (wadWatcher) {
     console.log('[DEBUG] DEBUG: Watcher already exists, skipping')
     return
   }
 
-  getSettings().then((settings) => {
-    const rawDir = settings.wadFilesDirectory || path.join(CONFIG_DIR, 'wads')
-    const wadDir = resolvePath(rawDir)
-    console.log(`[DEBUG] DEBUG: Watcher starting for directory: ${wadDir} (from raw: ${rawDir})`)
+  getSettings()
+    .then((settings) => {
+      const rawDir = settings.wadFilesDirectory || path.join(CONFIG_DIR, 'wads')
+      const wadDir = resolvePath(rawDir)
+      console.log(`[DEBUG] DEBUG: Watcher starting for directory: ${wadDir} (from raw: ${rawDir})`)
 
-    try {
-      fs.ensureDirSync(wadDir)
-    } catch (e) {
-      console.error(`[DEBUG] DEBUG: Failed to ensure directory ${wadDir}:`, e)
-      return
-    }
-
-    wadWatcher = chokidar.watch(wadDir, {
-      persistent: true,
-      ignoreInitial: false,
-      usePolling: true,
-      interval: 100
-    })
-
-    wadWatcher.on('all', (event, filePath) => {
-      if (filePath.toLowerCase().endsWith('.wad')) {
-        console.log(`[DEBUG] WAD change detected (${event}): ${filePath}. Syncing...`)
-        syncDoomVersions({ notifyDelta: true })
+      try {
+        fs.ensureDirSync(wadDir)
+      } catch (e) {
+        console.error(`[DEBUG] DEBUG: Failed to ensure directory ${wadDir}:`, e)
+        return
       }
-    })
 
-    wadWatcher.on('error', (error) => {
-      console.error(`[DEBUG] Chokidar watcher error:`, error)
-    })
+      wadWatcher = chokidar.watch(wadDir, {
+        persistent: true,
+        ignoreInitial: false,
+        usePolling: true,
+        interval: 100
+      })
 
-    console.log(`[DEBUG] Started WAD watcher on ${wadDir}`)
-  }).catch(err => {
-    console.error('[DEBUG] Error starting WAD watcher:', err)
-  })
+      wadWatcher.on('all', (event, filePath) => {
+        if (filePath.toLowerCase().endsWith('.wad')) {
+          console.log(`[DEBUG] WAD change detected (${event}): ${filePath}. Syncing...`)
+          syncDoomVersions({ notifyDelta: true })
+        }
+      })
+
+      wadWatcher.on('error', (error) => {
+        console.error(`[DEBUG] Chokidar watcher error:`, error)
+      })
+
+      console.log(`[DEBUG] Started WAD watcher on ${wadDir}`)
+    })
+    .catch((err) => {
+      console.error('[DEBUG] Error starting WAD watcher:', err)
+    })
 }
 
 // Sync Doom versions by scanning the WAD directory
-export async function syncDoomVersions(options: { notifyDelta?: boolean } = {}): Promise<IDoomVersion[]> {
+export async function syncDoomVersions(
+  options: { notifyDelta?: boolean } = {}
+): Promise<IDoomVersion[]> {
   try {
     initStorage()
     console.log('[DEBUG] syncDoomVersions starting...')
@@ -345,7 +391,10 @@ export async function syncDoomVersions(options: { notifyDelta?: boolean } = {}):
             ...existing,
             defaultIwad: fullPath, // Update actual path
             args: existing.args.includes('-iwad')
-              ? existing.args.replace(/-iwad\s+\"[^\"]+\"|-iwad\s+[^\s]+/, `-iwad ${escapePathForCmd(fullPath)}`)
+              ? existing.args.replace(
+                  /-iwad\s+"[^"]+"|-iwad\s+[^\s]+/,
+                  `-iwad ${escapePathForCmd(fullPath)}`
+                )
               : `-iwad ${escapePathForCmd(fullPath)} ${existing.args}`.trim()
           })
         } else {
@@ -387,7 +436,9 @@ export async function syncDoomVersions(options: { notifyDelta?: boolean } = {}):
     }
 
     await fs.writeJSON(DOOM_VERSIONS_FILE, updatedVersions, { spaces: 2 })
-    console.log(`[DEBUG] syncDoomVersions: Synced ${updatedVersions.length} versions to ${DOOM_VERSIONS_FILE}`)
+    console.log(
+      `[DEBUG] syncDoomVersions: Synced ${updatedVersions.length} versions to ${DOOM_VERSIONS_FILE}`
+    )
 
     // Prepare resolved versions for the UI
     const resolvedVersions = updatedVersions.map((v) => ({
@@ -402,11 +453,13 @@ export async function syncDoomVersions(options: { notifyDelta?: boolean } = {}):
       const oldIds = new Set(oldVersions.map((v) => v.id))
       const newIds = new Set(resolvedVersions.map((v) => v.id))
       const added = resolvedVersions.filter((v) => !oldIds.has(v.id))
-      const removed = oldVersions.map(v => ({
-        ...v,
-        icon: v.icon ? resolvePath(v.icon) : v.icon,
-        defaultIwad: v.defaultIwad ? resolvePath(v.defaultIwad) : v.defaultIwad
-      })).filter((v) => !newIds.has(v.id))
+      const removed = oldVersions
+        .map((v) => ({
+          ...v,
+          icon: v.icon ? resolvePath(v.icon) : v.icon,
+          defaultIwad: v.defaultIwad ? resolvePath(v.defaultIwad) : v.defaultIwad
+        }))
+        .filter((v) => !newIds.has(v.id))
       delta = { added, removed }
     }
 
@@ -416,7 +469,7 @@ export async function syncDoomVersions(options: { notifyDelta?: boolean } = {}):
     })
 
     return resolvedVersions
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error syncing Doom versions:', error)
     return []
   }
@@ -427,7 +480,7 @@ export async function getDoomVersionBySlug(slug: string): Promise<IDoomVersion |
   try {
     const versions = await getDoomVersions()
     return versions.find((v) => v.slug === slug)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error getting Doom version by slug ${slug}:`, error)
     return undefined
   }
@@ -444,15 +497,17 @@ export async function saveDoomVersions(versions: IDoomVersion[]): Promise<void> 
     BrowserWindow.getAllWindows().forEach((win) => {
       win.webContents.send('doom-versions-updated')
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error saving Doom versions:', error)
-    throw new Error(`Failed to save Doom versions: ${error.message}`)
+    throw new Error(
+      `Failed to save Doom versions: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
 
 // === Mod File Catalog ===
 // Get the mod file catalog
-export async function getModFileCatalog(): Promise<any[]> {
+export async function getModFileCatalog(): Promise<IModFile[]> {
   try {
     const filePath = path.join(CONFIG_DIR, 'modFileCatalogue.json')
     console.log('[DEBUG] Reading modFileCatalogue.json from:', filePath)
@@ -503,9 +558,11 @@ export async function moveFile(filePath: string, newPath: string): Promise<strin
 
     console.log('Moved file to', resolvedDest)
     return resolvedDest
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error moving file:', error)
-    throw new Error(`Failed to move file: ${error.message}`)
+    throw new Error(
+      `Failed to move file: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
 
@@ -525,9 +582,32 @@ export async function moveToModFolder(
 
     console.log(`[DEBUG] Moved file to mod folder: ${fullPath} (relative: ${relativePath})`)
     return { fullPath, relativePath }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error moving file to mod folder:', error)
-    throw new Error(`Failed to move file to mod folder: ${error.message}`)
+    throw new Error(
+      `Failed to move file to mod folder: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
+}
+
+// Copy a local image file to the images directory
+export async function copyImageToImages(sourcePath: string): Promise<string> {
+  try {
+    const fileName = sourcePath.split(/[\\/]/).pop() || `image_${Date.now()}`
+    const timestamp = Date.now()
+    const uniqueFileName = `${timestamp}_${fileName}`
+    const destPath = path.join(IMAGES_DIR, uniqueFileName)
+
+    await fs.ensureDir(IMAGES_DIR)
+    await fs.copy(sourcePath, destPath)
+
+    console.log(`[DEBUG] Image copied to: ${destPath}`)
+    return uniqueFileName
+  } catch (error: unknown) {
+    console.error('Error copying image:', error)
+    throw new Error(
+      `Failed to copy image: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
 
@@ -560,9 +640,11 @@ export async function downloadImage(url: string, modId: string): Promise<string>
 
     console.log(`[DEBUG] Image downloaded via axios and saved to: ${filePath}`)
     return fileName // Return just the filename
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error downloading image:', error)
-    throw new Error(`Failed to download image: ${error.message}`)
+    throw new Error(
+      `Failed to download image: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
 
@@ -605,9 +687,11 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id' | 'modId'>):
       return createdFile
     }
     throw new Error('Invalid file: filePath is required')
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error adding mod file to catalog:', error)
-    throw new Error(`Failed to add mod file to catalog: ${error.message}`)
+    throw new Error(
+      `Failed to add mod file to catalog: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
 
@@ -622,7 +706,10 @@ export async function updateModFileInCatalog(
     const index = catalog.findIndex((f) => String(f.id) === String(id))
 
     if (index === -1) {
-      console.error(`[DEBUG] Catalog update failed: Mod file with ID ${id} not found in catalog. Content of catalog IDs:`, catalog.map(f => f.id))
+      console.error(
+        `[DEBUG] Catalog update failed: Mod file with ID ${id} not found in catalog. Content of catalog IDs:`,
+        catalog.map((f) => f.id)
+      )
       throw new Error(`Mod file with ID ${id} not found in catalog`)
     }
 
@@ -630,11 +717,15 @@ export async function updateModFileInCatalog(
     catalog[index] = updatedFile
 
     await fs.writeJSON(MOD_FILE_CATALOG, catalog, { spaces: 2 })
-    console.log(`[DEBUG] Successfully updated mod file ${id} in catalog (new name: ${updates.name})`)
+    console.log(
+      `[DEBUG] Successfully updated mod file ${id} in catalog (new name: ${updates.name})`
+    )
     return updatedFile
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error updating mod file ${id} in catalog:`, error)
-    throw new Error(`Failed to update mod file: ${error.message}`)
+    throw new Error(
+      `Failed to update mod file: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
 
@@ -653,11 +744,12 @@ export async function saveMod(modData: IMod & { files: IModFile[] }): Promise<IM
     await fs.writeJSON(modFilePath, modData, { spaces: 2 })
     // Return only the IMod part (without files) as per previous usage?
     // Or return the whole saved object? Let's return the IMod part for now.
-    const { files, ...mod } = modData
+    const mod = { ...modData }
+    delete (mod as Record<string, unknown>).files
     return mod as IMod
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error saving mod:', error)
-    throw new Error(`Failed to save mod: ${error.message}`)
+    throw new Error(`Failed to save mod: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -679,15 +771,16 @@ export async function getMods(): Promise<IMod[]> {
           // Read the flat mod data { ...IMod, files: [...] }
           const modData = await fs.readJSON(modFilePath)
           // Extract the mod part (excluding files)
-          const { files, ...mod } = modData
+          const mod = { ...modData }
+          delete (mod as Record<string, unknown>).files
           mods.push(mod as IMod)
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error(`Error reading mod file ${modFilename}:`, err)
         }
       }
     }
     return mods
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting mods:', error)
     return []
   }
@@ -709,9 +802,9 @@ export async function getMod(modId: string): Promise<IMod & { files: IModFile[] 
       modData.files = []
     }
     return modData as IMod & { files: IModFile[] }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error getting mod ${modId}:`, error)
-    throw new Error(`Failed to get mod: ${error.message}`)
+    throw new Error(`Failed to get mod: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -721,7 +814,7 @@ export async function getMod(modId: string): Promise<IMod & { files: IModFile[] 
 async function ensureDir(dirPath: string): Promise<void> {
   try {
     await fs.ensureDir(dirPath);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error ensuring directory ${dirPath}:`, error);
   }
 }
@@ -785,43 +878,44 @@ export async function getDoomVersion(id: string): Promise<IDoomVersion | undefin
   try {
     const versions = await getDoomVersions()
     return versions.find((v) => v.id === id)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error getting Doom version by id ${id}:`, error)
     return undefined
   }
 }
 
-export async function createDoomVersion(_data: any) {
+export async function createDoomVersion(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _data: Partial<IDoomVersion>
+): Promise<IDoomVersion | null> {
   // TODO: Implement createDoomVersion
   return null
 }
 
-export async function updateDoomVersion(id: string, updates: Partial<IDoomVersion>): Promise<IDoomVersion> {
-  try {
-    const versions = await getDoomVersions()
-    const index = versions.findIndex((v) => v.id === id)
-
-    if (index === -1) {
-      throw new Error(`Doom version with ID ${id} not found`)
-    }
-
-    const updatedVersion = { ...versions[index], ...updates }
-    versions[index] = updatedVersion
-
-    await saveDoomVersions(versions)
-    return updatedVersion
-  } catch (error: any) {
-    console.error(`Error updating Doom version ${id}:`, error)
-    throw new Error(`Failed to update Doom version: ${error.message}`)
-  }
-}
-
-export async function deleteDoomVersion(_id: string | number) {
+export async function deleteDoomVersion(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _id: string | number
+): Promise<boolean> {
   // TODO: Implement deleteDoomVersion
   return false
 }
 
-export async function updateSettings(settings: any) {
+export async function updateDoomVersion(
+  id: string,
+  updates: Partial<IDoomVersion>
+): Promise<IDoomVersion> {
+  const versions = await getDoomVersions()
+  const index = versions.findIndex((v) => v.id === id)
+  if (index === -1) {
+    throw new Error(`Doom version with ID ${id} not found`)
+  }
+  const updated = { ...versions[index], ...updates }
+  versions[index] = updated
+  await saveDoomVersions(versions)
+  return updated
+}
+
+export async function updateSettings(settings: IAppSettings): Promise<IAppSettings> {
   // TODO: Implement updateSettings
   return settings
 }
@@ -831,36 +925,46 @@ export async function getAvailableModFiles(): Promise<IModFile[] | undefined> {
   return []
 }
 
-export async function getModFilesByType(_fileType: string): Promise<IModFile[] | undefined> {
+export async function getModFilesByType(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _fileType: string
+): Promise<IModFile[]> {
   // TODO: Implement getModFilesByType
   return []
 }
 
-export async function createModFile(file: any): Promise<IModFile | undefined> {
+export async function createModFile(file: Omit<IModFile, 'id' | 'modId'>): Promise<IModFile> {
   // TODO: Implement createModFile
-  return file
+  return file as unknown as IModFile
 }
 
 export async function getModsByDoomVersion(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _versionId: string | number
-): Promise<IMod[] | undefined> {
+): Promise<IMod[]> {
   // TODO: Implement getModsByDoomVersion
   return []
 }
 
-export async function getModFiles(_modId: string | number): Promise<IModFile[] | undefined> {
+export async function getModFiles(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _modId: string | number
+): Promise<IModFile[]> {
   // TODO: Implement getModFiles
   return []
 }
 
-export async function createMod(mod: any): Promise<IMod | undefined> {
+export async function createMod(mod: InsertMod): Promise<IMod> {
   // TODO: Implement createMod
-  return mod
+  return { ...mod, id: '', files: [] } as IMod
 }
 
-export async function updateMod(_id: string | number, _mod: any): Promise<IMod | undefined> {
+export async function updateMod(
+  _id: string | number,
+  _mod: Partial<IMod>
+): Promise<IMod | undefined> {
   // TODO: Implement updateMod
-  return _mod
+  return _mod as unknown as IMod
 }
 
 export async function deleteMod(id: string | number): Promise<boolean | undefined> {
@@ -877,15 +981,29 @@ export async function deleteMod(id: string | number): Promise<boolean | undefine
       console.warn('[DEBUG] Mod file does not exist:', modFilePath)
       return false
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting mod:', error)
     return false
   }
 }
 
-export async function deleteModFile(_id: string | number): Promise<boolean | undefined> {
-  // TODO: Implement deleteModFile
-  return false
+export async function deleteModFileFromCatalog(fileId: number): Promise<boolean> {
+  try {
+    const catalog = await getModFileCatalog()
+    const index = catalog.findIndex((f) => f.id === fileId)
+    if (index === -1) {
+      throw new Error(`File with ID ${fileId} not found in catalog`)
+    }
+
+    catalog.splice(index, 1)
+    await fs.writeJSON(MOD_FILE_CATALOG, catalog, { spaces: 2 })
+    return true
+  } catch (error) {
+    console.error('Error deleting file from catalog:', error)
+    throw new Error(
+      `Failed to delete file from catalog: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
 }
 
 // Migration helpers
@@ -900,8 +1018,9 @@ export async function checkLegacyConfig(): Promise<{ found: boolean; path: strin
   for (const legacyPath of LEGACY_CONFIG_DIRS) {
     if (fs.existsSync(legacyPath)) {
       // Check if it has content (e.g., settings.json or mods folder)
-      const hasContent = fs.existsSync(path.join(legacyPath, 'settings.json')) || 
-                         fs.existsSync(path.join(legacyPath, 'mods'))
+      const hasContent =
+        fs.existsSync(path.join(legacyPath, 'settings.json')) ||
+        fs.existsSync(path.join(legacyPath, 'mods'))
       if (hasContent) {
         return { found: true, path: legacyPath }
       }
@@ -918,7 +1037,7 @@ export async function executeMigration(sourcePath: string): Promise<boolean> {
     }
 
     console.log(`[MIGRATION] Migrating from ${resolvedSource} to ${CONFIG_DIR}`)
-    
+
     // Ensure new config dir exists
     await fs.ensureDir(CONFIG_DIR)
 

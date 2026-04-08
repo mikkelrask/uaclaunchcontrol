@@ -129,7 +129,6 @@ export const gameService = {
     return handleApiResponse<{ success: boolean; message: string }>(response)
   },
 
-
   // Move file
   async moveFile(
     filePath: string,

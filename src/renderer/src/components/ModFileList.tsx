@@ -1,8 +1,15 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { IModFile } from '@shared/schema'
-import { Trash, Plus, ChevronUp, ChevronDown } from 'lucide-react'
+import { Trash, ChevronUp, ChevronDown, Plus } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { gameService } from '@/lib/gameService'
 
 interface ModFileListProps {
   files: IModFile[]
@@ -10,44 +17,17 @@ interface ModFileListProps {
 }
 
 export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => {
-  const [newFilePath, setNewFilePath] = useState('')
+  const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
 
-  const addFile = () => {
-    if (!newFilePath.trim()) return
+  useEffect(() => {
+    gameService.getModFileCatalog().then(setCatalogFiles).catch(console.error)
+  }, [])
 
-    const fileName = newFilePath.split(/[\\/]/).pop() || newFilePath
-    const extension = fileName.split('.').pop()?.toUpperCase() || ''
-    let fileType = 'WAD'
-
-    if (extension === 'PK3' || extension === 'IPK3' || extension === 'ZIP') {
-      fileType = 'PK3'
-    } else if (extension === 'DEH' || extension === 'BEX') {
-      fileType = 'DEH'
-    } else if (extension === 'WAD') {
-      fileType = 'WAD'
-    } else {
-      fileType = extension || 'unknown'
-    }
-
-    const newFile: IModFile = {
-      id: -Math.random(), // Temporary negative ID for new files
-      modId: String(files[0]?.modId || 0),
-      filePath: newFilePath,
-      fileName,
-      fileType,
-      loadOrder: files.length,
-      isRequired: true
-    }
-
-    onChange([...files, newFile])
-    setNewFilePath('')
-  }
-
-  const removeFile = (fileId: number) => {
+  const removeFile = (fileId: number): void => {
     onChange(files.filter((f) => f.id !== fileId))
   }
 
-  const moveUp = (index: number) => {
+  const moveUp = (index: number): void => {
     if (index <= 0) return
     const newFiles = [...files]
     ;[newFiles[index - 1], newFiles[index]] = [newFiles[index], newFiles[index - 1]]
@@ -60,7 +40,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
     onChange(newFiles)
   }
 
-  const moveDown = (index: number) => {
+  const moveDown = (index: number): void => {
     if (index >= files.length - 1) return
     const newFiles = [...files]
     ;[newFiles[index], newFiles[index + 1]] = [newFiles[index + 1], newFiles[index]]
@@ -112,15 +92,58 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
       )}
 
       <div className="flex mt-3 space-x-2">
-        <Input
-          value={newFilePath}
-          onChange={(e) => setNewFilePath(e.target.value)}
-          placeholder="Path to mod file (.wad, .pk3, etc.)"
-          className="text-xs bg-app-secondary border-app"
-        />
+        <Select
+          value=""
+          onValueChange={(value) => {
+            if (value) {
+              const catalogFile = catalogFiles.find((f) => f.id.toString() === value)
+              if (catalogFile && catalogFile.filePath) {
+                const fileName = catalogFile.fileName || catalogFile.name || ''
+                const extension = fileName.split('.').pop()?.toUpperCase() || ''
+                let fileType = 'WAD'
+                if (extension === 'PK3' || extension === 'IPK3' || extension === 'ZIP') {
+                  fileType = 'PK3'
+                } else if (extension === 'DEH' || extension === 'BEX') {
+                  fileType = 'DEH'
+                }
+
+                const newFile: IModFile = {
+                  id: catalogFile.id,
+                  modId: String(files[0]?.modId || 0),
+                  filePath: catalogFile.filePath,
+                  fileName,
+                  fileType,
+                  loadOrder: files.length,
+                  isRequired: true,
+                  name: catalogFile.name || ''
+                }
+                onChange([...files, newFile])
+              }
+            }
+          }}
+        >
+          <SelectTrigger className="flex-1 bg-app-secondary border-app text-xs">
+            <SelectValue placeholder="Select from catalog or add new file" />
+          </SelectTrigger>
+          <SelectContent className="bg-app-secondary border-app max-h-[300px]">
+            {catalogFiles.length === 0 ? (
+              <SelectItem value="empty" disabled>
+                No files in catalog
+              </SelectItem>
+            ) : (
+              catalogFiles.map((catFile) => (
+                <SelectItem key={catFile.id} value={catFile.id.toString()}>
+                  {catFile.name}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
         <Button
           type="button"
-          onClick={addFile}
+          onClick={() => {
+            // This would open the file browser - for now just toast that it's not implemented
+          }}
           size="sm"
           variant="outline"
           className="bg-app-secondary border-app"

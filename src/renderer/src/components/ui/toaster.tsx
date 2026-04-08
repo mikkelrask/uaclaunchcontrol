@@ -1,3 +1,4 @@
+import React from 'react'
 import { useToast } from '@/hooks/use-toast'
 import {
   Toast,
@@ -8,7 +9,7 @@ import {
   ToastViewport
 } from '@/components/ui/toast'
 
-export function Toaster() {
+export const Toaster = (): React.ReactElement => {
   const { toasts } = useToast()
 
   return (

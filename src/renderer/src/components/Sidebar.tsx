@@ -28,16 +28,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeVersion, onVersionSelect
         {isLoading ? (
           <p>Loading...</p>
         ) : (
-          versions.filter((v) => !v.ignored).map((version) => (
-            <div
-              key={version.id}
-              className={`sidebar-icon ${activeVersion === version.id ? 'active' : ''}`}
-              onClick={() => onVersionSelect(version.id)}
-            >
-              <DoomVersionIcon version={version.slug} customIcon={version.icon} />
-              <span className="sr-only">{version.name}</span>
-            </div>
-          ))
+          versions
+            .filter((v) => !v.ignored)
+            .map((version) => (
+              <div
+                key={version.id}
+                className={`sidebar-icon ${activeVersion === version.id ? 'active' : ''}`}
+                onClick={() => onVersionSelect(version.id)}
+              >
+                <DoomVersionIcon version={version.slug} customIcon={version.icon} />
+                <span className="sr-only">{version.name}</span>
+              </div>
+            ))
         )}
       </div>
     </div>

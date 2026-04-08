@@ -60,9 +60,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream')
       return fs.createReadStream(resolved).pipe(res)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error serving media:', error)
-      return res.status(500).json({ error: error.message })
+      const message =
+        error instanceof Error
+          ? error instanceof Error
+            ? error.message
+            : 'Failed to serve media'
+          : 'Failed to serve media'
+      return res.status(500).json({ error: message })
     }
   })
 
@@ -82,12 +88,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
-  // Serve mod images dynamically from the configured mods directory
+  // Serve mod images dynamically from the images directory
   app.get('/images/:fileName', async (req, res) => {
     try {
-      const settings = await storage.getSettings()
-      const modsDir = storage.resolvePath(settings.modsDirectory || storage.MODS_DIR)
-      const filePath = path.join(modsDir, req.params.fileName)
+      const filePath = path.join(storage.IMAGES_DIR, req.params.fileName)
 
       console.log(`[DEBUG] Serving image request: ${req.params.fileName}`)
       console.log(`[DEBUG] Full disk path: ${filePath}`)
@@ -125,8 +129,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const fileName = await storage.downloadImage(url, modId)
       return res.json({ fileName })
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
+    }
+  })
+
+  // Upload screenshot route
+  app.post('/api/screenshots/upload', async (req, res) => {
+    const { filePath } = req.body
+    if (!filePath) {
+      return res.status(400).json({ error: 'Missing filePath' })
+    }
+    try {
+      const fileName = await storage.copyImageToImages(filePath)
+      return res.json({ fileName })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: error instanceof Error ? error.message : 'Failed to upload screenshot' })
     }
   })
 
@@ -173,8 +195,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { mod, files } = await gameService.getMod(id)
       return res.json({ mod, files })
-    } catch (error: any) {
-      return res.status(404).json({ message: error.message || 'Mod not found' })
+    } catch (error: unknown) {
+      return res.status(404).json({
+        message: error instanceof Error ? error.message : 'Mod not found'
+      })
     }
   })
 
@@ -190,8 +214,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const savedMod = await gameService.saveMod(mod, files || [])
       return res.status(201).json(savedMod)
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message || 'Failed to save mod' })
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to save mod'
+      })
     }
   })
 
@@ -210,8 +236,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const updatedMod = await gameService.saveMod(mod, files || [])
       return res.json(updatedMod)
-    } catch (error: any) {
-      return res.status(404).json({ message: error.message || 'Mod not found or failed to update' })
+    } catch (error: unknown) {
+      return res.status(404).json({
+        message: error instanceof Error ? error.message : 'Mod not found or failed to update'
+      })
     }
   })
 
@@ -227,8 +255,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('Mod not found or failed to delete')
       }
       return res.status(204).send()
-    } catch (error: any) {
-      return res.status(404).json({ message: error.message || 'Mod not found or failed to delete' })
+    } catch (error: unknown) {
+      return res.status(404).json({
+        message: error instanceof Error ? error.message : 'Mod not found or failed to delete'
+      })
     }
   })
 
@@ -244,8 +274,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error(result.message || 'Failed to launch mod')
       }
       return res.json({ success: true })
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message || 'Failed to launch mod' })
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to launch mod'
+      })
     }
   })
 
@@ -281,9 +313,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('File added to catalog successfully:', savedFile)
 
       return res.status(201).json(savedFile)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error in POST /api/mod-files/catalog:', error)
-      return res.status(500).json({ message: error.message || 'Failed to add file to catalog' })
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to add file to catalog'
+      })
     }
   })
 
@@ -293,8 +327,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!sourcePath) return res.status(400).json({ message: 'Missing sourcePath' })
       const result = await storage.moveToModFolder(sourcePath)
       return res.json(result)
-    } catch (error: any) {
-      return res.status(500).json({ message: error.message })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ message: error instanceof Error ? error.message : 'Failed to serve media' })
     }
   })
 
@@ -309,9 +345,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedFile = await storage.updateModFileInCatalog(id, updates)
       return res.json(updatedFile)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error in PUT /api/mod-files/catalog/${req.params.id}:`, error)
-      return res.status(500).json({ message: error.message || 'Failed to update file in catalog' })
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to update file in catalog'
+      })
+    }
+  })
+
+  // Delete a file from the catalog
+  app.delete('/api/mod-files/catalog/:id', async (req, res) => {
+    try {
+      const { id } = req.params
+      const fileId = parseInt(id, 10)
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: 'Invalid file ID' })
+      }
+      await storage.deleteModFileFromCatalog(fileId)
+      return res.json({ success: true })
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to delete file from catalog'
+      })
     }
   })
 
@@ -323,9 +378,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[API] PUT /api/versions/${id} - Updates:`, updates)
       const updatedVersion = await storage.updateDoomVersion(id, updates)
       res.json({ success: true, data: updatedVersion })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`[API] Error updating version ${req.params.id}:`, error)
-      res.status(500).json({ success: false, error: error.message })
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to serve media'
+      })
     }
   })
 
@@ -389,8 +447,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const info = await storage.checkLegacyConfig()
       return res.json(info)
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
     }
   })
 
@@ -400,8 +460,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!sourcePath) return res.status(400).json({ error: 'Missing sourcePath' })
       const success = await storage.executeMigration(sourcePath)
       return res.json({ success })
-    } catch (error: any) {
-      return res.status(500).json({ error: error.message })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
     }
   })
 

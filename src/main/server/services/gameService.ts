@@ -45,7 +45,7 @@ export class GameService {
 
       // storage.saveMod now returns the IMod part, so just return that
       return savedMod
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error saving mod ${mod.id}:`, error)
       return undefined
     }
@@ -56,7 +56,7 @@ export class GameService {
     try {
       const modFilePath = path.join(MODS_DIR, `${id}.json`)
       return await fileService.deleteFile(modFilePath)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error deleting mod ${id}:`, error)
       return false
     }
@@ -121,7 +121,9 @@ export class GameService {
               } else {
                 const modsDir = storage.resolvePath(settings.modsDirectory || '')
                 fullPath = path.join(modsDir, 'files', file.filePath)
-                console.log(`[DEBUG] Resolved relative file: ${file.filePath} -> ${fullPath} (modsDir: ${modsDir})`)
+                console.log(
+                  `[DEBUG] Resolved relative file: ${file.filePath} -> ${fullPath} (modsDir: ${modsDir})`
+                )
               }
               fileArgs.push(fullPath)
             } else {
@@ -176,16 +178,15 @@ export class GameService {
       }
 
       // Quote arguments that contain spaces for clearer logging and potential shell compatibility
-      const quotedArgs = args.map(arg => {
+      const quotedArgs = args.map((arg) => {
         if (arg.includes(' ') && !arg.startsWith('"') && !arg.startsWith("'")) {
           return `"${arg}"`
         }
         return arg
       })
 
-      const quotedExecutable = (executable.includes(' ') && !executable.startsWith('"')) 
-        ? `"${executable}"` 
-        : executable
+      const quotedExecutable =
+        executable.includes(' ') && !executable.startsWith('"') ? `"${executable}"` : executable
 
       // Log the full command for debugging
       console.log('Launching command:', quotedExecutable, quotedArgs.join(' '))
@@ -193,9 +194,9 @@ export class GameService {
       // Launch the game using fileService
       const success = await fileService.launchGame(executable, args)
       return { success }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error launching mod ${id}:`, error)
-      return { success: false, message: error.message }
+      return { success: false, message: error instanceof Error ? error.message : String(error) }
     }
   }
 }

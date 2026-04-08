@@ -13,7 +13,6 @@ export interface IMod {
   doomVersionId?: string // Consistently use string for IDs
   sourcePort?: string
   saveDirectory?: string
-  moddbId?: number
   launchParameters?: string
   posterImage?: string
   screenshotPath?: string
@@ -52,7 +51,12 @@ export interface IDoomVersion {
 export interface IResponseMessage {
   success: boolean
   error?: string
-  data?: any
+  data?: unknown
+}
+
+export interface IDoomVersionDelta {
+  added?: IDoomVersion[]
+  removed?: IDoomVersion[]
 }
 
 // App settings
@@ -66,4 +70,3 @@ export interface IAppSettings {
   defaultSourcePort?: string
   configPath?: string
 }
-

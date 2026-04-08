@@ -16,7 +16,7 @@ export const LaunchOptions: React.FC<LaunchOptionsProps> = ({ launchParameters, 
     setParameters(launchParameters)
   }, [launchParameters])
 
-  const handleEdit = () => {
+  const handleEdit = (): void => {
     setIsEditing(!isEditing)
 
     if (isEditing) {
@@ -24,7 +24,7 @@ export const LaunchOptions: React.FC<LaunchOptionsProps> = ({ launchParameters, 
     }
   }
 
-  const getExampleParameters = () => {
+  const getExampleParameters = (): string[] => {
     const examples = [
       '-skill 4 (Ultra-Violence difficulty)',
       '-warp E1M1 (start at Episode 1, Map 1)',

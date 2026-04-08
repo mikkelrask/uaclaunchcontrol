@@ -7,6 +7,7 @@ A modern desktop application for managing and launching Doom mods, built with El
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
 
 ![UAC Launch Control is Modded Rip and Tear on Easy Mode!](https://github.com/mikkelrask/uaclaunchcontrol/blob/main/IMG/macos-confirmed.png?raw=true)
+
 ## Overview
 
 UAC Launch Control is a mod launcher for **UZDoom/GZDoom/ZDoom** with big ambitions. It provides an intuitive interface for organizing your Doom WADs, managing mod files, and launching games with custom configurations.
@@ -96,6 +97,7 @@ pnpm dev
 ```
 
 This will:
+
 - Start the Vite dev server for the renderer (port 5173)
 - Start the Electron app with the Express API server (port 7666)
 - Start a file watcher on your WADs directory for real-time sync
@@ -106,19 +108,23 @@ pnpm build
 ```
 
 ### Platform-specific builds
+
 ```bash
 pnpm build:win    # Windows
 pnpm build:mac    # macOS
 pnpm build:linux  # Linux
 ```
+
 Built applications will be in the `dist/` directory.
 
 ## Configuration
+
 Done via the application settings via the cog icon in the top right corner, but everything is also stored in plain text json files, so you can edit them manually if you want to. All paths support tilde (`~`) expansion.
 
 ### Storage Location
 
 All application data is stored in `~/.config/uac/`:
+
 ```
 ~/.config/uac/
 ├── settings.json           # App settings (paths, preferences)
@@ -169,6 +175,7 @@ The Express server exposes the following REST API:
 ### TypeScript Configuration
 
 The project uses separate TypeScript configurations:
+
 - `tsconfig.node.json` - Main process and server code
 - `tsconfig.web.json` - Renderer process (includes `src/shared`)
 

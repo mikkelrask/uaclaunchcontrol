@@ -2,7 +2,7 @@ import { QueryClient, QueryFunction } from '@tanstack/react-query'
 
 const API_BASE = 'http://localhost:7666'
 
-async function throwIfResNotOk(res: Response) {
+async function throwIfResNotOk(res: Response): Promise<void> {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText
     throw new Error(`${res.status}: ${text}`)

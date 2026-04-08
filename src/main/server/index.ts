@@ -14,10 +14,10 @@ expressApp.use(express.urlencoded({ extended: false }))
 expressApp.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now()
   const path = req.path
-  let capturedJsonResponse: Record<string, any> | undefined = undefined
+  let capturedJsonResponse: unknown | undefined = undefined
 
   const originalResJson = res.json
-  res.json = function (bodyJson: any) {
+  res.json = function (bodyJson: unknown) {
     capturedJsonResponse = bodyJson
     return originalResJson.call(res, bodyJson)
   }
@@ -42,7 +42,7 @@ expressApp.use((req: Request, res: Response, next: NextFunction) => {
 })
 
 // Make launchMod available for import
-export async function launchMod(modId: number) {
+export async function launchMod(modId: number): Promise<{ success: boolean; message: string }> {
   try {
     const mod = await storage.getMod(modId.toString())
     if (!mod) {
@@ -87,13 +87,13 @@ export async function launchMod(modId: number) {
     process.unref()
 
     return { success: true, message: 'Mod launched' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to launch mod:', error)
-    return { success: false, message: error.message }
+    return { success: false, message: error instanceof Error ? error.message : String(error) }
   }
 }
 
-export async function startServer() {
+export async function startServer(): Promise<void> {
   console.log('Starting Production Server...')
   console.log('Current working directory:', process.cwd())
 
@@ -102,13 +102,21 @@ export async function startServer() {
 
   const server = await registerRoutes(expressApp)
 
-  expressApp.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500
-    const message = err.message || 'Internal Server Error'
+  expressApp.use(
+    (
+      err: Error & { status?: number; statusCode?: number },
+      _req: Request,
+      res: Response,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      _next: NextFunction
+    ) => {
+      const status = err.status || err.statusCode || 500
+      const message = err.message || 'Internal Server Error'
 
-    res.status(status).json({ message })
-    throw err
-  })
+      res.status(status).json({ message })
+      throw err
+    }
+  )
 
   // Use serveStatic directly for production
   console.log('Starting static server...')

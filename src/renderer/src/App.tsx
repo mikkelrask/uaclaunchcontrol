@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api'
 import { IAppSettings } from '@shared/schema'
 
-function AppRouter() {
+const AppRouter: React.FC = () => {
   return (
     <Router hook={useHashLocation}>
       <Switch>
@@ -26,7 +26,7 @@ function AppRouter() {
   )
 }
 
-function App() {
+const App: React.FC = () => {
   const { toast } = useToast()
 
   // Global settings query for theme sync
@@ -52,7 +52,7 @@ function App() {
 
         // Show toasts if wads were added or removed
         if (data?.added && data.added.length > 0) {
-          data.added.forEach((wad: any) => {
+          data.added.forEach((wad) => {
             toast({
               title: 'New WAD Found',
               description: `Added "${wad.name}" to your library.`
@@ -61,7 +61,7 @@ function App() {
         }
 
         if (data?.removed && data.removed.length > 0) {
-          data.removed.forEach((wad: any) => {
+          data.removed.forEach((wad) => {
             toast({
               title: 'WAD Removed',
               description: `Removed "${wad.name}" from your library.`
@@ -74,7 +74,7 @@ function App() {
 
   // Migration check on startup
   useEffect(() => {
-    const checkAndPromptMigration = async () => {
+    const checkAndPromptMigration = async (): Promise<void> => {
       try {
         const info = await api.checkMigration()
         if (info.found && info.path) {
@@ -101,7 +101,7 @@ function App() {
                         variant: 'destructive'
                       })
                     }
-                  } catch (err) {
+                  } catch {
                     toast({
                       title: 'Error',
                       description: 'Failed to execute migration.',

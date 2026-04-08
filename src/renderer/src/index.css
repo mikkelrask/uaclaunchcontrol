@@ -161,14 +161,13 @@
 }
 
 @layer components {
-
   /* Aspect ratio utilities */
   .aspect-w-16 {
     position: relative;
     padding-bottom: calc(9 / 16 * 100%);
   }
 
-  .aspect-w-16>* {
+  .aspect-w-16 > * {
     position: absolute;
     height: 100%;
     width: 100%;

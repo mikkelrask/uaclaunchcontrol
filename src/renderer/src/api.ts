@@ -75,6 +75,19 @@ export const api = {
     return response.json()
   },
 
+  deleteFromCatalog: async (id: number): Promise<{ success: boolean }> => {
+    const response = await fetch(`${API_BASE}/api/mod-files/catalog/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to delete file from catalog')
+    }
+
+    return response.json()
+  },
+
   // Mod operations
   createMod: async (mod: Omit<IMod, 'id'>): Promise<IMod> => {
     const response = await fetch(`${API_BASE}/api/mods`, {
@@ -89,7 +102,7 @@ export const api = {
   },
 
   // Dialog operations for file selection
-  showOpenDialog: async (options: any): Promise<{ canceled: boolean; filePaths: string[] }> => {
+  showOpenDialog: async (options: object): Promise<{ canceled: boolean; filePaths: string[] }> => {
     console.log('Showing open dialog with options:', options)
     const response = await fetch(`${API_BASE}/api/dialog/open`, {
       method: 'POST',
@@ -121,7 +134,7 @@ export const api = {
     if (!response.ok) throw new Error('Failed to update Doom versions')
     return response.json()
   },
-  
+
   updateDoomVersion: async (id: string, updates: Partial<IDoomVersion>) => {
     const response = await fetch(`${API_BASE}/api/versions/${id}`, {
       method: 'PUT',
@@ -141,7 +154,9 @@ export const api = {
     if (!response.ok) throw new Error('Failed to move file')
     return response.json()
   },
-  moveToModFolder: async (sourcePath: string): Promise<{ fullPath: string; relativePath: string }> => {
+  moveToModFolder: async (
+    sourcePath: string
+  ): Promise<{ fullPath: string; relativePath: string }> => {
     const response = await fetch(`${API_BASE}/api/mod-files/move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -157,6 +172,16 @@ export const api = {
       body: JSON.stringify({ url, modId })
     })
     if (!response.ok) throw new Error('Failed to download image')
+    return response.json()
+  },
+
+  uploadScreenshot: async (filePath: string): Promise<{ fileName: string }> => {
+    const response = await fetch(`${API_BASE}/api/screenshots/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath })
+    })
+    if (!response.ok) throw new Error('Failed to upload screenshot')
     return response.json()
   },
   checkMigration: async (): Promise<{ found: boolean; path: string | null }> => {
