@@ -8,6 +8,7 @@ import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Form,
   FormControl,
@@ -26,13 +27,12 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-// import ModFileList from '@/components/ModFileList';
 import { useToast } from '@/hooks/use-toast'
 import { gameService } from '@/lib/gameService'
-import { IMod, IModFile, IAppSettings } from '@shared/schema'
+import { IMod, IModFile, IAppSettings, IDoomVersion } from '@shared/schema'
 import { slugify } from '@/lib/utils'
 import { ModFileSelector } from '@/components/ModFileSelector'
-// import path from 'path';
+import { CatalogManager } from '@/components/CatalogManager'
 import { api } from '@/api'
 
 const formSchema = z.object({
@@ -53,12 +53,13 @@ export const InstallPage: React.FC = () => {
   const [activeVersion] = useState<string | null>(null)
   // const [searchQuery] = useState('');
   const [files, setFiles] = useState<IModFile[]>([])
+  const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null)
   // const [currentFilePath, setCurrentFilePath] = useState<string>('');
 
   // Fetch doom versions
-  const { data: versions = [] } = useQuery<any[]>({
+  const { data: versions = [] } = useQuery<IDoomVersion[]>({
     queryKey: ['/api/versions'],
     queryFn: api.getDoomVersions
   })
@@ -68,6 +69,18 @@ export const InstallPage: React.FC = () => {
     queryKey: ['/api/settings'],
     queryFn: gameService.getSettings
   })
+
+  // Fetch catalog files for Add Files tab
+  const { data: catalogData } = useQuery<IModFile[]>({
+    queryKey: ['/api/mod-files/catalog'],
+    queryFn: () => gameService.getModFileCatalog()
+  })
+
+  useEffect(() => {
+    if (catalogData) {
+      setCatalogFiles(catalogData)
+    }
+  }, [catalogData])
 
   // Setup form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -113,11 +126,11 @@ export const InstallPage: React.FC = () => {
     }
   })
 
-  const handleVersionSelect = (version: string) => {
+  const handleVersionSelect = (version: string): void => {
     setLocation(`/?version=${encodeURIComponent(version)}`)
   }
 
-  const handleSearch = (query: string) => {
+  const handleSearch = (query: string): void => {
     // setSearchQuery(query); // Removed unused state
     setLocation(`/?search=${encodeURIComponent(query)}`)
   }
@@ -135,7 +148,7 @@ export const InstallPage: React.FC = () => {
   //   setFiles(updatedFiles)
   // }
 
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+  const onSubmit = async (data: z.infer<typeof formSchema>): Promise<void> => {
     const fileData: IModFile[] = files.map((file, idx) => {
       // Strip directory from filePath and saveDirectory for shareability
       const pathValue = file.filePath || ''
@@ -211,12 +224,12 @@ export const InstallPage: React.FC = () => {
   }
 
   // Wrapper to update file list
-  const handleFilesChange = (newFiles: IModFile[]) => {
+  const handleFilesChange = (newFiles: IModFile[]): void => {
     setFiles(newFiles)
   }
 
   // Native Drag and Drop handlers
-  const handleDragStart = (e: React.DragEvent, index: number) => {
+  const handleDragStart = (e: React.DragEvent, index: number): void => {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', index.toString())
 
@@ -227,7 +240,7 @@ export const InstallPage: React.FC = () => {
     }, 0)
   }
 
-  const handleDragOver = (e: React.DragEvent<HTMLElement>) => {
+  const handleDragOver = (e: React.DragEvent<HTMLElement>): void => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
 
@@ -255,7 +268,7 @@ export const InstallPage: React.FC = () => {
     }
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent): void => {
     e.preventDefault()
     if (draggedIndex === null || insertionIndex === null) {
       handleDragEnd()
@@ -274,7 +287,7 @@ export const InstallPage: React.FC = () => {
     handleDragEnd()
   }
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (): void => {
     setDraggedIndex(null)
     setInsertionIndex(null)
   }
@@ -292,247 +305,289 @@ export const InstallPage: React.FC = () => {
               <CardTitle>New Launch Config</CardTitle>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Title</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="I.e. 'Brutal Doom'"
-                                className="bg-app-primary border-app"
-                                {...field} // Spread field props here
-                                onChange={(e) => {
-                                  const currentTitle = e.target.value // Get full value from event
-                                  field.onChange(currentTitle) // Update title field state
+              <Tabs defaultValue="install">
+                <TabsList className="mb-4 bg-app-primary border-app p-1">
+                  <TabsTrigger
+                    value="install"
+                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-white data-[state=active]:shadow-sm rounded px-4 text-app-secondary data-[state=active]:text-white dark:data-[state=active]:text-white"
+                  >
+                    Install Mod
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="files"
+                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-white data-[state=active]:shadow-sm rounded px-4 text-app-secondary data-[state=active]:text-white dark:data-[state=active]:text-white"
+                  >
+                    Add Files
+                  </TabsTrigger>
+                </TabsList>
 
-                                  // Check if saveDirectory is empty or was auto-filled
-                                  const currentSaveDir = form.getValues('saveDirectory')
-                                  const isSaveDirEmpty = !currentSaveDir
+                <TabsContent value="install">
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Title</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="I.e. 'Brutal Doom'"
+                                    className="bg-app-primary border-app"
+                                    {...field} // Spread field props here
+                                    onChange={(e) => {
+                                      const currentTitle = e.target.value // Get full value from event
+                                      field.onChange(currentTitle) // Update title field state
 
-                                  // Fix: Ensure currentSaveDir exists before calling startsWith
-                                  const wasAutoFilled =
-                                    settings.savegamesPath &&
-                                    currentSaveDir && // Check if currentSaveDir is truthy
-                                    currentSaveDir.startsWith(settings.savegamesPath + '/') &&
-                                    currentSaveDir.length > settings.savegamesPath.length + 1
+                                      // Check if saveDirectory is empty or was auto-filled
+                                      const currentSaveDir = form.getValues('saveDirectory')
+                                      const isSaveDirEmpty = !currentSaveDir
 
-                                  // Only update if empty or previously auto-filled
-                                  if (isSaveDirEmpty || wasAutoFilled) {
-                                    const sluggedTitle = slugify(currentTitle)
-                                    const newSaveDir = settings.savegamesPath
-                                      ? `${settings.savegamesPath}/${sluggedTitle}`
-                                      : sluggedTitle
-                                    // Update saveDirectory state
-                                    form.setValue('saveDirectory', newSaveDir, {
-                                      shouldValidate: true,
-                                      shouldDirty: true
-                                    })
-                                  }
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                                      // Fix: Ensure currentSaveDir exists before calling startsWith
+                                      const wasAutoFilled =
+                                        settings.savegamesPath &&
+                                        currentSaveDir && // Check if currentSaveDir is truthy
+                                        currentSaveDir.startsWith(settings.savegamesPath + '/') &&
+                                        currentSaveDir.length > settings.savegamesPath.length + 1
 
+                                      // Only update if empty or previously auto-filled
+                                      if (isSaveDirEmpty || wasAutoFilled) {
+                                        const sluggedTitle = slugify(currentTitle)
+                                        const newSaveDir = settings.savegamesPath
+                                          ? `${settings.savegamesPath}/${sluggedTitle}`
+                                          : sluggedTitle
+                                        // Update saveDirectory state
+                                        form.setValue('saveDirectory', newSaveDir, {
+                                          shouldValidate: true,
+                                          shouldDirty: true
+                                        })
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                      <FormField
-                        control={form.control}
-                        name="screenshotPath"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Screenshot/Cover URL (Optional)</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter screenshot URL"
-                                className="bg-app-primary border-app"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description (Optional)</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Enter mod description"
-                                className="bg-app-primary border-app"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                          <FormField
+                            control={form.control}
+                            name="screenshotPath"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Screenshot/Cover URL (Optional)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter screenshot URL"
+                                    className="bg-app-primary border-app"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Description (Optional)</FormLabel>
+                                <FormControl>
+                                  <Textarea
+                                    placeholder="Enter mod description"
+                                    className="bg-app-primary border-app"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
 
-                    <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="doomVersionId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Base Game</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger className="bg-app-primary border-app">
-                                  <SelectValue placeholder="Select Base Game/Version" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="bg-app-secondary border-app text-app-primary">
-                                {versions.filter((v) => !v.ignored).map((version) => (
-                                  <SelectItem key={version.id} value={version.id.toString()}>
-                                    {version.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                        <div className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="doomVersionId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Game</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="bg-app-primary border-app">
+                                      <SelectValue placeholder="Select Base Game/Version" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent className="bg-app-secondary border-app text-app-primary">
+                                    {versions
+                                      .filter((v) => !v.ignored)
+                                      .map((version) => (
+                                        <SelectItem key={version.id} value={version.id.toString()}>
+                                          {version.name}
+                                        </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                      <FormField
-                        control={form.control}
-                        name="sourcePort"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Source Port</FormLabel>
-                            <FormControl>
-                              <Input className="bg-app-primary border-app" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                          <FormField
+                            control={form.control}
+                            name="sourcePort"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Source Port</FormLabel>
+                                <FormControl>
+                                  <Input className="bg-app-primary border-app" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                      <FormField
-                        control={form.control}
-                        name="saveDirectory"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Save Directory (Optional)</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder={settings.savegamesPath || ''}
-                                className="bg-app-primary border-app"
-                                {...field}
-                                value={field.value || ''}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                          <FormField
+                            control={form.control}
+                            name="saveDirectory"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Save Directory (Optional)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder={settings.savegamesPath || ''}
+                                    className="bg-app-primary border-app"
+                                    {...field}
+                                    value={field.value || ''}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                      <FormField
-                        control={form.control}
-                        name="launchParameters"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Launch Parameters (Optional)</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="-skill 4 -warp 01"
-                                className="bg-app-primary border-app"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                  <Separator />
-                  <div>
-                    <div className="mb-4">
-                      <ModFileSelector value={files} onChange={handleFilesChange} />
-                    </div>
+                          <FormField
+                            control={form.control}
+                            name="launchParameters"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Launch Parameters (Optional)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="-skill 4 -warp 01"
+                                    className="bg-app-primary border-app"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                      <Separator />
+                      <div>
+                        <div className="mb-4">
+                          <ModFileSelector value={files} onChange={handleFilesChange} />
+                        </div>
 
-                    {files.length > 0 && (
-                      <div className="mb-4 border border-app rounded-md p-2">
-                        <h4 className="font-sans text-xs mb-3 text-app-muted font-bold tracking-widest uppercase">Load Order</h4>
-                        <ul
-                          className="space-y-2"
-                          onDragOver={handleDragOver}
-                          onDrop={handleDrop}
-                        >
-                          {files.map((file, index) => {
-                            const isDragged = draggedIndex === index
-                            const showPlaceholderBefore = insertionIndex === index && draggedIndex !== index
+                        {files.length > 0 && (
+                          <div className="mb-4 border border-app rounded-md p-2">
+                            <h4 className="font-sans text-xs mb-3 text-app-muted font-bold tracking-widest uppercase">
+                              Load Order
+                            </h4>
+                            <ul
+                              className="space-y-2"
+                              onDragOver={handleDragOver}
+                              onDrop={handleDrop}
+                            >
+                              {files.map((file, index) => {
+                                const isDragged = draggedIndex === index
+                                const showPlaceholderBefore =
+                                  insertionIndex === index && draggedIndex !== index
 
-                            return (
-                              <React.Fragment key={`${file.id}-${index}`}>
-                                {showPlaceholderBefore && (
+                                return (
+                                  <React.Fragment key={`${file.id}-${index}`}>
+                                    {showPlaceholderBefore && (
+                                      <li className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+                                        <span className="text-accent-highlight font-sans text-sm tracking-widest uppercase opacity-60">
+                                          drop here
+                                        </span>
+                                      </li>
+                                    )}
+
+                                    <li
+                                      draggable
+                                      data-drag-index={index}
+                                      onDragStart={(e) => handleDragStart(e, index)}
+                                      onDragEnd={handleDragEnd}
+                                      className={`flex items-center justify-between bg-app-primary p-2 rounded cursor-grab active:cursor-grabbing transition-all duration-150 border select-none ${
+                                        isDragged
+                                          ? 'hidden'
+                                          : 'border-transparent hover:border-accent-highlight/30 group'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className="text-app-muted text-xs font-semibold font-mono w-4">
+                                          {index + 1}
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <span className="text-sm font-medium">
+                                            {file.name || file.fileName}
+                                          </span>
+                                          <span className="text-xs text-app-muted">
+                                            ({file.fileType})
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </li>
+                                  </React.Fragment>
+                                )
+                              })}
+
+                              {/* Final placeholder if dragging to end */}
+                              {insertionIndex === files.length &&
+                                draggedIndex !== files.length - 1 && (
                                   <li className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
-                                    <span className="text-accent-highlight font-sans text-sm tracking-widest uppercase opacity-60">
-                                      drop here
+                                    <span className="text-sm text-accent-highlight font-sans tracking-widest uppercase opacity-60">
+                                      new placement
                                     </span>
                                   </li>
                                 )}
-
-                                <li
-                                  draggable
-                                  data-drag-index={index}
-                                  onDragStart={(e) => handleDragStart(e, index)}
-                                  onDragEnd={handleDragEnd}
-                                  className={`flex items-center justify-between bg-app-primary p-2 rounded cursor-grab active:cursor-grabbing transition-all duration-150 border select-none ${isDragged
-                                    ? 'hidden'
-                                    : 'border-transparent hover:border-accent-highlight/30 group'
-                                    }`}
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <div className="text-app-muted text-xs font-semibold font-mono w-4">
-                                      {index + 1}
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span className="text-sm font-medium">{file.name || file.fileName}</span>
-                                      <span className="text-xs text-app-muted">({file.fileType})</span>
-                                    </div>
-                                  </div>
-                                </li>
-                              </React.Fragment>
-                            )
-                          })}
-
-                          {/* Final placeholder if dragging to end */}
-                          {insertionIndex === files.length && draggedIndex !== files.length - 1 && (
-                            <li className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
-                              <span className="text-sm text-accent-highlight font-sans tracking-widest uppercase opacity-60">
-                                new placement
-                              </span>
-                            </li>
-                          )}
-                        </ul>
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  <div className="flex justify-end">
-                    <Button
-                      type="submit"
-                      className="bg-accent-highlight hover:opacity-90"
-                      disabled={!form.watch('title') || !form.watch('doomVersionId')}
-                    >
-                      {createMutation.isPending ? 'Installing...' : 'Install Mod'}
-                    </Button>
+                      <div className="flex justify-end">
+                        <Button
+                          type="submit"
+                          className="bg-accent-highlight hover:opacity-90"
+                          disabled={!form.watch('title') || !form.watch('doomVersionId')}
+                        >
+                          {createMutation.isPending ? 'Installing...' : 'Install Mod'}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </TabsContent>
+
+                <TabsContent value="files">
+                  <div className="space-y-4">
+                    <p className="text-sm text-app-secondary">
+                      Manage your file catalog. Add new files or remove existing ones from the
+                      catalog.
+                    </p>
+                    <CatalogManager
+                      files={catalogFiles}
+                      onChange={(newFiles) => setCatalogFiles(newFiles)}
+                    />
                   </div>
-                </form>
-              </Form>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
