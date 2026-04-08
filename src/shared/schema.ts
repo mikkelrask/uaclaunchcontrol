@@ -67,32 +67,3 @@ export interface IAppSettings {
   configPath?: string
 }
 
-// ModDB API response types
-export interface ModDBSearchResult {
-  id: number
-  name: string
-  summary: string
-  thumbnail: string
-  downloads: number
-  rating: number
-  // Add other properties as needed
-}
-
-export interface ModDBModDetails {
-  id: number
-  name: string
-  summary: string
-  description: string
-  thumbnail: string
-  downloads: number
-  rating: number
-  // Add other properties as needed
-}
-
-export interface ModDBFile {
-  id: number
-  name: string
-  size: number
-  url: string
-  // Add other properties as needed
-}

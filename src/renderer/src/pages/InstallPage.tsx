@@ -7,6 +7,7 @@ import { useLocation } from 'wouter'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import {
   Form,
   FormControl,
@@ -95,7 +96,7 @@ export const InstallPage: React.FC = () => {
       gameService.createMod(data.mod, data.files),
     onSuccess: () => {
       toast({
-        title: 'Success',
+        title: 'Config accepted',
         description: 'Mod installed successfully'
       })
       queryClient.invalidateQueries({ queryKey: ['/api/mods'] })
@@ -221,7 +222,7 @@ export const InstallPage: React.FC = () => {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', index.toString())
 
-    // Wait a tick before hiding the source element so the browser 
+    // Wait a tick before hiding the source element so the browser
     // captures the original element's style for the drag ghost.
     setTimeout(() => {
       setDraggedIndex(index)
@@ -290,7 +291,7 @@ export const InstallPage: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-4">
           <Card className="bg-app-secondary border-app mb-6">
             <CardHeader>
-              <CardTitle>Set Launch Parameters</CardTitle>
+              <CardTitle>New Launch Config</CardTitle>
             </CardHeader>
             <CardContent>
               <Form {...form}>
@@ -302,10 +303,10 @@ export const InstallPage: React.FC = () => {
                         name="title"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Mod Title</FormLabel>
+                            <FormLabel>Title</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="Enter mod title"
+                                placeholder="I.e. 'Brutal Doom'"
                                 className="bg-app-primary border-app"
                                 {...field} // Spread field props here
                                 onChange={(e) => {
@@ -343,6 +344,24 @@ export const InstallPage: React.FC = () => {
                         )}
                       />
 
+
+                      <FormField
+                        control={form.control}
+                        name="screenshotPath"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Screenshot/Cover URL (Optional)</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter screenshot URL"
+                                className="bg-app-primary border-app"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       <FormField
                         control={form.control}
                         name="description"
@@ -352,24 +371,6 @@ export const InstallPage: React.FC = () => {
                             <FormControl>
                               <Textarea
                                 placeholder="Enter mod description"
-                                className="bg-app-primary border-app"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="screenshotPath"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Screenshot URL (Optional)</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter screenshot URL"
                                 className="bg-app-primary border-app"
                                 {...field}
                               />
@@ -390,7 +391,7 @@ export const InstallPage: React.FC = () => {
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger className="bg-app-primary border-app">
-                                  <SelectValue placeholder="Select Doom Version" />
+                                  <SelectValue placeholder="Select Base Game/Version" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent className="bg-app-secondary border-app text-app-primary">
@@ -458,7 +459,7 @@ export const InstallPage: React.FC = () => {
                       />
                     </div>
                   </div>
-
+                  <Separator />
                   <div>
                     <div className="mb-4">
                       <ModFileSelector value={files} onChange={handleFilesChange} />
@@ -481,7 +482,7 @@ export const InstallPage: React.FC = () => {
                                 {showPlaceholderBefore && (
                                   <li className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
                                     <span className="text-accent-highlight font-sans text-sm tracking-widest uppercase opacity-60">
-                                      new placement
+                                      drop here
                                     </span>
                                   </li>
                                 )}

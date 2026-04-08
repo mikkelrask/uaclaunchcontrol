@@ -111,15 +111,15 @@ export const GamesPage: React.FC = () => {
 
           <div className="flex-1 overflow-y-auto p-6">
             <div className="mb-8">
-              <h1 className="text-4xl font-bold text-app-primary tracking-tight uppercase">
+              <h1 className="text-2xl font-bold text-app-primary tracking-tight">
                 {activeVersion
                   ? versions.find((v) => v.id === activeVersion)?.name || 'Unknown Version'
-                  : 'All Games'}
+                  : 'Launch'}
               </h1>
               <div className="h-1 w-20 bg-accent-highlight mt-2 rounded-full shadow-[0_0_10px_hsl(var(--accent-highlight)_/_0.5)]"></div>
             </div>
             {isModsLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                 {Array(8)
                   .fill(0)
                   .map((_, i) => (
@@ -128,7 +128,7 @@ export const GamesPage: React.FC = () => {
               </div>
             ) : filteredMods?.length === 0 ? (
               <div className="text-center py-10">
-                <h3 className="text-2xl font-sans mb-2">No mods found</h3>
+                <h3 className="text-2xl font-sans mb-2">Nothing to launch</h3>
                 <p className="text-app-secondary">
                   {activeVersion ? (
                     `No mods installed for this Doom version.`

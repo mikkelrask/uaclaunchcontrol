@@ -3,17 +3,17 @@
 @layer base {
   :root {
     /* Default theme (dark) - semantic variables */
-    --bg-primary: 222.2 84% 4.9%;
-    --bg-secondary: 217.2 32.6% 17.5%;
-    --bg-tertiary: 215 20.2% 65.1%;
-    --bg-card: 222.2 84% 4.9%;
-    --bg-popover: 222.2 84% 4.9%;
-    --bg-muted: 217.2 32.6% 17.5%;
-    --bg-sidebar: 222.2 84% 4.9%;
-    --bg-hover: 217.2 32.6% 17.5%;
+    --bg-primary: 222 47% 4%;
+    --bg-secondary: 222 47% 10%;
+    --bg-tertiary: 222 47% 18%;
+    --bg-card: 222 47% 7%;
+    --bg-popover: 222 47% 8%;
+    --bg-muted: 222 20% 18%;
+    --bg-sidebar: 222 47% 4%;
+    --bg-hover: 222 47% 15%;
 
     --text-primary: 210 40% 98%;
-    --text-secondary: 215 20.2% 65.1%;
+    --text-secondary: 215 20.2% 75.1%;
     --text-muted: 215 20.2% 65.1%;
     --text-sidebar: 210 40% 98%;
     --text-card: 210 40% 98%;
@@ -21,14 +21,14 @@
     --text-muted-foreground: 215 20.2% 65.1%;
 
     --accent-primary: 210 40% 98%;
-    --accent-secondary: 217.2 32.6% 17.5%;
-    --accent-destructive: 0 62.8% 30.6%;
+    --accent-secondary: 222 47% 12%;
+    --accent-destructive: 0 62.8% 40.6%;
     --accent-ring: 212.7 26.8% 83.9%;
     --accent-highlight: 0 84.2% 60.2%;
 
-    --border-primary: 217.2 32.6% 17.5%;
-    --border-input: 217.2 32.6% 17.5%;
-    --border-sidebar: 217.2 32.6% 17.5%;
+    --border-primary: 222 30% 18%;
+    --border-input: 222 30% 15%;
+    --border-sidebar: 222 30% 12%;
 
     /* Tailwind mappings */
     --background: var(--bg-primary);
@@ -69,13 +69,13 @@
   .light {
     /* Semantic variables */
     --bg-primary: 210 40% 98%;
-    --bg-secondary: 210 20% 90%;
-    --bg-tertiary: 215 16% 80%;
+    --bg-secondary: 210 20% 94%;
+    --bg-tertiary: 210 20% 88%;
     --bg-card: 0 0% 100%;
     --bg-popover: 0 0% 100%;
-    --bg-muted: 210 20% 90%;
+    --bg-muted: 210 20% 92%;
     --bg-sidebar: 210 40% 98%;
-    --bg-hover: 210 20% 88%;
+    --bg-hover: 210 20% 86%;
 
     --text-primary: 222.2 84% 4.9%;
     --text-secondary: 215.4 16.9% 45.9%;
@@ -86,14 +86,14 @@
     --text-muted-foreground: 215.4 16.9% 45.9%;
 
     --accent-primary: 222.2 84% 4.9%;
-    --accent-secondary: 210 20% 90%;
+    --accent-secondary: 210 20% 92%;
     --accent-destructive: 0 84.2% 60.2%;
     --accent-ring: 222.2 47.4% 11.2%;
     --accent-highlight: 0 72.2% 50.6%;
 
-    --border-primary: 214.3 31.8% 85%;
-    --border-input: 214.3 31.8% 85%;
-    --border-sidebar: 214.3 31.8% 85%;
+    --border-primary: 214.3 31.8% 88%;
+    --border-input: 214.3 31.8% 82%;
+    --border-sidebar: 214.3 31.8% 90%;
 
     /* Tailwind mappings */
     --background: 210 40% 98%;

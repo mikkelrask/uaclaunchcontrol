@@ -8,7 +8,6 @@ import { ToastAction } from '@/components/ui/toast'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 import GamesPage from '@/pages/GamesPage'
-import ModDBPage from '@/pages/ModDBPage'
 import InstallPage from '@/pages/InstallPage'
 import NotFound from '@/pages/not-found'
 import { useQuery } from '@tanstack/react-query'
@@ -20,7 +19,6 @@ function AppRouter() {
     <Router hook={useHashLocation}>
       <Switch>
         <Route path="/" component={GamesPage} />
-        <Route path="/moddb" component={ModDBPage} />
         <Route path="/install" component={InstallPage} />
         <Route component={NotFound} />
       </Switch>
@@ -92,8 +90,8 @@ function App() {
                     const result = await api.executeMigration(info.path!)
                     if (result.success) {
                       toast({
-                        title: 'Import Successful',
-                        description: 'Your legacy data has been migrated. Please restart the app.'
+                        title: 'Access granted',
+                        description: 'Your legacy data has been migrated.'
                       })
                       queryClient.invalidateQueries()
                     } else {

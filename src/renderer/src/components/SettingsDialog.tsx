@@ -286,14 +286,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     <Label className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider">
                       App Configuration
                     </Label>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-app-primary text-app-muted font-mono border border-app">SYSTEM</span>
+                    <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted font-mono border border-app">SYSTEM</span>
                   </div>
                   <div className="flex gap-2">
                     <div className="bg-app-primary/40 border border-app font-sans h-10 px-3 text-sm flex-1 flex items-center text-app-muted opacity-80 rounded-md truncate">
                       {settings.configPath}
                     </div>
                   </div>
-                  <p className="text-[10px] text-app-muted font-sans italic opacity-70">Internal master directory for settings, telemetry catalogues, and system state.</p>
+                  <p className="text-xs text-app-muted font-sans italic opacity-70">Internal master directory for settings, telemetry catalogues, and system state.</p>
                 </div>
               </div>
             </TabsContent>
@@ -324,7 +324,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       <FolderOpen className="w-5 h-5" />
                     </Button>
                   </div>
-                  <p className="text-[10px] text-app-muted font-sans italic opacity-70">Main system binary used for launching telemetry streams.</p>
+                  <p className="text-xs text-app-muted font-sans italic opacity-70">Main system binary used for launching telemetry streams.</p>
                 </div>
               </div>
 
@@ -360,7 +360,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           <FolderOpen className="w-5 h-5" />
                         </Button>
                       </div>
-                      <p className="text-[10px] text-app-muted font-sans italic opacity-70">{field.desc}</p>
+                      <p className="text-xs text-app-muted font-sans italic opacity-70">{field.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -509,7 +509,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
             <TabsContent value="advanced" className="space-y-4 mt-0 p-6">
               <p className="text-app-secondary">
-                Advanced settings will be implemented in a future update.
+                Permission denied. Red keycard required.
               </p>
             </TabsContent>
           </div>
