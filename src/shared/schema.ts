@@ -24,12 +24,17 @@ export type InsertMod = Omit<IMod, 'id'>
 export interface IModFile {
   id: number
   name?: string
-  fileName?: string // Alternative name for name
+  fileName?: string
   path?: string
-  filePath?: string // Alternative name for path
+  filePath?: string
   type?: 'wad' | 'pk3' | 'other'
-  fileType?: string // Alternative name for type
-  modId: string // Reference to parent mod
+  fileType?: string
+  hashValue?: string
+  version?: string
+  url?: string
+  requires?: Record<string, number>
+  requiredBy?: string[]
+  sidecarOnly?: boolean
   loadOrder?: number
   isRequired?: boolean
 }
