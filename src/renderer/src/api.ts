@@ -35,7 +35,7 @@ export const api = {
     return allFiles.filter((file: IModFile) => file.fileType === fileType)
   },
 
-  addToCatalog: async (file: Omit<IModFile, 'id' | 'modId'>): Promise<IModFile> => {
+  addToCatalog: async (file: Omit<IModFile, 'id'>): Promise<IModFile> => {
     console.log('[DEBUG] API addToCatalog called with:', file)
     try {
       const response = await fetch(`${API_BASE}/api/mod-files/catalog`, {
@@ -57,6 +57,22 @@ export const api = {
       return data
     } catch (error) {
       console.error('[DEBUG] API addToCatalog exception:', error)
+      throw error
+    }
+  },
+  computeHash: async (filePath: string): Promise<string> => {
+    try {
+      const response = await fetch(`${API_BASE}/api/mod-files/hash`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filePath })
+      })
+      if (!response.ok) {
+        throw new Error('Failed to compute hash')
+      }
+      return response.json()
+    } catch (error) {
+      console.error('[DEBUG] API computeHash exception:', error)
       throw error
     }
   },
