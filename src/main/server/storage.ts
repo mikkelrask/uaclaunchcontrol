@@ -3,6 +3,7 @@ import path from 'path'
 import os from 'os'
 import axios from 'axios'
 import chokidar from 'chokidar'
+import crypto from 'crypto'
 import { BrowserWindow } from 'electron'
 import { IAppSettings, IDoomVersion, IMod, IModFile, InsertMod } from '../../shared/schema'
 
@@ -648,8 +649,20 @@ export async function downloadImage(url: string, modId: string): Promise<string>
   }
 }
 
-// Add a mod file to the catalog
-export async function addModFileToCatalog(file: Omit<IModFile, 'id' | 'modId'>): Promise<IModFile> {
+export async function computeFileHash(filePath: string): Promise<string> {
+  try {
+    const resolvedPath = resolvePath(filePath)
+    const fileBuffer = await fs.promises.readFile(resolvedPath)
+    const hash = crypto.createHash('md5').update(fileBuffer).digest('hex')
+    console.log(`[DEBUG] Computed MD5 hash for ${filePath}: ${hash}`)
+    return hash
+  } catch (error) {
+    console.error(`Error computing hash for ${filePath}:`, error)
+    return ''
+  }
+}
+
+export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<IModFile> {
   try {
     console.log('addModFileToCatalog called with:', file)
     initStorage() // Ensure directories and files exist
@@ -669,13 +682,20 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id' | 'modId'>):
       const fileName = file.filePath.split(/[\\/]/).pop() || file.filePath
       // Always set name (pretty name), default to fileName if missing
       const name = file.name && file.name.trim() ? file.name : fileName
+      // Compute MD5 hash of the file
+      const hashValue = await computeFileHash(file.filePath)
       // Create new catalog entry with an ID
       const createdFile: IModFile = {
         ...file,
         name,
         fileName,
-        id: Date.now(), // Use timestamp as ID
-        modId: '0' // 0 as string for catalog entry
+        id: Date.now(),
+        hashValue,
+        requires: file.requires ?? {},
+        requiredBy: file.requiredBy ?? [],
+        sidecarOnly: file.sidecarOnly ?? false,
+        url: file.url ?? '',
+        version: file.version ?? ''
       }
       console.log('Created new catalog entry:', createdFile)
       // Add to catalog

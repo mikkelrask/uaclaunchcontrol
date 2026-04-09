@@ -334,6 +334,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  app.post('/api/mod-files/hash', async (req, res) => {
+    try {
+      const { filePath } = req.body
+      if (!filePath) return res.status(400).json({ message: 'Missing filePath' })
+      const hash = await storage.computeFileHash(filePath)
+      return res.json(hash)
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ message: error instanceof Error ? error.message : 'Failed to compute hash' })
+    }
+  })
+
   app.put('/api/mod-files/catalog/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10)
