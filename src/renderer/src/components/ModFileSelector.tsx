@@ -26,6 +26,8 @@ export function ModFileSelector({
   const { toast } = useToast()
   const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
 
+  const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)
+
   const loadCatalogFiles = useCallback(async (): Promise<void> => {
     try {
       console.log('Loading catalog files...')
@@ -49,7 +51,6 @@ export function ModFileSelector({
   const handleAddFile = (): void => {
     const newFile: IModFile = {
       id: Date.now(),
-      modId: '0',
       name: '',
       filePath: '',
       fileType: 'WAD',
@@ -136,10 +137,33 @@ export function ModFileSelector({
       filePath: catalogFile.filePath,
       fileType: catalogFile.fileType,
       fileName: catalogFile.fileName,
-      isRequired: catalogFile.isRequired ?? true,
       loadOrder: newFiles[index].loadOrder ?? index
     }
-    onChange(newFiles)
+
+    if (catalogFile.requires && Object.keys(catalogFile.requires).length > 0) {
+      const requiresHashes = Object.keys(catalogFile.requires)
+      for (const reqHash of requiresHashes) {
+        const reqFile = catalogFiles.find((f) => f.hashValue === reqHash)
+        if (reqFile) {
+          const alreadyAdded = newFiles.some((f) => f.id === reqFile.id)
+          if (!alreadyAdded) {
+            const relativeOrder = catalogFile.requires[reqHash] || 1
+            newFiles.splice(index + relativeOrder, 0, {
+              id: reqFile.id,
+              name: reqFile.name,
+              filePath: reqFile.filePath,
+              fileType: reqFile.fileType,
+              fileName: reqFile.fileName,
+              loadOrder: index + relativeOrder,
+              isRequired: true
+            })
+          }
+        }
+      }
+    }
+
+    const reorderedFiles = newFiles.map((file, i) => ({ ...file, loadOrder: i }))
+    onChange(reorderedFiles)
   }
 
   const handleBrowseFile = async (index: number): Promise<void> => {
@@ -172,9 +196,7 @@ export function ModFileSelector({
             name: fileName,
             filePath: newFilePath,
             fileType: detectedType,
-            fileName: fileName,
-            loadOrder: index,
-            isRequired: true
+            fileName: fileName
           })
           catalogId = savedCatalogFile.id
           loadCatalogFiles()
@@ -296,15 +318,19 @@ export function ModFileSelector({
                     <SelectValue placeholder="Catalog" />
                   </SelectTrigger>
                   <SelectContent className="bg-app-secondary border-app max-h-[300px]">
-                    {Array.isArray(catalogFiles) && catalogFiles.length === 0 ? (
+                    {selectableFiles.length === 0 ? (
                       <SelectItem value="none" disabled>
                         No catalog files
                       </SelectItem>
                     ) : (
-                      Array.isArray(catalogFiles) &&
-                      catalogFiles.map((catalogFile) => (
+                      selectableFiles.map((catalogFile) => (
                         <SelectItem key={catalogFile.id} value={catalogFile.id.toString()}>
                           {catalogFile.name}
+                          {catalogFile.version && (
+                            <span className="text-app-muted ml-1 text-xs">
+                              v{catalogFile.version}
+                            </span>
+                          )}
                         </SelectItem>
                       ))
                     )}

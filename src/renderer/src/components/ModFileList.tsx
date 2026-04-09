@@ -23,6 +23,8 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
     gameService.getModFileCatalog().then(setCatalogFiles).catch(console.error)
   }, [])
 
+  const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)
+
   const removeFile = (fileId: number): void => {
     onChange(files.filter((f) => f.id !== fileId))
   }
@@ -109,7 +111,6 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
 
                 const newFile: IModFile = {
                   id: catalogFile.id,
-                  modId: String(files[0]?.modId || 0),
                   filePath: catalogFile.filePath,
                   fileName,
                   fileType,
@@ -117,7 +118,40 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                   isRequired: true,
                   name: catalogFile.name || ''
                 }
-                onChange([...files, newFile])
+
+                let updatedFiles = [...files, newFile]
+
+                if (catalogFile.requires && Object.keys(catalogFile.requires).length > 0) {
+                  for (const [reqHash, offset] of Object.entries(catalogFile.requires)) {
+                    const reqFile = catalogFiles.find((f) => f.hashValue === reqHash)
+                    if (reqFile) {
+                      const alreadyAdded = updatedFiles.some((f) => f.id === reqFile.id)
+                      if (!alreadyAdded) {
+                        const reqFileName = reqFile.fileName || reqFile.name || ''
+                        const reqExt = reqFileName.split('.').pop()?.toUpperCase() || ''
+                        let reqFileType = 'WAD'
+                        if (reqExt === 'PK3' || reqExt === 'IPK3' || reqExt === 'ZIP') {
+                          reqFileType = 'PK3'
+                        } else if (reqExt === 'DEH' || reqExt === 'BEX') {
+                          reqFileType = 'DEH'
+                        }
+
+                        updatedFiles.splice(files.length + offset, 0, {
+                          id: reqFile.id,
+                          filePath: reqFile.filePath || '',
+                          fileName: reqFileName,
+                          fileType: reqFileType,
+                          loadOrder: files.length + offset,
+                          isRequired: true,
+                          name: reqFile.name || ''
+                        })
+                      }
+                    }
+                  }
+                }
+
+                updatedFiles = updatedFiles.map((f, i) => ({ ...f, loadOrder: i }))
+                onChange(updatedFiles)
               }
             }
           }}
@@ -126,12 +160,12 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
             <SelectValue placeholder="Select from catalog or add new file" />
           </SelectTrigger>
           <SelectContent className="bg-app-secondary border-app max-h-[300px]">
-            {catalogFiles.length === 0 ? (
+            {selectableFiles.length === 0 ? (
               <SelectItem value="empty" disabled>
                 No files in catalog
               </SelectItem>
             ) : (
-              catalogFiles.map((catFile) => (
+              selectableFiles.map((catFile) => (
                 <SelectItem key={catFile.id} value={catFile.id.toString()}>
                   {catFile.name}
                 </SelectItem>
