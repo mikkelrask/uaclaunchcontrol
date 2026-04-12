@@ -72,7 +72,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
           }}
         />
         {/* Dark gradient overlay - always visible */}
-        <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent pointer-events-none"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
 
         {/* Game title and icon container - starts at the bottom */}
         <div
