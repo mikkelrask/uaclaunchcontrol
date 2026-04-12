@@ -54,6 +54,13 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
     enabled: !!modId && isOpen
   })
 
+  // Fetch catalog for hydrating files with hashValue
+  const { data: catalogFiles } = useQuery({
+    queryKey: ['/api/mod-files/catalog'],
+    queryFn: () => gameService.getModFileCatalog(),
+    enabled: isOpen
+  })
+
   // Update mod mutation
   const updateMutation = useMutation({
     mutationFn: ({
@@ -137,12 +144,32 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
 
       // Type-safe check if data has a 'files' property
       if ('files' in data && Array.isArray(data.files)) {
-        setFiles(data.files as IModFile[])
+        const modFiles = data.files as IModFile[]
+        // Hydrate files with catalog data (hashValue)
+        if (catalogFiles && catalogFiles.length > 0) {
+          const hydratedFiles = modFiles.map((file) => {
+            // Try to find in catalog by hashValue first, then by filename
+            const catalogMatch = catalogFiles.find(
+              (c) => c.hashValue === file.hashValue || c.fileName === file.fileName
+            )
+            if (catalogMatch) {
+              return {
+                ...file,
+                hashValue: file.hashValue || catalogMatch.hashValue || '',
+                filePath: file.filePath || catalogMatch.filePath || ''
+              }
+            }
+            return file
+          })
+          setFiles(hydratedFiles)
+        } else {
+          setFiles(modFiles)
+        }
       } else {
         setFiles([])
       }
     }
-  }, [data])
+  }, [data, catalogFiles])
 
   const handleSave = (): void => {
     if (!mod || !modId) return
