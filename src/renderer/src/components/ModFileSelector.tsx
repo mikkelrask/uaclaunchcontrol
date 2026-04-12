@@ -1,13 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Combobox } from '@/components/ui/combobox'
 import { FolderOpenIcon, PlusIcon, TrashIcon } from 'lucide-react'
 import { gameService } from '@/lib/gameService'
 import type { IModFile } from '@shared/schema'
@@ -130,12 +124,22 @@ export function ModFileSelector({
     if (!catalogFile) return
 
     const newFiles = [...value]
+
+    // Determine fileType - use catalog value or derive from filename
+    let fileType = catalogFile.fileType
+    if (!fileType && catalogFile.fileName) {
+      const ext = catalogFile.fileName.split('.').pop()?.toUpperCase() || ''
+      if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+      else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
+      else fileType = 'WAD'
+    }
+
     newFiles[index] = {
       ...newFiles[index],
       id: catalogFile.id,
       name: catalogFile.name,
       filePath: catalogFile.filePath,
-      fileType: catalogFile.fileType,
+      fileType: fileType || 'WAD',
       fileName: catalogFile.fileName,
       loadOrder: newFiles[index].loadOrder ?? index
     }
@@ -148,11 +152,21 @@ export function ModFileSelector({
           const alreadyAdded = newFiles.some((f) => f.id === reqFile.id)
           if (!alreadyAdded) {
             const relativeOrder = catalogFile.requires[reqHash] || 1
+
+            // Determine required mod's fileType
+            let reqFileType = reqFile.fileType
+            if (!reqFileType && reqFile.fileName) {
+              const reqExt = reqFile.fileName.split('.').pop()?.toUpperCase() || ''
+              if (reqExt === 'PK3' || reqExt === 'IPK3' || reqExt === 'ZIP') reqFileType = 'PK3'
+              else if (reqExt === 'DEH' || reqExt === 'BEX') reqFileType = 'DEH'
+              else reqFileType = 'WAD'
+            }
+
             newFiles.splice(index + relativeOrder, 0, {
               id: reqFile.id,
               name: reqFile.name,
               filePath: reqFile.filePath,
-              fileType: reqFile.fileType,
+              fileType: reqFileType || 'WAD',
               fileName: reqFile.fileName,
               loadOrder: index + relativeOrder,
               isRequired: true
@@ -310,32 +324,20 @@ export function ModFileSelector({
                 </Button>
               </div>
 
-              <div className="w-24">
-                <Select
-                  onValueChange={(value) => handleSelectCatalogFile(index, parseInt(value, 10))}
-                >
-                  <SelectTrigger className="bg-app-primary border-app">
-                    <SelectValue placeholder="Catalog" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-app-secondary border-app max-h-[300px]">
-                    {selectableFiles.length === 0 ? (
-                      <SelectItem value="none" disabled>
-                        No catalog files
-                      </SelectItem>
-                    ) : (
-                      selectableFiles.map((catalogFile) => (
-                        <SelectItem key={catalogFile.id} value={catalogFile.id.toString()}>
-                          {catalogFile.name}
-                          {catalogFile.version && (
-                            <span className="text-app-muted ml-1 text-xs">
-                              v{catalogFile.version}
-                            </span>
-                          )}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+              <div className="w-32">
+                <Combobox
+                  value=""
+                  onValueChange={(value) => {
+                    if (value) handleSelectCatalogFile(index, parseInt(value, 10))
+                  }}
+                  options={selectableFiles.map((f) => ({
+                    value: f.id.toString(),
+                    label: f.name + (f.version ? ` v${f.version}` : '')
+                  }))}
+                  placeholder="Catalog..."
+                  className="bg-app-primary border-app"
+                  disabled={selectableFiles.length === 0}
+                />
               </div>
 
               <Button

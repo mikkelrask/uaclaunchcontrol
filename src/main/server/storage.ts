@@ -649,10 +649,18 @@ export async function downloadImage(url: string, modId: string): Promise<string>
 
 export async function computeFileHash(filePath: string): Promise<string> {
   try {
-    const resolvedPath = resolvePath(filePath)
+    let resolvedPath = resolvePath(filePath)
+
+    // If path is relative (not absolute and not starting with ~), resolve against mods directory
+    if (!path.isAbsolute(filePath) && !filePath.startsWith('~')) {
+      const settings = await getSettings()
+      const modsDir = resolvePath(settings.modsDirectory || path.join(CONFIG_DIR, 'mods'))
+      resolvedPath = path.join(modsDir, filePath)
+    }
+
     const fileBuffer = await fs.promises.readFile(resolvedPath)
     const hash = crypto.createHash('md5').update(fileBuffer).digest('hex')
-    console.log(`[DEBUG] Computed MD5 hash for ${filePath}: ${hash}`)
+    console.log(`[DEBUG] Computed MD5 hash for ${resolvedPath}: ${hash}`)
     return hash
   } catch (error) {
     console.error(`Error computing hash for ${filePath}:`, error)
@@ -758,6 +766,14 @@ export async function saveMod(modData: IMod & { files: IModFile[] }): Promise<IM
     const settings = await getSettings()
     const targetModsDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
     const modFilePath = path.join(targetModsDir, `${modData.id}.json`)
+
+    // Compute hashValue for files missing it
+    for (const file of modData.files) {
+      if (!file.hashValue && file.filePath) {
+        file.hashValue = await computeFileHash(file.filePath)
+      }
+    }
+
     // Data is already in the flat structure { ...IMod, files: [...] }
     await fs.writeJSON(modFilePath, modData, { spaces: 2 })
     // Return only the IMod part (without files) as per previous usage?

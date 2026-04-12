@@ -251,6 +251,7 @@ export const InstallPage: React.FC = () => {
   const handleDragStart = (e: React.DragEvent, index: number): void => {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', index.toString())
+    e.dataTransfer.setData('application/x-uac-reorder', 'true') // Mark as internal reorder
 
     // Wait a tick before hiding the source element so the browser
     // captures the original element's style for the drag ghost.
@@ -260,6 +261,11 @@ export const InstallPage: React.FC = () => {
   }
 
   const handleDragOver = (e: React.DragEvent<HTMLElement>): void => {
+    // Skip if this is an external file drop - let it bubble to JSON handler
+    if (e.dataTransfer.types.includes('Files') && !e.dataTransfer.getData('text/plain')) {
+      return
+    }
+
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
 
@@ -288,7 +294,13 @@ export const InstallPage: React.FC = () => {
   }
 
   const handleDrop = (e: React.DragEvent): void => {
+    // Skip if this is an external file drop - let it bubble to JSON handler
+    if (e.dataTransfer.types.includes('Files') && !e.dataTransfer.getData('text/plain')) {
+      return
+    }
+
     e.preventDefault()
+
     if (draggedIndex === null || insertionIndex === null) {
       handleDragEnd()
       return
@@ -313,6 +325,13 @@ export const InstallPage: React.FC = () => {
 
   const handleJsonDrop = useCallback(
     async (e: React.DragEvent) => {
+      const types = Array.from(e.dataTransfer.types || [])
+
+      // If this is NOT an external file drop, skip (it's an internal reorder)
+      if (!types.includes('Files') || types.includes('text/plain')) {
+        return
+      }
+
       e.preventDefault()
       setIsJsonDragging(false)
       const jsonFile = e.dataTransfer.files[0]
@@ -345,9 +364,14 @@ export const InstallPage: React.FC = () => {
         form.setValue('description', game.description || '')
         form.setValue('launchParameters', game.launchParameters || '')
 
-        if (game.sourcePort) {
+        // Only import sourcePort if it's a known port name, not a full path
+        const knownPorts = ['gzdoom', 'uzdoom', 'zandronum']
+        if (game.sourcePort && knownPorts.includes(game.sourcePort.toLowerCase())) {
           form.setValue('sourcePort', game.sourcePort)
         }
+
+        // Trigger saveDirectory slugification
+        const sluggedTitle = slugify(game.title || '')
 
         if (game.doomVersionSlug && versions.length > 0) {
           const matchedVersion = versions.find((v) => v.slug === game.doomVersionSlug)
@@ -405,13 +429,29 @@ export const InstallPage: React.FC = () => {
   )
 
   const handleJsonDragOver = (e: React.DragEvent): void => {
+    const types = Array.from(e.dataTransfer.types || [])
+
+    // If this is NOT an external file drop, skip JSON handling
+    // Internal reorders have text/plain but no Files
+    if (!types.includes('Files') || types.includes('text/plain')) {
+      return
+    }
+
     e.preventDefault()
     e.dataTransfer.dropEffect = 'copy'
     setIsJsonDragging(true)
   }
 
-  const handleJsonDragLeave = (): void => {
-    setIsJsonDragging(false)
+  const handleJsonDragLeave = (e: React.DragEvent): void => {
+    // Only clear if leaving the Card entirely (not entering child elements)
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+
+    // Check if we're actually leaving the card bounds
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsJsonDragging(false)
+    }
   }
 
   return (

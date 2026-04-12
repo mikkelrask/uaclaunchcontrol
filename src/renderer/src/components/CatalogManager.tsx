@@ -3,13 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import { IModFile } from '@shared/schema'
 import {
   Trash2,
@@ -107,11 +101,18 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         const hash = await api.computeHash(newFilePath)
         const fileName = req.filePath.split(/[\\/]/).pop() || req.filePath
 
+        // Derive fileType from extension
+        const ext = fileName.split('.').pop()?.toUpperCase() || ''
+        let reqFileType = 'WAD'
+        if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') reqFileType = 'PK3'
+        else if (ext === 'DEH' || ext === 'BEX') reqFileType = 'DEH'
+
         await api.addToCatalog({
           name: req.name,
           filePath: newFilePath,
-          fileType: addForm.fileType,
+          fileType: reqFileType,
           fileName: fileName,
+          hashValue: hash,
           sidecarOnly: req.sidecarOnly
         })
 
@@ -421,13 +422,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     }
   }
 
-  const handleToggleRequiredSidecar = async (
-    form: 'add' | 'edit',
-    index: number
-  ): Promise<void> => {
+  const handleToggleRequiredSidecar = (form: 'add' | 'edit', index: number): void => {
     const currentForm = form === 'add' ? addForm : editForm
     const req = currentForm.requires[index]
-    if (!req || !req.hash) return
+    if (!req) return
 
     const newValue = !req.sidecarOnly
     if (form === 'add') {
@@ -441,15 +439,20 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         requires: prev.requires.map((r, i) => (i === index ? { ...r, sidecarOnly: newValue } : r))
       }))
     }
+  }
 
-    const reqFile = catalogFiles.find((f) => f.hashValue === req.hash)
-    if (!reqFile) return
-
-    await api.updateInCatalog(reqFile.id, { sidecarOnly: newValue })
-
-    onChange(files.map((f) => (f.hashValue === req.hash ? { ...f, sidecarOnly: newValue } : f)))
-
-    loadCatalogFiles()
+  const handleRequiredNameChange = (form: 'add' | 'edit', index: number, name: string): void => {
+    if (form === 'add') {
+      setAddForm((prev) => ({
+        ...prev,
+        requires: prev.requires.map((r, i) => (i === index ? { ...r, name } : r))
+      }))
+    } else {
+      setEditForm((prev) => ({
+        ...prev,
+        requires: prev.requires.map((r, i) => (i === index ? { ...r, name } : r))
+      }))
+    }
   }
 
   const handleDeleteFromCatalog = async (file: IModFile): Promise<void> => {
@@ -838,8 +841,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                     </Button>
                     <span className="text-xs mr-2 w-6 text-center">{idx + 1}.</span>
                     <Input
-                      value={req.isNew ? `[NEW] ${req.name}` : req.name}
-                      readOnly
+                      value={req.name}
+                      onChange={(e) => handleRequiredNameChange('add', idx, e.target.value)}
                       className="bg-app-secondary border-app flex-1"
                     />
                     <input
@@ -860,29 +863,20 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                   </div>
                 ))}
                 <div className="flex gap-2">
-                  <Select
+                  <Combobox
+                    value=""
                     onValueChange={(value) => {
                       const fileId = parseInt(value, 10)
                       if (fileId) handleAddRequiredFromCatalog('add', fileId)
                     }}
-                  >
-                    <SelectTrigger className="bg-app-secondary border-app flex-1">
-                      <SelectValue placeholder="Add from catalog..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-app-secondary border-app">
-                      {selectableFilesForAdd.length === 0 ? (
-                        <SelectItem value="none" disabled>
-                          No mods available
-                        </SelectItem>
-                      ) : (
-                        selectableFilesForAdd.map((f) => (
-                          <SelectItem key={f.id} value={f.id.toString()}>
-                            {f.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                    options={selectableFilesForAdd.map((f) => ({
+                      value: f.id.toString(),
+                      label: f.name
+                    }))}
+                    placeholder="Add from catalog..."
+                    className="bg-app-secondary border-app flex-1"
+                    disabled={selectableFilesForAdd.length === 0}
+                  />
                   <Button
                     type="button"
                     variant="outline"
@@ -990,8 +984,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                     </Button>
                     <span className="text-xs mr-2 w-6 text-center">{idx + 1}.</span>
                     <Input
-                      value={req.isNew ? `[NEW] ${req.name}` : req.name}
-                      readOnly
+                      value={req.name}
+                      onChange={(e) => handleRequiredNameChange('edit', idx, e.target.value)}
                       className="bg-app-secondary border-app flex-1"
                     />
                     <input
@@ -1012,29 +1006,20 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                   </div>
                 ))}
                 <div className="flex gap-2">
-                  <Select
+                  <Combobox
+                    value=""
                     onValueChange={(value) => {
                       const fileId = parseInt(value, 10)
                       if (fileId) handleAddRequiredFromCatalog('edit', fileId)
                     }}
-                  >
-                    <SelectTrigger className="bg-app-secondary border-app flex-1">
-                      <SelectValue placeholder="Add from catalog..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-app-secondary border-app">
-                      {selectableFilesForEdit.length === 0 ? (
-                        <SelectItem value="none" disabled>
-                          No mods available
-                        </SelectItem>
-                      ) : (
-                        selectableFilesForEdit.map((f) => (
-                          <SelectItem key={f.id} value={f.id.toString()}>
-                            {f.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                    options={selectableFilesForEdit.map((f) => ({
+                      value: f.id.toString(),
+                      label: f.name
+                    }))}
+                    placeholder="Add from catalog..."
+                    className="bg-app-secondary border-app flex-1"
+                    disabled={selectableFilesForEdit.length === 0}
+                  />
                   <Button
                     type="button"
                     variant="outline"
