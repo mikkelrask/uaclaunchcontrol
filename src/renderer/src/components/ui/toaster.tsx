@@ -1,18 +1,19 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
 import { useToast } from '@/hooks/use-toast'
 import {
   Toast,
   ToastClose,
   ToastDescription,
-  ToastProvider,
   ToastTitle,
+  ToastProvider,
   ToastViewport
 } from '@/components/ui/toast'
 
 export const Toaster = (): React.ReactElement => {
   const { toasts } = useToast()
 
-  return (
+  return createPortal(
     <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
@@ -27,6 +28,7 @@ export const Toaster = (): React.ReactElement => {
         )
       })}
       <ToastViewport />
-    </ToastProvider>
+    </ToastProvider>,
+    document.body
   )
 }

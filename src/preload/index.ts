@@ -1,9 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-// Custom APIs for renderer
 const api = {
   onVersionsUpdated: (callback: (data?: unknown) => void) =>
-    ipcRenderer.on('doom-versions-updated', (_event, data) => callback(data))
+    ipcRenderer.on('doom-versions-updated', (_event, data) => callback(data)),
+  onUpdateStatus: (callback: (data: unknown) => void) =>
+    ipcRenderer.on('update-status', (_event, data) => callback(data)),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  triggerFakeUpdate: () => ipcRenderer.invoke('trigger-fake-update')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Switch, Route, Router } from 'wouter'
 import { useHashLocation } from 'wouter/use-hash-location'
 import { queryClient } from './lib/queryClient'
@@ -13,6 +13,8 @@ import NotFound from '@/pages/not-found'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api'
 import { IAppSettings } from '@shared/schema'
+import { useAutoUpdater } from '@/hooks/useAutoUpdater'
+import UpdateModal from '@/components/UpdateModal'
 
 const AppRouter: React.FC = () => {
   return (
@@ -28,12 +30,23 @@ const AppRouter: React.FC = () => {
 
 const App: React.FC = () => {
   const { toast } = useToast()
+  const { updateInfo } = useAutoUpdater()
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
 
   // Global settings query for theme sync
   const { data: settings } = useQuery<IAppSettings>({
     queryKey: ['/api/settings'],
     queryFn: api.getSettings
   })
+
+  // Open modal when "View" is clicked on update toast
+  useEffect(() => {
+    const handleShowModal = () => {
+      setIsUpdateModalOpen(true)
+    }
+    window.addEventListener('show-update-modal', handleShowModal)
+    return () => window.removeEventListener('show-update-modal', handleShowModal)
+  }, [])
 
   // Apply theme globally whenever settings change
   useEffect(() => {
@@ -126,6 +139,11 @@ const App: React.FC = () => {
   return (
     <TooltipProvider>
       <Toaster />
+      <UpdateModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        updateInfo={updateInfo}
+      />
       <AppRouter />
     </TooltipProvider>
   )

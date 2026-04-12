@@ -1,5 +1,35 @@
 import type { IDoomVersion, IMod, IModFile, InsertMod, IAppSettings } from '@shared/schema'
 
+interface OpenDialogOptions {
+  title?: string
+  defaultPath?: string
+  filters?: { name: string; extensions: string[] }[]
+  properties?: (
+    | 'openFile'
+    | 'openDirectory'
+    | 'multiSelections'
+    | 'showHiddenFiles'
+    | 'createDirectory'
+  )[]
+}
+
+interface SaveDialogOptions {
+  title?: string
+  defaultPath?: string
+  filters?: { name: string; extensions: string[] }[]
+  buttonLabel?: string
+}
+
+interface OpenDialogReturn {
+  canceled: boolean
+  filePaths: string[]
+}
+
+interface SaveDialogReturn {
+  canceled: boolean
+  filePath?: string
+}
+
 // Basic API base URL - needs to match the backend port
 const API_BASE = 'http://localhost:7666'
 
@@ -178,22 +208,22 @@ export const gameService = {
   },
 
   // Dialog functions
-  showOpenDialog: async (options: any) => {
+  showOpenDialog: async (options: OpenDialogOptions): Promise<OpenDialogReturn> => {
     const response = await fetch(`${API_BASE}/api/dialog/open`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(options)
     })
-    return handleApiResponse<any>(response)
+    return handleApiResponse<OpenDialogReturn>(response)
   },
 
-  showSaveDialog: async (options: any) => {
+  showSaveDialog: async (options: SaveDialogOptions): Promise<SaveDialogReturn> => {
     const response = await fetch(`${API_BASE}/api/dialog/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(options)
     })
-    return handleApiResponse<any>(response)
+    return handleApiResponse<SaveDialogReturn>(response)
   }
 }
 
