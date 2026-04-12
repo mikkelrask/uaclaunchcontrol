@@ -14,7 +14,7 @@ export const MODS_DIR = path.join(CONFIG_DIR, 'mods') // For mod {id}.json files
 const SETTINGS_FILE = path.join(CONFIG_DIR, 'settings.json') // Directly in CONFIG_DIR per local-structure.txt
 const DOOM_VERSIONS_FILE = path.join(CONFIG_DIR, 'doomVersions.json') // Directly in CONFIG_DIR per local-structure.txt
 const MOD_FILE_CATALOG = path.join(CONFIG_DIR, 'modFileCatalogue.json')
-export const IMAGES_DIR = path.join(CONFIG_DIR, 'images')
+export const IMAGES_DIR = path.join(CONFIG_DIR, 'data/images')
 
 const LEGACY_CONFIG_DIRS = [
   path.join(os.homedir(), '.config', 'mrdoom'),
@@ -23,7 +23,7 @@ const LEGACY_CONFIG_DIRS = [
 
 // Default settings
 const DEFAULT_SETTINGS: IAppSettings = {
-  gzDoomPath: 'gzdoom', // Default to assuming gzdoom is in PATH
+  gzDoomPath: 'uzdoom', // Default - assuming its in path
   theme: 'dark',
   savegamesPath: '~/.config/uac/saves', // Add empty string defaults for optional properties
   modsDirectory: '~/.config/uac/mods',
@@ -612,12 +612,10 @@ export async function copyImageToImages(sourcePath: string): Promise<string> {
   }
 }
 
-// Download an image from a URL and save it directly to the mods directory
+// Download an image from a URL and save it to the images directory
 export async function downloadImage(url: string, modId: string): Promise<string> {
   try {
-    const settings = await getSettings()
-    const modsDir = resolvePath(settings.modsDirectory || MODS_DIR)
-    await fs.ensureDir(modsDir)
+    await fs.ensureDir(IMAGES_DIR)
 
     const response = await axios.get(url, { responseType: 'arraybuffer' })
 
@@ -635,7 +633,7 @@ export async function downloadImage(url: string, modId: string): Promise<string>
     if (extension.length > 5) extension = '.jpg'
 
     const fileName = `${modId}-poster${extension}`
-    const filePath = path.join(modsDir, fileName)
+    const filePath = path.join(IMAGES_DIR, fileName)
 
     await fs.writeFile(filePath, response.data)
 
