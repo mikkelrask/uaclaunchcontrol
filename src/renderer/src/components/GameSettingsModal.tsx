@@ -202,8 +202,8 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
       },
       files: files.map((f) => ({
         name: f.name || f.fileName,
-        hashValue: f.hashValue,
-        loadOrder: f.loadOrder
+        hashValue: f.hashValue || '',
+        loadOrder: f.loadOrder ?? 0
       }))
     }
 
@@ -218,7 +218,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
 
     toast({
       title: 'Exported',
-      description: 'Modpack JSON copied to clipboard & downloaded'
+      description: 'Modpack JSON downloaded'
     })
   }
 

@@ -73,6 +73,7 @@ export const InstallPage: React.FC = () => {
   const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null)
+  const [isJsonDragging, setIsJsonDragging] = useState(false)
   // const [currentFilePath, setCurrentFilePath] = useState<string>('');
 
   // Fetch doom versions
@@ -312,6 +313,7 @@ export const InstallPage: React.FC = () => {
   const handleJsonDrop = useCallback(
     async (e: React.DragEvent) => {
       e.preventDefault()
+      setIsJsonDragging(false)
       const jsonFile = e.dataTransfer.files[0]
       if (!jsonFile || !jsonFile.name.endsWith('.json')) {
         toast({
@@ -404,6 +406,11 @@ export const InstallPage: React.FC = () => {
   const handleJsonDragOver = (e: React.DragEvent): void => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'copy'
+    setIsJsonDragging(true)
+  }
+
+  const handleJsonDragLeave = (): void => {
+    setIsJsonDragging(false)
   }
 
   return (
@@ -415,9 +422,14 @@ export const InstallPage: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
           <Card
-            className="bg-app-secondary border-app mb-6"
+            className={`bg-app-secondary border-app mb-6 transition-all ${
+              isJsonDragging
+                ? 'border-accent-highlight border-4 ring-2 ring-accent-highlight/30'
+                : ''
+            }`}
             onDrop={handleJsonDrop}
             onDragOver={handleJsonDragOver}
+            onDragLeave={handleJsonDragLeave}
           >
             <CardHeader>
               <CardTitle>New Launch Config</CardTitle>
