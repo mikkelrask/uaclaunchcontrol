@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import ModFileList from './ModFileList'
 import LaunchOptions from './LaunchOptions'
-import { FolderOpen } from 'lucide-react'
+import { FolderOpen, Download } from 'lucide-react'
 import { slugify } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
 
@@ -186,6 +186,42 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
     setMod((prev) => (prev ? { ...prev, [name]: value } : null))
   }
 
+  const handleExport = (): void => {
+    if (!mod || !files.length) return
+
+    const doomVersion = doomVersions?.find((v) => v.id === mod.doomVersionId)
+    const exportData = {
+      format: 'uac-modpack',
+      version: '1.0',
+      game: {
+        title: mod.title || mod.name,
+        description: mod.description || '',
+        doomVersionSlug: doomVersion?.slug || '',
+        sourcePort: mod.sourcePort || 'gzdoom',
+        launchParameters: mod.launchParameters || ''
+      },
+      files: files.map((f) => ({
+        name: f.name || f.fileName,
+        hashValue: f.hashValue,
+        loadOrder: f.loadOrder
+      }))
+    }
+
+    const jsonStr = JSON.stringify(exportData, null, 2)
+    const blob = new Blob([jsonStr], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${slugify(mod.title || mod.name || 'modpack')}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+
+    toast({
+      title: 'Exported',
+      description: 'Modpack JSON copied to clipboard & downloaded'
+    })
+  }
+
   if (!isOpen) return null
 
   return (
@@ -342,7 +378,16 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
             </div>
 
             <DialogFooter className="flex justify-between mt-6 shrink-0">
-              <div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleExport}
+                  className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
+                  disabled={!mod || files.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export JSON
+                </Button>
                 <Button
                   variant="outline"
                   onClick={handleDelete}
