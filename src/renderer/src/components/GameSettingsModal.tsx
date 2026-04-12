@@ -189,7 +189,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-app-secondary text-app-primary border-app max-w-4xl">
+      <DialogContent className="bg-app-secondary text-app-primary border-app max-w-4xl h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-2xl font-sans font-bold">
             {mod?.title || mod?.name || 'Mod Settings'}
@@ -199,8 +199,8 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
         {isLoading ? (
           <div className="p-4 text-center">Loading mod details...</div>
         ) : (
-          <>
-            <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="space-y-4 p-1">
               <div className="mb-4 group relative">
                 <button
                   type="button"
@@ -340,7 +340,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
               />
             </div>
 
-            <DialogFooter className="flex justify-between mt-6">
+            <DialogFooter className="flex justify-between mt-6 shrink-0">
               <div>
                 <Button
                   variant="outline"
@@ -370,7 +370,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                 </Button>
               </div>
             </DialogFooter>
-          </>
+          </div>
         )}
       </DialogContent>
     </Dialog>
