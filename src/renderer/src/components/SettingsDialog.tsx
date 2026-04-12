@@ -38,10 +38,18 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const [doomVersions, setDoomVersions] = useState<IDoomVersion[]>([])
   const [isLoadingVersions, setIsLoadingVersions] = useState(false)
   const [selectedWadIndex, setSelectedWadIndex] = useState(0)
+  const [appVersion, setAppVersion] = useState<string>('')
 
   // Fetch settings from API when dialog opens
   useEffect(() => {
     if (!isOpen) return
+
+    // Fetch app version
+    api
+      .getVersion()
+      .then(setAppVersion)
+      .catch(() => {})
+
     api
       .getSettings()
       .then((data) => {
@@ -289,7 +297,32 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
                   TECHNICAL SPECIFICATIONS
                 </Label>
-                <div className="bg-app-secondary/50 p-4 rounded-xl border border-app border-dashed space-y-3">
+                <div className="bg-app-secondary/50 p-4 rounded-xl border border-app border-dashed space-y-4">
+                  {appVersion && (
+                    <>
+                      <div className="flex items-center justify-between pt-2">
+                        <Label className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider">
+                          Software Build
+                        </Label>
+                        <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted font-mono border border-app">
+                          v{appVersion}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-app-muted font-sans italic opacity-70">
+                          Current executable version. Updates available via GitHub Releases.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => api.checkForUpdates()}
+                          className="text-xs h-7 bg-app-primary hover:bg-app-hover text-app-primary border-app"
+                        >
+                          Check for Updates
+                        </Button>
+                      </div>
+                    </>
+                  )}
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider">
                       App Configuration

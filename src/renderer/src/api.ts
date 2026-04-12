@@ -211,9 +211,30 @@ export const api = {
       body: JSON.stringify({ sourcePath })
     })
     return response.json()
+  },
+
+  getVersion: async (): Promise<string> => {
+    return await (window as any).api.getAppVersion()
+  },
+
+  onUpdateStatus: (callback: (data: any) => void) => {
+    ;(window as any).api.onUpdateStatus(callback)
+  },
+
+  checkForUpdates: () => {
+    ;(window as any).api.checkForUpdates()
+  },
+
+  downloadUpdate: () => {
+    ;(window as any).api.downloadUpdate()
+  },
+
+  installUpdate: () => {
+    ;(window as any).api.installUpdate()
+  },
+
+  triggerFakeUpdate: () => {
+    ;(window as any).api.triggerFakeUpdate()
   }
 
-  // Other existing API methods...
 }
-
-// Clean up by removing standalone functions that are now in the api object
