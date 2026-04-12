@@ -251,7 +251,7 @@ export function ModFileSelector({
             size="sm"
             variant={'default'}
             onClick={handleAddFile}
-            className="border-app"
+            className="bg-accent-highlight text-app-primary opacity-90 hover:opacity-100 hover:bg-accent-highlight"
             type="button"
           >
             <PlusIcon className="h-4 w-4 mr-1" />

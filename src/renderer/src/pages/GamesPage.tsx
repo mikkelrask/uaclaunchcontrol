@@ -99,10 +99,10 @@ export const GamesPage: React.FC = () => {
     <div className="flex h-screen overflow-hidden">
       <Sidebar activeVersion={activeVersion} onVersionSelect={handleVersionSelect} />
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <Header onSearch={handleSearch} />
 
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
           <ViewToggle
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
@@ -116,10 +116,10 @@ export const GamesPage: React.FC = () => {
                   ? versions.find((v) => v.id === activeVersion)?.name || 'Unknown Version'
                   : 'Launch'}
               </h1>
-              <div className="h-1 w-20 bg-accent-highlight mt-2 rounded-full shadow-[0_0_10px_hsl(var(--accent-highlight)_/_0.5)]"></div>
+              <div className="h-1 w-20 bg-accent-highlight mt-2 rounded-full shadow-[0_0_10px_hsl(var(--accent-highlight)/0.5)]"></div>
             </div>
             {isModsLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-6">
                 {Array(8)
                   .fill(0)
                   .map((_, i) => (
@@ -147,7 +147,7 @@ export const GamesPage: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">
                 {filteredMods?.map((mod) => {
                   const version = getVersionForMod(mod)
                   if (!version) return null

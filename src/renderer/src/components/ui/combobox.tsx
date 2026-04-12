@@ -28,8 +28,16 @@ export function Combobox({
   disabled
 }: ComboboxProps): React.ReactElement {
   const [open, setOpen] = React.useState(false)
+  const listRef = React.useRef<HTMLDivElement>(null)
 
   const selectedOption = options.find((opt) => opt.value === value)
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (listRef.current) {
+      e.stopPropagation()
+      listRef.current.scrollTop += e.deltaY
+    }
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -61,7 +69,7 @@ export function Combobox({
       <PopoverContent className="p-0" align="start">
         <Command>
           <CommandInput placeholder="Search..." />
-          <CommandList>
+          <CommandList ref={listRef} onWheel={handleWheel}>
             <CommandEmpty>No results found.</CommandEmpty>
             {options.map((opt) => (
               <CommandItem

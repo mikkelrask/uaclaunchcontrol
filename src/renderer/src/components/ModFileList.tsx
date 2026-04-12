@@ -60,7 +60,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
   }
 
   return (
-    <div className="bg-app-primary p-3 rounded h-40 overflow-y-auto">
+    <div className="bg-app-primary p-3 pb-0 rounded h-56 overflow-y-auto">
       {files.length === 0 ? (
         <div className="text-app-primary text-center py-2">No mod files added</div>
       ) : (
@@ -84,7 +84,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                 <ChevronDown className="h-4 w-4" />
               </button>
               <span className="text-xs mr-2">{index + 1}.</span>
-              <span title={file.filePath}>{file.fileName}</span>
+              <span title={file.filePath}>{(file.name || file.fileName)?.slice(0, 30)}</span>
             </div>
             <button
               type="button"

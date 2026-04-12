@@ -148,6 +148,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
     if (!mod || !modId) return
 
     const filesWithoutIds = files.map((f) => ({
+      name: f.name,
       fileName: f.fileName,
       filePath: f.filePath,
       fileType: f.fileType,
@@ -280,7 +281,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-lg font-sans mb-2">Game Configuration</h3>
+                  <h3 className="text-lg font-sans mb-2">Base Configuration</h3>
                   <div className="bg-app-primary p-3 rounded space-y-2">
                     <div>
                       <Label htmlFor="doomVersionId">Base Game</Label>

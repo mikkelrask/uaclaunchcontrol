@@ -19,7 +19,8 @@ import {
   Check,
   ExternalLink,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Upload
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
@@ -55,6 +56,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     requires: [] as RequiredModEntry[],
     sidecarOnly: false
   })
+  const [isDraggingFile, setIsDraggingFile] = useState(false)
+  const [showSidecarOnly, setShowSidecarOnly] = useState(false)
 
   const [editForm, setEditForm] = useState({
     name: '',
@@ -232,6 +235,16 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   }
 
   const handleBrowseFile = async (): Promise<void> => {
+    setAddForm({
+      name: '',
+      filePath: '',
+      fileType: 'PK3',
+      version: '',
+      url: '',
+      requires: [],
+      sidecarOnly: false
+    })
+
     try {
       const result = await api.showOpenDialog({
         title: 'Select Mod File',
@@ -245,16 +258,63 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           ...prev,
           filePath: selectedPath,
           name:
-            prev.name ||
             selectedPath
               .split(/[\\/]/)
               .pop()
-              ?.replace(/\.[^.]+$/, '') ||
-            ''
+              ?.replace(/\.[^.]+$/, '') || ''
         }))
+        setIsAddModalOpen(true)
       }
     } catch (error) {
       console.error('Failed to open file dialog:', error)
+    }
+  }
+
+  const handleFileDragOver = (e: React.DragEvent): void => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingFile(true)
+  }
+
+  const handleFileDragLeave = (e: React.DragEvent): void => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingFile(false)
+  }
+
+  const handleFileDrop = (e: React.DragEvent): void => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDraggingFile(false)
+
+    const droppedFiles = e.dataTransfer.files
+    if (droppedFiles.length > 0) {
+      const file = droppedFiles[0]
+      const droppedPath = (file as File & { path?: string }).path || file.name
+
+      const ext = droppedPath.split('.').pop()?.toLowerCase()
+      const validExtensions = ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip']
+      if (!ext || !validExtensions.includes(ext)) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please drop a valid mod file (wad, pk3, ipk3, deh, bex, zip)',
+          variant: 'destructive'
+        })
+        return
+      }
+
+      setAddForm((prev) => ({
+        ...prev,
+        filePath: droppedPath,
+        name:
+          prev.name ||
+          droppedPath
+            .split(/[\\/]/)
+            .pop()
+            ?.replace(/\.[^.]+$/, '') ||
+          ''
+      }))
+      setIsAddModalOpen(true)
     }
   }
 
@@ -525,19 +585,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     }
   }
 
-  const openAddModal = (): void => {
-    setAddForm({
-      name: '',
-      filePath: '',
-      fileType: 'PK3',
-      version: '',
-      url: '',
-      requires: [],
-      sidecarOnly: false
-    })
-    setIsAddModalOpen(true)
-  }
-
   const selectableFilesForAdd = availableRequiredFiles.filter(
     (f) => !addForm.requires.some((r) => r.hash === f.hashValue)
   )
@@ -550,118 +597,159 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          onClick={openAddModal}
-          className="bg-accent-highlight hover:opacity-90"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Add Mod File
-        </Button>
+      <div
+        onClick={handleBrowseFile}
+        onDragOver={handleFileDragOver}
+        onDragLeave={handleFileDragLeave}
+        onDrop={handleFileDrop}
+        className={`border-2 border-dashed rounded-lg p-8 cursor-pointer transition-all duration-200 ${
+          isDraggingFile
+            ? 'border-accent-highlight bg-accent-highlight/10'
+            : 'border-app hover:border-accent-highlight/50 hover:bg-app-primary/50'
+        }`}
+      >
+        <div className="flex items-center justify-center gap-2 text-app-muted">
+          <Upload className="h-5 w-5" />
+          <span className="text-sm">Click to add mod file or drag and drop a file here</span>
+        </div>
       </div>
 
       {files.length === 0 ? (
         <div className="text-center text-app-secondary py-8">
-          No files in catalog. Add files using the button above.
+          No files in catalog. Add files using the dropzone above.
         </div>
       ) : (
-        <div className="border border-app rounded-md overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-app-primary">
-              <tr>
-                <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
-                  Name
-                </th>
-                <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
-                  Version
-                </th>
-                <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
-                  Type
-                </th>
-                <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
-                  Hash
-                </th>
-                <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
-                  Requires
-                </th>
-                <th className="text-right p-3 text-xs font-semibold text-app-muted uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {files.map((file) => (
-                <tr key={file.id} className="group border-t border-app hover:bg-app-primary/50">
-                  <td className="p-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span>{file.name || file.fileName}</span>
-                      {file.sidecarOnly && (
-                        <span className="px-1.5 py-0.5 bg-yellow-900/50 text-yellow-500 text-xs rounded">
-                          sidecar
+        (() => {
+          const visibleFiles = showSidecarOnly ? files : files.filter((f) => !f.sidecarOnly)
+          if (visibleFiles.length === 0) {
+            return (
+              <div className="text-center text-app-secondary py-8">
+                {files.filter((f) => f.sidecarOnly).length === files.length
+                  ? 'All files are sidecars/addons. Check "Show sidecar-mods" to view them.'
+                  : 'No files match the current filter.'}
+              </div>
+            )
+          }
+          return (
+            <div className="border border-app rounded-md overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-app-primary">
+                  <tr>
+                    <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
+                      Name
+                    </th>
+                    <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
+                      Version
+                    </th>
+                    <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
+                      Type
+                    </th>
+                    <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
+                      Requires
+                    </th>
+                    <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
+                      Hash
+                    </th>
+                    <th className="text-right p-3 text-xs font-semibold text-app-muted uppercase">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleFiles.map((file) => (
+                    <tr key={file.id} className="group border-t border-app hover:bg-app-primary/50">
+                      <td className="p-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span>{file.name || file.fileName}</span>
+                          {file.sidecarOnly && (
+                            <span className="px-1.5 py-0.5 bg-yellow-900/50 text-yellow-500 text-xs rounded">
+                              sidecar
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3 text-sm text-app-muted">{file.version || '-'}</td>
+                      <td className="p-3 text-sm">
+                        <span className="px-2 py-1 bg-app-primary rounded text-xs">
+                          {file.fileType}
                         </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-3 text-sm text-app-muted">{file.version || '-'}</td>
-                  <td className="p-3 text-sm">
-                    <span className="px-2 py-1 bg-app-primary rounded text-xs">
-                      {file.fileType}
-                    </span>
-                  </td>
-                  <td className="p-3 text-sm text-app-muted font-mono text-xs">
-                    {file.hashValue ? (
-                      <span title={file.hashValue}>{file.hashValue.slice(0, 8)}...</span>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                  <td className="p-3 text-sm text-app-muted">
-                    {file.requires && Object.keys(file.requires).length > 0
-                      ? Object.keys(file.requires).length
-                      : '-'}
-                  </td>
-                  <td className="p-3 text-right">
-                    <div className="flex items-center gap-1 justify-end">
-                      {file.url && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenUrl(file.url!)}
-                          className="text-app-muted hover:text-app-primary p-1"
-                          title="Open URL"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleOpenEditModal(file)}
-                        className="text-app-muted hover:text-app-primary p-1"
-                        title="Edit"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteFromCatalog(file)}
-                        className="text-red-500 hover:text-red-700 hover:bg-transparent"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                      <td className="p-3 text-sm text-app-muted">
+                        {file.requires && Object.keys(file.requires).length > 0
+                          ? Object.keys(file.requires)
+                              .map((hash) => catalogFiles.find((f) => f.hashValue === hash)?.name)
+                              .join(', ')
+                          : '-'}
+                      </td>
+                      <td className="p-3 text-sm text-app-muted font-mono">
+                        {file.hashValue ? (
+                          <span title={file.hashValue}>{file.hashValue.slice(0, 8)}...</span>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                      <td className="p-3 text-right">
+                        <div className="flex items-center gap-1 justify-end">
+                          {file.url && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenUrl(file.url!)}
+                              className="text-app-muted hover:text-app-primary p-1"
+                              title="Open URL"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenEditModal(file)}
+                            className="text-app-muted hover:text-app-primary p-1"
+                            title="Edit"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteFromCatalog(file)}
+                            className="text-red-500 hover:text-red-700 hover:bg-transparent"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        })()
       )}
 
-      <div className="text-sm text-app-muted">{files.length} files in catalog</div>
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-app-muted">
+          {showSidecarOnly ? files.length : files.filter((f) => !f.sidecarOnly).length} files in
+          catalog
+          {files.some((f) => f.sidecarOnly) && (
+            <span className="ml-2">({files.filter((f) => f.sidecarOnly).length} sidecar-mods)</span>
+          )}
+        </div>
+        {files.some((f) => f.sidecarOnly) && (
+          <label className="flex items-center gap-2 text-sm text-app-muted cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showSidecarOnly}
+              onChange={(e) => setShowSidecarOnly(e.target.checked)}
+              className="w-4 h-4"
+            />
+            Show sidecar-only
+          </label>
+        )}
+      </div>
 
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="bg-app-primary border-app max-w-md max-h-[80vh] overflow-y-auto">
@@ -816,7 +904,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                 className="w-4 h-4"
               />
               <Label htmlFor="add-sidecar" className="text-sm font-normal">
-                Sidecar only (only shown when adding required mods)
+                Sidecar mod (Check if this mod doesn't work without other mod files)
               </Label>
             </div>
           </div>

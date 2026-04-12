@@ -296,10 +296,10 @@ export const InstallPage: React.FC = () => {
     <div className="flex h-screen overflow-hidden">
       <Sidebar activeVersion={activeVersion} onVersionSelect={handleVersionSelect} />
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <Header onSearch={handleSearch} />
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
           <Card className="bg-app-secondary border-app mb-6">
             <CardHeader>
               <CardTitle>New Launch Config</CardTitle>
@@ -309,15 +309,15 @@ export const InstallPage: React.FC = () => {
                 <TabsList className="mb-4 bg-app-primary border-app p-1">
                   <TabsTrigger
                     value="install"
-                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-white data-[state=active]:shadow-sm rounded px-4 text-app-secondary data-[state=active]:text-white dark:data-[state=active]:text-white"
+                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary data-[state=active]:text-foreground dark:data-[state=active]:text-foreground"
                   >
-                    Install Mod
+                    Game Instance
                   </TabsTrigger>
                   <TabsTrigger
                     value="files"
-                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-white data-[state=active]:shadow-sm rounded px-4 text-app-secondary data-[state=active]:text-white dark:data-[state=active]:text-white"
+                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary data-[state=active]:text-foreground dark:data-[state=active]:text-foreground"
                   >
-                    Add Files
+                    Mod Files
                   </TabsTrigger>
                 </TabsList>
 
