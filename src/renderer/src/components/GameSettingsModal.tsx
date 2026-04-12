@@ -153,7 +153,8 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
       filePath: f.filePath,
       fileType: f.fileType,
       loadOrder: f.loadOrder,
-      isRequired: f.isRequired
+      isRequired: f.isRequired,
+      hashValue: f.hashValue
     }))
 
     updateMutation.mutate({

@@ -175,7 +175,8 @@ export const InstallPage: React.FC = () => {
       return {
         ...file,
         filePath: fileNameOnly, // Store only the filename
-        loadOrder: idx
+        loadOrder: idx,
+        hashValue: file.hashValue || ''
       }
     })
 

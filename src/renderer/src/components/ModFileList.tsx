@@ -120,7 +120,8 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                   fileType,
                   loadOrder: files.length,
                   isRequired: true,
-                  name: catalogFile.name || ''
+                  name: catalogFile.name || '',
+                  hashValue: catalogFile.hashValue || ''
                 }
 
                 let updatedFiles = [...files, newFile]
@@ -149,7 +150,8 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                           fileType: reqFileType,
                           loadOrder: files.length + offset,
                           isRequired: true,
-                          name: reqFile.name || ''
+                          name: reqFile.name || '',
+                          hashValue: reqFile.hashValue || ''
                         })
                       }
                     }
