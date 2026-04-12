@@ -2,13 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { IModFile } from '@shared/schema'
 import { Trash, ChevronUp, ChevronDown, Plus } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import { gameService } from '@/lib/gameService'
 
 interface ModFileListProps {
@@ -24,6 +18,16 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
   }, [])
 
   const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)
+
+  const generateUniqueId = (baseId: number): number => {
+    const existingIds = new Set(files.map((f) => f.id))
+    if (!existingIds.has(baseId)) return baseId
+    let newId = Date.now()
+    while (existingIds.has(newId)) {
+      newId = Date.now() + Math.floor(Math.random() * 1000)
+    }
+    return newId
+  }
 
   const removeFile = (fileId: number): void => {
     onChange(files.filter((f) => f.id !== fileId))
@@ -94,7 +98,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
       )}
 
       <div className="flex mt-3 space-x-2">
-        <Select
+        <Combobox
           value=""
           onValueChange={(value) => {
             if (value) {
@@ -110,7 +114,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                 }
 
                 const newFile: IModFile = {
-                  id: catalogFile.id,
+                  id: generateUniqueId(catalogFile.id),
                   filePath: catalogFile.filePath,
                   fileName,
                   fileType,
@@ -120,13 +124,15 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                 }
 
                 let updatedFiles = [...files, newFile]
+                const usedIds = new Set(updatedFiles.map((f) => f.id))
 
                 if (catalogFile.requires && Object.keys(catalogFile.requires).length > 0) {
                   for (const [reqHash, offset] of Object.entries(catalogFile.requires)) {
                     const reqFile = catalogFiles.find((f) => f.hashValue === reqHash)
                     if (reqFile) {
-                      const alreadyAdded = updatedFiles.some((f) => f.id === reqFile.id)
-                      if (!alreadyAdded) {
+                      const reqFileId = generateUniqueId(reqFile.id)
+                      if (!usedIds.has(reqFileId)) {
+                        usedIds.add(reqFileId)
                         const reqFileName = reqFile.fileName || reqFile.name || ''
                         const reqExt = reqFileName.split('.').pop()?.toUpperCase() || ''
                         let reqFileType = 'WAD'
@@ -137,7 +143,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                         }
 
                         updatedFiles.splice(files.length + offset, 0, {
-                          id: reqFile.id,
+                          id: reqFileId,
                           filePath: reqFile.filePath || '',
                           fileName: reqFileName,
                           fileType: reqFileType,
@@ -155,29 +161,17 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
               }
             }
           }}
-        >
-          <SelectTrigger className="flex-1 bg-app-secondary border-app text-xs">
-            <SelectValue placeholder="Select from catalog or add new file" />
-          </SelectTrigger>
-          <SelectContent className="bg-app-secondary border-app max-h-[300px]">
-            {selectableFiles.length === 0 ? (
-              <SelectItem value="empty" disabled>
-                No files in catalog
-              </SelectItem>
-            ) : (
-              selectableFiles.map((catFile) => (
-                <SelectItem key={catFile.id} value={catFile.id.toString()}>
-                  {catFile.name}
-                </SelectItem>
-              ))
-            )}
-          </SelectContent>
-        </Select>
+          options={selectableFiles.map((f) => ({
+            value: f.id.toString(),
+            label: f.name || f.fileName || 'Unnamed'
+          }))}
+          placeholder="Select from catalog..."
+          className="flex-1 bg-app-secondary border-app text-xs"
+          disabled={selectableFiles.length === 0}
+        />
         <Button
           type="button"
-          onClick={() => {
-            // This would open the file browser - for now just toast that it's not implemented
-          }}
+          onClick={() => {}}
           size="sm"
           variant="outline"
           className="bg-app-secondary border-app"
