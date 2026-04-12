@@ -17,14 +17,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeVersion, onVersionSelect
   })
 
   return (
-    <div className="w-20 bg-app-primary h-full flex flex-col items-center py-6 border-r border-app-secondary">
-      {/* App Logo */}
-      <div className="w-12 h-12 mb-12 bg-app-secondary rounded-md flex items-center justify-center">
+    <div className="w-20 bg-app-primary h-full flex flex-col items-center py-6 border-r border-app-secondary overflow-y-auto scrollbar-hide min-h-0">
+      {/* App Logo - stays at top */}
+      <div className="w-12 h-12 mb-12 bg-app-secondary rounded-md flex items-center justify-center shrink-0">
         <img src={logo} alt="Logo" className="w-12 h-12" />
       </div>
 
-      {/* Doom Version Filters */}
-      <div className="flex flex-col space-y-6">
+      {/* Doom Version Filters - scrolls if needed */}
+      <div className="flex flex-col space-y-6 shrink-0">
         {isLoading ? (
           <p>Loading...</p>
         ) : (

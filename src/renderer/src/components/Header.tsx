@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
   }
 
   return (
-    <header className="bg-app-secondary p-4 flex items-center justify-between border-b border-app">
+    <header className="bg-app-secondary p-4 flex items-center justify-between border-b border-app shrink-0">
       {/* Search Bar */}
       <div className="relative w-96">
         <form onSubmit={handleSearch}>
