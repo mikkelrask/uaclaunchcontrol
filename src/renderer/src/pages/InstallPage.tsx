@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,6 +34,23 @@ import { slugify } from '@/lib/utils'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { CatalogManager } from '@/components/CatalogManager'
 import { api } from '@/api'
+
+interface UacModpackImport {
+  format: string
+  version: string
+  game: {
+    title: string
+    description?: string
+    doomVersionSlug: string
+    sourcePort?: string
+    launchParameters?: string
+  }
+  files: {
+    name: string
+    hashValue?: string
+    loadOrder: number
+  }[]
+}
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -292,6 +309,103 @@ export const InstallPage: React.FC = () => {
     setInsertionIndex(null)
   }
 
+  const handleJsonDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault()
+      const jsonFile = e.dataTransfer.files[0]
+      if (!jsonFile || !jsonFile.name.endsWith('.json')) {
+        toast({
+          title: 'Invalid file',
+          description: 'Please drop a JSON file',
+          variant: 'destructive'
+        })
+        return
+      }
+
+      try {
+        const text = await jsonFile.text()
+        const importData: UacModpackImport = JSON.parse(text)
+
+        if (importData.format !== 'uac-modpack') {
+          toast({
+            title: 'Invalid format',
+            description: 'Not a UAC modpack JSON',
+            variant: 'destructive'
+          })
+          return
+        }
+
+        const game = importData.game
+        const importFiles = importData.files
+
+        form.setValue('title', game.title || '')
+        form.setValue('description', game.description || '')
+        form.setValue('launchParameters', game.launchParameters || '')
+
+        if (game.sourcePort) {
+          form.setValue('sourcePort', game.sourcePort)
+        }
+
+        if (game.doomVersionSlug && versions.length > 0) {
+          const matchedVersion = versions.find((v) => v.slug === game.doomVersionSlug)
+          if (matchedVersion) {
+            form.setValue('doomVersionId', matchedVersion.id.toString())
+          }
+        }
+
+        const catalogData = await gameService.getModFileCatalog()
+        const matchedFiles: IModFile[] = []
+        const missingFiles: IModFile[] = []
+
+        for (const impFile of importFiles) {
+          const catalogMatch = catalogData.find((c) => c.hashValue === impFile.hashValue)
+          if (catalogMatch) {
+            matchedFiles.push({
+              ...catalogMatch,
+              loadOrder: impFile.loadOrder
+            })
+          } else {
+            missingFiles.push({
+              id: Date.now() + Math.random(),
+              name: impFile.name,
+              fileName: impFile.name,
+              filePath: '',
+              fileType: 'PK3',
+              loadOrder: impFile.loadOrder,
+              isRequired: true,
+              hashValue: impFile.hashValue
+            })
+          }
+        }
+
+        matchedFiles.sort((a, b) => (a.loadOrder ?? 0) - (b.loadOrder ?? 0))
+        missingFiles.sort((a, b) => (a.loadOrder ?? 0) - (b.loadOrder ?? 0))
+        setFiles([...matchedFiles, ...missingFiles])
+
+        if (missingFiles.length > 0) {
+          toast({
+            title: 'Import partially successful',
+            description: `${matchedFiles.length} files matched, ${missingFiles.length} missing (shown in red)`
+          })
+        } else {
+          toast({ title: 'Import successful', description: 'All files matched from catalog' })
+        }
+      } catch (err) {
+        toast({
+          title: 'Import failed',
+          description: 'Invalid JSON format',
+          variant: 'destructive'
+        })
+      }
+    },
+    [toast, form, versions]
+  )
+
+  const handleJsonDragOver = (e: React.DragEvent): void => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar activeVersion={activeVersion} onVersionSelect={handleVersionSelect} />
@@ -300,7 +414,11 @@ export const InstallPage: React.FC = () => {
         <Header onSearch={handleSearch} />
 
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
-          <Card className="bg-app-secondary border-app mb-6">
+          <Card
+            className="bg-app-secondary border-app mb-6"
+            onDrop={handleJsonDrop}
+            onDragOver={handleJsonDragOver}
+          >
             <CardHeader>
               <CardTitle>New Launch Config</CardTitle>
             </CardHeader>
@@ -535,8 +653,15 @@ export const InstallPage: React.FC = () => {
                                           {index + 1}
                                         </div>
                                         <div className="flex flex-col">
-                                          <span className="text-sm font-medium">
+                                          <span
+                                            className={`text-sm font-medium ${!file.filePath ? 'text-red-400' : ''}`}
+                                          >
                                             {file.name || file.fileName}
+                                            {!file.filePath && (
+                                              <span className="ml-2 text-xs bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded">
+                                                missing
+                                              </span>
+                                            )}
                                           </span>
                                           <span className="text-xs text-app-muted">
                                             ({file.fileType})
