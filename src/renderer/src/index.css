@@ -1,8 +1,32 @@
-@import 'tailwindcss';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   :root {
-    /* Default theme (dark) - semantic variables */
+    /* Default theme (dark) - shadcn/tailwind mappings (MUST be direct HSL, not var()) */
+    --background: 222 47% 4%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 7%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 222 47% 12%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 20% 18%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 222 47% 12%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 40.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 30% 18%;
+    --input: 222 30% 15%;
+    --ring: 212.7 26.8% 83.9%;
+    --radius: 0.5rem;
+
+    /* Your semantic variables for custom components */
     --bg-primary: 222 47% 4%;
     --bg-secondary: 222 47% 10%;
     --bg-tertiary: 222 47% 18%;
@@ -11,7 +35,6 @@
     --bg-muted: 222 20% 18%;
     --bg-sidebar: 222 47% 4%;
     --bg-hover: 222 47% 15%;
-
     --text-primary: 210 40% 98%;
     --text-secondary: 215 20.2% 75.1%;
     --text-muted: 215 20.2% 65.1%;
@@ -19,29 +42,37 @@
     --text-card: 210 40% 98%;
     --text-popover: 210 40% 98%;
     --text-muted-foreground: 215 20.2% 65.1%;
-
     --accent-primary: 210 40% 98%;
     --accent-secondary: 222 47% 12%;
     --accent-destructive: 0 62.8% 40.6%;
     --accent-ring: 212.7 26.8% 83.9%;
     --accent-highlight: 0 84.2% 60.2%;
-
     --border-primary: 222 30% 18%;
     --border-input: 222 30% 15%;
     --border-sidebar: 222 30% 12%;
+  }
 
-    /* Tailwind mappings */
-    --background: var(--bg-primary);
-    --foreground: var(--text-primary);
-    --card: var(--bg-card);
-    --card-foreground: var(--text-card);
-    --popover: var(--bg-popover);
-    --popover-foreground: var(--text-popover);
-    --primary: var(--accent-primary);
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: var(--accent-secondary);
-    --secondary-foreground: var(--text-primary);
-    --muted: var(--bg-muted);
+  .light {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 84% 4.9%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215.4 16.9% 45.9%;
+    --accent: 210 20% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 82%;
+    --ring: 222.2 47.4% 11.2%;
+    --radius: 0.5rem;
     --muted-foreground: var(--text-muted-foreground);
     --accent: var(--accent-secondary);
     --accent-foreground: var(--text-primary);
@@ -133,11 +164,11 @@
   * {
     border-color: hsl(var(--border));
   }
-
   body {
     @apply font-sans antialiased;
     background: hsl(var(--bg-primary));
     color: hsl(var(--text-primary));
+    overflow: hidden;
   }
 
   /* Custom scrollbar */
@@ -157,6 +188,16 @@
 
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--accent-highlight));
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 
@@ -237,6 +278,7 @@
   .game-card {
     @apply rounded-lg overflow-hidden shadow-lg transition-all duration-200 ease-in-out relative;
     background: hsl(var(--bg-card));
+    z-index: 0;
   }
 
   .game-card:hover {
