@@ -871,7 +871,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                     }}
                     options={selectableFilesForAdd.map((f) => ({
                       value: f.id.toString(),
-                      label: f.name
+                      label: f.name || 'Unnamed'
                     }))}
                     placeholder="Add from catalog..."
                     className="bg-app-secondary border-app flex-1"
@@ -1014,7 +1014,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                     }}
                     options={selectableFilesForEdit.map((f) => ({
                       value: f.id.toString(),
-                      label: f.name
+                      label: f.name || 'Unnamed'
                     }))}
                     placeholder="Add from catalog..."
                     className="bg-app-secondary border-app flex-1"

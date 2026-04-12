@@ -371,7 +371,7 @@ export const InstallPage: React.FC = () => {
         }
 
         // Trigger saveDirectory slugification
-        const sluggedTitle = slugify(game.title || '')
+        // (handled by the title onChange in the form)
 
         if (game.doomVersionSlug && versions.length > 0) {
           const matchedVersion = versions.find((v) => v.slug === game.doomVersionSlug)
