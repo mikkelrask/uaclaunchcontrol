@@ -1,9 +1,0 @@
-allowBuilds:
-  electron: true
-  electron-winstaller: true
-  esbuild: true
-
-ignoredBuiltDependencies:
-  - electron
-  - electron-winstaller
-  - esbuild

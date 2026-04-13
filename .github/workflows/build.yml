@@ -40,4 +40,5 @@ jobs:
         run: npx electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: false # Add this line
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
