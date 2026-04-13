@@ -1,7 +1,7 @@
 {
   "name": "uac-launch-control",
   "version": "0.2.3",
-  "description": "Modded Rip and Tear on Easy mode",
+  "description": "Mod, Rip and Tear",
   "main": "./out/main/index.js",
   "desktopName": "uaclaunchcontrol.desktop",
   "author": "Mikkel Rask <mikkelrask@protonmail.com>",
@@ -59,7 +59,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tanstack/react-query": "^5.90.20",
     "@types/cors": "^2.8.19",
-    "axios": "^1.14.0",
+    "axios": "^1.15.0",
     "chokidar": "^5.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -111,6 +111,6 @@
     "shadcn": "^4.2.0",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
-    "vite": "^7.2.6"
+    "vite": "^7.3.2"
   }
 }
