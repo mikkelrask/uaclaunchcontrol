@@ -1,20 +1,64 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, nativeImage } from 'electron'
 import { join } from 'path'
+import { existsSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
 import { startServer } from './server'
 import { autoUpdater } from 'electron-updater'
 
+const isDebug = process.env.DEBUG === 'true'
+
+function debug(...args: unknown[]): void {
+  if (isDebug) {
+    console.log(...args)
+  }
+}
+
 let mainWindow: BrowserWindow | null = null
 
+function getLinuxIcon(): Electron.BrowserWindowConstructorOptions['icon'] | undefined {
+  if (process.platform !== 'linux') return undefined
+
+  let iconPath: string | undefined
+  let iconSource = ''
+
+  if (process.env.APPDIR) {
+    iconPath = join(process.env.APPDIR, 'resources', 'app.asar.unpacked', 'resources', 'icon.png')
+    iconSource = 'AppImage'
+    if (!existsSync(iconPath)) {
+      debug('[Icon] AppImage icon not found at:', iconPath)
+      iconPath = undefined
+    }
+  }
+
+  if (!iconPath) {
+    iconPath = join(__dirname, '../../resources/icon.png')
+    iconSource = 'dev/fallback'
+    if (!existsSync(iconPath)) {
+      debug('[Icon] Fallback icon not found at:', iconPath)
+      return undefined
+    }
+  }
+
+  debug('[Icon] Using icon from:', iconPath, '(source:', iconSource + ')')
+  const img = nativeImage.createFromPath(iconPath)
+  if (img.isEmpty()) {
+    debug('[Icon] WARNING: Image is empty!')
+    return undefined
+  }
+  debug('[Icon] Image dimensions:', img.getSize())
+  return img
+}
+
 function createWindow(): void {
+  const linuxIcon = getLinuxIcon()
+
   mainWindow = new BrowserWindow({
     width: 1920,
     height: 1080,
     show: false,
     autoHideMenuBar: true,
     title: 'UAC Launch Control',
-    ...(process.platform === 'linux' ? { icon } : {}),
+    ...(process.platform === 'linux' && linuxIcon ? { icon: linuxIcon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -24,6 +68,10 @@ function createWindow(): void {
   mainWindow.maximize()
 
   mainWindow.on('ready-to-show', () => {
+    if (process.platform === 'linux' && linuxIcon) {
+      mainWindow?.setIcon(linuxIcon)
+      debug('[Icon] Icon set via setIcon() in ready-to-show')
+    }
     mainWindow?.show()
   })
 

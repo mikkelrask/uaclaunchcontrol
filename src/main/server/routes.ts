@@ -5,6 +5,7 @@ import * as storage from './storage'
 import * as express from 'express'
 import path from 'path'
 import fs from 'fs-extra'
+import { debug } from '../../shared/debug'
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json())
@@ -93,11 +94,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const filePath = path.join(storage.IMAGES_DIR, req.params.fileName)
 
-      console.log(`[DEBUG] Serving image request: ${req.params.fileName}`)
-      console.log(`[DEBUG] Full disk path: ${filePath}`)
+      debug(`Serving image request: ${req.params.fileName}`)
+      debug(`Full disk path: ${filePath}`)
 
       if (fs.existsSync(filePath)) {
-        console.log(`[DEBUG] File exists, sending...`)
+        debug(`File exists, sending...`)
         const stream = fs.createReadStream(filePath)
         // Set content type based on extension
         const ext = path.extname(filePath).toLowerCase()
@@ -435,9 +436,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const options = req.body || {}
 
       if (options.defaultPath) {
-        console.log('[DEBUG] Dialog open: Raw defaultPath:', options.defaultPath)
+        debug(`Dialog open: Raw defaultPath:`, options.defaultPath)
         options.defaultPath = storage.resolvePath(options.defaultPath)
-        console.log('[DEBUG] Dialog open: Resolved defaultPath:', options.defaultPath)
+        debug(`Dialog open: Resolved defaultPath:`, options.defaultPath)
       }
 
       // Get the focused window or the first window

@@ -3,6 +3,7 @@
   "version": "0.2.3",
   "description": "Modded Rip and Tear on Easy mode",
   "main": "./out/main/index.js",
+  "desktopName": "uaclaunchcontrol.desktop",
   "author": "Mikkel Rask <mikkelrask@protonmail.com>",
   "homepage": "https://github.com/mikkelrask/uaclaunchcontrol",
   "repository": {

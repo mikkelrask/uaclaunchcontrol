@@ -4,6 +4,7 @@ import * as storage from '../storage'
 import { fileService } from './fileService'
 import { IMod, IModFile, IDoomVersion } from '../../../shared/schema'
 import { MODS_DIR } from '../storage'
+import { debug } from '../../../shared/debug'
 
 // Service to handle game-related operations
 export class GameService {
@@ -113,7 +114,7 @@ export class GameService {
                 file.filePath.startsWith('/') ||
                 file.filePath.includes(':')
 
-              console.log(`[DEBUG] Processing file: ${file.filePath}, isAbsolute: ${isAbsolute}`)
+              debug(`Processing file: ${file.filePath}, isAbsolute: ${isAbsolute}`)
 
               let fullPath: string
               if (isAbsolute) {
@@ -121,8 +122,8 @@ export class GameService {
               } else {
                 const modsDir = storage.resolvePath(settings.modsDirectory || '')
                 fullPath = path.join(modsDir, 'files', file.filePath)
-                console.log(
-                  `[DEBUG] Resolved relative file: ${file.filePath} -> ${fullPath} (modsDir: ${modsDir})`
+                debug(
+                  `Resolved relative file: ${file.filePath} -> ${fullPath} (modsDir: ${modsDir})`
                 )
               }
               fileArgs.push(fullPath)

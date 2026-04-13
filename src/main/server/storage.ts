@@ -6,6 +6,7 @@ import chokidar from 'chokidar'
 import crypto from 'crypto'
 import { BrowserWindow } from 'electron'
 import { IAppSettings, IDoomVersion, IMod, IModFile, InsertMod } from '../../shared/schema'
+import { debug } from '../../shared/debug'
 
 // Define storage paths (Aligned with local-structure.txt)
 const CONFIG_DIR = path.join(os.homedir(), '.config', 'uac')
@@ -140,7 +141,6 @@ export function initStorage(): boolean {
     const legacyConfig = checkLegacyConfigSync()
     if (legacyConfig.found) {
       console.log(`Legacy config found at ${legacyConfig.path}, waiting for migration...`)
-      // Don't create default files yet - let the UI prompt for migration
       console.log('Storage initialized successfully (waiting for migration)')
       return true
     }
@@ -148,19 +148,19 @@ export function initStorage(): boolean {
     // Create settings file with defaults if it doesn't exist
     if (!fs.existsSync(SETTINGS_FILE)) {
       fs.writeJSONSync(SETTINGS_FILE, DEFAULT_SETTINGS, { spaces: 2 })
-      console.log(`Created default settings file at ${SETTINGS_FILE}`)
+      debug(`Created default settings file at ${SETTINGS_FILE}`)
     }
 
     // Create doomVersions file with defaults if it doesn't exist
     if (!fs.existsSync(DOOM_VERSIONS_FILE)) {
       fs.writeJSONSync(DOOM_VERSIONS_FILE, DEFAULT_DOOM_VERSIONS, { spaces: 2 })
-      console.log(`Created default doom versions file at ${DOOM_VERSIONS_FILE}`)
+      debug(`Created default doom versions file at ${DOOM_VERSIONS_FILE}`)
     }
 
     // Create modFileCatalog file with empty array if it doesn't exist
     if (!fs.existsSync(MOD_FILE_CATALOG)) {
       fs.writeJSONSync(MOD_FILE_CATALOG, [], { spaces: 2 }) // Default to empty array
-      console.log(`Created default mod file catalog at ${MOD_FILE_CATALOG}`)
+      debug(`Created default mod file catalog at ${MOD_FILE_CATALOG}`)
     }
 
     // Sync Doom versions on startup
@@ -201,10 +201,10 @@ function checkLegacyConfigSync(): { found: boolean; path: string | null } {
 export async function getSettings(): Promise<IAppSettings> {
   try {
     initStorage() // Ensure directories/files exist
-    console.log('[DEBUG] Reading settings from', SETTINGS_FILE)
+    debug('Reading settings from', SETTINGS_FILE)
     const settingsData = await fs.readJSON(SETTINGS_FILE)
     const settings: IAppSettings = { ...DEFAULT_SETTINGS, ...settingsData }
-    console.log('[DEBUG] Retrieved settings from file:', settings)
+    debug('Retrieved settings from file:', settings)
 
     // Resolve tildes for all known path fields before sending to UI
     const resolvedSettings: IAppSettings = {
@@ -225,7 +225,7 @@ export async function getSettings(): Promise<IAppSettings> {
         : settings.wadFilesDirectory
     }
 
-    console.log('[DEBUG] Returning resolved settings to UI:', resolvedSettings)
+    debug('Returning resolved settings to UI:', resolvedSettings)
     return resolvedSettings
   } catch (error: unknown) {
     console.error('[DEBUG] Error getting settings:', error)
@@ -239,16 +239,16 @@ export async function saveSettings(settings: Partial<IAppSettings>): Promise<IAp
     initStorage() // Ensure directories/files exist
     const currentSettings = await getSettings()
     const updatedSettings = { ...currentSettings, ...settings }
-    console.log('[DEBUG] Saving settings to', SETTINGS_FILE, 'with data:', updatedSettings)
+    debug('Saving settings to', SETTINGS_FILE, 'with data:', updatedSettings)
     await fs.writeJSON(SETTINGS_FILE, updatedSettings, { spaces: 2 })
-    console.log('[DEBUG] Saved settings:', updatedSettings)
+    debug('Saved settings:', updatedSettings)
 
     // If wadFilesDirectory changed, restart watcher
     if (
       settings.wadFilesDirectory &&
       settings.wadFilesDirectory !== currentSettings.wadFilesDirectory
     ) {
-      console.log('[DEBUG] wadFilesDirectory changed, restarting watcher...')
+      debug('wadFilesDirectory changed, restarting watcher...')
       stopWadWatcher()
       await syncDoomVersions()
       startWadWatcher()
@@ -288,7 +288,7 @@ export async function getDoomVersions(): Promise<IDoomVersion[]> {
       icon: v.icon ? resolvePath(v.icon) : v.icon,
       defaultIwad: v.defaultIwad ? resolvePath(v.defaultIwad) : v.defaultIwad
     }))
-    console.log('[DEBUG] getDoomVersions: Returning resolved versions:', resolved.length)
+    debug('getDoomVersions: Returning resolved versions:', resolved.length)
     return resolved
   } catch (error: unknown) {
     console.error('Error getting Doom versions:', error)
@@ -308,9 +308,9 @@ export function stopWadWatcher(): void {
 }
 
 export function startWadWatcher(): void {
-  console.log('[DEBUG] DEBUG: startWadWatcher called')
+  debug('startWadWatcher called')
   if (wadWatcher) {
-    console.log('[DEBUG] DEBUG: Watcher already exists, skipping')
+    debug('Watcher already exists, skipping')
     return
   }
 
@@ -318,7 +318,7 @@ export function startWadWatcher(): void {
     .then((settings) => {
       const rawDir = settings.wadFilesDirectory || path.join(CONFIG_DIR, 'wads')
       const wadDir = resolvePath(rawDir)
-      console.log(`[DEBUG] DEBUG: Watcher starting for directory: ${wadDir} (from raw: ${rawDir})`)
+      debug(`Watcher starting for directory: ${wadDir} (from raw: ${rawDir})`)
 
       try {
         fs.ensureDirSync(wadDir)
@@ -336,7 +336,7 @@ export function startWadWatcher(): void {
 
       wadWatcher.on('all', (event, filePath) => {
         if (filePath.toLowerCase().endsWith('.wad')) {
-          console.log(`[DEBUG] WAD change detected (${event}): ${filePath}. Syncing...`)
+          debug(`WAD change detected (${event}): ${filePath}. Syncing...`)
           syncDoomVersions({ notifyDelta: true })
         }
       })
@@ -345,7 +345,7 @@ export function startWadWatcher(): void {
         console.error(`[DEBUG] Chokidar watcher error:`, error)
       })
 
-      console.log(`[DEBUG] Started WAD watcher on ${wadDir}`)
+      debug(`Started WAD watcher on ${wadDir}`)
     })
     .catch((err) => {
       console.error('[DEBUG] Error starting WAD watcher:', err)
@@ -358,7 +358,7 @@ export async function syncDoomVersions(
 ): Promise<IDoomVersion[]> {
   try {
     initStorage()
-    console.log('[DEBUG] syncDoomVersions starting...')
+    debug('syncDoomVersions starting...')
     const settings = await getSettings()
     const wadDir = resolvePath(settings.wadFilesDirectory || path.join(CONFIG_DIR, 'wads'))
 
@@ -437,9 +437,7 @@ export async function syncDoomVersions(
     }
 
     await fs.writeJSON(DOOM_VERSIONS_FILE, updatedVersions, { spaces: 2 })
-    console.log(
-      `[DEBUG] syncDoomVersions: Synced ${updatedVersions.length} versions to ${DOOM_VERSIONS_FILE}`
-    )
+    debug(`syncDoomVersions: Synced ${updatedVersions.length} versions to ${DOOM_VERSIONS_FILE}`)
 
     // Prepare resolved versions for the UI
     const resolvedVersions = updatedVersions.map((v) => ({
@@ -492,7 +490,7 @@ export async function saveDoomVersions(versions: IDoomVersion[]): Promise<void> 
   try {
     initStorage() // Ensure file exists
     await fs.writeJSON(DOOM_VERSIONS_FILE, versions, { spaces: 2 })
-    console.log('[DEBUG] Saved doom versions to', DOOM_VERSIONS_FILE)
+    debug('Saved doom versions to', DOOM_VERSIONS_FILE)
 
     // Notify all windows that versions have been updated
     BrowserWindow.getAllWindows().forEach((win) => {
@@ -511,12 +509,12 @@ export async function saveDoomVersions(versions: IDoomVersion[]): Promise<void> 
 export async function getModFileCatalog(): Promise<IModFile[]> {
   try {
     const filePath = path.join(CONFIG_DIR, 'modFileCatalogue.json')
-    console.log('[DEBUG] Reading modFileCatalogue.json from:', filePath)
+    debug('Reading modFileCatalogue.json from:', filePath)
     if (!fs.existsSync(filePath)) {
       return []
     }
     const raw = await fs.promises.readFile(filePath, 'utf-8')
-    console.log('[DEBUG] Raw modFileCatalogue.json contents:', raw)
+    debug('Raw modFileCatalogue.json contents:', raw)
     let data = []
     try {
       data = JSON.parse(raw)
@@ -549,7 +547,7 @@ export async function moveFile(filePath: string, newPath: string): Promise<strin
     const resolvedSource = resolvePath(filePath)
     const resolvedDest = resolvePath(newPath)
 
-    console.log('[DEBUG] Moving file from', resolvedSource, 'to', resolvedDest)
+    debug('Moving file from', resolvedSource, 'to', resolvedDest)
 
     // Ensure destination directory exists
     await fs.ensureDir(path.dirname(resolvedDest))
@@ -581,7 +579,7 @@ export async function moveToModFolder(
     await fs.ensureDir(path.join(modsDir, 'files'))
     await fs.copy(resolvePath(sourcePath), fullPath, { overwrite: true })
 
-    console.log(`[DEBUG] Moved file to mod folder: ${fullPath} (relative: ${relativePath})`)
+    debug(`Moved file to mod folder: ${fullPath} (relative: ${relativePath})`)
     return { fullPath, relativePath }
   } catch (error: unknown) {
     console.error('Error moving file to mod folder:', error)
@@ -602,7 +600,7 @@ export async function copyImageToImages(sourcePath: string): Promise<string> {
     await fs.ensureDir(IMAGES_DIR)
     await fs.copy(sourcePath, destPath)
 
-    console.log(`[DEBUG] Image copied to: ${destPath}`)
+    debug(`Image copied to: ${destPath}`)
     return uniqueFileName
   } catch (error: unknown) {
     console.error('Error copying image:', error)
@@ -637,7 +635,7 @@ export async function downloadImage(url: string, modId: string): Promise<string>
 
     await fs.writeFile(filePath, response.data)
 
-    console.log(`[DEBUG] Image downloaded via axios and saved to: ${filePath}`)
+    debug(`Image downloaded via axios and saved to: ${filePath}`)
     return fileName // Return just the filename
   } catch (error: unknown) {
     console.error('Error downloading image:', error)
@@ -660,7 +658,7 @@ export async function computeFileHash(filePath: string): Promise<string> {
 
     const fileBuffer = await fs.promises.readFile(resolvedPath)
     const hash = crypto.createHash('md5').update(fileBuffer).digest('hex')
-    console.log(`[DEBUG] Computed MD5 hash for ${resolvedPath}: ${hash}`)
+    debug(`Computed MD5 hash for ${resolvedPath}: ${hash}`)
     return hash
   } catch (error) {
     console.error(`Error computing hash for ${filePath}:`, error)
@@ -670,17 +668,17 @@ export async function computeFileHash(filePath: string): Promise<string> {
 
 export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<IModFile> {
   try {
-    console.log('addModFileToCatalog called with:', file)
+    debug('addModFileToCatalog called with:', file)
     initStorage() // Ensure directories and files exist
 
     // Read existing catalog
-    console.log(`Reading catalog from ${MOD_FILE_CATALOG}`)
+    debug(`Reading catalog from ${MOD_FILE_CATALOG}`)
     let catalog: IModFile[] = []
     if (fs.existsSync(MOD_FILE_CATALOG)) {
       catalog = await fs.readJSON(MOD_FILE_CATALOG)
-      console.log(`Existing catalog has ${catalog.length} entries`)
+      debug(`Existing catalog has ${catalog.length} entries`)
     } else {
-      console.log(`Catalog file doesn't exist, creating new one`)
+      debug(`Catalog file doesn't exist, creating new one`)
     }
 
     if (file.filePath) {
@@ -703,13 +701,13 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
         url: file.url ?? '',
         version: file.version ?? ''
       }
-      console.log('Created new catalog entry:', createdFile)
+      debug('Created new catalog entry:', createdFile)
       // Add to catalog
       catalog.push(createdFile)
       // Save updated catalog
-      console.log(`Writing updated catalog with ${catalog.length} entries to ${MOD_FILE_CATALOG}`)
+      debug(`Writing updated catalog with ${catalog.length} entries to ${MOD_FILE_CATALOG}`)
       await fs.writeJSON(MOD_FILE_CATALOG, catalog, { spaces: 2 })
-      console.log(`Catalog file saved successfully`)
+      debug(`Catalog file saved successfully`)
       return createdFile
     }
     throw new Error('Invalid file: filePath is required')
@@ -743,9 +741,7 @@ export async function updateModFileInCatalog(
     catalog[index] = updatedFile
 
     await fs.writeJSON(MOD_FILE_CATALOG, catalog, { spaces: 2 })
-    console.log(
-      `[DEBUG] Successfully updated mod file ${id} in catalog (new name: ${updates.name})`
-    )
+    debug(`Successfully updated mod file ${id} in catalog (new name: ${updates.name})`)
     return updatedFile
   } catch (error: unknown) {
     console.error(`Error updating mod file ${id} in catalog:`, error)
@@ -1006,10 +1002,10 @@ export async function deleteMod(id: string | number): Promise<boolean | undefine
     const settings = await getSettings()
     const targetModsDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
     const modFilePath = path.join(targetModsDir, `${id}.json`)
-    console.log('[DEBUG] Attempting to delete mod file:', modFilePath)
+    debug('Attempting to delete mod file:', modFilePath)
     if (await fs.pathExists(modFilePath)) {
       await fs.remove(modFilePath)
-      console.log('[DEBUG] Deleted mod file:', modFilePath)
+      debug('Deleted mod file:', modFilePath)
       return true
     } else {
       console.warn('[DEBUG] Mod file does not exist:', modFilePath)
@@ -1070,7 +1066,7 @@ export async function executeMigration(sourcePath: string): Promise<boolean> {
       throw new Error(`Migration source not found: ${resolvedSource}`)
     }
 
-    console.log(`[MIGRATION] Migrating from ${resolvedSource} to ${CONFIG_DIR}`)
+    debug(`Migrating from ${resolvedSource} to ${CONFIG_DIR}`)
 
     // Ensure new config dir exists
     await fs.ensureDir(CONFIG_DIR)
@@ -1081,7 +1077,7 @@ export async function executeMigration(sourcePath: string): Promise<boolean> {
       errorOnExist: false
     })
 
-    console.log(`[MIGRATION] Successfully migrated content to ${CONFIG_DIR}`)
+    debug(`Successfully migrated content to ${CONFIG_DIR}`)
 
     // Patch internal JSON paths to point to the new uac directory
     await patchLegacyPaths(CONFIG_DIR)
@@ -1116,7 +1112,7 @@ async function patchLegacyPaths(directory: string): Promise<void> {
 
         if (patched !== content) {
           await fs.writeFile(fullPath, patched)
-          console.log(`[MIGRATION] Patched legacy paths in ${fullPath}`)
+          debug(`Patched legacy paths in ${fullPath}`)
         }
       }
     }

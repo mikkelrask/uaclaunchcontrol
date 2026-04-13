@@ -33,6 +33,7 @@ linux:
     - deb
   maintainer: mikkelrask
   category: Game
+  icon: build/icons
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
