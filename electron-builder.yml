@@ -15,14 +15,6 @@ win:
   executableName: uaclaunchcontrol
   icon: build/icons
 nsis:
-linux:
-  target:
-    - AppImage
-    - deb
-  maintainer: mikkelrask
-  category: Game
-  icon: build/icons
-nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
@@ -42,7 +34,7 @@ linux:
     - deb
   maintainer: mikkelrask
   category: Game
-  icon: build
+  icon: build/icons
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
