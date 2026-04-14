@@ -2,11 +2,11 @@
 
 A modern desktop application for managing and launching Doom mods, built with Electron, React, and TypeScript. It is _very much_ a WIP and early
 
-![UAC Launch Control](https://img.shields.io/badge/Electron-Latest-47848F?logo=electron)
+![Electron](https://img.shields.io/badge/Electron-Latest-47848F?logo=electron)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
 
-![UAC Launch Control is Modded Rip and Tear on Easy Mode!](https://github.com/mikkelrask/uaclaunchcontrol/blob/main/IMG/macos-confirmed.png?raw=true)
+![UAC Launch Control is Modded Rip and Tear on Easy Mode!](https://github.com/mikkelrask/uaclaunchcontrol/blob/main/IMG/0.2.4.png?raw=true)
 
 ## Overview
 
@@ -19,18 +19,16 @@ UAC Launch Control stores your mod-files in a locally stored catalogue, making i
 #### Key Features
 
 - 🎮 **Mod Management**: Organize and launch Doom mods with ease
-- 📁 **File Catalog**: Maintain a catalog of mod files (WADs, PK3s, DEH patches)
+- 📁 **File Catalog**: Maintain a catalog of mod files
 - ⚙️ **Custom Launch Parameters**: Configure launch arguments per mod
-- 🎯 **"Bring your own Source port"**: UZDoom, GZDoom, Zandronum, and more
-- 🔄 **Real-time WAD Sync**: Automatically discovers WAD files in your wads directory and keeps them in sync with the UI
-- 🖼️ **Custom Icons**: Support for custom PNG/JPG icons for every WAD version
-- 🏠 **Tilde Support**: Full support for `~` in all configuration paths for better portability
+- 🎯 **"Bring your own Source port"**: UZDoom, GZDoom, Zandronum, and more - let me know if your source port isn't working
+- 📦 **Mod-linking** - if a mod requires another specific, you can set it as required, and the app will always add those together.
 
 ## Architecture
 
 ### Technology Stack
 
-- **Frontend**: React 18 + TypeScript + TailwindCSS v4
+- **Frontend**: React 18 + TypeScript + TailwindCSS v3
 - **Backend**: Express.js API server
 - **Desktop**: Electron (main + renderer processes)
 - **Build Tool**: electron-vite
