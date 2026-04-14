@@ -2,6 +2,7 @@
 
 A modern desktop application for managing and launching Doom mods, built with Electron, React, and TypeScript. It is _very much_ a WIP and early
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/mikkelrask/uaclaunchcontrol)
 ![Electron](https://img.shields.io/badge/Electron-Latest-47848F?logo=electron)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
@@ -10,20 +11,20 @@ A modern desktop application for managing and launching Doom mods, built with El
 
 ## Overview
 
-UAC Launch Control is a mod launcher for **UZDoom/GZDoom/ZDoom** with big ambitions. It provides an intuitive interface for organizing your Doom WADs, managing mod files, and launching games with custom configurations.
+**UAC Launch Control** is a mod launcher for **UZDoom/GZDoom/ZDoom** with big ambitions. It provides an intuitive interface for **organizing your Doom WADs and mod files**, and launching games with custom configurations to test mod compatability.
 
-No more having to remember the launch order of your mods, or making `.bat` launch scripts for each of your mods.
-
-UAC Launch Control stores your mod-files in a locally stored catalogue, making it easy to mix-and-match different mods, to create your own custom "mod-pack" or "remix".
+No more having to remember the launch order of your mods, or blindly trusting and launching `.bat` scripts to rip and tear!
 
 #### Key Features
 
-- 🎮 **Mod Management**: Organize and launch Doom mods with ease
+- 🎮 **Game Management**: Organize and launch different configurations of mods and modpacks with ease
 - 📁 **File Catalog**: Maintain a catalog of mod files
+- 📦 **"Mod-linking"**:  if a mod requires another specific, you can set it as required, and the app will always add additional mods when creating a new game instance
 - ⚙️ **Custom Launch Parameters**: Configure launch arguments per mod
-- 🎯 **"Bring your own Source port"**: UZDoom, GZDoom, Zandronum, and more - let me know if your source port isn't working
-- 📦 **Mod-linking** - if a mod requires another specific, you can set it as required, and the app will always add those together.
+- 🔄 **Import and Export**: You can export your favorite configuration and share with your friends with a simple json file, that your friend can import*
+- 🎯 **"Bring your own Source port"**: UZDoom, GZDoom, Zandronum, and more - if your source port isn't working, let me know in the [issues](https://github.com/mikkelrask/uaclaunchcontrol/issues)!
 
+_\* they still need the actual modfiles - I don't want to keep users away from the communities, or "steal downloads" from mod-developers, as that metric obviously is used to measure a games popularity and the likes._
 ## Architecture
 
 ### Technology Stack
@@ -185,7 +186,7 @@ The project uses separate TypeScript configurations:
 
 ### Styling
 
-- TailwindCSS v4 with custom dark theme
+- TailwindCSS v3 with custom dark theme
 - CSS variables for theming in `src/renderer/src/index.css`
 - Custom components in `src/renderer/src/components/ui/`
 
@@ -199,7 +200,7 @@ The project uses separate TypeScript configurations:
 
 ## License
 
-This is free software.
+This is free software. Free as in freedom _and_ free beer.
 
 ## Contributing
 
