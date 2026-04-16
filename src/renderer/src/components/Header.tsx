@@ -32,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
         <form onSubmit={handleSearch}>
           <input
             type="text"
-            placeholder="SEARCH ..."
+            placeholder="QUERY DATABASE"
             className="w-full bg-app-primary text-app-primary px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-accent-highlight"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

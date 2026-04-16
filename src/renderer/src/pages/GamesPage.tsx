@@ -128,20 +128,20 @@ export const GamesPage: React.FC = () => {
               </div>
             ) : filteredMods?.length === 0 ? (
               <div className="text-center py-10">
-                <h3 className="text-2xl font-sans mb-2">Nothing to launch</h3>
+                <h3 className="text-2xl font-sans mb-2">FAILURE: Configuration incomplete</h3>
                 <p className="text-app-secondary">
                   {activeVersion ? (
-                    `No mods installed for this Doom version.`
+                    `No mods installed for this version.`
                   ) : (
                     <>
-                      No mods installed. Click{' '}
+                      Create deployment configuration to start. Click{' '}
                       <Link
                         href="/install"
                         className="text-accent-highlight font-bold hover:underline"
                       >
                         INSTALL
                       </Link>{' '}
-                      to add your first mod.
+                      to get started.
                     </>
                   )}
                 </p>

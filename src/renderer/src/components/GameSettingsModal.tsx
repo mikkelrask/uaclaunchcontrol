@@ -320,18 +320,18 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
 
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label htmlFor="title">Mod Title</Label>
+                  <Label htmlFor="title" className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Label</Label>
                   <Input
                     id="title"
                     name="title"
                     value={mod?.title || mod?.name || ''}
                     onChange={handleInputChange}
-                    className="bg-app-primary border-app"
+                    className="bg-app-primary border-app "
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description" className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Description</Label>
                   <Textarea
                     id="description"
                     name="description"
@@ -348,7 +348,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                   <h3 className="text-lg font-sans mb-2">Base Configuration</h3>
                   <div className="bg-app-primary p-3 rounded space-y-2">
                     <div>
-                      <Label htmlFor="doomVersionId">Base Game</Label>
+                      <Label htmlFor="doomVersionId" className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Base WAD</Label>
                       <Select
                         value={mod?.doomVersionId?.toString() || ''}
                         onValueChange={(value) => handleSelectChange('doomVersionId', value)}
@@ -367,7 +367,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                     </div>
 
                     <div>
-                      <Label htmlFor="sourcePort">Source Port</Label>
+                      <Label htmlFor="sourcePort" className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Source Port</Label>
                       <Input
                         id="sourcePort"
                         name="sourcePort"
@@ -378,7 +378,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                     </div>
 
                     <div>
-                      <Label htmlFor="saveDirectory">Save Directory</Label>
+                      <Label htmlFor="saveDirectory" className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Save Directory</Label>
                       <Input
                         id="saveDirectory"
                         name="saveDirectory"

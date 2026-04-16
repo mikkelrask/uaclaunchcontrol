@@ -4,161 +4,139 @@
 
 @layer base {
   :root {
-    /* Default theme (dark) - shadcn/tailwind mappings (MUST be direct HSL, not var()) */
-    --background: 222 47% 4%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 222 47% 12%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 222 20% 18%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 222 47% 12%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 40.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 222 30% 18%;
-    --input: 222 30% 15%;
-    --ring: 212.7 26.8% 83.9%;
-    --radius: 0.5rem;
+    /* === CORE (less blue, more neutral/industrial) === */
+    --background: 220 18% 5%;
+    --foreground: 210 20% 92%;
 
-    /* Your semantic variables for custom components */
-    --bg-primary: 222 47% 4%;
-    --bg-secondary: 222 47% 10%;
-    --bg-tertiary: 222 47% 18%;
-    --bg-card: 222 47% 7%;
-    --bg-popover: 222 47% 8%;
-    --bg-muted: 222 20% 18%;
-    --bg-sidebar: 222 47% 4%;
-    --bg-hover: 222 47% 15%;
-    --text-primary: 210 40% 98%;
-    --text-secondary: 215 20.2% 75.1%;
-    --text-muted: 215 20.2% 65.1%;
-    --text-sidebar: 210 40% 98%;
-    --text-card: 210 40% 98%;
-    --text-popover: 210 40% 98%;
-    --text-muted-foreground: 215 20.2% 65.1%;
-    --accent-primary: 210 40% 98%;
-    --accent-secondary: 222 47% 12%;
-    --accent-destructive: 0 62.8% 40.6%;
-    --accent-ring: 212.7 26.8% 83.9%;
-    --accent-highlight: 0 84.2% 60.2%;
-    --border-primary: 222 30% 18%;
-    --border-input: 222 30% 15%;
-    --border-sidebar: 222 30% 12%;
+    --card: 220 18% 8%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 220 18% 9%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 210 20% 92%;
+    --primary-foreground: 220 18% 10%;
+
+    --secondary: 220 12% 14%;
+    --secondary-foreground: 210 20% 92%;
+
+    --muted: 220 10% 18%;
+    --muted-foreground: 215 10% 60%;
+
+    --accent: 220 12% 14%;
+    --accent-foreground: 210 20% 92%;
+
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 210 20% 95%;
+
+    --border: 220 12% 18%;
+    --input: 220 12% 16%;
+    --ring: 0 84% 60%;
+
+    --radius: 0.4rem;
+
+    /* === SEMANTIC LAYERS === */
+    --bg-primary: 220 18% 5%;
+    --bg-secondary: 220 15% 9%;
+    --bg-tertiary: 220 12% 14%;
+    --bg-card: 220 18% 8%;
+    --bg-popover: 220 18% 9%;
+    --bg-muted: 220 10% 18%;
+    --bg-sidebar: 220 18% 6%;
+    --bg-hover: 220 12% 16%;
+
+    /* === TEXT === */
+    --text-primary: 210 20% 92%;
+    --text-secondary: 215 12% 70%;
+    --text-muted: 215 10% 75%;
+    --text-sidebar: 210 20% 92%;
+    --text-card: 210 20% 92%;
+    --text-popover: 210 20% 92%;
+
+    /* === ACCENTS === */
+    --accent-primary: 210 20% 92%;
+    --accent-secondary: 220 12% 14%;
+
+    /* 🔴 UAC SIGNAL */
+    --accent-highlight: 0 84% 60%;
+    --accent-highlight-soft: 0 84% 60% / 0.15;
+    --accent-highlight-border: 0 84% 60% / 0.35;
+
+    --accent-destructive: 0 65% 45%;
+    --accent-ring: 0 84% 60%;
+
+    /* === BORDERS === */
+    --border-primary: 220 12% 18%;
+    --border-input: 220 12% 16%;
+    --border-sidebar: 220 12% 14%;
   }
 
   .light {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    /* === CORE === */
+    --background: 210 20% 96%;
+    --foreground: 220 20% 12%;
+
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 84% 4.9%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 20% 96%;
-    --muted-foreground: 215.4 16.9% 45.9%;
-    --accent: 210 20% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 82%;
-    --ring: 222.2 47.4% 11.2%;
-    --radius: 0.5rem;
-    --muted-foreground: var(--text-muted-foreground);
-    --accent: var(--accent-secondary);
-    --accent-foreground: var(--text-primary);
-    --destructive: var(--accent-destructive);
-    --destructive-foreground: var(--text-primary);
-    --border: var(--border-primary);
-    --input: var(--border-input);
-    --ring: var(--accent-ring);
-    --radius: 0.5rem;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: var(--bg-sidebar);
-    --sidebar-foreground: var(--text-sidebar);
-    --sidebar-primary: var(--accent-primary);
-    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: var(--accent-secondary);
-    --sidebar-accent-foreground: var(--text-primary);
-    --sidebar-border: var(--border-sidebar);
-    --sidebar-ring: var(--accent-ring);
-  }
+    --card-foreground: 220 20% 12%;
 
-  .light {
-    /* Semantic variables */
-    --bg-primary: 210 40% 98%;
-    --bg-secondary: 210 20% 94%;
-    --bg-tertiary: 210 20% 88%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 12%;
+
+    --primary: 220 20% 12%;
+    --primary-foreground: 210 20% 96%;
+
+    --secondary: 210 15% 90%;
+    --secondary-foreground: 220 20% 12%;
+
+    --muted: 210 15% 88%;
+    --muted-foreground: 215 12% 40%;
+
+    --accent: 210 15% 90%;
+    --accent-foreground: 220 20% 12%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 210 15% 82%;
+    --input: 210 15% 78%;
+    --ring: 0 84% 60%;
+
+    --radius: 0.4rem;
+
+    /* === SEMANTIC === */
+    --bg-primary: 210 20% 96%;
+    --bg-secondary: 210 15% 92%;
+    --bg-tertiary: 210 15% 88%;
     --bg-card: 0 0% 100%;
     --bg-popover: 0 0% 100%;
-    --bg-muted: 210 20% 92%;
-    --bg-sidebar: 210 40% 98%;
-    --bg-hover: 210 20% 86%;
+    --bg-muted: 210 15% 88%;
+    --bg-sidebar: 210 20% 95%;
+    --bg-hover: 210 15% 85%;
 
-    --text-primary: 222.2 84% 4.9%;
-    --text-secondary: 215.4 16.9% 45.9%;
-    --text-muted: 215.4 16.9% 45.9%;
-    --text-sidebar: 222.2 84% 4.9%;
-    --text-card: 222.2 84% 4.9%;
-    --text-popover: 222.2 84% 4.9%;
-    --text-muted-foreground: 215.4 16.9% 45.9%;
+    /* === TEXT === */
+    --text-primary: 220 20% 12%;
+    --text-secondary: 215 12% 40%;
+    --text-muted: 215 10% 45%;
+    --text-sidebar: 220 20% 12%;
+    --text-card: 220 20% 12%;
+    --text-popover: 220 20% 12%;
 
-    --accent-primary: 222.2 84% 4.9%;
-    --accent-secondary: 210 20% 92%;
-    --accent-destructive: 0 84.2% 60.2%;
-    --accent-ring: 222.2 47.4% 11.2%;
-    --accent-highlight: 0 72.2% 50.6%;
+    /* === ACCENTS === */
+    --accent-primary: 220 20% 12%;
+    --accent-secondary: 210 15% 90%;
 
-    --border-primary: 214.3 31.8% 88%;
-    --border-input: 214.3 31.8% 82%;
-    --border-sidebar: 214.3 31.8% 90%;
+    /* 🔴 SAME UAC RED (important) */
+    --accent-highlight: 0 84% 60%;
+    --accent-highlight-soft: 0 84% 60% / 0.12;
+    --accent-highlight-border: 0 84% 60% / 0.3;
 
-    /* Tailwind mappings */
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 84% 4.9%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 20% 96%;
-    --muted-foreground: 215.4 16.9% 45.9%;
-    --accent: 210 20% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 47.4% 11.2%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 210 40% 98%;
-    --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-primary: 222.2 84% 4.9%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 20% 96%;
-    --sidebar-accent-foreground: 222.2 84% 4.9%;
-    --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 222.2 47.4% 11.2%;
+    --accent-destructive: 0 70% 55%;
+    --accent-ring: 0 84% 60%;
+
+    /* === BORDERS === */
+    --border-primary: 210 15% 82%;
+    --border-input: 210 15% 78%;
+    --border-sidebar: 210 15% 85%;
   }
 
   * {
@@ -319,12 +297,38 @@
   }
 
   .sidebar-icon {
-    @apply w-12 h-12 rounded-md flex items-center justify-center cursor-pointer transition-all duration-200;
+    @apply w-12 h-12 rounded-md flex items-center justify-center cursor-pointer transition-all duration-200 opacity-60;
   }
 
-  .sidebar-icon:hover,
   .sidebar-icon.active {
-    background: hsl(var(--bg-hover));
-    @apply scale-105;
+    @apply opacity-80;
+    position: relative;
+  }
+
+  .sidebar-icon.active::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: hsl(var(--accent-destructive));
+    border-radius: 1px;
+  }
+  .sidebar-icon:hover {
+    @apply opacity-100;
+    background: hsl(var(--sidebar-icon-bg));
+    border: 1px solid hsl(var(--accent-hightlight-border));
+  }
+
+  .game-card {
+    transition: all 180ms ease;
+  }
+
+  .game-card:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--accent-highlight-border));
+    box-shadow: 0 0 0 1px var(--border-sidebar);
+    border-radius: 0;
   }
 }

@@ -152,14 +152,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       await queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
 
       toast({
-        title: 'Settings Saved',
+        title: 'System: core_settings',
         description: 'Your settings have been saved successfully.'
       })
       onClose()
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to save settings',
+        title: 'System Failure',
+        description: 'Could not save core_settings',
         variant: 'destructive'
       })
     }
@@ -566,7 +566,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                   <Label className="text-sm font-sans font-semibold text-app-primary">
                                     Hide from Interface
                                   </Label>
-                                  <p className="text-[11px] text-app-muted font-medium leading-tight">
+                                  <p className="text-sm text-app-muted font-medium leading-tight">
                                     Useful for data-only WADs like voice-overs. Will be hidden from
                                     sidebar & mod install pages.
                                   </p>

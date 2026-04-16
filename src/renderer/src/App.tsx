@@ -67,8 +67,8 @@ const App: React.FC = () => {
         if (data?.added && data.added.length > 0) {
           data.added.forEach((wad) => {
             toast({
-              title: 'New WAD Found',
-              description: `Added "${wad.name}" to your library.`
+              title: 'System: New WAD Detected',
+              description: `Added "${wad.name}" to your library. To update go to core_settings -> wads config`
             })
           })
         }
@@ -76,8 +76,8 @@ const App: React.FC = () => {
         if (data?.removed && data.removed.length > 0) {
           data.removed.forEach((wad) => {
             toast({
-              title: 'WAD Removed',
-              description: `Removed "${wad.name}" from your library.`
+              title: 'System: WAD Removed',
+              description: `The system detected that "${wad.name}" was removed from your library.`
             })
           })
         }
@@ -92,7 +92,7 @@ const App: React.FC = () => {
         const info = await api.checkMigration()
         if (info.found && info.path) {
           toast({
-            title: 'Legacy Data Detected',
+            title: 'Legacy Configuration Detected',
             description: `We found old configuration in ${info.path}. Would you like to import it?`,
             duration: 10000,
             action: (
@@ -103,8 +103,8 @@ const App: React.FC = () => {
                     const result = await api.executeMigration(info.path!)
                     if (result.success) {
                       toast({
-                        title: 'Access granted',
-                        description: 'Your legacy data has been migrated.'
+                        title: 'Data migration success',
+                        description: 'Your legacy configuration has been migrated and moved to ~/.config/uac/.'
                       })
                       queryClient.invalidateQueries()
                     } else {
@@ -116,7 +116,7 @@ const App: React.FC = () => {
                     }
                   } catch {
                     toast({
-                      title: 'Error',
+                      title: 'Warning - System failure',
                       description: 'Failed to execute migration.',
                       variant: 'destructive'
                     })

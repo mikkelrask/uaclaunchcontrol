@@ -473,7 +473,7 @@ export const InstallPage: React.FC = () => {
             onDragLeave={handleJsonDragLeave}
           >
             <CardHeader>
-              <CardTitle>New Launch Config</CardTitle>
+              <CardTitle>New Launch Configuration</CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="install">
@@ -482,7 +482,7 @@ export const InstallPage: React.FC = () => {
                     value="install"
                     className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary data-[state=active]:text-foreground dark:data-[state=active]:text-foreground"
                   >
-                    Game Instance
+                    Configuration
                   </TabsTrigger>
                   <TabsTrigger
                     value="files"
@@ -502,7 +502,7 @@ export const InstallPage: React.FC = () => {
                             name="title"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Title</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Label</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="I.e. 'Brutal Doom'"
@@ -548,7 +548,7 @@ export const InstallPage: React.FC = () => {
                             name="screenshotPath"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Screenshot/Cover URL (Optional)</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Screenshot/Cover URL (Optional)</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="Enter screenshot URL"
@@ -565,7 +565,7 @@ export const InstallPage: React.FC = () => {
                             name="description"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Description (Optional)</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Description (Optional)</FormLabel>
                                 <FormControl>
                                   <Textarea
                                     placeholder="Enter mod description"
@@ -585,7 +585,7 @@ export const InstallPage: React.FC = () => {
                             name="doomVersionId"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Base Game</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Base WAD</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                   <FormControl>
                                     <SelectTrigger className="bg-app-primary border-app">
@@ -612,7 +612,7 @@ export const InstallPage: React.FC = () => {
                             name="sourcePort"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Source Port</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Source Port</FormLabel>
                                 <FormControl>
                                   <Input className="bg-app-primary border-app" {...field} />
                                 </FormControl>
@@ -626,7 +626,7 @@ export const InstallPage: React.FC = () => {
                             name="saveDirectory"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Save Directory (Optional)</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Save Directory (Optional)</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder={settings.savegamesPath || ''}
@@ -645,7 +645,7 @@ export const InstallPage: React.FC = () => {
                             name="launchParameters"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Launch Parameters (Optional)</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Launch Parameters (Optional)</FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="-skill 4 -warp 01"
@@ -668,7 +668,7 @@ export const InstallPage: React.FC = () => {
                         {files.length > 0 && (
                           <div className="mb-4 border border-app rounded-md p-2">
                             <h4 className="font-sans text-xs mb-3 text-app-muted font-bold tracking-widest uppercase">
-                              Load Order
+                              Launch sequence
                             </h4>
                             <ul
                               className="space-y-2"
