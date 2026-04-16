@@ -12,25 +12,33 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { UpdateInfo } from '@/hooks/useAutoUpdater'
 import { api } from '@/api'
 import { Download, ExternalLink, RefreshCw } from 'lucide-react'
+import type { IInstallType } from '@shared/schema'
 
 interface UpdateModalProps {
   isOpen: boolean
   onClose: () => void
   updateInfo: UpdateInfo | null
+  installType: IInstallType | null
 }
 
-export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose, updateInfo }) => {
+export const UpdateModal: React.FC<UpdateModalProps> = ({
+  isOpen,
+  onClose,
+  updateInfo,
+  installType
+}) => {
+  const isSystemInstalled = installType?.isSystemInstalled ?? false
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState(0)
 
   useEffect(() => {
-    const handleShowModal = (_event: CustomEvent<UpdateInfo>) => {
+    const handleShowModal = () => {
       // The modal will be triggered via props from parent
     }
 
-    window.addEventListener('show-update-modal', handleShowModal as EventListener)
+    window.addEventListener('show-update-modal', handleShowModal)
     return () => {
-      window.removeEventListener('show-update-modal', handleShowModal as EventListener)
+      window.removeEventListener('show-update-modal', handleShowModal)
     }
   }, [])
 
@@ -43,19 +51,19 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose, updat
     }
   }, [updateInfo])
 
-  const handleDownload = () => {
+  const handleDownload = (): void => {
     setIsDownloading(true)
     api.downloadUpdate()
   }
 
-  const handleViewOnGitHub = () => {
+  const handleViewOnGitHub = (): void => {
     const version = updateInfo?.version
     if (version) {
       window.open(`https://github.com/mikkelrask/uaclaunchcontrol/releases/v${version}`, '_blank')
     }
   }
 
-  const handleInstall = () => {
+  const handleInstall = (): void => {
     api.installUpdate()
   }
 
@@ -141,7 +149,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose, updat
             View on GitHub
           </Button>
 
-          {updateInfo.status === 'available' && !isDownloading && (
+          {updateInfo.status === 'available' && !isDownloading && !isSystemInstalled && (
             <Button
               onClick={handleDownload}
               className="bg-accent-highlight hover:opacity-90 text-white"
@@ -151,7 +159,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ isOpen, onClose, updat
             </Button>
           )}
 
-          {updateInfo.status === 'downloaded' && (
+          {updateInfo.status === 'downloaded' && !isSystemInstalled && (
             <Button
               onClick={handleInstall}
               className="bg-accent-highlight hover:opacity-90 text-white"

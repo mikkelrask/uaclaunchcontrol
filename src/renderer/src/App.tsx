@@ -12,7 +12,7 @@ import InstallPage from '@/pages/InstallPage'
 import NotFound from '@/pages/not-found'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api'
-import { IAppSettings } from '@shared/schema'
+import { IAppSettings, IInstallType } from '@shared/schema'
 import { useAutoUpdater } from '@/hooks/useAutoUpdater'
 import UpdateModal from '@/components/UpdateModal'
 
@@ -32,6 +32,12 @@ const App: React.FC = () => {
   const { toast } = useToast()
   const { updateInfo } = useAutoUpdater()
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
+  const [installType, setInstallType] = useState<IInstallType | null>(null)
+
+  // Fetch install type on mount
+  useEffect(() => {
+    api.getInstallType().then(setInstallType).catch(console.error)
+  }, [])
 
   // Global settings query for theme sync
   const { data: settings } = useQuery<IAppSettings>({
@@ -41,7 +47,7 @@ const App: React.FC = () => {
 
   // Open modal when "View" is clicked on update toast
   useEffect(() => {
-    const handleShowModal = () => {
+    const handleShowModal = (): void => {
       setIsUpdateModalOpen(true)
     }
     window.addEventListener('show-update-modal', handleShowModal)
@@ -104,7 +110,8 @@ const App: React.FC = () => {
                     if (result.success) {
                       toast({
                         title: 'Data migration success',
-                        description: 'Your legacy configuration has been migrated and moved to ~/.config/uac/.'
+                        description:
+                          'Your legacy configuration has been migrated and moved to ~/.config/uac/.'
                       })
                       queryClient.invalidateQueries()
                     } else {
@@ -143,6 +150,7 @@ const App: React.FC = () => {
         isOpen={isUpdateModalOpen}
         onClose={() => setIsUpdateModalOpen(false)}
         updateInfo={updateInfo}
+        installType={installType}
       />
       <AppRouter />
     </TooltipProvider>

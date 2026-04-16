@@ -31,7 +31,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     screenshotsPath: '',
     wadFilesDirectory: '',
     defaultSourcePort: 'gzdoom',
-    configPath: ''
+    configPath: '',
+    autoUpdateEnabled: true
   })
 
   // Doom versions state
@@ -141,7 +142,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         screenshotsPath: settings.screenshotsPath,
         wadFilesDirectory: settings.wadFilesDirectory,
         theme: settings.theme,
-        defaultSourcePort: settings.defaultSourcePort
+        defaultSourcePort: settings.defaultSourcePort,
+        autoUpdateEnabled: settings.autoUpdateEnabled
       }
       await api.updateSettings(payload)
 
@@ -304,13 +306,29 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         <Label className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider">
                           Software Build
                         </Label>
-                        <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted font-mono border border-app">
-                          v{appVersion}
+                        <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted border border-app">
+                          E1M{appVersion}
                         </span>
                       </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-app/30">
+                        <div className="space-y-0.5">
+                          <Label className="text-xs font-sans text-app-primary font-medium">
+                            Auto-Update on Startup
+                          </Label>
+                          <p className="text-[10px] text-app-muted font-sans leading-tight">
+                            Automatically check for updates when the app launches.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={settings.autoUpdateEnabled ?? true}
+                          onCheckedChange={(checked) =>
+                            setSettings((s) => ({ ...s, autoUpdateEnabled: checked }))
+                          }
+                        />
+                      </div>
                       <div className="flex items-center justify-between">
-                        <p className="text-xs text-app-muted font-sans italic opacity-70">
-                          Current executable version. Updates available via GitHub Releases.
+                        <p className="text-xs text-app-primary font-medium font-sans">
+                          Manually check for app updates
                         </p>
                         <Button
                           variant="outline"
@@ -422,7 +440,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         <Input
                           id={`${id}-${field.id}`}
                           name={field.id}
-                          value={settings[field.id as keyof typeof settings]}
+                          value={String(settings[field.id as keyof typeof settings] ?? '')}
                           onChange={handleChange}
                           className="bg-app-primary border-app font-sans h-10 text-sm flex-1 focus-visible:ring-2 focus-visible:ring-accent-highlight/40"
                         />
@@ -448,7 +466,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               {isLoadingVersions ? (
                 <div className="flex items-center justify-center h-full gap-3 text-app-secondary font-mono italic">
                   <div className="w-2 h-2 rounded-full bg-accent-highlight animate-pulse" />
-                  CALIBRATING WAD REPOSITORIES...
+                  CALIBRATING REPOSITORIES ...
                 </div>
               ) : doomVersions.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
@@ -563,10 +581,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                             <div className="pt-2">
                               <div className="flex items-center justify-between pb-4">
                                 <div className="space-y-0.5">
-                                  <Label className="text-sm font-sans font-semibold text-app-primary">
+                                  <Label className="text-xs text-app-primary font-medium font-sans">
                                     Hide from Interface
                                   </Label>
-                                  <p className="text-sm text-app-muted font-medium leading-tight">
+                                  <p className="text-xs text-app-muted font-sans italic opacity-70">
                                     Useful for data-only WADs like voice-overs. Will be hidden from
                                     sidebar & mod install pages.
                                   </p>

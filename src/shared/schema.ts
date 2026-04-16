@@ -64,6 +64,11 @@ export interface IDoomVersionDelta {
   removed?: IDoomVersion[]
 }
 
+export interface IInstallType {
+  isAppImage: boolean
+  isSystemInstalled: boolean
+}
+
 // App settings
 export interface IAppSettings {
   gzDoomPath: string
@@ -74,4 +79,5 @@ export interface IAppSettings {
   wadFilesDirectory?: string
   defaultSourcePort?: string
   configPath?: string
+  autoUpdateEnabled?: boolean
 }

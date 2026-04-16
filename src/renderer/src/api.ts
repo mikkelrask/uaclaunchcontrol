@@ -235,6 +235,9 @@ export const api = {
 
   triggerFakeUpdate: () => {
     ;(window as any).api.triggerFakeUpdate()
-  }
+  },
 
+  getInstallType: () => {
+    return (window as any).api.getInstallType()
+  }
 }
