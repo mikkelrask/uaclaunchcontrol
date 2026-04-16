@@ -12,6 +12,7 @@ import type { IDoomVersion, IAppSettings } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { FolderOpen } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
+import uacLogo from '@/assets/UAC Logo.svg'
 
 interface SettingsDialogProps {
   isOpen: boolean
@@ -310,13 +311,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           E1M{appVersion}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-app/30">
+                      <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <Label className="text-xs font-sans text-app-primary font-medium">
-                            Auto-Update on Startup
+                            Check for updates on Startup
                           </Label>
                           <p className="text-[10px] text-app-muted font-sans leading-tight">
-                            Automatically check for updates when the app launches.
+                            Automatically notify about application updates. <br />
+                            Updating is always optional - new updates will never be downloaded/applied without interaction.
                           </p>
                         </div>
                         <Switch
@@ -341,7 +343,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       </div>
                     </>
                   )}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between border-t pt-2 border-app/30">
                     <Label className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider">
                       App Configuration
                     </Label>
@@ -358,6 +360,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     Internal master directory for settings, telemetry catalogues, and system state.
                   </p>
                 </div>
+                  <div className="flex-col items-center pt-8 border-t border-dashed">
+                    <img src={uacLogo} alt="" className="w-12 opacity-30 hover:opacity-60 mx-auto animate-pulse" />
+                    <p className="text-xs text-app-muted text-center transition-opacity opacity-30 italic uppercase mt-2">
+                      This is UAC, The Union Aerospace Corporation developed software<br />Distribution and use outside Phobos facility is strictly prohibited.
+                    </p>
+                  </div>
               </div>
             </TabsContent>
 
@@ -585,8 +593,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                     Hide from Interface
                                   </Label>
                                   <p className="text-xs text-app-muted font-sans italic opacity-70">
-                                    Useful for data-only WADs like voice-overs. Will be hidden from
-                                    sidebar & mod install pages.
+                                    Toggling will excluded this wad from
+                                    the sidebar and wad selectors.
                                   </p>
                                 </div>
                                 <Switch
@@ -614,8 +622,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               )}
             </TabsContent>
 
-            <TabsContent value="advanced" className="space-y-4 mt-0 p-6">
-              <p className="text-app-secondary">Permission denied. Red keycard required.</p>
+            <TabsContent value="advanced" className="space-y-4 mt-0 p-6 items-center">
+              <p className="text-app-secondary italic text-center mt-[20%]"><span className="bold">Permission denied.</span> Red keycard required.</p>
             </TabsContent>
           </div>
         </Tabs>

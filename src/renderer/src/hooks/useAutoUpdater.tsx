@@ -23,8 +23,8 @@ export function useAutoUpdater() {
       switch (data.status) {
         case 'available':
           toast({
-            title: 'Update Available',
-            description: `Version ${data.version} is available. Click to view release notes.`,
+            title: 'SYSTEM: Update Pending',
+            description: `Version ${data.version} is now available. Click to view release notes.`,
             action: (
               <ToastAction
                 altText="View Update"
@@ -41,8 +41,8 @@ export function useAutoUpdater() {
         case 'not-available':
           if (data.isManual) {
             toast({
-              title: 'Up to Date',
-              description: 'You are running the latest version.'
+              title: 'SYSTEM: Up-to-Date',
+              description: 'Latest version (${data.version}) is installed.'
             })
           }
           break
@@ -50,8 +50,8 @@ export function useAutoUpdater() {
           break
         case 'downloaded':
           toast({
-            title: 'Update Ready',
-            description: `Version ${data.version} has been downloaded. Restart to install.`,
+            title: 'SYSTEM: Update Ready',
+            description: `Version ${data.version} has been downloaded. Click Restart to apply.`,
             action: (
               <ToastAction altText="Restart Now" onClick={() => api.installUpdate()}>
                 Restart
@@ -61,8 +61,8 @@ export function useAutoUpdater() {
           break
         case 'error':
           toast({
-            title: 'Update Error',
-            description: data.error || 'An error occurred while checking for updates.',
+            title: 'SYSTEM: Update failure',
+            description: data.error || 'Could not reach UAC data centers. Contact Sam Grimm at UAC, Phobos facility if the issue persists.',
             variant: 'destructive'
           })
           break
