@@ -9,6 +9,7 @@ export interface UpdateInfo {
   releaseNotes?: string
   percent?: number
   error?: string
+  isManual?: boolean
 }
 
 export function useAutoUpdater() {
@@ -25,16 +26,25 @@ export function useAutoUpdater() {
             title: 'Update Available',
             description: `Version ${data.version} is available. Click to view release notes.`,
             action: (
-              <ToastAction altText="View Update" onClick={() => {
-                // This will be handled by a modal in App.tsx
-                window.dispatchEvent(new CustomEvent('show-update-modal', { detail: data }))
-              }}>
+              <ToastAction
+                altText="View Update"
+                onClick={() => {
+                  // This will be handled by a modal in App.tsx
+                  window.dispatchEvent(new CustomEvent('show-update-modal', { detail: data }))
+                }}
+              >
                 View
               </ToastAction>
             )
           })
           break
         case 'not-available':
+          if (data.isManual) {
+            toast({
+              title: 'Up to Date',
+              description: 'You are running the latest version.'
+            })
+          }
           break
         case 'downloading':
           break
