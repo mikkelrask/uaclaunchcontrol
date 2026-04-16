@@ -60,7 +60,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
     : imagePlaceholder
 
   return (
-    <div className="game-card group cursor-pointer relative">
+    <div className="game-card group cursor-pointer relative border">
       {/* Using aspect-ratio to enforce 16:9 ratio for screenshots */}
       <div className="aspect-w-16 aspect-h-9 overflow-hidden relative">
         <img
@@ -72,7 +72,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
           }}
         />
         {/* Dark gradient overlay - always visible */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
 
         {/* Game title and icon container - starts at the bottom */}
         <div

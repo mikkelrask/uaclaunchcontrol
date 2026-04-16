@@ -155,14 +155,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       await queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
 
       toast({
-        title: 'System: core_settings',
-        description: 'Your settings have been saved successfully.'
+        title: 'SYSTEM: core_settings',
+        description: 'Your changes have been approved.'
       })
       onClose()
     } catch {
       toast({
-        title: 'System Failure',
-        description: 'Could not save core_settings',
+        title: 'SYSTEM: core_settings',
+        description: 'No changes have been applied. Could not save settings.',
         variant: 'destructive'
       })
     }

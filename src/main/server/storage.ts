@@ -30,7 +30,8 @@ const DEFAULT_SETTINGS: IAppSettings = {
   modsDirectory: '~/.config/uac/mods',
   screenshotsPath: '~/Pictures/UAC Launch Control/screenshots',
   defaultSourcePort: 'uzdoom',
-  wadFilesDirectory: '~/.config/uac/wads'
+  wadFilesDirectory: '~/.config/uac/wads',
+  autoUpdateEnabled: true
 }
 
 // Default Doom Versions
@@ -258,7 +259,7 @@ export async function saveSettings(settings: Partial<IAppSettings>): Promise<IAp
   } catch (error: unknown) {
     console.error('[DEBUG] Error saving settings:', error)
     throw new Error(
-      `Failed to save settings: ${error instanceof Error ? error.message : String(error)}`
+      `Failure: Setting not saved: ${error instanceof Error ? error.message : String(error)}`
     )
   }
 }

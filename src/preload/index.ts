@@ -9,7 +9,8 @@ const api = {
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
-  triggerFakeUpdate: () => ipcRenderer.invoke('trigger-fake-update')
+  triggerFakeUpdate: () => ipcRenderer.invoke('trigger-fake-update'),
+  getInstallType: () => ipcRenderer.invoke('get-install-type')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

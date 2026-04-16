@@ -73,8 +73,8 @@ const App: React.FC = () => {
         if (data?.added && data.added.length > 0) {
           data.added.forEach((wad) => {
             toast({
-              title: 'System: New WAD Detected',
-              description: `Added "${wad.name}" to your library. To update go to core_settings -> wads config`
+              title: 'SYSTEM: wad_watcher',
+              description: `Found and added "${wad.name}" to your library. To update go to core_settings -> wads config`
             })
           })
         }
@@ -82,8 +82,8 @@ const App: React.FC = () => {
         if (data?.removed && data.removed.length > 0) {
           data.removed.forEach((wad) => {
             toast({
-              title: 'System: WAD Removed',
-              description: `The system detected that "${wad.name}" was removed from your library.`
+              title: 'SYSTEM: wad_watcher',
+              description: `The system detected that "${wad.name}" was removed from your library. Launch configurations using this will no longer work`
             })
           })
         }
@@ -98,8 +98,8 @@ const App: React.FC = () => {
         const info = await api.checkMigration()
         if (info.found && info.path) {
           toast({
-            title: 'Legacy Configuration Detected',
-            description: `We found old configuration in ${info.path}. Would you like to import it?`,
+            title: 'SYSTEM: Legacy_Check',
+            description: `Old configuration directory located in ${info.path}. Would you like to import it to the new config-directory?`,
             duration: 10000,
             action: (
               <ToastAction
