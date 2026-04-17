@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useLocation, Link } from 'wouter'
 import { Settings, Menu } from 'lucide-react'
 import SettingsDialog from './SettingsDialog'
+import doomGuy from '@/assets/guy,doom.webp'
 
 interface HeaderProps {
   onSearch: (query: string, includeAllMods?: boolean) => void // Add a flag to include all mods
@@ -64,12 +65,14 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
 
       {/* User Profile */}
       <div className="flex items-center space-x-2">
-        <div className="flex items-center bg-app-primary rounded-md p-1">
+        <div className="flex items-center bg-app-hover rounded-md p-1">
           <div className="w-8 h-8 rounded bg-accent-highlight flex items-center justify-center text-white">
-            R
+            <img src={doomGuy} alt="Guy, Doom - Space Marine" className="w-8 h-8 rounded"/>
           </div>
-          <span className="text-base font-sans ml-2 mr-1">ROBOTEARS</span>
-          <span className="text-xs text-app-secondary">LVL 71</span>
+          <div className="flex-col">
+            <div className="text-xs font-sans ml-2 mr-1">Guy, Doom</div>
+            <div className="ml-2 text-xs italic text-app-secondary">Marine</div>
+          </div>
         </div>
         <button
           className="w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover"
