@@ -4,6 +4,8 @@ import { existsSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { startServer } from './server'
 import { autoUpdater } from 'electron-updater'
+import { getSettings } from './server/storage'
+import { IInstallType } from '../shared/schema'
 
 const isDebug = process.env.DEBUG === 'true'
 
@@ -14,6 +16,7 @@ function debug(...args: unknown[]): void {
 }
 
 let mainWindow: BrowserWindow | null = null
+let lastCheckWasManual = false
 
 function getLinuxIcon(): Electron.BrowserWindowConstructorOptions['icon'] | undefined {
   if (process.platform !== 'linux') return undefined
@@ -47,6 +50,24 @@ function getLinuxIcon(): Electron.BrowserWindowConstructorOptions['icon'] | unde
   }
   debug('[Icon] Image dimensions:', img.getSize())
   return img
+}
+
+function getInstallType(): IInstallType {
+  const isLinux = process.platform === 'linux'
+  if (!isLinux) {
+    return { isAppImage: false, isSystemInstalled: false }
+  }
+
+  const isAppImage = !!process.env.APPDIR || process.execPath.includes('/tmp')
+
+  const knownPaths = [
+    '/opt/uac-launch-control/uac-launch-control',
+    '/usr/bin/uac-launch-control',
+    '/usr/local/bin/uac-launch-control'
+  ]
+  const isSystemInstalled = knownPaths.some((p) => existsSync(p))
+
+  return { isAppImage, isSystemInstalled }
 }
 
 function createWindow(): void {
@@ -104,7 +125,10 @@ function setupAutoUpdater(): void {
   })
 
   autoUpdater.on('update-not-available', () => {
-    mainWindow?.webContents.send('update-status', { status: 'not-available' })
+    mainWindow?.webContents.send('update-status', {
+      status: 'not-available',
+      isManual: lastCheckWasManual
+    })
   })
 
   autoUpdater.on('download-progress', (progress) => {
@@ -129,8 +153,21 @@ function setupAutoUpdater(): void {
   })
 }
 
-function checkForUpdates(): void {
+async function checkForUpdates(options: { manual?: boolean } = {}): Promise<void> {
   if (!is.dev) {
+    lastCheckWasManual = options.manual ?? false
+
+    if (!options.manual) {
+      try {
+        const settings = await getSettings()
+        if (settings.autoUpdateEnabled === false) {
+          console.log('[AutoUpdater] Skipping - disabled in settings')
+          return
+        }
+      } catch {
+        // Continue with update check if we can't read settings
+      }
+    }
     autoUpdater.checkForUpdates().catch((err) => {
       console.error('Error checking for updates:', err)
     })
@@ -152,8 +189,12 @@ app.whenReady().then(async () => {
     return app.getVersion()
   })
 
-  ipcMain.handle('check-for-updates', () => {
-    checkForUpdates()
+  ipcMain.handle('check-for-updates', async () => {
+    await checkForUpdates({ manual: true })
+  })
+
+  ipcMain.handle('get-install-type', () => {
+    return getInstallType()
   })
 
   ipcMain.handle('download-update', () => {
