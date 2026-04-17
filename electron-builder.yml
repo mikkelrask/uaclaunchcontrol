@@ -42,9 +42,6 @@ mac:
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
 
-dmg:
-  artifactName: ${name}-${version}-${os}-${arch}.${ext}
-
 linux:
   target:
     - AppImage
@@ -54,7 +51,3 @@ linux:
   category: Game
   icon: build/icons
   executableName: uac-launch-control
-
-appImage:
-  # optional override (can be removed if global is fine)
-  artifactName: ${name}-${version}-${os}-${arch}.${ext}
