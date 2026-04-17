@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 const api = {
   onVersionsUpdated: (callback: (data?: unknown) => void) =>
@@ -10,7 +10,8 @@ const api = {
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
   triggerFakeUpdate: () => ipcRenderer.invoke('trigger-fake-update'),
-  getInstallType: () => ipcRenderer.invoke('get-install-type')
+  getInstallType: () => ipcRenderer.invoke('get-install-type'),
+  getPathForFile: (file: File) => webUtils.getPathForFile(file)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

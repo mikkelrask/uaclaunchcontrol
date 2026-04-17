@@ -81,13 +81,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   }
 
   const handleMoveFileToModFolder = async (sourcePath: string): Promise<string> => {
-    try {
-      const result = await api.moveToModFolder(sourcePath)
-      return result.fullPath
-    } catch (error) {
-      console.error('Failed to move file:', error)
-      return sourcePath
-    }
+    const result = await api.moveToModFolder(sourcePath)
+    return result.fullPath
   }
 
   const processRequiredMods = async (
@@ -291,7 +286,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     const droppedFiles = e.dataTransfer.files
     if (droppedFiles.length > 0) {
       const file = droppedFiles[0]
-      const droppedPath = (file as File & { path?: string }).path || file.name
+      const droppedPath = (window as any).api.getPathForFile(file) || file.name
 
       const ext = droppedPath.split('.').pop()?.toLowerCase()
       const validExtensions = ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip']
