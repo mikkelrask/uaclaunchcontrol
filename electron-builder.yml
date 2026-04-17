@@ -1,7 +1,11 @@
 appId: com.mikkelrask.uaclaunchcontrol
 productName: UAC Launch Control
+
+artifactName: ${name}-${version}-${os}-${arch}.${ext}
+
 directories:
   buildResources: build
+
 files:
   - out/**/*
   - package.json
@@ -9,36 +13,48 @@ files:
   - '!src'
   - '!legacy-app'
   - '!dist'
+
 asarUnpack:
   - resources/**
+
+npmRebuild: false
+
+publish:
+  provider: github
+  owner: mikkelrask
+  repo: uaclaunchcontrol
+
 win:
-  executableName: uaclaunchcontrol
+  executableName: uac-launch-control
   icon: build/icons
+
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+
 mac:
   identity: null
   entitlementsInherit: build/entitlements.mac.plist
+  notarize: false
   extendInfo:
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  notarize: false
+
 dmg:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${name}-${version}-${os}-${arch}.${ext}
+
 linux:
   target:
     - AppImage
     - deb
+    - tar.gz
   maintainer: mikkelrask
   category: Game
   icon: build/icons
+  executableName: uac-launch-control
+
 appImage:
-  artifactName: ${name}-${version}.${ext}
-npmRebuild: false
-publish:
-  provider: github
-  owner: mikkelrask
-  repo: uaclaunchcontrol
+  # optional override (can be removed if global is fine)
+  artifactName: ${name}-${version}-${os}-${arch}.${ext}
