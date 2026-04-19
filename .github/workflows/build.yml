@@ -33,12 +33,6 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Setup App Icons for Build
-        run: |
-          mkdir -p build/icons
-          cp resources/icon-*.png build/icons/
-          echo "✅ Copied icon sizes to build/icons/"
-
       - name: Build Application
         run: npm run build
 
