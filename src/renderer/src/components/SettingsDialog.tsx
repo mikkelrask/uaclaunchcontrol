@@ -26,8 +26,6 @@ interface SettingsDialogProps {
   onClose: () => void
 }
 
-// remove local toFileUrl as it's now in utils
-
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast()
   const id = useId()
@@ -39,10 +37,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     screenshotsPath: '',
     wadFilesDirectory: '',
     databaseLinkPresets: [
-      { name: 'ModDB', url: 'https://www.moddb.com/games/doom-ii' },
-      { name: 'ZDoom', url: 'https://forum.zdoom.org/' },
-      { name: 'DoomWorld', url: 'https://www.doomworld.com/' },
-      { name: 'Itch.io', url: 'https://itch.io/game-mods/tag-doom' }
+      { name: 'MODDB', url: 'https://www.moddb.com/games/doom-ii' },
+      { name: 'ZDOOM', url: 'https://forum.zdoom.org/' },
+      { name: 'DOOMWORLD', url: 'https://www.doomworld.com/' },
+      { name: 'ITCH', url: 'https://itch.io/game-mods/tag-doom' }
     ],
     selectedPresetIndex: 0,
     configPath: '',
@@ -291,10 +289,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   </div>
                   <div className="space-y-3">
                     <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                      Database Link
+                      EXTERNAL REPOS
                     </Label>
                     <div className="p-4 bg-app-secondary border border-app rounded-lg flex flex-col gap-3 shadow-md">
-                      <span className="text-xs font-sans text-app-muted">Source</span>
+                      <span className="text-xs font-sans text-app-muted">DATABASE LINK</span>
                       <Select
                         value={settings.selectedPresetIndex.toString()}
                         onValueChange={(value) =>

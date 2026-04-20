@@ -23,10 +23,10 @@ const LEGACY_CONFIG_DIRS = [
 ]
 
 const DEFAULT_DATABASE_LINKS: IDatabaseLink[] = [
-  { name: 'ModDB', url: 'https://www.moddb.com/games/doom-ii' },
-  { name: 'ZDoom', url: 'https://forum.zdoom.org/' },
-  { name: 'DoomWorld', url: 'https://www.doomworld.com/' },
-  { name: 'Itch.io', url: 'https://itch.io/game-mods/tag-doom' }
+  { name: 'MODDB', url: 'https://www.moddb.com/games/doom-ii' },
+  { name: 'ZDOOM', url: 'https://forum.zdoom.org/' },
+  { name: 'DOOMWORLD', url: 'https://www.doomworld.com/' },
+  { name: 'ITCH', url: 'https://itch.io/game-mods/tag-doom' }
 ]
 
 const DEFAULT_SETTINGS: IAppSettings = {
