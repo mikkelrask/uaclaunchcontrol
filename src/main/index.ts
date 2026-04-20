@@ -55,17 +55,46 @@ function getLinuxIcon(): Electron.BrowserWindowConstructorOptions['icon'] | unde
 function getInstallType(): IInstallType {
   const isLinux = process.platform === 'linux'
   if (!isLinux) {
+    debug('[InstallType] Not Linux, returning false for both')
     return { isAppImage: false, isSystemInstalled: false }
   }
 
-  const isAppImage = !!process.env.APPDIR || process.execPath.includes('/tmp')
+  const hasAppDir = !!process.env.APPDIR
+  const execPath = process.execPath
+  const pathIncludesTmp = execPath.includes('/tmp')
 
-  const knownPaths = [
+  debug(`[InstallType] APPDIR env: ${hasAppDir}`)
+  debug(`[InstallType] execPath: ${execPath}`)
+  debug(`[InstallType] pathIncludesTmp: ${pathIncludesTmp}`)
+
+  const isAppImage = hasAppDir || pathIncludesTmp
+
+  // Check multiple possible system install paths
+  const possiblePaths = [
     '/opt/uac-launch-control/uac-launch-control',
     '/usr/bin/uac-launch-control',
-    '/usr/local/bin/uac-launch-control'
+    '/usr/local/bin/uac-launch-control',
+    // Also check if we're running from a standard package install location
+    execPath
   ]
-  const isSystemInstalled = knownPaths.some((p) => existsSync(p))
+
+  let foundPath: string | undefined
+  for (const p of possiblePaths) {
+    if (p && existsSync(p)) {
+      foundPath = p
+      break
+    }
+  }
+
+  // Also check for running FROM /opt or /usr (even if not the exact binary)
+  const runsFromSystemDir = execPath.startsWith('/opt/') || execPath.startsWith('/usr/')
+
+  debug(`[InstallType] System install path found: ${foundPath || 'none'}`)
+  debug(`[InstallType] runsFromSystemDir: ${runsFromSystemDir}`)
+
+  const isSystemInstalled = !!foundPath || runsFromSystemDir
+
+  debug(`[InstallType] Result: isAppImage=${isAppImage}, isSystemInstalled=${isSystemInstalled}`)
 
   return { isAppImage, isSystemInstalled }
 }
@@ -127,6 +156,7 @@ function setupAutoUpdater(): void {
   autoUpdater.on('update-not-available', () => {
     mainWindow?.webContents.send('update-status', {
       status: 'not-available',
+      version: app.getVersion(),
       isManual: lastCheckWasManual
     })
   })
@@ -194,7 +224,10 @@ app.whenReady().then(async () => {
   })
 
   ipcMain.handle('get-install-type', () => {
-    return getInstallType()
+    debug('[IPC] get-install-type called')
+    const result = getInstallType()
+    console.log('[IPC] get-install-type returning:', result)
+    return result
   })
 
   ipcMain.handle('download-update', () => {

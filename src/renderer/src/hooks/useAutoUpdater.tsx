@@ -42,7 +42,7 @@ export function useAutoUpdater() {
           if (data.isManual) {
             toast({
               title: 'SYSTEM: Up-to-Date',
-              description: 'Latest version (${data.version}) is installed.'
+              description: `Latest version (${data.version || 'unknown'}) is installed.`
             })
           }
           break

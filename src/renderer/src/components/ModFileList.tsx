@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { IModFile } from '@shared/schema'
+import { IModFile, InsertModFile } from '@shared/schema'
 import { Trash, ChevronUp, ChevronDown, Plus } from 'lucide-react'
 import { Combobox } from '@/components/ui/combobox'
 import { gameService } from '@/lib/gameService'
 
 interface ModFileListProps {
-  files: IModFile[]
-  onChange: (files: IModFile[]) => void
+  files: IModFile[] | InsertModFile[]
+  onChange: (files: IModFile[] | InsertModFile[]) => void
 }
 
 export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => {
@@ -19,18 +19,18 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
 
   const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)
 
-  const generateUniqueId = (baseId: number): number => {
-    const existingIds = new Set(files.map((f) => f.id))
-    if (!existingIds.has(baseId)) return baseId
-    let newId = Date.now()
-    while (existingIds.has(newId)) {
-      newId = Date.now() + Math.floor(Math.random() * 1000)
+  const generateUniqueId = (baseHash: string): string => {
+    const existingHashes = new Set(files.map((f) => f.hashValue))
+    if (baseHash && !existingHashes.has(baseHash)) return baseHash
+    let newHash = `${Date.now()}-${Math.floor(Math.random() * 1000)}`
+    while (existingHashes.has(newHash)) {
+      newHash = `${Date.now()}-${Math.floor(Math.random() * 1000)}`
     }
-    return newId
+    return newHash
   }
 
-  const removeFile = (fileId: number): void => {
-    onChange(files.filter((f) => f.id !== fileId))
+  const removeFile = (fileHash: string): void => {
+    onChange(files.filter((f) => f.hashValue !== fileHash))
   }
 
   const moveUp = (index: number): void => {
@@ -65,7 +65,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
         <div className="text-app-primary text-center py-2">No mod files added</div>
       ) : (
         files.map((file, index) => (
-          <div key={file.id} className="flex justify-between items-center mb-2 text-sm">
+          <div key={file.hashValue} className="flex justify-between items-center mb-2 text-sm">
             <div className="flex items-center space-x-1">
               <button
                 type="button"
@@ -88,7 +88,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
             </div>
             <button
               type="button"
-              onClick={() => removeFile(file.id)}
+              onClick={() => removeFile(file.hashValue || '')}
               className="text-xs bg-app-secondary p-1 rounded hover:bg-app-hover"
             >
               <Trash className="h-3 w-3" />
@@ -102,7 +102,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
           value=""
           onValueChange={(value) => {
             if (value) {
-              const catalogFile = catalogFiles.find((f) => f.id.toString() === value)
+              const catalogFile = catalogFiles.find((f) => f.id?.toString() === value)
               if (catalogFile && catalogFile.filePath) {
                 const fileName = catalogFile.fileName || catalogFile.name || ''
                 const extension = fileName.split('.').pop()?.toUpperCase() || ''
@@ -113,27 +113,26 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                   fileType = 'DEH'
                 }
 
-                const newFile: IModFile = {
-                  id: generateUniqueId(catalogFile.id),
+                const newFile: InsertModFile = {
                   filePath: catalogFile.filePath,
                   fileName,
                   fileType,
                   loadOrder: files.length,
                   isRequired: true,
                   name: catalogFile.name || '',
-                  hashValue: catalogFile.hashValue || ''
+                  hashValue: generateUniqueId(catalogFile.hashValue || '')
                 }
 
                 let updatedFiles = [...files, newFile]
-                const usedIds = new Set(updatedFiles.map((f) => f.id))
+                const usedHashes = new Set(updatedFiles.map((f) => f.hashValue))
 
                 if (catalogFile.requires && Object.keys(catalogFile.requires).length > 0) {
                   for (const [reqHash, offset] of Object.entries(catalogFile.requires)) {
                     const reqFile = catalogFiles.find((f) => f.hashValue === reqHash)
                     if (reqFile) {
-                      const reqFileId = generateUniqueId(reqFile.id)
-                      if (!usedIds.has(reqFileId)) {
-                        usedIds.add(reqFileId)
+                      const reqFileHash = generateUniqueId(reqFile.hashValue || '')
+                      if (!usedHashes.has(reqFileHash)) {
+                        usedHashes.add(reqFileHash)
                         const reqFileName = reqFile.fileName || reqFile.name || ''
                         const reqExt = reqFileName.split('.').pop()?.toUpperCase() || ''
                         let reqFileType = 'WAD'
@@ -144,15 +143,14 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                         }
 
                         updatedFiles.splice(files.length + offset, 0, {
-                          id: reqFileId,
                           filePath: reqFile.filePath || '',
                           fileName: reqFileName,
                           fileType: reqFileType,
                           loadOrder: files.length + offset,
                           isRequired: true,
                           name: reqFile.name || '',
-                          hashValue: reqFile.hashValue || ''
-                        })
+                          hashValue: reqFileHash
+                        } as InsertModFile)
                       }
                     }
                   }
@@ -164,7 +162,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
             }
           }}
           options={selectableFiles.map((f) => ({
-            value: f.id.toString(),
+            value: f.id?.toString() || '',
             label: f.name || f.fileName || 'Unnamed'
           }))}
           placeholder="Select from catalog..."

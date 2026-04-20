@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { IMod, IModFile, IDoomVersion } from '@shared/schema'
+import { IMod, IModFile, IDoomVersion, InsertModFile } from '@shared/schema'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
@@ -45,7 +45,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   const queryClient = useQueryClient()
 
   const [mod, setMod] = useState<IMod | null>(null)
-  const [files, setFiles] = useState<IModFile[]>([])
+  const [files, setFiles] = useState<InsertModFile[]>([])
 
   // Fetch mod details
   const { data, isLoading } = useQuery({
