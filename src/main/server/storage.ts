@@ -5,7 +5,7 @@ import axios from 'axios'
 import chokidar from 'chokidar'
 import crypto from 'crypto'
 import { BrowserWindow } from 'electron'
-import { IAppSettings, IDoomVersion, IMod, IModFile, InsertMod } from '../../shared/schema'
+import { IAppSettings, IDatabaseLink, IDoomVersion, IMod, IModFile, InsertMod } from '../../shared/schema'
 import { debug } from '../../shared/debug'
 
 // Define storage paths (Aligned with local-structure.txt)
@@ -22,14 +22,21 @@ const LEGACY_CONFIG_DIRS = [
   path.join(os.homedir(), '.config', 'uaclaunchcontrol')
 ]
 
-// Default settings
+const DEFAULT_DATABASE_LINKS: IDatabaseLink[] = [
+  { name: 'ModDB', url: 'https://www.moddb.com/games/doom-ii' },
+  { name: 'ZDoom', url: 'https://forum.zdoom.org/' },
+  { name: 'DoomWorld', url: 'https://www.doomworld.com/' },
+  { name: 'Itch.io', url: 'https://itch.io/game-mods/tag-doom' }
+]
+
 const DEFAULT_SETTINGS: IAppSettings = {
-  gzDoomPath: 'uzdoom', // Default - assuming its in path
+  gzDoomPath: 'uzdoom',
   theme: 'dark',
-  savegamesPath: '~/.config/uac/saves', // Add empty string defaults for optional properties
+  savegamesPath: '~/.config/uac/saves',
   modsDirectory: '~/.config/uac/mods',
   screenshotsPath: '~/Pictures/UAC Launch Control/screenshots',
-  defaultSourcePort: 'uzdoom',
+  databaseLinkPresets: DEFAULT_DATABASE_LINKS,
+  selectedPresetIndex: 0,
   wadFilesDirectory: '~/.config/uac/wads',
   autoUpdateEnabled: true
 }
