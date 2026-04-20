@@ -69,6 +69,11 @@ export interface IInstallType {
   isSystemInstalled: boolean
 }
 
+export interface IDatabaseLink {
+  name: string
+  url: string
+}
+
 // App settings
 export interface IAppSettings {
   gzDoomPath: string
@@ -77,7 +82,8 @@ export interface IAppSettings {
   modsDirectory?: string
   screenshotsPath?: string
   wadFilesDirectory?: string
-  defaultSourcePort?: string
+  databaseLinkPresets: IDatabaseLink[]
+  selectedPresetIndex: number
   configPath?: string
   autoUpdateEnabled?: boolean
 }
