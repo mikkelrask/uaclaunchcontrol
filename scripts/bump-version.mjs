@@ -71,7 +71,7 @@ updateJSON('package.json', (json) => {
 })
 
 try {
-  execSync('git add package.json scripts/bump-version.mjs')
+  execSync('git add package.json scripts/bump-version.mjs resources/')
   const status = execSync('git status --porcelain').toString().trim()
   if (status) {
     execSync(`git commit -m "chore: bump version to ${version} 🚀"`)
