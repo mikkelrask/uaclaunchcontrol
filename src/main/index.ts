@@ -59,40 +59,17 @@ function getInstallType(): IInstallType {
     return { isAppImage: false, isSystemInstalled: false }
   }
 
-  const hasAppDir = !!process.env.APPDIR
   const execPath = process.execPath
-  const pathIncludesTmp = execPath.includes('/tmp')
 
-  debug(`[InstallType] APPDIR env: ${hasAppDir}`)
+  debug(`[InstallType] APPDIR env: ${!!process.env.APPDIR}`)
+  debug(`[InstallType] APPIMAGE env: ${!!process.env.APPIMAGE}`)
   debug(`[InstallType] execPath: ${execPath}`)
-  debug(`[InstallType] pathIncludesTmp: ${pathIncludesTmp}`)
 
-  const isAppImage = hasAppDir || pathIncludesTmp
+  // Check if running AS AppImage (env vars)
+  const isAppImage = !!process.env.APPDIR || !!process.env.APPIMAGE
 
-  // Check multiple possible system install paths
-  const possiblePaths = [
-    '/opt/uac-launch-control/uac-launch-control',
-    '/usr/bin/uac-launch-control',
-    '/usr/local/bin/uac-launch-control',
-    // Also check if we're running from a standard package install location
-    execPath
-  ]
-
-  let foundPath: string | undefined
-  for (const p of possiblePaths) {
-    if (p && existsSync(p)) {
-      foundPath = p
-      break
-    }
-  }
-
-  // Also check for running FROM /opt or /usr (even if not the exact binary)
-  const runsFromSystemDir = execPath.startsWith('/opt/') || execPath.startsWith('/usr/')
-
-  debug(`[InstallType] System install path found: ${foundPath || 'none'}`)
-  debug(`[InstallType] runsFromSystemDir: ${runsFromSystemDir}`)
-
-  const isSystemInstalled = !!foundPath || runsFromSystemDir
+  // Check if currently running FROM system location
+  const isSystemInstalled = execPath.startsWith('/opt/') || execPath.startsWith('/usr/')
 
   debug(`[InstallType] Result: isAppImage=${isAppImage}, isSystemInstalled=${isSystemInstalled}`)
 
