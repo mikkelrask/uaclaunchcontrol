@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import { useLocation, Link } from 'wouter'
+import { useQuery } from '@tanstack/react-query'
 import { Settings, Menu } from 'lucide-react'
 import SettingsDialog from './SettingsDialog'
+import { api } from '@/api'
 import doomGuy from '@/assets/guy,doom.webp'
 
 interface HeaderProps {
@@ -12,6 +14,13 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
   const [location] = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
+  const { data: settings } = useQuery({
+    queryKey: ['/api/settings'],
+    queryFn: api.getSettings
+  })
+
+  const databaseLink = settings?.databaseLinkPresets?.[settings?.selectedPresetIndex ?? 0]
 
   const handleSearch = (e: React.FormEvent): void => {
     e.preventDefault()
@@ -49,12 +58,12 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
           </span>
         </Link>
         <a
-          href="https://www.moddb.com/games/doom-ii"
+          href={databaseLink?.url ?? 'https://www.moddb.com/games/doom-ii'}
           target="_blank"
           rel="noopener noreferrer"
           className="nav-tab cursor-pointer"
         >
-          MODDB
+          {databaseLink?.name ?? 'MODDB'}
         </a>
         <Link href="/install">
           <span className={`nav-tab ${location === '/install' ? 'active' : ''} cursor-pointer`}>

@@ -9,6 +9,13 @@ import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import { queryClient } from '@/lib/queryClient'
 import type { IDoomVersion, IAppSettings } from '@shared/schema'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { FolderOpen } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
@@ -31,7 +38,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     modsDirectory: '',
     screenshotsPath: '',
     wadFilesDirectory: '',
-    defaultSourcePort: 'gzdoom',
+    databaseLinkPresets: [
+      { name: 'ModDB', url: 'https://www.moddb.com/games/doom-ii' },
+      { name: 'ZDoom', url: 'https://forum.zdoom.org/' },
+      { name: 'DoomWorld', url: 'https://www.doomworld.com/' },
+      { name: 'Itch.io', url: 'https://itch.io/game-mods/tag-doom' }
+    ],
+    selectedPresetIndex: 0,
     configPath: '',
     autoUpdateEnabled: true
   })
@@ -143,7 +156,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         screenshotsPath: settings.screenshotsPath,
         wadFilesDirectory: settings.wadFilesDirectory,
         theme: settings.theme,
-        defaultSourcePort: settings.defaultSourcePort,
+        databaseLinkPresets: settings.databaseLinkPresets,
+        selectedPresetIndex: settings.selectedPresetIndex,
         autoUpdateEnabled: settings.autoUpdateEnabled
       }
       await api.updateSettings(payload)
@@ -277,21 +291,40 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   </div>
                   <div className="space-y-3">
                     <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                      System Protocol
+                      Database Link
                     </Label>
                     <div className="p-4 bg-app-secondary border border-app rounded-lg flex flex-col gap-3 shadow-md">
-                      <span className="text-xs font-sans text-app-muted">Default Engine</span>
-                      <select
-                        value={settings.defaultSourcePort}
-                        onChange={(e) =>
-                          setSettings((s) => ({ ...s, defaultSourcePort: e.target.value }))
+                      <span className="text-xs font-sans text-app-muted">Source</span>
+                      <Select
+                        value={settings.selectedPresetIndex.toString()}
+                        onValueChange={(value) =>
+                          setSettings((s) => ({
+                            ...s,
+                            selectedPresetIndex: parseInt(value, 10)
+                          }))
                         }
-                        className="bg-app-primary border-app text-sm font-sans p-2 rounded-md outline-none text-app-primary focus:ring-2 ring-accent-highlight/30 h-10 w-full appearance-none transition-all hover:border-app-muted"
                       >
-                        <option value="gzdoom">GZDOOM</option>
-                        <option value="uzdoom">UZDOOM</option>
-                        <option value="zandronum">ZANDRONUM</option>
-                      </select>
+                        <SelectTrigger className="bg-app-primary border-app text-app-primary h-10">
+                          <SelectValue placeholder="Select a database" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-app-secondary border-app text-app-primary">
+                          {settings.databaseLinkPresets.map((preset, index) => (
+                            <SelectItem
+                              key={index}
+                              value={index.toString()}
+                              className="focus:bg-app-hover focus:text-app-primary"
+                            >
+                              {preset.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center gap-2 pt-2">
+                        <span className="text-xs text-app-muted">URL:</span>
+                        <span className="text-xs text-app-primary truncate flex-1">
+                          {settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
