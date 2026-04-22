@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Combobox } from '@/components/ui/combobox'
-import { IModFile } from '@shared/schema'
+import { IModFile, IRequiredMod } from '@shared/schema'
 import {
   Trash2,
   Plus,
@@ -30,7 +30,7 @@ interface RequiredModEntry {
   name: string
   filePath: string
   isNew: boolean
-  offset: number
+  loadOrder: number
   sidecarOnly: boolean
 }
 
@@ -87,8 +87,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
   const processRequiredMods = async (
     requiredMods: RequiredModEntry[]
-  ): Promise<Record<string, number>> => {
-    const result: Record<string, number> = {}
+  ): Promise<IRequiredMod[]> => {
+    const result: IRequiredMod[] = []
 
     for (const req of requiredMods) {
       if (req.isNew && req.filePath) {
@@ -96,7 +96,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         const hash = await api.computeHash(newFilePath)
         const fileName = req.filePath.split(/[\\/]/).pop() || req.filePath
 
-        // Derive fileType from extension
         const ext = fileName.split('.').pop()?.toUpperCase() || ''
         let reqFileType = 'WAD'
         if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') reqFileType = 'PK3'
@@ -111,9 +110,17 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           sidecarOnly: req.sidecarOnly
         })
 
-        result[hash] = req.offset
+        result.push({
+          hash,
+          loadOrder: req.loadOrder,
+          sidecarOnly: req.sidecarOnly
+        })
       } else {
-        result[req.hash] = req.offset
+        result.push({
+          hash: req.hash,
+          loadOrder: req.loadOrder,
+          sidecarOnly: req.sidecarOnly
+        })
       }
     }
 
@@ -323,7 +330,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       name: catalogFile.name || '',
       filePath: catalogFile.filePath || '',
       isNew: false,
-      offset: form === 'add' ? addForm.requires.length + 1 : editForm.requires.length + 1,
+      loadOrder: form === 'add' ? addForm.requires.length : editForm.requires.length,
       sidecarOnly: catalogFile.sidecarOnly || false
     }
 
@@ -351,7 +358,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           name: fileName.replace(/\.[^.]+$/, ''),
           filePath: selectedPath,
           isNew: true,
-          offset: form === 'add' ? addForm.requires.length + 1 : editForm.requires.length + 1,
+          loadOrder: form === 'add' ? addForm.requires.length : editForm.requires.length,
           sidecarOnly: false
         }
 
@@ -474,21 +481,40 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
   const handleOpenEditModal = (file: IModFile): void => {
     const existingRequires: RequiredModEntry[] = []
+
     if (file.requires) {
-      for (const [hash, offset] of Object.entries(file.requires)) {
-        const reqFile = catalogFiles.find((f) => f.hashValue === hash)
-        if (reqFile) {
-          existingRequires.push({
-            hash,
-            name: reqFile.name || '',
-            filePath: reqFile.filePath || '',
-            isNew: false,
-            offset,
-            sidecarOnly: reqFile.sidecarOnly || false
-          })
+      if (Array.isArray(file.requires)) {
+        for (const req of file.requires) {
+          const reqFile = catalogFiles.find((f) => f.hashValue === req.hash)
+          if (reqFile) {
+            existingRequires.push({
+              hash: req.hash,
+              name: reqFile.name || '',
+              filePath: reqFile.filePath || '',
+              isNew: false,
+              loadOrder: req.loadOrder,
+              sidecarOnly: req.sidecarOnly ?? reqFile.sidecarOnly ?? false
+            })
+          }
+        }
+      } else {
+        for (const [hash, offset] of Object.entries(file.requires)) {
+          const reqFile = catalogFiles.find((f) => f.hashValue === hash)
+          if (reqFile) {
+            existingRequires.push({
+              hash,
+              name: reqFile.name || '',
+              filePath: reqFile.filePath || '',
+              isNew: false,
+              loadOrder: offset,
+              sidecarOnly: reqFile.sidecarOnly || false
+            })
+          }
         }
       }
     }
+
+    existingRequires.sort((a, b) => a.loadOrder - b.loadOrder)
 
     setSelectedFile(file)
     setEditForm({
@@ -673,11 +699,24 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                         </span>
                       </td>
                       <td className="p-3 text-sm text-app-muted">
-                        {file.requires && Object.keys(file.requires).length > 0
-                          ? Object.keys(file.requires)
+                        {(() => {
+                          if (!file.requires) return '-'
+                          if (Array.isArray(file.requires)) {
+                            if (file.requires.length === 0) return '-'
+                            return file.requires
+                              .sort((a, b) => a.loadOrder - b.loadOrder)
+                              .map((r) => catalogFiles.find((f) => f.hashValue === r.hash)?.name)
+                              .join(', ')
+                          }
+                          if (typeof file.requires === 'object') {
+                            const keys = Object.keys(file.requires)
+                            if (keys.length === 0) return '-'
+                            return keys
                               .map((hash) => catalogFiles.find((f) => f.hashValue === hash)?.name)
                               .join(', ')
-                          : '-'}
+                          }
+                          return '-'
+                        })()}
                       </td>
                       <td className="p-3 text-sm text-app-muted font-mono">
                         {file.hashValue ? (
@@ -812,8 +851,20 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             </div>
 
             <div className="space-y-2">
-              <Label>Required Mods (optional)</Label>
+              <Label>Load Order</Label>
               <div className="space-y-2">
+                <div className="flex items-center gap-1 bg-accent-highlight/10 border border-accent-highlight/30 rounded p-2">
+                  <span className="text-xs font-bold text-accent-highlight mr-2 w-6">0.</span>
+                  <span className="text-xs font-semibold text-accent-highlight mr-2">MAIN</span>
+                  <span className="text-xs flex-1">{addForm.name || addForm.filePath.split(/[\\/]/).pop()}</span>
+                  <input
+                    type="checkbox"
+                    checked={addForm.sidecarOnly}
+                    onChange={(e) => setAddForm((prev) => ({ ...prev, sidecarOnly: e.target.checked }))}
+                    className="w-4 h-4"
+                    title="Sidecar only"
+                  />
+                </div>
                 {addForm.requires.map((req, idx) => (
                   <div key={idx} className="flex items-center gap-1">
                     <Button
@@ -884,20 +935,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                id="add-sidecar"
-                type="checkbox"
-                checked={addForm.sidecarOnly}
-                onChange={(e) => setAddForm((prev) => ({ ...prev, sidecarOnly: e.target.checked }))}
-                className="w-4 h-4"
-              />
-              <Label htmlFor="add-sidecar" className="text-sm font-normal">
-                Sidecar mod (Check if this mod doesn't work without other mod files)
-              </Label>
-            </div>
-          </div>
-
           <div className="flex justify-end gap-2">
             <Button
               variant="outline"
@@ -955,8 +992,22 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             </div>
 
             <div className="space-y-2">
-              <Label>Required Mods (optional)</Label>
+              <Label>Load Order</Label>
               <div className="space-y-2">
+                <div className="flex items-center gap-1 bg-accent-highlight/10 border border-accent-highlight/30 rounded p-2">
+                  <span className="text-xs font-bold text-accent-highlight mr-2 w-6">0.</span>
+                  <span className="text-xs font-semibold text-accent-highlight mr-2">MAIN</span>
+                  <span className="text-xs flex-1">{editForm.name || selectedFile?.name}</span>
+                  <input
+                    type="checkbox"
+                    checked={editForm.sidecarOnly}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({ ...prev, sidecarOnly: e.target.checked }))
+                    }
+                    className="w-4 h-4"
+                    title="Sidecar only"
+                  />
+                </div>
                 {editForm.requires.map((req, idx) => (
                   <div key={idx} className="flex items-center gap-1">
                     <Button
@@ -1025,21 +1076,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                   </Button>
                 </div>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                id="edit-sidecar"
-                type="checkbox"
-                checked={editForm.sidecarOnly}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, sidecarOnly: e.target.checked }))
-                }
-                className="w-4 h-4"
-              />
-              <Label htmlFor="edit-sidecar" className="text-sm font-normal">
-                Sidecar only
-              </Label>
             </div>
 
             {selectedFile?.hashValue && (
