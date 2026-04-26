@@ -21,12 +21,6 @@ export interface IMod {
 
 export type InsertMod = Omit<IMod, 'id'>
 
-export interface IRequiredMod {
-  hash: string
-  loadOrder: number
-  sidecarOnly?: boolean
-}
-
 export interface IModFile {
   id: number
   name?: string
@@ -38,7 +32,7 @@ export interface IModFile {
   hashValue?: string
   version?: string
   url?: string
-  requires?: IRequiredMod[]
+  requires?: Record<string, number>
   requiredBy?: string[]
   sidecarOnly?: boolean
   loadOrder?: number

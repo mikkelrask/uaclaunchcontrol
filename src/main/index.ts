@@ -92,6 +92,10 @@ function createWindow(): void {
     }
   })
 
+  if (app.isPackaged) {
+    mainWindow.removeMenu()
+  }
+
   mainWindow.maximize()
 
   mainWindow.on('ready-to-show', () => {
