@@ -207,7 +207,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               <Settings className="w-5 h-5 text-accent-highlight" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-bold tracking-tight text-app-primary font-sans lowercase">
+              <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
                 core_settings
               </DialogTitle>
               <p className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
@@ -222,25 +222,25 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             <TabsList className="bg-transparent border-b-0 gap-6 h-12">
               <TabsTrigger
                 value="general"
-                className="font-sans text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
+                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
                 General
               </TabsTrigger>
               <TabsTrigger
                 value="paths"
-                className="font-sans text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
+                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
                 Paths
               </TabsTrigger>
               <TabsTrigger
                 value="wad-config"
-                className="font-sans text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
+                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
                 Wad Config
               </TabsTrigger>
               <TabsTrigger
                 value="advanced"
-                className="font-sans text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all opacity-50"
+                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all opacity-50"
               >
                 Advanced
               </TabsTrigger>
@@ -256,7 +256,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       Visual Interface
                     </Label>
                     <div className="p-4 bg-app-secondary border border-app rounded-lg flex items-center justify-between shadow-md">
-                      <span className="text-sm font-sans font-medium text-app-primary">
+                      <span className="text-sm font-medium text-app-primary">
                         App Theme
                       </span>
                       <div className="flex gap-2 p-1 bg-app-primary/50 rounded-md border border-app">
@@ -264,8 +264,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           variant="ghost"
                           size="sm"
                           onClick={() => setSettings((s) => ({ ...s, theme: 'dark' }))}
-                          className={`h-8 font-sans text-xs transition-all ${
-                            settings.theme === 'dark'
+                          className={`h-8 text-xs transition-all ${
+                             settings.theme === 'dark'
                               ? 'bg-accent-highlight text-white shadow-sm'
                               : 'text-app-muted hover:text-app-primary'
                           }`}
@@ -276,8 +276,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           variant="ghost"
                           size="sm"
                           onClick={() => setSettings((s) => ({ ...s, theme: 'light' }))}
-                          className={`h-8 font-sans text-xs transition-all ${
-                            settings.theme === 'light'
+                          className={`h-8 text-xs transition-all ${
+                             settings.theme === 'light'
                               ? 'bg-accent-highlight text-white shadow-sm'
                               : 'text-app-muted hover:text-app-primary'
                           }`}
@@ -292,7 +292,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       EXTERNAL REPOS
                     </Label>
                     <div className="p-4 bg-app-secondary border border-app rounded-lg flex flex-col gap-3 shadow-md">
-                      <span className="text-xs font-sans text-app-muted">DATABASE LINK</span>
+                      <span className="text-xs text-app-muted">DATABASE LINK</span>
                       <Select
                         value={settings.selectedPresetIndex.toString()}
                         onValueChange={(value) =>
@@ -335,19 +335,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   {appVersion && (
                     <>
                       <div className="flex items-center justify-between pt-2">
-                        <Label className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider">
-                          Software Build
-                        </Label>
+                        <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
+                           Software Build
+                         </Label>
                         <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted border border-app">
                           E1M{appVersion}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
-                          <Label className="text-xs font-sans text-app-primary font-medium">
-                            Check for updates on Startup
-                          </Label>
-                          <p className="text-[10px] text-app-muted font-sans leading-tight">
+                        <Label className="text-xs text-app-primary font-medium">
+                             Check for updates on Startup
+                           </Label>
+                           <p className="text-[10px] text-app-muted leading-tight">
                             Automatically notify about application updates. <br />
                             Updating is always optional - new updates will never be downloaded/applied without interaction.
                           </p>
@@ -360,9 +360,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         />
                       </div>
                       <div className="flex items-center justify-between">
-                        <p className="text-xs text-app-primary font-medium font-sans">
-                          Manually check for app updates
-                        </p>
+                      <p className="text-xs text-app-primary font-medium">
+                           Manually check for app updates
+                         </p>
                         <Button
                           variant="outline"
                           size="sm"
@@ -375,21 +375,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     </>
                   )}
                   <div className="flex items-center justify-between border-t pt-2 border-app/30">
-                    <Label className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider">
-                      App Configuration
-                    </Label>
+                    <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
+                       App Configuration
+                     </Label>
                     <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted font-mono border border-app">
                       SYSTEM
                     </span>
                   </div>
                   <div className="flex gap-2">
-                    <div className="bg-app-primary/40 border border-app font-sans h-10 px-3 text-sm flex-1 flex items-center text-app-muted opacity-80 rounded-md truncate">
+                    <div className="bg-app-primary/40 border border-app h-10 px-3 text-sm flex-1 flex items-center text-app-muted opacity-80 rounded-md truncate">
                       {settings.configPath}
                     </div>
                   </div>
-                  <p className="text-xs text-app-muted font-sans italic opacity-70">
-                    Internal master directory for settings, telemetry catalogues, and system state.
-                  </p>
+                  <p className="text-xs text-app-muted italic opacity-70">
+                     Internal master directory for settings, telemetry catalogues, and system state.
+                   </p>
                 </div>
                   <div className="flex-col items-center pt-8 border-t border-dashed">
                     <img src={uacLogo} alt="" className="w-12 opacity-30 hover:opacity-60 mx-auto animate-pulse" />
@@ -411,9 +411,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3">
                   <Label
                     htmlFor={`${id}-gzDoomPath`}
-                    className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider"
-                  >
-                    Source Port Executable
+                    className="text-xs text-app-muted font-bold uppercase tracking-wider"
+                   >
+                     Source Port Executable
                   </Label>
                   <div className="flex gap-2">
                     <Input
@@ -421,7 +421,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       name="gzDoomPath"
                       value={settings.gzDoomPath}
                       onChange={handleChange}
-                      className="bg-app-primary border-app font-sans h-10 text-sm flex-1 focus-visible:ring-2 focus-visible:ring-accent-highlight/40"
+                           className="bg-app-primary border-app h-10 text-sm flex-1 focus-visible:ring-2 focus-visible:ring-accent-highlight/40"
                     />
                     <Button
                       size="icon"
@@ -432,9 +432,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       <FolderOpen className="w-5 h-5" />
                     </Button>
                   </div>
-                  <p className="text-xs text-app-muted font-sans italic opacity-70">
-                    Main system binary used for launching telemetry streams.
-                  </p>
+                  <p className="text-xs text-app-muted italic opacity-70">
+                     Main system binary used for launching telemetry streams.
+                   </p>
                 </div>
               </div>
 
@@ -471,9 +471,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     >
                       <Label
                         htmlFor={`${id}-${field.id}`}
-                        className="text-xs font-sans text-app-muted font-bold uppercase tracking-wider"
-                      >
-                        {field.label}
+                        className="text-xs text-app-muted font-bold uppercase tracking-wider"
+                       >
+                         {field.label}
                       </Label>
                       <div className="flex gap-2">
                         <Input
@@ -481,7 +481,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           name={field.id}
                           value={String(settings[field.id as keyof typeof settings] ?? '')}
                           onChange={handleChange}
-                          className="bg-app-primary border-app font-sans h-10 text-sm flex-1 focus-visible:ring-2 focus-visible:ring-accent-highlight/40"
+                          className="bg-app-primary border-app h-10 text-sm flex-1 focus-visible:ring-2 focus-visible:ring-accent-highlight/40"
                         />
                         <Button
                           size="icon"
@@ -492,9 +492,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           <FolderOpen className="w-5 h-5" />
                         </Button>
                       </div>
-                      <p className="text-xs text-app-muted font-sans italic opacity-70">
-                        {field.desc}
-                      </p>
+                      <p className="text-xs text-app-muted italic opacity-70">
+                         {field.desc}
+                       </p>
                     </div>
                   ))}
                 </div>
@@ -509,7 +509,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 </div>
               ) : doomVersions.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-app-secondary font-sans italic opacity-60">
+                  <p className="text-app-secondary italic opacity-60">
                     No WAD files detected in the secure sector.
                   </p>
                 </div>
@@ -536,7 +536,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                             />
                           </div>
                           <span
-                            className={`text-sm font-sans font-medium truncate flex-1 ${
+                            className={`text-sm font-medium truncate flex-1 ${
                               selectedWadIndex === index
                                 ? 'text-accent-highlight'
                                 : 'text-app-primary'
@@ -577,7 +577,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                 onChange={(e) =>
                                   handleVersionChange(selectedWadIndex, 'name', e.target.value)
                                 }
-                                className="bg-app-secondary border-app font-sans h-11 text-base focus-visible:ring-accent-highlight/40"
+                                 className="bg-app-secondary border-app h-11 text-base focus-visible:ring-accent-highlight/40"
                               />
                             </div>
                             <div className="space-y-2">
@@ -593,8 +593,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                     e.target.value
                                   )
                                 }
-                                className="bg-app-secondary border-app font-sans h-11 text-base focus-visible:ring-accent-highlight/40"
-                                placeholder="default: gzdoom"
+                                className="bg-app-secondary border-app h-11 text-base focus-visible:ring-accent-highlight/40"
+                                 placeholder="default: gzdoom"
                               />
                             </div>
                           </div>
@@ -606,24 +606,24 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           </Label>
                           <div className="space-y-4 pt-1">
                             <div className="flex flex-col gap-2">
-                              <span className="text-xs text-app-primary font-medium font-sans">
-                                Launch Arguments
-                              </span>
+                              <span className="text-xs text-app-primary font-medium">
+                                 Launch Arguments
+                               </span>
                               <Input
                                 value={doomVersions[selectedWadIndex].args || ''}
                                 onChange={(e) =>
                                   handleVersionChange(selectedWadIndex, 'args', e.target.value)
                                 }
-                                className="bg-app-primary border-app font-sans h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
+                                 className="bg-app-primary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
                               />
                             </div>
                             <div className="pt-2">
                               <div className="flex items-center justify-between pb-4">
                                 <div className="space-y-0.5">
-                                  <Label className="text-xs text-app-primary font-medium font-sans">
+                                  <Label className="text-xs text-app-primary font-medium">
                                     Hide from Interface
                                   </Label>
-                                  <p className="text-xs text-app-muted font-sans italic opacity-70">
+                                  <p className="text-xs text-app-muted italic opacity-70">
                                     Toggling will excluded this wad from
                                     the sidebar and wad selectors.
                                   </p>
@@ -637,9 +637,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                               </div>
                             </div>
                             <div className="flex flex-col gap-2 overflow-hidden">
-                              <span className="text-xs text-app-primary font-medium font-sans">
-                                File Source
-                              </span>
+                              <span className="text-xs text-app-primary font-medium">
+                                 File Source
+                               </span>
                               <code className="text-xs font-mono p-3 bg-black/30 rounded-lg border border-app/50 break-all text-app-muted leading-relaxed">
                                 {doomVersions[selectedWadIndex].defaultIwad}
                               </code>
@@ -663,13 +663,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
           <Button
             variant="outline"
             onClick={onClose}
-            className="font-sans text-xs uppercase bg-transparent border-app hover:bg-app-hover text-app-muted hover:text-app-primary h-9 px-6"
+            className="text-xs uppercase bg-transparent border-app hover:bg-app-hover text-app-muted hover:text-app-primary h-9 px-6"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSave}
-            className="font-sans text-xs font-bold uppercase bg-accent-highlight text-white hover:bg-accent-highlight/90 h-9 px-8 shadow-lg shadow-accent-highlight/20"
+            className="text-xs font-bold uppercase bg-accent-highlight text-white hover:bg-accent-highlight/90 h-9 px-8 shadow-lg shadow-accent-highlight/20"
           >
             Save Configuration
           </Button>

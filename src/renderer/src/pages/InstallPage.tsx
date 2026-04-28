@@ -667,7 +667,7 @@ export const InstallPage: React.FC = () => {
 
                         {files.length > 0 && (
                           <div className="mb-4 border border-app rounded-md p-2">
-                            <h4 className="font-sans text-xs mb-3 text-app-muted font-bold tracking-widest uppercase">
+                            <h4 className="text-xs mb-3 text-app-muted font-bold tracking-widest uppercase">
                               Launch sequence
                             </h4>
                             <ul
@@ -684,7 +684,7 @@ export const InstallPage: React.FC = () => {
                                   <React.Fragment key={`${file.id}-${index}`}>
                                     {showPlaceholderBefore && (
                                       <li className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
-                                        <span className="text-accent-highlight font-sans text-sm tracking-widest uppercase opacity-60">
+                                        <span className="text-accent-highlight text-sm tracking-widest uppercase opacity-60">
                                           drop here
                                         </span>
                                       </li>
@@ -730,7 +730,7 @@ export const InstallPage: React.FC = () => {
                               {insertionIndex === files.length &&
                                 draggedIndex !== files.length - 1 && (
                                   <li className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
-                                    <span className="text-sm text-accent-highlight font-sans tracking-widest uppercase opacity-60">
+                                    <span className="text-sm text-accent-highlight tracking-widest uppercase opacity-60">
                                       new placement
                                     </span>
                                   </li>

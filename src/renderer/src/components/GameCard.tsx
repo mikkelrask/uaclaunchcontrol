@@ -80,7 +80,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
                       transform transition-transform duration-300 group-hover:translate-y-[-130px] z-10"
         >
           {/* Game title */}
-          <h3 className="text-white font-sans lg:text-lg font-bold">{mod.title}</h3>
+          <h3 className="text-white lg:text-lg font-bold">{mod.title}</h3>
 
           {/* Version icon */}
           <DoomVersionIcon
@@ -108,7 +108,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
       >
         <button
           type="button"
-          className="px-4 py-1 text-white font-sans rounded bg-accent-highlight hover:opacity-90 transition-colors"
+          className="px-4 py-1 text-white rounded bg-accent-highlight hover:opacity-90 transition-colors"
           onClick={handleLaunch}
           disabled={launchMutation.isPending}
         >
@@ -116,7 +116,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
         </button>
         <button
           type="button"
-          className="px-4 py-1 text-app-primary font-sans rounded bg-app-primary hover:bg-app-hover transition-colors"
+          className="px-4 py-1 text-app-primary rounded bg-app-primary hover:bg-app-hover transition-colors"
           onClick={handleSettings}
         >
           Settings

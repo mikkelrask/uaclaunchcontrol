@@ -73,7 +73,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-app-secondary text-app-primary border-app max-w-4xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-sans font-bold flex items-center gap-2">
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <RefreshCw className="w-5 h-5 text-accent-highlight" />
             Update Available
           </DialogTitle>

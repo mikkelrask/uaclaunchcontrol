@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Aldrich';
+  src: url('./assets/fonts/Aldrich-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -143,7 +151,7 @@
     border-color: hsl(var(--border));
   }
   body {
-    @apply font-sans antialiased;
+    @apply antialiased;
     background: hsl(var(--bg-primary));
     color: hsl(var(--text-primary));
     overflow: hidden;
@@ -278,7 +286,7 @@
   }
 
   .nav-tab.active {
-    @apply font-sans font-bold;
+    @apply font-bold;
     color: hsl(var(--text-primary));
   }
 

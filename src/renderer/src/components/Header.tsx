@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
         <form onSubmit={handleSearch}>
           <input
             type="text"
-            placeholder="QUERY DATABASE"
+            placeholder="DATABASE QUERY"
             className="w-full bg-app-primary text-app-primary px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-accent-highlight"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -51,7 +51,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex space-x-12 text-xl font-bold font-sans">
+      <nav className="flex space-x-12 text-xl font-bold">
         <Link href="/">
           <span className={`nav-tab ${location === '/' ? 'active' : ''} cursor-pointer`}>
             GAMES
@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
             <img src={doomGuy} alt="Guy, Doom - Space Marine" className="w-8 h-8 rounded"/>
           </div>
           <div className="flex-col">
-            <div className="text-xs font-sans ml-2 mr-1">Guy, Doom</div>
+            <div className="text-xs ml-2 mr-1">Guy, Doom</div>
             <div className="ml-2 text-xs italic text-app-secondary">Marine</div>
           </div>
         </div>

@@ -128,7 +128,7 @@ export const GamesPage: React.FC = () => {
               </div>
             ) : filteredMods?.length === 0 ? (
               <div className="text-center py-10">
-                <h3 className="text-2xl font-sans mb-2">FAILURE: Configuration incomplete</h3>
+                <h3 className="text-2xl mb-2">FAILURE: Configuration incomplete</h3>
                 <p className="text-app-secondary">
                   {activeVersion ? (
                     `No mods installed for this version.`
