@@ -48,7 +48,6 @@ interface UacModpackImport {
   files: {
     name: string
     hashValue?: string
-    loadOrder: number
   }[]
 }
 
@@ -167,7 +166,7 @@ export const InstallPage: React.FC = () => {
   // }
 
   const onSubmit = async (data: z.infer<typeof formSchema>): Promise<void> => {
-    const fileData: IModFile[] = files.map((file, idx) => {
+    const fileData: IModFile[] = files.map((file) => {
       // Strip directory from filePath and saveDirectory for shareability
       const pathValue = file.filePath || ''
       const fileNameOnly = pathValue.split(/[\\/]/).pop() || pathValue
@@ -175,7 +174,6 @@ export const InstallPage: React.FC = () => {
       return {
         ...file,
         filePath: fileNameOnly, // Store only the filename
-        loadOrder: idx,
         hashValue: file.hashValue || ''
       }
     })
@@ -313,7 +311,7 @@ export const InstallPage: React.FC = () => {
     const target = insertionIndex > draggedIndex ? insertionIndex - 1 : insertionIndex
     newFiles.splice(target, 0, draggedItem)
 
-    const updatedFiles = newFiles.map((file, idx) => ({ ...file, loadOrder: idx }))
+    const updatedFiles = newFiles
     setFiles(updatedFiles)
     handleDragEnd()
   }
@@ -389,8 +387,7 @@ export const InstallPage: React.FC = () => {
           if (catalogMatch) {
             matchedFiles.push({
               ...catalogMatch,
-              loadOrder: impFile.loadOrder
-            })
+              })
           } else {
             missingFiles.push({
               id: Date.now() + Math.random(),
@@ -398,15 +395,11 @@ export const InstallPage: React.FC = () => {
               fileName: impFile.name,
               filePath: '',
               fileType: 'PK3',
-              loadOrder: impFile.loadOrder,
               isRequired: true,
               hashValue: impFile.hashValue
             })
           }
         }
-
-        matchedFiles.sort((a, b) => (a.loadOrder ?? 0) - (b.loadOrder ?? 0))
-        missingFiles.sort((a, b) => (a.loadOrder ?? 0) - (b.loadOrder ?? 0))
         setFiles([...matchedFiles, ...missingFiles])
 
         if (missingFiles.length > 0) {

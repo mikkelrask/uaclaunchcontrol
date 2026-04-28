@@ -32,6 +32,7 @@ interface RequiredModEntry {
   isNew: boolean
   offset: number
   sidecarOnly: boolean
+  isMain?: boolean
 }
 
 export function CatalogManager({ files, onChange }: CatalogManagerProps): React.ReactElement {
@@ -47,7 +48,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     fileType: 'PK3',
     version: '',
     url: '',
-    requires: [] as RequiredModEntry[],
+    loadOrder: [] as RequiredModEntry[],
     sidecarOnly: false
   })
   const [isDraggingFile, setIsDraggingFile] = useState(false)
@@ -57,7 +58,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     name: '',
     version: '',
     url: '',
-    requires: [] as RequiredModEntry[],
+    loadOrder: [] as RequiredModEntry[],
     sidecarOnly: false
   })
 
@@ -150,7 +151,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const newFilePathMoved = await handleMoveFileToModFolder(addForm.filePath)
       const hashValue = await api.computeHash(newFilePathMoved)
 
-      const selfRefCheck = addForm.requires.some((r) => r.isNew && r.filePath === addForm.filePath)
+      const selfRefCheck = addForm.loadOrder.some((r) => r.isNew && r.filePath === addForm.filePath)
       if (selfRefCheck) {
         toast({
           title: 'Invalid required mod',
@@ -160,7 +161,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         return
       }
 
-      const processedRequires = await processRequiredMods(addForm.requires)
+      const processedLoadOrder = await processRequiredMods(addForm.loadOrder)
 
       const newFile: IModFile = {
         id: Date.now(),
@@ -171,7 +172,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         version: addForm.version,
         url: addForm.url,
         hashValue,
-        requires: processedRequires,
+        loadOrder: processedLoadOrder,
         sidecarOnly: addForm.sidecarOnly
       }
 
@@ -185,11 +186,12 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         version: addForm.version,
         url: addForm.url,
         hashValue,
-        requires: processedRequires,
+        loadOrder: processedLoadOrder,
         sidecarOnly: addForm.sidecarOnly
       })
 
-      for (const req of addForm.requires) {
+      for (const req of addForm.loadOrder) {
+        if (req.isMain) continue
         if (req.isNew && req.filePath) {
           continue
         }
@@ -217,7 +219,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         fileType: 'PK3',
         version: '',
         url: '',
-        requires: [],
+        loadOrder: [],
         sidecarOnly: false
       })
       loadCatalogFiles()
@@ -237,7 +239,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       fileType: 'PK3',
       version: '',
       url: '',
-      requires: [],
+      loadOrder: [],
       sidecarOnly: false
     })
 
@@ -250,15 +252,22 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       if (!result.canceled && result.filePaths.length > 0) {
         const selectedPath = result.filePaths[0]
-        setAddForm((prev) => ({
-          ...prev,
-          filePath: selectedPath,
-          name:
-            selectedPath
-              .split(/[\\/]/)
-              .pop()
-              ?.replace(/\.[^.]+$/, '') || ''
-        }))
+        setAddForm((prev) => {
+          const name = selectedPath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') || ''
+          const newLoadOrder = [...prev.loadOrder]
+          const mainIdx = newLoadOrder.findIndex((req) => req.isMain)
+          if (mainIdx >= 0) {
+            newLoadOrder[mainIdx] = { ...newLoadOrder[mainIdx], filePath: selectedPath, name }
+          } else {
+            newLoadOrder.unshift({ hash: '', name, filePath: selectedPath, isNew: true, offset: 1, sidecarOnly: false, isMain: true })
+          }
+          return {
+            ...prev,
+            filePath: selectedPath,
+            name: prev.name || name,
+            loadOrder: newLoadOrder
+          }
+        })
         setIsAddModalOpen(true)
       }
     } catch (error) {
@@ -299,17 +308,22 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         return
       }
 
-      setAddForm((prev) => ({
-        ...prev,
-        filePath: droppedPath,
-        name:
-          prev.name ||
-          droppedPath
-            .split(/[\\/]/)
-            .pop()
-            ?.replace(/\.[^.]+$/, '') ||
-          ''
-      }))
+      setAddForm((prev) => {
+        const name = droppedPath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') || ''
+        const newLoadOrder = [...prev.loadOrder]
+        const mainIdx = newLoadOrder.findIndex((req) => req.isMain)
+        if (mainIdx >= 0) {
+          newLoadOrder[mainIdx] = { ...newLoadOrder[mainIdx], filePath: droppedPath, name }
+        } else {
+          newLoadOrder.unshift({ hash: '', name, filePath: droppedPath, isNew: true, offset: 1, sidecarOnly: false, isMain: true })
+        }
+        return {
+          ...prev,
+          filePath: droppedPath,
+          name: prev.name || name,
+          loadOrder: newLoadOrder
+        }
+      })
       setIsAddModalOpen(true)
     }
   }
@@ -323,14 +337,14 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       name: catalogFile.name || '',
       filePath: catalogFile.filePath || '',
       isNew: false,
-      offset: form === 'add' ? addForm.requires.length + 1 : editForm.requires.length + 1,
+      offset: form === 'add' ? addForm.loadOrder.length + 1 : editForm.loadOrder.length + 1,
       sidecarOnly: catalogFile.sidecarOnly || false
     }
 
     if (form === 'add') {
-      setAddForm((prev) => ({ ...prev, requires: [...prev.requires, newReq] }))
+      setAddForm((prev) => ({ ...prev, loadOrder: [...prev.loadOrder, newReq] }))
     } else {
-      setEditForm((prev) => ({ ...prev, requires: [...prev.requires, newReq] }))
+      setEditForm((prev) => ({ ...prev, loadOrder: [...prev.loadOrder, newReq] }))
     }
   }
 
@@ -351,14 +365,14 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           name: fileName.replace(/\.[^.]+$/, ''),
           filePath: selectedPath,
           isNew: true,
-          offset: form === 'add' ? addForm.requires.length + 1 : editForm.requires.length + 1,
+          offset: form === 'add' ? addForm.loadOrder.length + 1 : editForm.loadOrder.length + 1,
           sidecarOnly: false
         }
 
         if (form === 'add') {
-          setAddForm((prev) => ({ ...prev, requires: [...prev.requires, newReq] }))
+          setAddForm((prev) => ({ ...prev, loadOrder: [...prev.loadOrder, newReq] }))
         } else {
-          setEditForm((prev) => ({ ...prev, requires: [...prev.requires, newReq] }))
+          setEditForm((prev) => ({ ...prev, loadOrder: [...prev.loadOrder, newReq] }))
         }
       }
     } catch (error) {
@@ -368,9 +382,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
   const handleRemoveRequiredMod = (form: 'add' | 'edit', index: number): void => {
     if (form === 'add') {
-      setAddForm((prev) => ({ ...prev, requires: prev.requires.filter((_, i) => i !== index) }))
+      setAddForm((prev) => ({ ...prev, loadOrder: prev.loadOrder.filter((_, i) => i !== index) }))
     } else {
-      setEditForm((prev) => ({ ...prev, requires: prev.requires.filter((_, i) => i !== index) }))
+      setEditForm((prev) => ({ ...prev, loadOrder: prev.loadOrder.filter((_, i) => i !== index) }))
     }
   }
 
@@ -378,60 +392,60 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     if (index === 0) return
     if (form === 'add') {
       setAddForm((prev) => {
-        const newRequires = [...prev.requires]
-        const temp = newRequires[index]
-        newRequires[index] = newRequires[index - 1]
-        newRequires[index - 1] = temp
-        return { ...prev, requires: newRequires }
+        const newLoadOrder = [...prev.loadOrder]
+        const temp = newLoadOrder[index]
+        newLoadOrder[index] = newLoadOrder[index - 1]
+        newLoadOrder[index - 1] = temp
+        return { ...prev, loadOrder: newLoadOrder }
       })
     } else {
       setEditForm((prev) => {
-        const newRequires = [...prev.requires]
-        const temp = newRequires[index]
-        newRequires[index] = newRequires[index - 1]
-        newRequires[index - 1] = temp
-        return { ...prev, requires: newRequires }
+        const newLoadOrder = [...prev.loadOrder]
+        const temp = newLoadOrder[index]
+        newLoadOrder[index] = newLoadOrder[index - 1]
+        newLoadOrder[index - 1] = temp
+        return { ...prev, loadOrder: newLoadOrder }
       })
     }
   }
 
   const handleMoveRequiredDown = (form: 'add' | 'edit', index: number): void => {
-    const currentList = form === 'add' ? addForm.requires : editForm.requires
+    const currentList = form === 'add' ? addForm.loadOrder : editForm.loadOrder
     if (index >= currentList.length - 1) return
     if (form === 'add') {
       setAddForm((prev) => {
-        const newRequires = [...prev.requires]
-        const temp = newRequires[index]
-        newRequires[index] = newRequires[index + 1]
-        newRequires[index + 1] = temp
-        return { ...prev, requires: newRequires }
+        const newLoadOrder = [...prev.loadOrder]
+        const temp = newLoadOrder[index]
+        newLoadOrder[index] = newLoadOrder[index + 1]
+        newLoadOrder[index + 1] = temp
+        return { ...prev, loadOrder: newLoadOrder }
       })
     } else {
       setEditForm((prev) => {
-        const newRequires = [...prev.requires]
-        const temp = newRequires[index]
-        newRequires[index] = newRequires[index + 1]
-        newRequires[index + 1] = temp
-        return { ...prev, requires: newRequires }
+        const newLoadOrder = [...prev.loadOrder]
+        const temp = newLoadOrder[index]
+        newLoadOrder[index] = newLoadOrder[index + 1]
+        newLoadOrder[index + 1] = temp
+        return { ...prev, loadOrder: newLoadOrder }
       })
     }
   }
 
   const handleToggleRequiredSidecar = (form: 'add' | 'edit', index: number): void => {
     const currentForm = form === 'add' ? addForm : editForm
-    const req = currentForm.requires[index]
+    const req = currentForm.loadOrder[index]
     if (!req) return
 
     const newValue = !req.sidecarOnly
     if (form === 'add') {
       setAddForm((prev) => ({
         ...prev,
-        requires: prev.requires.map((r, i) => (i === index ? { ...r, sidecarOnly: newValue } : r))
+        loadOrder: prev.loadOrder.map((r, i) => (i === index ? { ...r, sidecarOnly: newValue } : r))
       }))
     } else {
       setEditForm((prev) => ({
         ...prev,
-        requires: prev.requires.map((r, i) => (i === index ? { ...r, sidecarOnly: newValue } : r))
+        loadOrder: prev.loadOrder.map((r, i) => (i === index ? { ...r, sidecarOnly: newValue } : r))
       }))
     }
   }
@@ -440,12 +454,12 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     if (form === 'add') {
       setAddForm((prev) => ({
         ...prev,
-        requires: prev.requires.map((r, i) => (i === index ? { ...r, name } : r))
+        loadOrder: prev.loadOrder.map((r, i) => (i === index ? { ...r, name } : r))
       }))
     } else {
       setEditForm((prev) => ({
         ...prev,
-        requires: prev.requires.map((r, i) => (i === index ? { ...r, name } : r))
+        loadOrder: prev.loadOrder.map((r, i) => (i === index ? { ...r, name } : r))
       }))
     }
   }
@@ -473,12 +487,24 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   }
 
   const handleOpenEditModal = (file: IModFile): void => {
-    const existingRequires: RequiredModEntry[] = []
-    if (file.requires) {
-      for (const [hash, offset] of Object.entries(file.requires)) {
+    const existingLoadOrder: RequiredModEntry[] = []
+    
+    existingLoadOrder.push({
+      hash: file.hashValue || '',
+      name: file.name || '',
+      filePath: file.filePath || '',
+      isNew: false,
+      offset: file.loadOrder?.[file.hashValue || ''] ?? 1,
+      sidecarOnly: file.sidecarOnly || false,
+      isMain: true
+    })
+
+    if (file.loadOrder) {
+      for (const [hash, offset] of Object.entries(file.loadOrder)) {
+        if (hash === file.hashValue) continue
         const reqFile = catalogFiles.find((f) => f.hashValue === hash)
         if (reqFile) {
-          existingRequires.push({
+          existingLoadOrder.push({
             hash,
             name: reqFile.name || '',
             filePath: reqFile.filePath || '',
@@ -489,13 +515,15 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         }
       }
     }
+    
+    existingLoadOrder.sort((a, b) => a.offset - b.offset)
 
     setSelectedFile(file)
     setEditForm({
       name: file.name || '',
       version: file.version || '',
       url: file.url || '',
-      requires: existingRequires,
+      loadOrder: existingLoadOrder,
       sidecarOnly: file.sidecarOnly || false
     })
     setIsEditModalOpen(true)
@@ -521,7 +549,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         }
       }
 
-      const selfRefCheck = editForm.requires.some(
+      const selfRefCheck = editForm.loadOrder.some(
         (r) => r.isNew && r.filePath === selectedFile.filePath
       )
       if (selfRefCheck) {
@@ -533,13 +561,13 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         return
       }
 
-      const processedRequires = await processRequiredMods(editForm.requires)
+      const processedLoadOrder = await processRequiredMods(editForm.loadOrder)
 
       const updates: Partial<IModFile> = {
         name: editForm.name.trim(),
         version: editForm.version,
         url: editForm.url,
-        requires: processedRequires,
+        loadOrder: processedLoadOrder,
         sidecarOnly: editForm.sidecarOnly
       }
 
@@ -551,7 +579,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const updatedFiles = files.map((f) => (f.id === selectedFile.id ? { ...f, ...updates } : f))
       onChange(updatedFiles)
 
-      for (const req of editForm.requires) {
+      for (const req of editForm.loadOrder) {
+        if (req.isMain) continue
         if (req.isNew && req.filePath) {
           continue
         }
@@ -584,12 +613,12 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   }
 
   const selectableFilesForAdd = availableRequiredFiles.filter(
-    (f) => !addForm.requires.some((r) => r.hash === f.hashValue)
+    (f) => !addForm.loadOrder.some((r) => r.hash === f.hashValue)
   )
 
   const selectableFilesForEdit = availableRequiredFiles.filter(
     (f) =>
-      !editForm.requires.some((r) => r.hash === f.hashValue) &&
+      !editForm.loadOrder.some((r) => r.hash === f.hashValue) &&
       f.hashValue !== selectedFile?.hashValue
   )
 
@@ -643,7 +672,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                       Type
                     </th>
                     <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
-                      Requires
+                      LoadOrder
                     </th>
                     <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
                       Hash
@@ -673,8 +702,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                         </span>
                       </td>
                       <td className="p-3 text-sm text-app-muted">
-                        {file.requires && Object.keys(file.requires).length > 0
-                          ? Object.keys(file.requires)
+                        {file.loadOrder && Object.keys(file.loadOrder).length > 0
+                          ? Object.keys(file.loadOrder)
                               .map((hash) => catalogFiles.find((f) => f.hashValue === hash)?.name)
                               .join(', ')
                           : '-'}
@@ -812,9 +841,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             </div>
 
             <div className="space-y-2">
-              <Label>Required Mods (optional)</Label>
+              <Label>Load Order</Label>
               <div className="space-y-2">
-                {addForm.requires.map((req, idx) => (
+                {addForm.loadOrder.length > 1 && addForm.loadOrder.map((req, idx) => (
                   <div key={idx} className="flex items-center gap-1">
                     <Button
                       variant="ghost"
@@ -829,7 +858,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                       variant="ghost"
                       size="sm"
                       onClick={() => handleMoveRequiredDown('add', idx)}
-                      disabled={idx >= addForm.requires.length - 1}
+                      disabled={idx >= addForm.loadOrder.length - 1}
                       className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
                     >
                       <ChevronDown className="h-4 w-4" />
@@ -838,12 +867,14 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                     <Input
                       value={req.name}
                       onChange={(e) => handleRequiredNameChange('add', idx, e.target.value)}
-                      className="bg-app-secondary border-app flex-1"
+                      disabled={req.isMain}
+                      className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
                     />
                     <input
                       type="checkbox"
                       checked={req.sidecarOnly}
                       onChange={() => handleToggleRequiredSidecar('add', idx)}
+                      disabled={req.isMain}
                       className="w-4 h-4"
                       title="Sidecar only"
                     />
@@ -851,7 +882,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveRequiredMod('add', idx)}
-                      className="text-red-500 hover:text-red-700"
+                      disabled={req.isMain}
+                      className={`text-red-500 hover:text-red-700 ${req.isMain ? 'opacity-30' : ''}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -955,9 +987,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             </div>
 
             <div className="space-y-2">
-              <Label>Required Mods (optional)</Label>
+              <Label>Load Order</Label>
               <div className="space-y-2">
-                {editForm.requires.map((req, idx) => (
+                {editForm.loadOrder.length > 1 && editForm.loadOrder.map((req, idx) => (
                   <div key={idx} className="flex items-center gap-1">
                     <Button
                       variant="ghost"
@@ -972,7 +1004,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                       variant="ghost"
                       size="sm"
                       onClick={() => handleMoveRequiredDown('edit', idx)}
-                      disabled={idx >= editForm.requires.length - 1}
+                      disabled={idx >= editForm.loadOrder.length - 1}
                       className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
                     >
                       <ChevronDown className="h-4 w-4" />
@@ -981,12 +1013,14 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                     <Input
                       value={req.name}
                       onChange={(e) => handleRequiredNameChange('edit', idx, e.target.value)}
-                      className="bg-app-secondary border-app flex-1"
+                      disabled={req.isMain}
+                      className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
                     />
                     <input
                       type="checkbox"
                       checked={req.sidecarOnly}
                       onChange={() => handleToggleRequiredSidecar('edit', idx)}
+                      disabled={req.isMain}
                       className="w-4 h-4"
                       title="Sidecar only"
                     />
@@ -994,7 +1028,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveRequiredMod('edit', idx)}
-                      className="text-red-500 hover:text-red-700"
+                      disabled={req.isMain}
+                      className={`text-red-500 hover:text-red-700 ${req.isMain ? 'opacity-30' : ''}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

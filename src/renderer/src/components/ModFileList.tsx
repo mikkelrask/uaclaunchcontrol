@@ -38,11 +38,6 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
     const newFiles = [...files]
     ;[newFiles[index - 1], newFiles[index]] = [newFiles[index], newFiles[index - 1]]
 
-    // Update load order
-    newFiles.forEach((file, idx) => {
-      file.loadOrder = idx
-    })
-
     onChange(newFiles)
   }
 
@@ -50,11 +45,6 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
     if (index >= files.length - 1) return
     const newFiles = [...files]
     ;[newFiles[index], newFiles[index + 1]] = [newFiles[index + 1], newFiles[index]]
-
-    // Update load order
-    newFiles.forEach((file, idx) => {
-      file.loadOrder = idx
-    })
 
     onChange(newFiles)
   }
@@ -104,31 +94,15 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
             if (value) {
               const catalogFile = catalogFiles.find((f) => f.id?.toString() === value)
               if (catalogFile && catalogFile.filePath) {
-                const fileName = catalogFile.fileName || catalogFile.name || ''
-                const extension = fileName.split('.').pop()?.toUpperCase() || ''
-                let fileType = 'WAD'
-                if (extension === 'PK3' || extension === 'IPK3' || extension === 'ZIP') {
-                  fileType = 'PK3'
-                } else if (extension === 'DEH' || extension === 'BEX') {
-                  fileType = 'DEH'
-                }
 
-                const newFile: InsertModFile = {
-                  filePath: catalogFile.filePath,
-                  fileName,
-                  fileType,
-                  loadOrder: files.length,
-                  isRequired: true,
-                  name: catalogFile.name || '',
-                  hashValue: generateUniqueId(catalogFile.hashValue || '')
-                }
 
-                let updatedFiles = [...files, newFile]
+                let updatedFiles = [...files]
                 const usedHashes = new Set(updatedFiles.map((f) => f.hashValue))
 
-                if (catalogFile.requires && Object.keys(catalogFile.requires).length > 0) {
-                  for (const [reqHash, offset] of Object.entries(catalogFile.requires)) {
-                    const reqFile = catalogFiles.find((f) => f.hashValue === reqHash)
+                if (catalogFile.loadOrder && Object.keys(catalogFile.loadOrder).length > 0) {
+                  const entries = Object.entries(catalogFile.loadOrder).sort((a, b) => a[1] - b[1])
+                  for (const [hash, _] of entries) {
+                    const reqFile = catalogFiles.find((f) => f.hashValue === hash)
                     if (reqFile) {
                       const reqFileHash = generateUniqueId(reqFile.hashValue || '')
                       if (!usedHashes.has(reqFileHash)) {
@@ -142,11 +116,10 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                           reqFileType = 'DEH'
                         }
 
-                        updatedFiles.splice(files.length + offset, 0, {
+                        updatedFiles.push({
                           filePath: reqFile.filePath || '',
                           fileName: reqFileName,
                           fileType: reqFileType,
-                          loadOrder: files.length + offset,
                           isRequired: true,
                           name: reqFile.name || '',
                           hashValue: reqFileHash
@@ -154,9 +127,26 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                       }
                     }
                   }
+                } else {
+                  const fileName = catalogFile.fileName || catalogFile.name || ''
+                  const extension = fileName.split('.').pop()?.toUpperCase() || ''
+                  let fileType = 'WAD'
+                  if (extension === 'PK3' || extension === 'IPK3' || extension === 'ZIP') {
+                    fileType = 'PK3'
+                  } else if (extension === 'DEH' || extension === 'BEX') {
+                    fileType = 'DEH'
+                  }
+
+                  updatedFiles.push({
+                    filePath: catalogFile.filePath,
+                    fileName,
+                    fileType,
+                    isRequired: true,
+                    name: catalogFile.name || '',
+                    hashValue: generateUniqueId(catalogFile.hashValue || '')
+                  } as InsertModFile)
                 }
 
-                updatedFiles = updatedFiles.map((f, i) => ({ ...f, loadOrder: i }))
                 onChange(updatedFiles)
               }
             }

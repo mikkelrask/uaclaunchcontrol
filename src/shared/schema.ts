@@ -32,10 +32,9 @@ export interface IModFile {
   hashValue?: string
   version?: string
   url?: string
-  requires?: Record<string, number>
+  loadOrder?: Record<string, number>
   requiredBy?: string[]
   sidecarOnly?: boolean
-  loadOrder?: number
   isRequired?: boolean
 }
 

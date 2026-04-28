@@ -55,7 +55,6 @@ export function ModFileSelector({
       name: '',
       filePath: '',
       fileType: 'WAD',
-      loadOrder: value.length,
       isRequired: true,
       fileName: ''
     }
@@ -87,10 +86,9 @@ export function ModFileSelector({
     const newFiles = [...value]
     newFiles.splice(index, 1)
 
-    const updatedFiles = newFiles.map((file, i) => ({
+    const updatedFiles = newFiles.map((file) => ({
       ...file,
-      loadOrder: i
-    }))
+      }))
 
     onChange(updatedFiles)
   }
@@ -130,61 +128,51 @@ export function ModFileSelector({
     const catalogFile = catalogFiles.find((f) => f.id === parseInt(catalogFileId + '', 10))
     if (!catalogFile) return
 
-    const newFiles = [...value]
+    let newFiles = [...value]
+    const filesToInsert: IModFile[] = []
 
-    // Determine fileType - use catalog value or derive from filename
-    let fileType = catalogFile.fileType
-    if (!fileType && catalogFile.fileName) {
-      const ext = catalogFile.fileName.split('.').pop()?.toUpperCase() || ''
-      if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
-      else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
-      else fileType = 'WAD'
-    }
-
-    newFiles[index] = {
-      ...newFiles[index],
-      id: catalogFile.id,
-      name: catalogFile.name,
-      filePath: catalogFile.filePath,
-      fileType: fileType || 'WAD',
-      fileName: catalogFile.fileName,
-      loadOrder: newFiles[index].loadOrder ?? index
-    }
-
-    if (catalogFile.requires && Object.keys(catalogFile.requires).length > 0) {
-      const requiresHashes = Object.keys(catalogFile.requires)
-      for (const reqHash of requiresHashes) {
-        const reqFile = catalogFiles.find((f) => f.hashValue === reqHash)
+    if (catalogFile.loadOrder && Object.keys(catalogFile.loadOrder).length > 0) {
+      const entries = Object.entries(catalogFile.loadOrder).sort((a, b) => a[1] - b[1])
+      for (const [hash, _] of entries) {
+        const reqFile = catalogFiles.find((f) => f.hashValue === hash)
         if (reqFile) {
-          const alreadyAdded = newFiles.some((f) => f.id === reqFile.id)
-          if (!alreadyAdded) {
-            const relativeOrder = catalogFile.requires[reqHash] || 1
-
-            // Determine required mod's fileType
-            let reqFileType = reqFile.fileType
-            if (!reqFileType && reqFile.fileName) {
-              const reqExt = reqFile.fileName.split('.').pop()?.toUpperCase() || ''
-              if (reqExt === 'PK3' || reqExt === 'IPK3' || reqExt === 'ZIP') reqFileType = 'PK3'
-              else if (reqExt === 'DEH' || reqExt === 'BEX') reqFileType = 'DEH'
-              else reqFileType = 'WAD'
-            }
-
-            newFiles.splice(index + relativeOrder, 0, {
-              id: reqFile.id,
-              name: reqFile.name,
-              filePath: reqFile.filePath,
-              fileType: reqFileType || 'WAD',
-              fileName: reqFile.fileName,
-              loadOrder: index + relativeOrder,
-              isRequired: true
-            })
+          let fileType = reqFile.fileType
+          if (!fileType && reqFile.fileName) {
+            const ext = reqFile.fileName.split('.').pop()?.toUpperCase() || ''
+            if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+            else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
+            else fileType = 'WAD'
           }
+          filesToInsert.push({
+            id: reqFile.id,
+            name: reqFile.name,
+            filePath: reqFile.filePath,
+            fileType: fileType || 'WAD',
+            fileName: reqFile.fileName,
+            isRequired: true
+          })
         }
       }
+    } else {
+      let fileType = catalogFile.fileType
+      if (!fileType && catalogFile.fileName) {
+        const ext = catalogFile.fileName.split('.').pop()?.toUpperCase() || ''
+        if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+        else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
+        else fileType = 'WAD'
+      }
+      filesToInsert.push({
+        id: catalogFile.id,
+        name: catalogFile.name,
+        filePath: catalogFile.filePath,
+        fileType: fileType || 'WAD',
+        fileName: catalogFile.fileName,
+        isRequired: true
+      })
     }
 
-    const reorderedFiles = newFiles.map((file, i) => ({ ...file, loadOrder: i }))
-    onChange(reorderedFiles)
+    newFiles.splice(index, 1, ...filesToInsert)
+    onChange(newFiles)
   }
 
   const handleBrowseFile = async (index: number): Promise<void> => {
@@ -238,9 +226,7 @@ export function ModFileSelector({
           fileName: fileName,
           fileType: detectedType,
           name: !newFiles[index].name ? fileName : newFiles[index].name,
-          isRequired: newFiles[index].isRequired !== undefined ? newFiles[index].isRequired : true,
-          loadOrder: index
-        }
+          isRequired: newFiles[index].isRequired !== undefined ? newFiles[index].isRequired : true}
 
         console.log('Updating files with:', newFiles)
         onChange(newFiles)

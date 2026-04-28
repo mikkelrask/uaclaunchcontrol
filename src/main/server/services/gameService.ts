@@ -104,9 +104,7 @@ export class GameService {
       const fileArgs: string[] = []
       if (files.length > 0) {
         fileArgs.push('-file')
-        files
-          .sort((a, b) => (a.loadOrder ?? 0) - (b.loadOrder ?? 0))
-          .forEach((file) => {
+        files.forEach((file) => {
             if (file.filePath) {
               const isAbsolute =
                 path.isAbsolute(file.filePath) ||

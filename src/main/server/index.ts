@@ -64,7 +64,7 @@ export async function launchMod(modId: number): Promise<{ success: boolean; mess
     const executable = storage.resolvePath(settings.gzDoomPath)
     const args: string[] = []
 
-    for (const file of modFiles.sort((a, b) => (a.loadOrder ?? 0) - (b.loadOrder ?? 0))) {
+    for (const file of modFiles) {
       if (!file.filePath) {
         console.warn(`Mod file ${file.id} has no file path, skipping`)
         continue

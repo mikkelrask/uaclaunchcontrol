@@ -534,7 +534,46 @@ export async function getModFileCatalog(): Promise<IModFile[]> {
       console.warn('storage.ts: modFileCatalogue.json is not an array, got:', data)
       return []
     }
-    return data
+    
+    // Migration: requires -> loadOrder
+    let migrated = false
+    const migratedData = data.map((file: any) => {
+      if (file.requires !== undefined || typeof file.loadOrder === 'number') {
+        migrated = true
+        const oldRequires = file.requires || {}
+        const newLoadOrder: Record<string, number> = {}
+        
+        // Main file gets offset 1 if hash exists
+        if (file.hashValue) {
+          newLoadOrder[file.hashValue] = 1
+        }
+        
+        // Shift others by 1
+        for (const [hash, offset] of Object.entries(oldRequires)) {
+          newLoadOrder[hash] = (offset as number) + 1
+        }
+        
+        const newFile = { ...file, loadOrder: newLoadOrder }
+        delete newFile.requires
+        return newFile as IModFile
+      }
+      // Ensure loadOrder is a Record<string, number> if missing
+      if (!file.loadOrder && file.hashValue) {
+        migrated = true
+        return {
+          ...file,
+          loadOrder: { [file.hashValue]: 1 }
+        } as IModFile
+      }
+      return file as IModFile
+    })
+
+    if (migrated) {
+      await fs.writeJSON(filePath, migratedData, { spaces: 2 })
+      debug('storage.ts: Migrated modFileCatalogue.json requires to loadOrder')
+    }
+
+    return migratedData
   } catch (error) {
     console.error('storage.ts: Error reading modFileCatalogue.json:', error)
     return []
@@ -703,7 +742,7 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
         fileName,
         id: Date.now(),
         hashValue,
-        requires: file.requires ?? {},
+        loadOrder: file.loadOrder ?? {},
         requiredBy: file.requiredBy ?? [],
         sidecarOnly: file.sidecarOnly ?? false,
         url: file.url ?? '',
