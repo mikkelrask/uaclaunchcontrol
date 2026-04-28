@@ -30,7 +30,7 @@ const DEFAULT_DATABASE_LINKS: IDatabaseLink[] = [
 ]
 
 const DEFAULT_SETTINGS: IAppSettings = {
-  gzDoomPath: 'uzdoom',
+  sourcePortPath: 'uzdoom',
   theme: 'dark',
   savegamesPath: '~/.config/uac/saves',
   modsDirectory: '~/.config/uac/mods',
@@ -211,6 +211,11 @@ export async function getSettings(): Promise<IAppSettings> {
     initStorage() // Ensure directories/files exist
     debug('Reading settings from', SETTINGS_FILE)
     const settingsData = await fs.readJSON(SETTINGS_FILE)
+    if (settingsData.gzDoomPath !== undefined) {
+      settingsData.sourcePortPath = settingsData.gzDoomPath
+      delete settingsData.gzDoomPath
+      await fs.writeJSON(SETTINGS_FILE, settingsData, { spaces: 2 })
+    }
     const settings: IAppSettings = { ...DEFAULT_SETTINGS, ...settingsData }
     debug('Retrieved settings from file:', settings)
 
@@ -218,7 +223,7 @@ export async function getSettings(): Promise<IAppSettings> {
     const resolvedSettings: IAppSettings = {
       ...settings,
       configPath: CONFIG_DIR,
-      gzDoomPath: settings.gzDoomPath ? resolvePath(settings.gzDoomPath) : settings.gzDoomPath,
+      sourcePortPath: settings.sourcePortPath ? resolvePath(settings.sourcePortPath) : settings.sourcePortPath,
       savegamesPath: settings.savegamesPath
         ? resolvePath(settings.savegamesPath)
         : settings.savegamesPath,
@@ -372,7 +377,7 @@ export async function syncDoomVersions(
 
     // Load existing versions to detect changes
     const oldVersions: IDoomVersion[] = await fs.readJSON(DOOM_VERSIONS_FILE).catch(() => [])
-    const executable = settings.gzDoomPath || 'gzdoom'
+    const executable = settings.sourcePortPath || 'uzdoom'
 
     await fs.ensureDir(wadDir)
     const files = await fs.readdir(wadDir)

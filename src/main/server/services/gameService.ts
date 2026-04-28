@@ -85,10 +85,10 @@ export class GameService {
 
       // Need settings for executable path
       const settings = await storage.getSettings()
-      if (!settings.gzDoomPath) {
+      if (!settings.sourcePortPath) {
         throw new Error('GZDoom executable path not set in settings.')
       }
-      const executable = storage.resolvePath(settings.gzDoomPath)
+      const executable = storage.resolvePath(settings.sourcePortPath)
 
       // Load Doom version for args
       const doomVersionId = String(mod.doomVersionId)

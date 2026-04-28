@@ -106,7 +106,7 @@ export const InstallPage: React.FC = () => {
       title: '',
       description: '',
       doomVersionId: '',
-      sourcePort: settings?.gzDoomPath || '',
+      sourcePort: settings?.sourcePortPath || '',
       saveDirectory: '',
       launchParameters: ''
     }
@@ -114,10 +114,10 @@ export const InstallPage: React.FC = () => {
 
   // Update sourcePort default when settings load
   useEffect(() => {
-    if (settings?.gzDoomPath && !form.getValues('sourcePort')) {
-      form.setValue('sourcePort', settings.gzDoomPath)
+    if (settings?.sourcePortPath && !form.getValues('sourcePort')) {
+      form.setValue('sourcePort', settings.sourcePortPath)
     }
-  }, [settings?.gzDoomPath])
+  }, [settings?.sourcePortPath])
 
   // Create mod mutation
   const createMutation = useMutation({

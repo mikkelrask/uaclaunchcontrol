@@ -75,7 +75,7 @@ export interface IDatabaseLink {
 
 // App settings
 export interface IAppSettings {
-  gzDoomPath: string
+  sourcePortPath: string
   theme: string
   savegamesPath?: string
   modsDirectory?: string

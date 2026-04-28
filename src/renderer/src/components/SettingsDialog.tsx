@@ -30,7 +30,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const { toast } = useToast()
   const id = useId()
   const [settings, setSettings] = useState<IAppSettings>({
-    gzDoomPath: '',
+    sourcePortPath: '',
     theme: 'dark',
     savegamesPath: '',
     modsDirectory: '',
@@ -148,7 +148,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const handleSave = async (): Promise<void> => {
     try {
       const payload = {
-        gzDoomPath: settings.gzDoomPath,
+        sourcePortPath: settings.sourcePortPath,
         savegamesPath: settings.savegamesPath,
         modsDirectory: settings.modsDirectory,
         screenshotsPath: settings.screenshotsPath,
@@ -183,7 +183,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   // Handle folder/file browse
   const handleBrowse = async (settingName: string): Promise<void> => {
     const currentPath = settings[settingName as keyof typeof settings] as string | undefined
-    const isFile = settingName === 'gzDoomPath'
+    const isFile = settingName === 'sourcePortPath'
 
     const result = await api.showOpenDialog({
       properties: isFile ? ['openFile'] : ['openDirectory'],
@@ -410,16 +410,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 </Label>
                 <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3">
                   <Label
-                    htmlFor={`${id}-gzDoomPath`}
+                    htmlFor={`${id}-sourcePortPath`}
                     className="text-xs text-app-muted font-bold uppercase tracking-wider"
                    >
                      Source Port Executable
                   </Label>
                   <div className="flex gap-2">
                     <Input
-                      id={`${id}-gzDoomPath`}
-                      name="gzDoomPath"
-                      value={settings.gzDoomPath}
+                      id={`${id}-sourcePortPath`}
+                      name="sourcePortPath"
+                      value={settings.sourcePortPath}
                       onChange={handleChange}
                            className="bg-app-primary border-app h-10 text-sm flex-1 focus-visible:ring-2 focus-visible:ring-accent-highlight/40"
                     />
@@ -427,7 +427,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       size="icon"
                       variant="ghost"
                       className="h-10 w-10 shrink-0 hover:bg-accent-highlight/10 text-accent-highlight transition-colors border border-app/30"
-                      onClick={() => handleBrowse('gzDoomPath')}
+                      onClick={() => handleBrowse('sourcePortPath')}
                     >
                       <FolderOpen className="w-5 h-5" />
                     </Button>

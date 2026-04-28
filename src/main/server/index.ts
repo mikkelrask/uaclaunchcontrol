@@ -57,11 +57,11 @@ export async function launchMod(modId: number): Promise<{ success: boolean; mess
     const settings = await storage.getSettings()
     console.log('Retrieved settings for launch:', settings)
 
-    if (!settings?.gzDoomPath) {
+    if (!settings?.sourcePortPath) {
       throw new Error('GZDoom executable path not set in settings. Please set it in Settings.')
     }
 
-    const executable = storage.resolvePath(settings.gzDoomPath)
+    const executable = storage.resolvePath(settings.sourcePortPath)
     const args: string[] = []
 
     for (const file of modFiles) {
