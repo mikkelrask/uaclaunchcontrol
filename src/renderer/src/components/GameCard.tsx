@@ -112,14 +112,14 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
           onClick={handleLaunch}
           disabled={launchMutation.isPending}
         >
-          {launchMutation.isPending ? 'LAUNCHING...' : 'PLAY'}
+          {launchMutation.isPending ? 'LAUNCHING...' : '> LAUNCH <'}
         </button>
         <button
           type="button"
           className="px-4 py-1 text-app-primary rounded bg-app-primary hover:bg-app-hover transition-colors"
           onClick={handleSettings}
         >
-          Settings
+          ADJUST
         </button>
       </div>
     </div>

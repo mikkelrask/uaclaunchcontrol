@@ -665,13 +665,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             onClick={onClose}
             className="text-xs uppercase bg-transparent border-app hover:bg-app-hover text-app-muted hover:text-app-primary h-9 px-6"
           >
-            Cancel
+            Abort
           </Button>
           <Button
             onClick={handleSave}
             className="text-xs font-bold uppercase bg-accent-highlight text-white hover:bg-accent-highlight/90 h-9 px-8 shadow-lg shadow-accent-highlight/20"
           >
-            Save Configuration
+            Apply
           </Button>
         </div>
       </DialogContent>

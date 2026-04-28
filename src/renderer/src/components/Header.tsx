@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useLocation, Link } from 'wouter'
 import { useQuery } from '@tanstack/react-query'
 import { Settings, Menu } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import SettingsDialog from './SettingsDialog'
 import { api } from '@/api'
 import doomGuy from '@/assets/guy,doom.webp'
@@ -40,10 +41,10 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
       {/* Search Bar */}
       <div className="relative w-96">
         <form onSubmit={handleSearch}>
-          <input
+          <Input
             type="text"
             placeholder="DATABASE QUERY"
-            className="w-full bg-app-primary text-app-primary px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-accent-highlight"
+            className="bg-app-primary text-app-primary"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -54,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
       <nav className="flex space-x-12 text-xl font-bold">
         <Link href="/">
           <span className={`nav-tab ${location === '/' ? 'active' : ''} cursor-pointer`}>
-            GAMES
+            LAUNCH
           </span>
         </Link>
         <a

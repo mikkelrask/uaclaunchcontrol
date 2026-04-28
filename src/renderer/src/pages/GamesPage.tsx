@@ -114,7 +114,7 @@ export const GamesPage: React.FC = () => {
               <h1 className="text-2xl font-bold text-app-primary tracking-tight">
                 {activeVersion
                   ? versions.find((v) => v.id === activeVersion)?.name || 'Unknown Version'
-                  : 'Launch'}
+                  : 'Configurations:'}
               </h1>
               <div className="h-1 w-20 bg-accent-highlight mt-2 rounded-full shadow-[0_0_10px_hsl(var(--accent-highlight)/0.5)]"></div>
             </div>
