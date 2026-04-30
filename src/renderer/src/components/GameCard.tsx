@@ -60,13 +60,13 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
     : imagePlaceholder
 
   return (
-    <div className="game-card group cursor-pointer relative border">
+    <div className="game-card group cursor-pointer relative border hover:shadow-xl shadow-accent-hightlight/20">
       {/* Using aspect-ratio to enforce 16:9 ratio for screenshots */}
       <div className="aspect-w-16 aspect-h-9 overflow-hidden relative">
         <img
           src={displayImagePath}
           alt={mod.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover group-hover:hue-rotate-180"
           onError={(e) => {
             e.currentTarget.src = imagePlaceholder
           }}

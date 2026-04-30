@@ -293,6 +293,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     </Label>
                     <div className="p-4 bg-app-secondary border border-app rounded-lg flex flex-col gap-3 shadow-md">
                       <span className="text-xs text-app-muted">DATABASE LINK</span>
+                      <p className="text-[10px] text-app-muted leading-tight">
+                        Changes the navigation shortcut to your preferred source of mods.
+                      </p>
                       <Select
                         value={settings.selectedPresetIndex.toString()}
                         onValueChange={(value) =>
@@ -336,7 +339,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     <>
                       <div className="flex items-center justify-between pt-2">
                         <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                           Software Build
+                           LIVE SYSTEM
                          </Label>
                         <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted border border-app">
                           E1M{appVersion}
@@ -369,17 +372,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           onClick={() => api.checkForUpdates()}
                           className="text-xs h-7 bg-app-primary hover:bg-app-hover text-app-primary border-app"
                         >
-                          Check for Updates
+                           Check
                         </Button>
                       </div>
                     </>
                   )}
-                  <div className="flex items-center justify-between border-t pt-2 border-app/30">
+                  <div className="flex items-center justify-between border-t pt-6 border-app/30">
                     <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                       App Configuration
+                       Application Ini
                      </Label>
-                    <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted font-mono border border-app">
-                      SYSTEM
+                    <span className="text-xs px-2 py-0.5 rounded bg-accent-highlight/10 text-accent-highlight/60 font-mono border border-accent-highlight/25">
+                      RESTRICTED AREA
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -392,9 +395,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                    </p>
                 </div>
                   <div className="flex-col items-center pt-8 border-t border-dashed">
-                    <img src={uacLogo} alt="" className="w-12 opacity-30 hover:opacity-60 mx-auto animate-pulse" />
+                    <img src={uacLogo} alt="" className="w-12 opacity-30 hover:opacity-60 mx-auto animate-pulse color-accent-highlight" />
                     <p className="text-xs text-app-muted text-center transition-opacity opacity-30 italic uppercase mt-2">
-                      This is UAC, The Union Aerospace Corporation developed software<br />Distribution and use outside Phobos facility is strictly prohibited.
+                      This software is developed by The Union Aerospace Corporation, UAC.<br />Unauthorized access or usage outside Phobos facility is strictly prohibited<br />Any violations will result in termination.
                     </p>
                   </div>
               </div>
@@ -669,9 +672,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
           </Button>
           <Button
             onClick={handleSave}
-            className="text-xs font-bold uppercase bg-accent-highlight text-white hover:bg-accent-highlight/90 h-9 px-8 shadow-lg shadow-accent-highlight/20"
+            className="text-xs font-bold uppercase bg-accent-highlight text-white hover:bg-accent-highlight/90 h-9 px-4 shadow-lg shadow-accent-highlight/20"
           >
-            Apply
+          {'> Apply <'}
           </Button>
         </div>
       </DialogContent>
