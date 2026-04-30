@@ -20,14 +20,14 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
     mutationFn: gameService.launchMod,
     onSuccess: () => {
       toast({
-        title: 'Game launched',
-        description: `${mod.title} is now running`
+        title: 'SYSTEM: launch_protocol',
+        description: `${mod.title} is now running.`
       })
     },
     onError: (error) => {
       toast({
-        title: 'Launch failed',
-        description: `Failed to launch ${mod.title}: ${error}`,
+        title: 'FATAL: launch_failed',
+        description: `Could not launch ${mod.title}: ${error}`,
         variant: 'destructive'
       })
     }
@@ -60,13 +60,13 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
     : imagePlaceholder
 
   return (
-    <div className="game-card group cursor-pointer relative border hover:shadow-xl shadow-accent-hightlight/20">
+    <div className="game-card group cursor-pointer relative border shadow-accent-hightlight/20">
       {/* Using aspect-ratio to enforce 16:9 ratio for screenshots */}
       <div className="aspect-w-16 aspect-h-9 overflow-hidden relative">
         <img
           src={displayImagePath}
           alt={mod.title}
-          className="w-full h-full object-cover group-hover:hue-rotate-180"
+          className="w-full h-full object-cover group-hover:hue-rotate-90"
           onError={(e) => {
             e.currentTarget.src = imagePlaceholder
           }}
@@ -80,7 +80,7 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
                       transform transition-transform duration-300 group-hover:translate-y-[-130px] z-10"
         >
           {/* Game title */}
-          <h3 className="text-white lg:text-lg font-bold">{mod.title}</h3>
+          <h3 className="text-white lg:text-lg font-bold ">{mod.title}</h3>
 
           {/* Version icon */}
           <DoomVersionIcon
@@ -108,11 +108,11 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
       >
         <button
           type="button"
-          className="px-4 py-1 text-white rounded bg-accent-highlight hover:opacity-90 transition-colors"
+          className="px-2 py-1 text-white rounded bg-accent-highlight hover:opacity-90 transition-colors"
           onClick={handleLaunch}
           disabled={launchMutation.isPending}
         >
-          {launchMutation.isPending ? 'LAUNCHING...' : '> LAUNCH <'}
+          {launchMutation.isPending ? 'LAUNCHING...' : ' LAUNCH'}
         </button>
         <button
           type="button"

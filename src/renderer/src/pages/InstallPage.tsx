@@ -125,8 +125,8 @@ export const InstallPage: React.FC = () => {
       gameService.createMod(data.mod, data.files),
     onSuccess: () => {
       toast({
-        title: 'Config accepted',
-        description: 'Mod installed successfully'
+        title: 'SYSTEM: params_accepted',
+        description: 'Successfully added new launch configuration.'
       })
       queryClient.invalidateQueries({ queryKey: ['/api/mods'] })
       form.reset()
@@ -561,7 +561,7 @@ export const InstallPage: React.FC = () => {
                                 <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Description (Optional)</FormLabel>
                                 <FormControl>
                                   <Textarea
-                                    placeholder="Enter mod description"
+                                    placeholder="Enter a fitting description"
                                     className="bg-app-primary border-app"
                                     {...field}
                                   />

@@ -247,7 +247,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const result = await api.showOpenDialog({
         title: 'Select Mod File',
         properties: ['openFile'],
-        filters: [{ name: 'DOOM Files', extensions: ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip'] }]
+        filters: [{ name: 'Mod stuff', extensions: ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip'] }]
       })
 
       if (!result.canceled && result.filePaths.length > 0) {
@@ -301,8 +301,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const validExtensions = ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip']
       if (!ext || !validExtensions.includes(ext)) {
         toast({
-          title: 'Invalid file type',
-          description: 'Please drop a valid mod file (wad, pk3, ipk3, deh, bex, zip)',
+          title: 'FATAL: type_unknow',
+          description: 'Please only use supported files: wad, pk3, ipk3, deh, bex, zip',
           variant: 'destructive'
         })
         return
@@ -488,7 +488,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
   const handleOpenEditModal = (file: IModFile): void => {
     const existingLoadOrder: RequiredModEntry[] = []
-    
+
     existingLoadOrder.push({
       hash: file.hashValue || '',
       name: file.name || '',
@@ -515,7 +515,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         }
       }
     }
-    
+
     existingLoadOrder.sort((a, b) => a.offset - b.offset)
 
     setSelectedFile(file)
@@ -637,13 +637,13 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       >
         <div className="flex items-center justify-center gap-2 text-app-muted">
           <Upload className="h-5 w-5" />
-          <span className="text-sm">Click to add mod file or drag and drop a file here</span>
+          <span className="text-sm">Drag/drop file here, or click to select</span>
         </div>
       </div>
 
       {files.length === 0 ? (
         <div className="text-center text-app-secondary py-8">
-          No files in catalog. Add files using the dropzone above.
+          No files in catalog yet. Add files using the dropzone above.
         </div>
       ) : (
         (() => {
