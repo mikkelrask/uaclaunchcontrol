@@ -387,7 +387,7 @@ export const InstallPage: React.FC = () => {
           if (catalogMatch) {
             matchedFiles.push({
               ...catalogMatch,
-              })
+            })
           } else {
             missingFiles.push({
               id: Date.now() + Math.random(),
@@ -456,11 +456,10 @@ export const InstallPage: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
           <Card
-            className={`bg-app-secondary border-app mb-6 transition-all ${
-              isJsonDragging
+            className={`bg-app-secondary border-app mb-6 transition-all ${isJsonDragging
                 ? 'border-accent-highlight border-4 ring-2 ring-accent-highlight/30'
                 : ''
-            }`}
+              }`}
             onDrop={handleJsonDrop}
             onDragOver={handleJsonDragOver}
             onDragLeave={handleJsonDragLeave}
@@ -473,13 +472,13 @@ export const InstallPage: React.FC = () => {
                 <TabsList className="mb-4 bg-app-primary border-app p-1">
                   <TabsTrigger
                     value="install"
-                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary data-[state=active]:text-foreground dark:data-[state=active]:text-foreground"
+                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
                   >
                     Configuration
                   </TabsTrigger>
                   <TabsTrigger
                     value="files"
-                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary data-[state=active]:text-foreground dark:data-[state=active]:text-foreground"
+                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
                   >
                     Mod Files
                   </TabsTrigger>
@@ -688,11 +687,10 @@ export const InstallPage: React.FC = () => {
                                       data-drag-index={index}
                                       onDragStart={(e) => handleDragStart(e, index)}
                                       onDragEnd={handleDragEnd}
-                                      className={`flex items-center justify-between bg-app-primary p-2 rounded cursor-grab active:cursor-grabbing transition-all duration-150 border select-none ${
-                                        isDragged
+                                      className={`flex items-center justify-between bg-app-primary p-2 rounded cursor-grab active:cursor-grabbing transition-all duration-150 border select-none ${isDragged
                                           ? 'hidden'
                                           : 'border-transparent hover:border-accent-highlight/30 group'
-                                      }`}
+                                        }`}
                                     >
                                       <div className="flex items-center gap-3">
                                         <div className="text-app-muted text-xs font-semibold font-mono w-4">

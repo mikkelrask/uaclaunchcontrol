@@ -9,6 +9,7 @@
   ],
   "compilerOptions": {
     "composite": true,
+    "types": ["react", "react-dom"],
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
