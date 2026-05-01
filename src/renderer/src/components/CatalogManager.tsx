@@ -87,14 +87,24 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   }
 
   const processRequiredMods = async (
-    requiredMods: RequiredModEntry[]
+    requiredMods: RequiredModEntry[],
+    mainHash?: string
   ): Promise<Record<string, number>> => {
     const result: Record<string, number> = {}
 
     for (const req of requiredMods) {
+      if (req.isMain) {
+        if (mainHash) {
+          result[mainHash] = req.offset
+        }
+        continue
+      }
+
       if (req.isNew && req.filePath) {
         const newFilePath = await handleMoveFileToModFolder(req.filePath)
         const hash = await api.computeHash(newFilePath)
+        if (!hash) continue // Skip if hash computation failed
+
         const fileName = req.filePath.split(/[\\/]/).pop() || req.filePath
 
         // Derive fileType from extension
@@ -113,7 +123,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         })
 
         result[hash] = req.offset
-      } else {
+      } else if (req.hash) {
         result[req.hash] = req.offset
       }
     }
@@ -151,7 +161,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const newFilePathMoved = await handleMoveFileToModFolder(addForm.filePath)
       const hashValue = await api.computeHash(newFilePathMoved)
 
-      const selfRefCheck = addForm.loadOrder.some((r) => r.isNew && r.filePath === addForm.filePath)
+      const selfRefCheck = addForm.loadOrder.some(
+        (r) => r.isNew && !r.isMain && r.filePath === addForm.filePath
+      )
       if (selfRefCheck) {
         toast({
           title: 'Invalid required mod',
@@ -161,22 +173,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         return
       }
 
-      const processedLoadOrder = await processRequiredMods(addForm.loadOrder)
-
-      const newFile: IModFile = {
-        id: Date.now(),
-        name: prettyName,
-        filePath: newFilePathMoved,
-        fileType,
-        fileName,
-        version: addForm.version,
-        url: addForm.url,
-        hashValue,
-        loadOrder: processedLoadOrder,
-        sidecarOnly: addForm.sidecarOnly
-      }
-
-      onChange([newFile, ...files])
+      const processedLoadOrder = await processRequiredMods(addForm.loadOrder, hashValue)
 
       await api.addToCatalog({
         name: prettyName,
@@ -222,7 +219,11 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         loadOrder: [],
         sidecarOnly: false
       })
-      loadCatalogFiles()
+
+      // Fetch fresh authoritative list and notify parent
+      const freshCatalog = await gameService.getModFileCatalog()
+      setCatalogFiles(freshCatalog)
+      onChange(freshCatalog)
     } catch (error) {
       toast({
         title: 'Error',
@@ -574,7 +575,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       const selfRefCheck = editForm.loadOrder.some(
-        (r) => r.isNew && r.filePath === selectedFile.filePath
+        (r) => r.isNew && !r.isMain && r.filePath === selectedFile.filePath
       )
       if (selfRefCheck) {
         toast({
@@ -585,7 +586,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         return
       }
 
-      const processedLoadOrder = await processRequiredMods(editForm.loadOrder)
+      const processedLoadOrder = await processRequiredMods(editForm.loadOrder, selectedFile.hashValue)
 
       const updates: Partial<IModFile> = {
         name: editForm.name.trim(),
@@ -600,25 +601,18 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       await api.updateInCatalog(selectedFile.id, updates)
-      const updatedFiles = files.map((f) => (f.id === selectedFile.id ? { ...f, ...updates } : f))
-      onChange(updatedFiles)
-
-      for (const req of editForm.loadOrder) {
-        if (req.isMain) continue
-        if (req.isNew && req.filePath) {
-          continue
-        }
-        const reqFile = catalogFiles.find((f) => f.hashValue === req.hash)
-        if (reqFile && req.sidecarOnly !== reqFile.sidecarOnly) {
-          await api.updateInCatalog(reqFile.id, { sidecarOnly: req.sidecarOnly })
-        }
-      }
 
       toast({
         title: 'Success',
-        description: 'File updated'
+        description: `Updated "${editForm.name}"`
       })
+
       setIsEditModalOpen(false)
+
+      // Fetch fresh authoritative list and notify parent
+      const freshCatalog = await gameService.getModFileCatalog()
+      setCatalogFiles(freshCatalog)
+      onChange(freshCatalog)
       setSelectedFile(null)
       loadCatalogFiles()
     } catch (error) {
