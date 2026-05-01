@@ -74,7 +74,10 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                 <ChevronDown className="h-4 w-4" />
               </button>
               <span className="text-xs mr-2">{index + 1}.</span>
-              <span title={file.filePath}>{(file.name || file.fileName)?.slice(0, 30)}</span>
+              <span title={file.filePath}>
+                {(file.name || file.fileName)?.slice(0, 30)}
+                {file.version && ` (${file.version})`}
+              </span>
             </div>
             <button
               type="button"
@@ -151,7 +154,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
           }}
           options={selectableFiles.map((f) => ({
             value: f.id?.toString() || '',
-            label: f.name || f.fileName || 'Unnamed'
+            label: (f.name || f.fileName || 'Unnamed') + (f.version ? ` (${f.version})` : '')
           }))}
           placeholder="Select from catalog..."
           className="flex-1 bg-app-secondary border-app text-xs"

@@ -329,7 +329,7 @@ export function ModFileSelector({
                   }}
                   options={selectableFiles.map((f) => ({
                     value: f.id.toString(),
-                    label: f.name + (f.version ? ` v${f.version}` : '')
+                    label: f.name + (f.version ? ` (${f.version})` : '')
                   }))}
                   placeholder="Catalog..."
                   className="bg-app-primary border-app"
