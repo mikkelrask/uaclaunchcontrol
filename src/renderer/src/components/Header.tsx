@@ -77,7 +77,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
       <div className="flex items-center space-x-2">
         <div className="flex items-center bg-app-hover rounded-md p-1">
           <div className="w-8 h-8 rounded bg-accent-highlight flex items-center justify-center text-white">
-            <img src={doomGuy} alt="Guy, Doom - Space Marine" className="w-8 h-8 rounded"/>
+            <img src={doomGuy} alt="Guy, Doom - Space Marine" className="w-8 h-8 rounded" />
           </div>
           <div className="flex-col">
             <div className="text-xs ml-2 mr-1">Guy, Doom</div>

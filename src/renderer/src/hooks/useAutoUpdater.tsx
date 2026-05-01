@@ -62,7 +62,9 @@ export function useAutoUpdater() {
         case 'error':
           toast({
             title: 'SYSTEM: Update failure',
-            description: data.error || 'Could not reach UAC data centers. Contact Sam Grimm at UAC, Phobos facility if the issue persists.',
+            description:
+              data.error ||
+              'Could not reach UAC data centers. Contact Sam Grimm at UAC, Phobos facility if the issue persists.',
             variant: 'destructive'
           })
           break

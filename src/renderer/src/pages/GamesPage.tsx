@@ -113,7 +113,8 @@ export const GamesPage: React.FC = () => {
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-app-primary tracking-tight">
                 {activeVersion
-                  ? versions.find((v) => v.id === activeVersion)?.name.toUpperCase()|| 'Unknown Version'
+                  ? versions.find((v) => v.id === activeVersion)?.name.toUpperCase() ||
+                    'Unknown Version'
                   : '// PROTOCOLS'}
               </h1>
               <div className="h-1 w-20 bg-accent-highlight mt-2 rounded-full shadow-[0_0_10px_hsl(var(--accent-highlight)/0.5)]"></div>
@@ -128,7 +129,10 @@ export const GamesPage: React.FC = () => {
               </div>
             ) : filteredMods?.length === 0 ? (
               <div className="text-center py-10">
-                <h3 className="text-2xl mb-2"><span className="animate-pulse text-accent-highlight font-bold">FAILURE:</span> Configuration incomplete</h3>
+                <h3 className="text-2xl mb-2">
+                  <span className="animate-pulse text-accent-highlight font-bold">FAILURE:</span>{' '}
+                  Configuration incomplete
+                </h3>
                 <p className="text-app-secondary">
                   {activeVersion ? (
                     `No mods installed for this base game.`

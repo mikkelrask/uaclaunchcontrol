@@ -5,7 +5,14 @@ import axios from 'axios'
 import chokidar from 'chokidar'
 import crypto from 'crypto'
 import { BrowserWindow } from 'electron'
-import { IAppSettings, IDatabaseLink, IDoomVersion, IMod, IModFile, InsertMod } from '../../shared/schema'
+import {
+  IAppSettings,
+  IDatabaseLink,
+  IDoomVersion,
+  IMod,
+  IModFile,
+  InsertMod
+} from '../../shared/schema'
 import { debug } from '../../shared/debug'
 
 // Define storage paths (Aligned with local-structure.txt)
@@ -223,7 +230,9 @@ export async function getSettings(): Promise<IAppSettings> {
     const resolvedSettings: IAppSettings = {
       ...settings,
       configPath: CONFIG_DIR,
-      sourcePortPath: settings.sourcePortPath ? resolvePath(settings.sourcePortPath) : settings.sourcePortPath,
+      sourcePortPath: settings.sourcePortPath
+        ? resolvePath(settings.sourcePortPath)
+        : settings.sourcePortPath,
       savegamesPath: settings.savegamesPath
         ? resolvePath(settings.savegamesPath)
         : settings.savegamesPath,
@@ -539,7 +548,7 @@ export async function getModFileCatalog(): Promise<IModFile[]> {
       console.warn('storage.ts: modFileCatalogue.json is not an array, got:', data)
       return []
     }
-    
+
     // Migration: requires -> loadOrder
     let migrated = false
     const migratedData = data.map((file: any) => {
@@ -547,17 +556,17 @@ export async function getModFileCatalog(): Promise<IModFile[]> {
         migrated = true
         const oldRequires = file.requires || {}
         const newLoadOrder: Record<string, number> = {}
-        
+
         // Main file gets offset 1 if hash exists
         if (file.hashValue) {
           newLoadOrder[file.hashValue] = 1
         }
-        
+
         // Shift others by 1
         for (const [hash, offset] of Object.entries(oldRequires)) {
           newLoadOrder[hash] = (offset as number) + 1
         }
-        
+
         const newFile = { ...file, loadOrder: newLoadOrder }
         delete newFile.requires
         return newFile as IModFile

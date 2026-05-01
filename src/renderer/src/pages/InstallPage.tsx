@@ -386,7 +386,7 @@ export const InstallPage: React.FC = () => {
           const catalogMatch = catalogData.find((c) => c.hashValue === impFile.hashValue)
           if (catalogMatch) {
             matchedFiles.push({
-              ...catalogMatch,
+              ...catalogMatch
             })
           } else {
             missingFiles.push({
@@ -456,10 +456,11 @@ export const InstallPage: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
           <Card
-            className={`bg-app-secondary border-app mb-6 transition-all ${isJsonDragging
+            className={`bg-app-secondary border-app mb-6 transition-all ${
+              isJsonDragging
                 ? 'border-accent-highlight border-4 ring-2 ring-accent-highlight/30'
                 : ''
-              }`}
+            }`}
             onDrop={handleJsonDrop}
             onDragOver={handleJsonDragOver}
             onDragLeave={handleJsonDragLeave}
@@ -494,7 +495,9 @@ export const InstallPage: React.FC = () => {
                             name="title"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Label</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                                  Label
+                                </FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="I.e. 'Brutal Doom'"
@@ -540,7 +543,9 @@ export const InstallPage: React.FC = () => {
                             name="screenshotPath"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Screenshot/Cover URL (Optional)</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                                  Screenshot/Cover URL (Optional)
+                                </FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="Enter screenshot URL"
@@ -557,7 +562,9 @@ export const InstallPage: React.FC = () => {
                             name="description"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Description (Optional)</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                                  Description (Optional)
+                                </FormLabel>
                                 <FormControl>
                                   <Textarea
                                     placeholder="Enter a fitting description"
@@ -577,7 +584,9 @@ export const InstallPage: React.FC = () => {
                             name="doomVersionId"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Base WAD</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                                  Base WAD
+                                </FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                   <FormControl>
                                     <SelectTrigger className="bg-app-primary border-app">
@@ -604,7 +613,9 @@ export const InstallPage: React.FC = () => {
                             name="sourcePort"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Source Port</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                                  Source Port
+                                </FormLabel>
                                 <FormControl>
                                   <Input className="bg-app-primary border-app" {...field} />
                                 </FormControl>
@@ -618,7 +629,9 @@ export const InstallPage: React.FC = () => {
                             name="saveDirectory"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Save Directory (Optional)</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                                  Save Directory (Optional)
+                                </FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder={settings.savegamesPath || ''}
@@ -637,7 +650,9 @@ export const InstallPage: React.FC = () => {
                             name="launchParameters"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">Launch Parameters (Optional)</FormLabel>
+                                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                                  Launch Parameters (Optional)
+                                </FormLabel>
                                 <FormControl>
                                   <Input
                                     placeholder="-skill 4 -warp 01"
@@ -687,10 +702,11 @@ export const InstallPage: React.FC = () => {
                                       data-drag-index={index}
                                       onDragStart={(e) => handleDragStart(e, index)}
                                       onDragEnd={handleDragEnd}
-                                      className={`flex items-center justify-between bg-app-primary p-2 rounded cursor-grab active:cursor-grabbing transition-all duration-150 border select-none ${isDragged
+                                      className={`flex items-center justify-between bg-app-primary p-2 rounded cursor-grab active:cursor-grabbing transition-all duration-150 border select-none ${
+                                        isDragged
                                           ? 'hidden'
                                           : 'border-transparent hover:border-accent-highlight/30 group'
-                                        }`}
+                                      }`}
                                     >
                                       <div className="flex items-center gap-3">
                                         <div className="text-app-muted text-xs font-semibold font-mono w-4">

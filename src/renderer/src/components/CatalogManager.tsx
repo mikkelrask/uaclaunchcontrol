@@ -4,18 +4,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Combobox } from '@/components/ui/combobox'
-import { IModFile } from '@shared/schema'
 import {
-  Trash2,
-  Plus,
-  FolderOpen,
-  Pencil,
-  Check,
-  ExternalLink,
-  ChevronUp,
-  ChevronDown,
-  Upload
-} from 'lucide-react'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { DataTable } from '@/components/ui/data-table'
+import { getCatalogColumns } from '@/components/catalog-columns'
+import { IModFile } from '@shared/schema'
+import { Trash2, Plus, FolderOpen, Check, ChevronUp, ChevronDown, Upload } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import { gameService } from '@/lib/gameService'
@@ -53,6 +52,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   })
   const [isDraggingFile, setIsDraggingFile] = useState(false)
   const [showSidecarOnly, setShowSidecarOnly] = useState(false)
+  const [fileTypeFilter, setFileTypeFilter] = useState<string>('all')
 
   const [editForm, setEditForm] = useState({
     name: '',
@@ -253,13 +253,25 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       if (!result.canceled && result.filePaths.length > 0) {
         const selectedPath = result.filePaths[0]
         setAddForm((prev) => {
-          const name = selectedPath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') || ''
+          const name =
+            selectedPath
+              .split(/[\\/]/)
+              .pop()
+              ?.replace(/\.[^.]+$/, '') || ''
           const newLoadOrder = [...prev.loadOrder]
           const mainIdx = newLoadOrder.findIndex((req) => req.isMain)
           if (mainIdx >= 0) {
             newLoadOrder[mainIdx] = { ...newLoadOrder[mainIdx], filePath: selectedPath, name }
           } else {
-            newLoadOrder.unshift({ hash: '', name, filePath: selectedPath, isNew: true, offset: 1, sidecarOnly: false, isMain: true })
+            newLoadOrder.unshift({
+              hash: '',
+              name,
+              filePath: selectedPath,
+              isNew: true,
+              offset: 1,
+              sidecarOnly: false,
+              isMain: true
+            })
           }
           return {
             ...prev,
@@ -309,13 +321,25 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       setAddForm((prev) => {
-        const name = droppedPath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') || ''
+        const name =
+          droppedPath
+            .split(/[\\/]/)
+            .pop()
+            ?.replace(/\.[^.]+$/, '') || ''
         const newLoadOrder = [...prev.loadOrder]
         const mainIdx = newLoadOrder.findIndex((req) => req.isMain)
         if (mainIdx >= 0) {
           newLoadOrder[mainIdx] = { ...newLoadOrder[mainIdx], filePath: droppedPath, name }
         } else {
-          newLoadOrder.unshift({ hash: '', name, filePath: droppedPath, isNew: true, offset: 1, sidecarOnly: false, isMain: true })
+          newLoadOrder.unshift({
+            hash: '',
+            name,
+            filePath: droppedPath,
+            isNew: true,
+            offset: 1,
+            sidecarOnly: false,
+            isMain: true
+          })
         }
         return {
           ...prev,
@@ -641,142 +665,73 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         </div>
       </div>
 
-      {files.length === 0 ? (
-        <div className="text-center text-app-secondary py-8">
-          No files in catalog yet. Add files using the dropzone above.
-        </div>
-      ) : (
-        (() => {
-          const visibleFiles = showSidecarOnly ? files : files.filter((f) => !f.sidecarOnly)
-          if (visibleFiles.length === 0) {
-            return (
-              <div className="text-center text-app-secondary py-8">
-                {files.filter((f) => f.sidecarOnly).length === files.length
-                  ? 'All files are sidecars/addons. Check "Show sidecar-mods" to view them.'
-                  : 'No files match the current filter.'}
-              </div>
-            )
-          }
+      {(() => {
+        const visibleFiles = showSidecarOnly ? files : files.filter((f) => !f.sidecarOnly)
+        const filteredByType =
+          fileTypeFilter === 'all'
+            ? visibleFiles
+            : visibleFiles.filter((f) => f.fileType === fileTypeFilter)
+
+        const columns = getCatalogColumns({
+          catalogFiles,
+          onEdit: handleOpenEditModal,
+          onDelete: handleDeleteFromCatalog,
+          onOpenUrl: handleOpenUrl
+        })
+
+        if (files.length === 0) {
           return (
-            <div className="border border-app rounded-md overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-app-primary">
-                  <tr>
-                    <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
-                      Name
-                    </th>
-                    <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
-                      Version
-                    </th>
-                    <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
-                      Type
-                    </th>
-                    <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
-                      LoadOrder
-                    </th>
-                    <th className="text-left p-3 text-xs font-semibold text-app-muted uppercase">
-                      Hash
-                    </th>
-                    <th className="text-right p-3 text-xs font-semibold text-app-muted uppercase">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleFiles.map((file) => (
-                    <tr key={file.id} className="group border-t border-app hover:bg-app-primary/50">
-                      <td className="p-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <span>{file.name || file.fileName}</span>
-                          {file.sidecarOnly && (
-                            <span className="px-1.5 py-0.5 bg-yellow-900/50 text-yellow-500 text-xs rounded">
-                              sidecar
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3 text-sm text-app-muted">{file.version || '-'}</td>
-                      <td className="p-3 text-sm">
-                        <span className="px-2 py-1 bg-app-primary rounded text-xs">
-                          {file.fileType}
-                        </span>
-                      </td>
-                      <td className="p-3 text-sm text-app-muted">
-                        {file.loadOrder && Object.keys(file.loadOrder).length > 0
-                          ? Object.keys(file.loadOrder)
-                              .map((hash) => catalogFiles.find((f) => f.hashValue === hash)?.name)
-                              .join(', ')
-                          : '-'}
-                      </td>
-                      <td className="p-3 text-sm text-app-muted font-mono">
-                        {file.hashValue ? (
-                          <span title={file.hashValue}>{file.hashValue.slice(0, 8)}...</span>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                      <td className="p-3 text-right">
-                        <div className="flex items-center gap-1 justify-end">
-                          {file.url && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenUrl(file.url!)}
-                              className="text-app-muted hover:text-app-primary p-1"
-                              title="Open URL"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEditModal(file)}
-                            className="text-app-muted hover:text-app-primary p-1"
-                            title="Edit"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteFromCatalog(file)}
-                            className="text-red-500 hover:text-red-700 hover:bg-transparent"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="text-center text-app-secondary py-8">
+              No files in catalog yet. Add files using the dropzone above.
             </div>
           )
-        })()
-      )}
+        }
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-app-muted">
-          {showSidecarOnly ? files.length : files.filter((f) => !f.sidecarOnly).length} files in
-          catalog
-          {files.some((f) => f.sidecarOnly) && (
-            <span className="ml-2">({files.filter((f) => f.sidecarOnly).length} sidecar-mods)</span>
-          )}
-        </div>
-        {files.some((f) => f.sidecarOnly) && (
-          <label className="flex items-center gap-2 text-sm text-app-muted cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showSidecarOnly}
-              onChange={(e) => setShowSidecarOnly(e.target.checked)}
-              className="w-4 h-4"
-            />
-            Show sidecar-only
-          </label>
-        )}
-      </div>
+        return (
+          <DataTable
+            columns={columns}
+            data={filteredByType}
+            searchKey="name"
+            searchPlaceholder="Search catalog..."
+            pageSize={20}
+            toolbar={
+              <>
+                <Select value={fileTypeFilter} onValueChange={setFileTypeFilter}>
+                  <SelectTrigger className="w-[100px] h-9 bg-app-primary border-app text-xs">
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-app-secondary border-app text-app-primary">
+                    <SelectItem value="all" className="text-xs">
+                      All types
+                    </SelectItem>
+                    <SelectItem value="WAD" className="text-xs">
+                      WAD
+                    </SelectItem>
+                    <SelectItem value="PK3" className="text-xs">
+                      PK3
+                    </SelectItem>
+                    <SelectItem value="DEH" className="text-xs">
+                      DEH
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {files.some((f) => f.sidecarOnly) && (
+                  <label className="flex items-center gap-2 text-sm text-app-muted cursor-pointer whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={showSidecarOnly}
+                      onChange={(e) => setShowSidecarOnly(e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    Sidecars
+                  </label>
+                )}
+              </>
+            }
+          />
+        )
+      })()}
 
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="bg-app-primary border-app max-w-md max-h-[80vh] overflow-y-auto">
@@ -843,52 +798,53 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             <div className="space-y-2">
               <Label>Load Order</Label>
               <div className="space-y-2">
-                {addForm.loadOrder.length > 1 && addForm.loadOrder.map((req, idx) => (
-                  <div key={idx} className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleMoveRequiredUp('add', idx)}
-                      disabled={idx === 0}
-                      className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleMoveRequiredDown('add', idx)}
-                      disabled={idx >= addForm.loadOrder.length - 1}
-                      className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                    <span className="text-xs mr-2 w-6 text-center">{idx + 1}.</span>
-                    <Input
-                      value={req.name}
-                      onChange={(e) => handleRequiredNameChange('add', idx, e.target.value)}
-                      disabled={req.isMain}
-                      className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
-                    />
-                    <input
-                      type="checkbox"
-                      checked={req.sidecarOnly}
-                      onChange={() => handleToggleRequiredSidecar('add', idx)}
-                      disabled={req.isMain}
-                      className="w-4 h-4"
-                      title="Sidecar only"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveRequiredMod('add', idx)}
-                      disabled={req.isMain}
-                      className={`text-red-500 hover:text-red-700 ${req.isMain ? 'opacity-30' : ''}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                {addForm.loadOrder.length > 1 &&
+                  addForm.loadOrder.map((req, idx) => (
+                    <div key={idx} className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMoveRequiredUp('add', idx)}
+                        disabled={idx === 0}
+                        className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMoveRequiredDown('add', idx)}
+                        disabled={idx >= addForm.loadOrder.length - 1}
+                        className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                      <span className="text-xs mr-2 w-6 text-center">{idx + 1}.</span>
+                      <Input
+                        value={req.name}
+                        onChange={(e) => handleRequiredNameChange('add', idx, e.target.value)}
+                        disabled={req.isMain}
+                        className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
+                      />
+                      <input
+                        type="checkbox"
+                        checked={req.sidecarOnly}
+                        onChange={() => handleToggleRequiredSidecar('add', idx)}
+                        disabled={req.isMain}
+                        className="w-4 h-4"
+                        title="Sidecar only"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveRequiredMod('add', idx)}
+                        disabled={req.isMain}
+                        className={`text-red-500 hover:text-red-700 ${req.isMain ? 'opacity-30' : ''}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
                 <div className="flex gap-2">
                   <Combobox
                     value=""
@@ -989,52 +945,53 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             <div className="space-y-2">
               <Label>Load Order</Label>
               <div className="space-y-2">
-                {editForm.loadOrder.length > 1 && editForm.loadOrder.map((req, idx) => (
-                  <div key={idx} className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleMoveRequiredUp('edit', idx)}
-                      disabled={idx === 0}
-                      className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleMoveRequiredDown('edit', idx)}
-                      disabled={idx >= editForm.loadOrder.length - 1}
-                      className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                    <span className="text-xs mr-2 w-6 text-center">{idx + 1}.</span>
-                    <Input
-                      value={req.name}
-                      onChange={(e) => handleRequiredNameChange('edit', idx, e.target.value)}
-                      disabled={req.isMain}
-                      className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
-                    />
-                    <input
-                      type="checkbox"
-                      checked={req.sidecarOnly}
-                      onChange={() => handleToggleRequiredSidecar('edit', idx)}
-                      disabled={req.isMain}
-                      className="w-4 h-4"
-                      title="Sidecar only"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveRequiredMod('edit', idx)}
-                      disabled={req.isMain}
-                      className={`text-red-500 hover:text-red-700 ${req.isMain ? 'opacity-30' : ''}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                {editForm.loadOrder.length > 1 &&
+                  editForm.loadOrder.map((req, idx) => (
+                    <div key={idx} className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMoveRequiredUp('edit', idx)}
+                        disabled={idx === 0}
+                        className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMoveRequiredDown('edit', idx)}
+                        disabled={idx >= editForm.loadOrder.length - 1}
+                        className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                      <span className="text-xs mr-2 w-6 text-center">{idx + 1}.</span>
+                      <Input
+                        value={req.name}
+                        onChange={(e) => handleRequiredNameChange('edit', idx, e.target.value)}
+                        disabled={req.isMain}
+                        className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
+                      />
+                      <input
+                        type="checkbox"
+                        checked={req.sidecarOnly}
+                        onChange={() => handleToggleRequiredSidecar('edit', idx)}
+                        disabled={req.isMain}
+                        className="w-4 h-4"
+                        title="Sidecar only"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveRequiredMod('edit', idx)}
+                        disabled={req.isMain}
+                        className={`text-red-500 hover:text-red-700 ${req.isMain ? 'opacity-30' : ''}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
                 <div className="flex gap-2">
                   <Combobox
                     value=""

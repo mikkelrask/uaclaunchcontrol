@@ -94,8 +94,6 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
             if (value) {
               const catalogFile = catalogFiles.find((f) => f.id?.toString() === value)
               if (catalogFile && catalogFile.filePath) {
-
-
                 let updatedFiles = [...files]
                 const usedHashes = new Set(updatedFiles.map((f) => f.hashValue))
 

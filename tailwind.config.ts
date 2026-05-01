@@ -8,7 +8,15 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Aldrich', 'sans-serif'],
-        mono: ['ui-monospace', 'SFMono-Regular', 'SF Mono', 'Menlo', 'Consolas', 'Liberation Mono', 'monospace'],
+        mono: [
+          'ui-monospace',
+          'SFMono-Regular',
+          'SF Mono',
+          'Menlo',
+          'Consolas',
+          'Liberation Mono',
+          'monospace'
+        ]
       },
       borderRadius: {
         lg: 'var(--radius)',

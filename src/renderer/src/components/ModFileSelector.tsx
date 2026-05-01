@@ -87,8 +87,8 @@ export function ModFileSelector({
     newFiles.splice(index, 1)
 
     const updatedFiles = newFiles.map((file) => ({
-      ...file,
-      }))
+      ...file
+    }))
 
     onChange(updatedFiles)
   }
@@ -226,7 +226,8 @@ export function ModFileSelector({
           fileName: fileName,
           fileType: detectedType,
           name: !newFiles[index].name ? fileName : newFiles[index].name,
-          isRequired: newFiles[index].isRequired !== undefined ? newFiles[index].isRequired : true}
+          isRequired: newFiles[index].isRequired !== undefined ? newFiles[index].isRequired : true
+        }
 
         console.log('Updating files with:', newFiles)
         onChange(newFiles)
@@ -275,13 +276,16 @@ export function ModFileSelector({
         <div className="space-y-3">
           {value.map((file, index) => (
             <div key={index} className="flex items-center gap-2">
-              <div className="flex-1">
+              <div className="flex-1 flex items-center gap-2">
                 <Input
                   placeholder="Pretty name"
                   value={file.name || ''}
                   onChange={(e) => handleUpdateFile(index, 'name', e.target.value)}
                   className="bg-app-primary border-app"
                 />
+                {file.version && (
+                  <span className="text-xs text-app-muted whitespace-nowrap">({file.version})</span>
+                )}
               </div>
 
               <div className="w-24">

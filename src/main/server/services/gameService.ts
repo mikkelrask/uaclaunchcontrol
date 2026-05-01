@@ -105,30 +105,28 @@ export class GameService {
       if (files.length > 0) {
         fileArgs.push('-file')
         files.forEach((file) => {
-            if (file.filePath) {
-              const isAbsolute =
-                path.isAbsolute(file.filePath) ||
-                file.filePath.startsWith('~') ||
-                file.filePath.startsWith('/') ||
-                file.filePath.includes(':')
+          if (file.filePath) {
+            const isAbsolute =
+              path.isAbsolute(file.filePath) ||
+              file.filePath.startsWith('~') ||
+              file.filePath.startsWith('/') ||
+              file.filePath.includes(':')
 
-              debug(`Processing file: ${file.filePath}, isAbsolute: ${isAbsolute}`)
+            debug(`Processing file: ${file.filePath}, isAbsolute: ${isAbsolute}`)
 
-              let fullPath: string
-              if (isAbsolute) {
-                fullPath = path.resolve(storage.resolvePath(file.filePath))
-              } else {
-                const modsDir = storage.resolvePath(settings.modsDirectory || '')
-                fullPath = path.join(modsDir, 'files', file.filePath)
-                debug(
-                  `Resolved relative file: ${file.filePath} -> ${fullPath} (modsDir: ${modsDir})`
-                )
-              }
-              fileArgs.push(fullPath)
+            let fullPath: string
+            if (isAbsolute) {
+              fullPath = path.resolve(storage.resolvePath(file.filePath))
             } else {
-              console.warn(`Mod file ${file.id} for mod ${mod.id} is missing filePath.`)
+              const modsDir = storage.resolvePath(settings.modsDirectory || '')
+              fullPath = path.join(modsDir, 'files', file.filePath)
+              debug(`Resolved relative file: ${file.filePath} -> ${fullPath} (modsDir: ${modsDir})`)
             }
-          })
+            fileArgs.push(fullPath)
+          } else {
+            console.warn(`Mod file ${file.id} for mod ${mod.id} is missing filePath.`)
+          }
+        })
       }
 
       // Add save directory: prefer mod.saveDirectory, else settings.savegamesPath
