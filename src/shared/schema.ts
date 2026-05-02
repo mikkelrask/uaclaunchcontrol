@@ -85,4 +85,6 @@ export interface IAppSettings {
   selectedPresetIndex: number
   configPath?: string
   autoUpdateEnabled?: boolean
+  registryLookupEnabled?: boolean
+  registryUuid?: string
 }

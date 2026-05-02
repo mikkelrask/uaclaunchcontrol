@@ -1,5 +1,16 @@
 import { IModFile, IMod, IAppSettings, IDoomVersion } from '@shared/schema'
 
+export interface IRegistryMod {
+  family_name: string
+  version: string
+  category: string | null
+  is_sidecar: number
+  load_order: Record<string, number>
+  urls: { url: string; domain: string }[]
+  submitted_at: number
+  approved_at: number
+}
+
 export const API_BASE = 'http://localhost:7666'
 
 export const api = {
@@ -74,6 +85,45 @@ export const api = {
     } catch (error) {
       console.error('[DEBUG] API computeHash exception:', error)
       throw error
+    }
+  },
+
+  lookupMod: async (hash: string, registryUrl: string): Promise<IRegistryMod | null> => {
+    try {
+      const response = await fetch(`${registryUrl}/mod/${hash}`)
+      if (response.ok) {
+        return response.json()
+      }
+      return null
+    } catch {
+      return null
+    }
+  },
+  submitToPending: async (
+    data: {
+      hash: string
+      suggested_name: string
+      url: string
+      version?: string
+      category?: string
+      is_sidecar?: number
+      load_order?: string
+    },
+    uuid: string,
+    apiUrl: string
+  ): Promise<void> => {
+    try {
+      await fetch(`${apiUrl}/mod/pending`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-UAC-UUID': uuid
+        },
+        body: JSON.stringify(data)
+      })
+      // Silently ignore all responses
+    } catch {
+      // Network error - silently ignore
     }
   },
   updateInCatalog: async (id: number, updates: Partial<IModFile>): Promise<IModFile> => {

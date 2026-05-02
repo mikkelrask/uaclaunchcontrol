@@ -44,7 +44,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     ],
     selectedPresetIndex: 0,
     configPath: '',
-    autoUpdateEnabled: true
+    autoUpdateEnabled: true,
+    registryLookupEnabled: false
   })
 
   // Doom versions state
@@ -144,7 +145,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   }
 
-  // Handle save
+    // Handle save
   const handleSave = async (): Promise<void> => {
     try {
       const payload = {
@@ -156,7 +157,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         theme: settings.theme,
         databaseLinkPresets: settings.databaseLinkPresets,
         selectedPresetIndex: settings.selectedPresetIndex,
-        autoUpdateEnabled: settings.autoUpdateEnabled
+        autoUpdateEnabled: settings.autoUpdateEnabled,
+        registryLookupEnabled: settings.registryLookupEnabled,
+        registryUuid: settings.registryUuid
       }
       await api.updateSettings(payload)
 
@@ -362,6 +365,29 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         />
                       </div>
                       <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label className="text-xs text-app-primary font-medium">
+                            Registry Lookup
+                          </Label>
+                          <p className="text-[10px] text-app-muted leading-tight">
+                            Look up mod files in the online registry when adding to catalog.
+                            <br />
+                            Requires an active connection to the UAC Registry.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={settings.registryLookupEnabled ?? false}
+                          onCheckedChange={(checked) => {
+                            if (checked && !settings.registryUuid) {
+                              const uuid = crypto.randomUUID()
+                              setSettings((s) => ({ ...s, registryLookupEnabled: checked, registryUuid: uuid }))
+                            } else {
+                              setSettings((s) => ({ ...s, registryLookupEnabled: checked }))
+                            }
+                          }}
+                        />
+                      </div>
+                       <div className="flex items-center justify-between">
                         <p className="text-xs text-app-primary font-medium">
                           Manually check for app updates
                         </p>

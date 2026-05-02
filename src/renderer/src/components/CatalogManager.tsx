@@ -13,11 +13,12 @@ import {
 } from '@/components/ui/select'
 import { DataTable } from '@/components/ui/data-table'
 import { getCatalogColumns } from '@/components/catalog-columns'
-import { IModFile } from '@shared/schema'
+import { IModFile, IAppSettings } from "@shared/schema"
 import { Trash2, Plus, FolderOpen, Check, ChevronUp, ChevronDown, Upload } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import { gameService } from '@/lib/gameService'
+import { REGISTRY_API_URL } from '@shared/registry-config'
 
 interface CatalogManagerProps {
   files: IModFile[]
@@ -61,6 +62,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     loadOrder: [] as RequiredModEntry[],
     sidecarOnly: false
   })
+
+  const [lastLookupHash, setLastLookupHash] = useState<string | null>(null)
+  const [lastLookupFound, setLastLookupFound] = useState<boolean>(false)
+  const [lastLookupData, setLastLookupData] = useState<any>(null)
 
   const loadCatalogFiles = async (): Promise<void> => {
     try {
@@ -131,6 +136,12 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     return result
   }
 
+  const resetLookupState = () => {
+    setLastLookupHash(null)
+    setLastLookupFound(false)
+    setLastLookupData(null)
+  }
+
   const handleAddFile = async (): Promise<void> => {
     if (!addForm.filePath.trim()) return
 
@@ -187,6 +198,40 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         sidecarOnly: addForm.sidecarOnly
       })
 
+      // Check if we should submit to pending registry
+      if (lastLookupHash === hashValue) {
+        let shouldSubmit = false
+
+        if (!lastLookupFound) {
+          // Hash not in registry - new submission
+          shouldSubmit = true
+        } else if (lastLookupData) {
+          // Hash in registry - check if user provided NEW info
+          const urlInRegistry = lastLookupData.urls?.some((u: any) => u.url === addForm.url)
+          const hasNewUrl = !!(addForm.url && !urlInRegistry)
+          const hasNewVersion = !!(addForm.version && !lastLookupData.version)
+          shouldSubmit = hasNewUrl || hasNewVersion
+        }
+
+        if (shouldSubmit && addForm.url) {
+          // Fire and forget - get settings for UUID
+          api.getSettings().then(settings => {
+            if (settings?.registryUuid) {
+              api.submitToPending({
+                hash: hashValue,
+                suggested_name: prettyName,
+                url: addForm.url,
+                version: addForm.version || undefined,
+                is_sidecar: addForm.sidecarOnly ? 1 : 0,
+                load_order: processedLoadOrder ? JSON.stringify(processedLoadOrder) : undefined
+              }, settings.registryUuid, REGISTRY_API_URL)
+            }
+          }).catch(() => {
+            // Silently ignore
+          })
+        }
+      }
+
       for (const req of addForm.loadOrder) {
         if (req.isMain) continue
         if (req.isNew && req.filePath) {
@@ -209,6 +254,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         description: `Added "${prettyName}" to catalog`
       })
 
+      resetLookupState()
       setIsAddModalOpen(false)
       setAddForm({
         name: '',
@@ -234,16 +280,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   }
 
   const handleBrowseFile = async (): Promise<void> => {
-    setAddForm({
-      name: '',
-      filePath: '',
-      fileType: 'PK3',
-      version: '',
-      url: '',
-      loadOrder: [],
-      sidecarOnly: false
-    })
-
     try {
       const result = await api.showOpenDialog({
         title: 'Select Mod File',
@@ -253,34 +289,117 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       if (!result.canceled && result.filePaths.length > 0) {
         const selectedPath = result.filePaths[0]
-        setAddForm((prev) => {
-          const name =
-            selectedPath
-              .split(/[\\/]/)
-              .pop()
-              ?.replace(/\.[^.]+$/, '') || ''
-          const newLoadOrder = [...prev.loadOrder]
-          const mainIdx = newLoadOrder.findIndex((req) => req.isMain)
-          if (mainIdx >= 0) {
-            newLoadOrder[mainIdx] = { ...newLoadOrder[mainIdx], filePath: selectedPath, name }
-          } else {
-            newLoadOrder.unshift({
-              hash: '',
-              name,
-              filePath: selectedPath,
-              isNew: true,
-              offset: 1,
-              sidecarOnly: false,
-              isMain: true
-            })
+        const fileName = selectedPath.split(/[\\/]/).pop() || ''
+        const name = fileName.replace(/\.[^.]+$/, '')
+
+        // Detect file type from extension
+        const ext = fileName.split('.').pop()?.toUpperCase() || ''
+        let fileType = 'WAD'
+        if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+        else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
+
+        // Compute hash
+        let hash = ''
+        try {
+          hash = await api.computeHash(selectedPath)
+          console.log('[Registry] Computed hash:', hash)
+        } catch {
+          console.error('Failed to compute hash')
+        }
+
+        // Fetch settings
+        let settings: IAppSettings | null = null
+        try {
+          settings = await api.getSettings()
+          console.log('[Registry] Settings loaded:', { registryLookupEnabled: settings?.registryLookupEnabled })
+        } catch {
+          console.error('Failed to fetch settings')
+        }
+
+        // If opted in and hash is available, do the lookup
+        let registryData: any = null
+        if (settings?.registryLookupEnabled && hash) {
+          try {
+            const apiUrl = REGISTRY_API_URL
+            console.log('[Registry] Looking up hash:', hash, 'at', apiUrl)
+            registryData = await api.lookupMod(hash, apiUrl)
+            console.log('[Registry] Lookup result:', registryData)
+          } catch (e) {
+            console.error('[Registry] Lookup failed:', e)
           }
-          return {
-            ...prev,
-            filePath: selectedPath,
-            name: prev.name || name,
-            loadOrder: newLoadOrder
+        }
+
+        // Track lookup results
+        if (registryData) {
+          setLastLookupHash(hash)
+          setLastLookupFound(true)
+          setLastLookupData(registryData)
+        } else {
+          setLastLookupHash(hash)
+          setLastLookupFound(false)
+          setLastLookupData(null)
+        }
+
+        const mainEntry = {
+          hash: hash || '',
+          name: name,
+          filePath: selectedPath,
+          isNew: true,
+          offset: 1,
+          sidecarOnly: false,
+          isMain: true
+        }
+
+        // Pre-fill from registry if available
+        const updatedForm: any = {
+          filePath: selectedPath,
+          name: registryData?.family_name || name,
+          fileType: fileType,
+          version: registryData?.version || '',
+          url: '',
+          loadOrder: [mainEntry],
+          sidecarOnly: registryData?.is_sidecar === 1
+        }
+
+        // URL pre-selection based on user's preferred mod source
+        if (registryData?.urls && registryData.urls.length > 0) {
+          let selectedUrl = registryData.urls[0].url
+          if (settings?.databaseLinkPresets && settings?.selectedPresetIndex !== undefined) {
+            const preset = settings.databaseLinkPresets[settings.selectedPresetIndex]
+            if (preset) {
+              try {
+                const presetDomain = new URL(preset.url).hostname.replace('www.', '')
+                const matchingUrl = registryData.urls.find(
+                  (u: any) => u.domain.replace('www.', '') === presetDomain
+                )
+                if (matchingUrl) {
+                  selectedUrl = matchingUrl.url
+                }
+              } catch {
+                // use default
+              }
+            }
           }
-        })
+          updatedForm.url = selectedUrl
+        }
+
+        // Load order from registry
+        if (registryData?.load_order) {
+          const loadOrderEntries = Object.entries(registryData.load_order)
+            .filter(([h]) => h !== hash)
+            .map(([h, offset]) => ({
+              hash: h,
+              name: h,
+              filePath: '',
+              isNew: false,
+              offset: offset as number,
+              sidecarOnly: false
+            }))
+          updatedForm.loadOrder = [mainEntry, ...loadOrderEntries]
+        }
+
+        console.log('[Registry] Setting form with:', updatedForm)
+        setAddForm(updatedForm)
         setIsAddModalOpen(true)
       }
     } catch (error) {
@@ -300,7 +419,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     setIsDraggingFile(false)
   }
 
-  const handleFileDrop = (e: React.DragEvent): void => {
+  const handleFileDrop = async (e: React.DragEvent): Promise<void> => {
     e.preventDefault()
     e.stopPropagation()
     setIsDraggingFile(false)
@@ -310,8 +429,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const file = droppedFiles[0]
       const droppedPath = (window as any).api.getPathForFile(file) || file.name
 
-      const ext = droppedPath.split('.').pop()?.toLowerCase()
-      const validExtensions = ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip']
+      const ext = droppedPath.split('.').pop()?.toUpperCase()
+      const validExtensions = ['WAD', 'PK3', 'IPK3', 'DEH', 'BEX', 'ZIP']
       if (!ext || !validExtensions.includes(ext)) {
         toast({
           title: 'FATAL: type_unknow',
@@ -321,34 +440,116 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         return
       }
 
-      setAddForm((prev) => {
-        const name =
-          droppedPath
-            .split(/[\\/]/)
-            .pop()
-            ?.replace(/\.[^.]+$/, '') || ''
-        const newLoadOrder = [...prev.loadOrder]
-        const mainIdx = newLoadOrder.findIndex((req) => req.isMain)
-        if (mainIdx >= 0) {
-          newLoadOrder[mainIdx] = { ...newLoadOrder[mainIdx], filePath: droppedPath, name }
-        } else {
-          newLoadOrder.unshift({
-            hash: '',
-            name,
-            filePath: droppedPath,
-            isNew: true,
-            offset: 1,
-            sidecarOnly: false,
-            isMain: true
-          })
+      // Detect file type from extension
+      let fileType = 'WAD'
+      if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+      else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
+
+      const fileName = droppedPath.split(/[\\/]/).pop() || ''
+      const name = fileName.replace(/\.[^.]+$/, '')
+
+      // Compute hash
+      let hash = ''
+      try {
+        hash = await api.computeHash(droppedPath)
+        console.log('[Registry] Computed hash:', hash)
+      } catch {
+        console.error('Failed to compute hash')
+      }
+
+      // Fetch settings
+      let settings: IAppSettings | null = null
+      try {
+        settings = await api.getSettings()
+        console.log('[Registry] Settings loaded:', { registryLookupEnabled: settings?.registryLookupEnabled })
+      } catch {
+        console.error('Failed to fetch settings')
+      }
+
+      // If opted in and hash is available, do the lookup
+      let registryData: any = null
+      if (settings?.registryLookupEnabled && hash) {
+        try {
+          const apiUrl = REGISTRY_API_URL
+          console.log('[Registry] Looking up hash:', hash, 'at', apiUrl)
+          registryData = await api.lookupMod(hash, apiUrl)
+          console.log('[Registry] Lookup result:', registryData)
+        } catch (e) {
+          console.error('[Registry] Lookup failed:', e)
         }
-        return {
-          ...prev,
-          filePath: droppedPath,
-          name: prev.name || name,
-          loadOrder: newLoadOrder
+      }
+
+      // Track lookup results
+      if (registryData) {
+        setLastLookupHash(hash)
+        setLastLookupFound(true)
+        setLastLookupData(registryData)
+      } else {
+        setLastLookupHash(hash)
+        setLastLookupFound(false)
+        setLastLookupData(null)
+      }
+
+      const mainEntry = {
+        hash: hash || '',
+        name: name,
+        filePath: droppedPath,
+        isNew: true,
+        offset: 1,
+        sidecarOnly: false,
+        isMain: true
+      }
+
+      // Pre-fill from registry if available
+      const updatedForm: any = {
+        filePath: droppedPath,
+        name: registryData?.family_name || name,
+        fileType: fileType,
+        version: registryData?.version || '',
+        url: '',
+        loadOrder: [mainEntry],
+        sidecarOnly: registryData?.is_sidecar === 1
+      }
+
+      // URL pre-selection based on user's preferred mod source
+      if (registryData?.urls && registryData.urls.length > 0) {
+        let selectedUrl = registryData.urls[0].url
+        if (settings?.databaseLinkPresets && settings?.selectedPresetIndex !== undefined) {
+          const preset = settings.databaseLinkPresets[settings.selectedPresetIndex]
+          if (preset) {
+            try {
+              const presetDomain = new URL(preset.url).hostname.replace('www.', '')
+              const matchingUrl = registryData.urls.find(
+                (u: any) => u.domain.replace('www.', '') === presetDomain
+              )
+              if (matchingUrl) {
+                selectedUrl = matchingUrl.url
+              }
+            } catch {
+              // use default
+            }
+          }
         }
-      })
+        updatedForm.url = selectedUrl
+      }
+
+      // Load order from registry
+      if (registryData?.load_order) {
+        const loadOrderEntries = Object.entries(registryData.load_order)
+          .filter(([h]) => h !== hash)
+          .map(([h, offset]) => ({
+            hash: h,
+            name: h,
+            filePath: '',
+            isNew: false,
+            offset: offset as number,
+            sidecarOnly: false
+          }))
+        updatedForm.loadOrder = [mainEntry, ...loadOrderEntries]
+      }
+
+      console.log('[Registry] Setting form with:', updatedForm)
+      setAddForm(updatedForm)
       setIsAddModalOpen(true)
     }
   }
@@ -601,6 +802,33 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       await api.updateInCatalog(selectedFile.id, updates)
+
+      // Submit to pending if hash not in registry and we have URL
+      if (hashValue && editForm.url) {
+        api.getSettings().then(async (settings) => {
+          if (settings?.registryLookupEnabled && settings?.registryUuid) {
+            try {
+              const lookup = await api.lookupMod(hashValue, REGISTRY_API_URL)
+              if (!lookup) {
+                // Not in registry, submit to pending
+                await api.submitToPending({
+                  hash: hashValue,
+                  suggested_name: editForm.name.trim(),
+                  url: editForm.url,
+                  version: editForm.version || undefined,
+                  is_sidecar: editForm.sidecarOnly ? 1 : 0,
+                  load_order: processedLoadOrder ? JSON.stringify(processedLoadOrder) : undefined
+                }, settings.registryUuid, REGISTRY_API_URL)
+                console.log('[Registry] Submitted updated file to pending:', hashValue)
+              }
+            } catch {
+              // Silently ignore - registry lookup failed
+            }
+          }
+        }).catch(() => {
+          // Silently ignore
+        })
+      }
 
       toast({
         title: 'Success',
@@ -883,7 +1111,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           <div className="flex justify-end gap-2">
             <Button
               variant="outline"
-              onClick={() => setIsAddModalOpen(false)}
+              onClick={() => { resetLookupState(); setIsAddModalOpen(false) }}
               className="bg-app-secondary"
             >
               Cancel
