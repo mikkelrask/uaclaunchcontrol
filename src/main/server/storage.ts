@@ -45,7 +45,8 @@ const DEFAULT_SETTINGS: IAppSettings = {
   databaseLinkPresets: DEFAULT_DATABASE_LINKS,
   selectedPresetIndex: 0,
   wadFilesDirectory: '~/.config/uac/wads',
-  autoUpdateEnabled: true
+  autoUpdateEnabled: true,
+  registryLookupEnabled: false
 }
 
 // Default Doom Versions
