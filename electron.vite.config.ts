@@ -21,6 +21,9 @@ export default defineConfig({
         }
       }
     },
+    define: {
+      'process.env.DEBUG': JSON.stringify(process.env.DEBUG)
+    },
     plugins: [react()]
   }
 })
