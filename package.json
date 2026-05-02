@@ -1,6 +1,6 @@
 {
   "name": "uac-launch-control",
-  "version": "0.2.500",
+  "version": "0.3.0",
   "description": "Mod, Rip and Tear",
   "main": "./out/main/index.js",
   "desktopName": "uaclaunchcontrol.desktop",
