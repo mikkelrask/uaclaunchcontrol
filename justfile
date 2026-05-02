@@ -4,7 +4,8 @@ default:
 
 # Start development environment
 dev:
-    npm run dev
+  cd ../uac-registry && wrangler dev --local &
+  cd  ../uaclaunchcontrol && DEBUG=true npm run dev
 
 # Preview the production build locally
 preview:
