@@ -61,12 +61,17 @@ function getInstallType(): IInstallType {
 
   const execPath = process.execPath
 
-  debug(`[InstallType] APPDIR env: ${!!process.env.APPDIR}`)
-  debug(`[InstallType] APPIMAGE env: ${!!process.env.APPIMAGE}`)
+  // Log ALL env vars that might indicate AppImage
+  const envKeys = Object.keys(process.env).filter(k => k.includes('APP'))
+  debug(`[InstallType] Possible AppImage env vars: ${envKeys.join(', ')}`)
+  debug(`[InstallType] APPDIR: ${process.env.APPDIR || 'NOT SET'}`)
+  debug(`[InstallType] APPIMAGE: ${process.env.APPIMAGE || 'NOT SET'}`)
   debug(`[InstallType] execPath: ${execPath}`)
+  debug(`[InstallType] execPath includes /tmp: ${execPath.includes('/tmp')}`)
 
   // Check if running AS AppImage (env vars)
-  const isAppImage = !!process.env.APPDIR || !!process.env.APPIMAGE
+  // AppImage typically sets APPDIR and APPIMAGE env vars
+  const isAppImage = !!process.env.APPDIR || !!process.env.APPIMAGE || execPath.includes('/tmp')
 
   // Check if currently running FROM system location
   const isSystemInstalled = execPath.startsWith('/opt/') || execPath.startsWith('/usr/')
@@ -123,10 +128,12 @@ function setupAutoUpdater(): void {
   autoUpdater.autoInstallOnAppQuit = true
 
   autoUpdater.on('checking-for-update', () => {
+    debug('[AutoUpdater] Checking for update...')
     mainWindow?.webContents.send('update-status', { status: 'checking' })
   })
 
   autoUpdater.on('update-available', (info) => {
+    debug(`[AutoUpdater] Update available: ${info.version}`)
     mainWindow?.webContents.send('update-status', {
       status: 'available',
       version: info.version,
@@ -135,6 +142,7 @@ function setupAutoUpdater(): void {
   })
 
   autoUpdater.on('update-not-available', () => {
+    debug(`[AutoUpdater] Update NOT available. Current version: ${app.getVersion()}`)
     mainWindow?.webContents.send('update-status', {
       status: 'not-available',
       version: app.getVersion(),
@@ -150,6 +158,7 @@ function setupAutoUpdater(): void {
   })
 
   autoUpdater.on('update-downloaded', (info) => {
+    debug(`[AutoUpdater] Update downloaded: ${info.version}`)
     mainWindow?.webContents.send('update-status', {
       status: 'downloaded',
       version: info.version
@@ -157,6 +166,7 @@ function setupAutoUpdater(): void {
   })
 
   autoUpdater.on('error', (error) => {
+    debug(`[AutoUpdater] Error: ${error.message}`)
     mainWindow?.webContents.send('update-status', {
       status: 'error',
       error: error.message
@@ -167,26 +177,109 @@ function setupAutoUpdater(): void {
 async function checkForUpdates(options: { manual?: boolean } = {}): Promise<void> {
   if (!is.dev) {
     lastCheckWasManual = options.manual ?? false
+    debug(`[AutoUpdater] checkForUpdates called, manual: ${lastCheckWasManual}`)
 
     if (!options.manual) {
       try {
         const settings = await getSettings()
         if (settings.autoUpdateEnabled === false) {
-          console.log('[AutoUpdater] Skipping - disabled in settings')
+          debug('[AutoUpdater] Skipping - disabled in settings')
           return
         }
       } catch {
         // Continue with update check if we can't read settings
       }
     }
+
+    // For system installs (deb/AUR), electron-updater can't find updates
+    // because it looks for AppImage files. So we call GitHub API directly.
+    const installType = getInstallType()
+    
+    if (installType.isSystemInstalled && !installType.isAppImage) {
+      // System install - check GitHub releases directly
+      debug(`[AutoUpdater] System install detected, checking GitHub API directly`)
+      checkGitHubRelease()
+      return
+    }
+
+    // AppImage or other - use electron-updater
+    debug(`[AutoUpdater] Calling autoUpdater.checkForUpdates()`)
     autoUpdater.checkForUpdates().catch((err) => {
-      console.error('Error checking for updates:', err)
+      debug(`[AutoUpdater] Error: ${err.message}`)
     })
+  } else {
+    debug('[AutoUpdater] Skipped - running in dev mode')
   }
+}
+
+async function checkGitHubRelease(): Promise<void> {
+  const currentVersion = app.getVersion()
+  debug(`[AutoUpdater] Checking GitHub for latest version (current: ${currentVersion})`)
+
+  return new Promise((resolve) => {
+    const req = require('https').get(
+      'https://api.github.com/repos/mikkelrask/uaclaunchcontrol/releases/latest',
+      (res: any) => {
+        let data = ''
+        res.on('data', (chunk: string) => { data += chunk })
+        res.on('end', () => {
+          try {
+            const release = JSON.parse(data) as { tag_name: string; html_url: string; body?: string }
+            const latestVersion = (release.tag_name || '').replace(/^v/, '')
+            debug(`[AutoUpdater] Latest version: ${latestVersion}`)
+
+            if (latestVersion && latestVersion !== currentVersion) {
+              debug(`[AutoUpdater] Update available: ${latestVersion}`)
+              mainWindow?.webContents.send('update-status', {
+                status: 'available',
+                version: latestVersion,
+                releaseNotes: release.body || ''
+              })
+            } else {
+              debug(`[AutoUpdater] No update available`)
+              mainWindow?.webContents.send('update-status', {
+                status: 'not-available',
+                version: currentVersion,
+                isManual: lastCheckWasManual
+              })
+            }
+          } catch (err) {
+            debug(`[AutoUpdater] GitHub API parse error: ${(err as Error).message}`)
+            if (lastCheckWasManual) {
+              mainWindow?.webContents.send('update-status', {
+                status: 'not-available',
+                version: currentVersion,
+                isManual: true
+              })
+            }
+          }
+          resolve()
+        })
+      }
+    )
+
+    req.on('error', (err: Error) => {
+      debug(`[AutoUpdater] GitHub API error: ${err.message}`)
+      if (lastCheckWasManual) {
+        mainWindow?.webContents.send('update-status', {
+          status: 'not-available',
+          version: currentVersion,
+          isManual: true
+        })
+      }
+      resolve()
+    })
+  })
 }
 
 app.whenReady().then(async () => {
   await startServer()
+  
+  // Log install type on startup
+  const installType = getInstallType()
+  debug(`[Startup] Install type: ${JSON.stringify(installType)}`)
+  debug(`[Startup] App version: ${app.getVersion()}`)
+  debug(`[Startup] Platform: ${process.platform}, execPath: ${process.execPath}`)
 
   electronApp.setAppUserModelId('com.electron')
 
@@ -222,6 +315,9 @@ app.whenReady().then(async () => {
   })
 
   ipcMain.handle('trigger-fake-update', () => {
+    const installType = getInstallType()
+    debug(`[FakeUpdate] Install type: ${JSON.stringify(installType)}`)
+    
     mainWindow?.webContents.send('update-status', {
       status: 'available',
       version: '0.2.4',

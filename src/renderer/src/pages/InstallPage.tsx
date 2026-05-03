@@ -753,7 +753,7 @@ export const InstallPage: React.FC = () => {
                           className="bg-accent-highlight hover:opacity-90"
                           disabled={!form.watch('title') || !form.watch('doomVersionId')}
                         >
-                          {createMutation.isPending ? 'Installing...' : 'Install Mod'}
+                          {createMutation.isPending ? 'Applying...' : 'Create protocol'}
                         </Button>
                       </div>
                     </form>
