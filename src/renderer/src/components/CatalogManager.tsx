@@ -115,7 +115,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         // Derive fileType from extension
         const ext = fileName.split('.').pop()?.toUpperCase() || ''
         let reqFileType = 'WAD'
-        if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') reqFileType = 'PK3'
+        if (ext === 'PK3' || ext === 'PK7' || ext === 'IPK3' || ext === 'ZIP') reqFileType = 'PK3'
         else if (ext === 'DEH' || ext === 'BEX') reqFileType = 'DEH'
 
         await api.addToCatalog({
@@ -150,7 +150,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     const extension = fileName.split('.').pop()?.toUpperCase() || ''
     let fileType = 'WAD'
 
-    if (extension === 'PK3' || extension === 'IPK3' || extension === 'ZIP') {
+    if (extension === 'PK3' || extension === 'PK7' || extension === 'IPK3' || extension === 'ZIP') {
       fileType = 'PK3'
     } else if (extension === 'DEH' || extension === 'BEX') {
       fileType = 'DEH'
@@ -284,7 +284,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const result = await api.showOpenDialog({
         title: 'Select Mod File',
         properties: ['openFile'],
-        filters: [{ name: 'Mod stuff', extensions: ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip'] }]
+        filters: [{ name: 'Mod stuff', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }]
       })
 
       if (!result.canceled && result.filePaths.length > 0) {
@@ -295,7 +295,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         // Detect file type from extension
         const ext = fileName.split('.').pop()?.toUpperCase() || ''
         let fileType = 'WAD'
-        if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+        if (ext === 'PK3' || ext === 'PK7' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
         else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
 
         // Compute hash
@@ -430,11 +430,11 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const droppedPath = (window as any).api.getPathForFile(file) || file.name
 
       const ext = droppedPath.split('.').pop()?.toUpperCase()
-      const validExtensions = ['WAD', 'PK3', 'IPK3', 'DEH', 'BEX', 'ZIP']
+      const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'ZIP']
       if (!ext || !validExtensions.includes(ext)) {
         toast({
           title: 'FATAL: type_unknow',
-          description: 'Please only use supported files: wad, pk3, ipk3, deh, bex, zip',
+          description: 'Please only use supported files: wad, pk3, pk7, ipk3, deh, bex, zip',
           variant: 'destructive'
         })
         return
@@ -442,8 +442,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       // Detect file type from extension
       let fileType = 'WAD'
-      if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
-      else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
+       if (ext === 'PK3' || ext === 'PK7' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+       else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
 
       const fileName = droppedPath.split(/[\\/]/).pop() || ''
       const name = fileName.replace(/\.[^.]+$/, '')
@@ -579,7 +579,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const result = await api.showOpenDialog({
         title: 'Select Required Mod File',
         properties: ['openFile'],
-        filters: [{ name: 'DOOM Files', extensions: ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip'] }]
+        filters: [{ name: 'DOOM Files', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }]
       })
 
       if (!result.canceled && result.filePaths.length > 0) {
