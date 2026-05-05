@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useLocation, Link } from 'wouter'
 import { useQuery } from '@tanstack/react-query'
 import { Settings, Menu } from 'lucide-react'
@@ -9,12 +9,66 @@ import doomGuy from '@/assets/guy,doom.webp'
 
 interface HeaderProps {
   onSearch: (query: string, includeAllMods?: boolean) => void // Add a flag to include all mods
+  enableLiveSearch?: boolean // Enable live search (filter as you type)
 }
 
-export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
-  const [location] = useLocation()
+export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) => {
+  const [location, setLocation] = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === '/') {
+        const activeElement = document.activeElement
+        const isTyping =
+          activeElement &&
+          (activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            (activeElement as HTMLElement).isContentEditable)
+
+        if (!isTyping && searchInputRef.current) {
+          event.preventDefault()
+          searchInputRef.current.focus()
+        }
+      }
+
+      if (event.key === 'i' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const activeElement = document.activeElement
+        const isTyping =
+          activeElement &&
+          (activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            (activeElement as HTMLElement).isContentEditable)
+
+        if (!isTyping) {
+          setLocation('/install')
+        }
+      }
+
+      if (event.key === 'l' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const activeElement = document.activeElement
+        const isTyping =
+          activeElement &&
+          (activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            (activeElement as HTMLElement).isContentEditable)
+
+        if (!isTyping) {
+          setLocation('/')
+        }
+      }
+
+      if (event.key === '.' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault()
+        setIsSettingsOpen(true)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [setLocation])
 
   const { data: settings } = useQuery({
     queryKey: ['/api/settings'],
@@ -42,11 +96,17 @@ export const Header: React.FC<HeaderProps> = ({ onSearch }) => {
       <div className="relative w-96">
         <form onSubmit={handleSearch}>
           <Input
+            ref={searchInputRef}
             type="text"
             placeholder="DATABASE QUERY"
             className="bg-app-primary text-app-primary"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              if (enableLiveSearch) {
+                onSearch(e.target.value, false)
+              }
+            }}
           />
         </form>
       </div>

@@ -62,7 +62,7 @@ export const GamesPage: React.FC = () => {
 
   const handleSearch = (query: string): void => {
     setSearchQuery(query)
-    setActiveVersion(null) // Clear active version when searching
+    // Don't clear activeVersion - search within current base game filter
   }
 
   const handleViewModeChange = (mode: ViewMode): void => {
@@ -100,7 +100,7 @@ export const GamesPage: React.FC = () => {
       <Sidebar activeVersion={activeVersion} onVersionSelect={handleVersionSelect} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header onSearch={handleSearch} />
+        <Header onSearch={handleSearch} enableLiveSearch={true} />
 
         <div className="flex-1 flex flex-col overflow-hidden min-h-0">
           <ViewToggle
