@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Settings, Menu } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import SettingsDialog from './SettingsDialog'
+import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 import { api } from '@/api'
 import doomGuy from '@/assets/guy,doom.webp'
 
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
   const [location, setLocation] = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -63,6 +65,20 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
       if (event.key === '.' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault()
         setIsSettingsOpen(true)
+      }
+
+      if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const activeElement = document.activeElement
+        const isTyping =
+          activeElement &&
+          (activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            (activeElement as HTMLElement).isContentEditable)
+
+        if (!isTyping) {
+          event.preventDefault()
+          setIsShortcutsOpen(true)
+        }
       }
     }
 
@@ -157,6 +173,9 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
 
       {/* Settings Dialog */}
       <SettingsDialog isOpen={isSettingsOpen} onClose={closeSettings} />
+
+      {/* Keyboard Shortcuts Dialog */}
+      <KeyboardShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
     </header>
   )
 }
