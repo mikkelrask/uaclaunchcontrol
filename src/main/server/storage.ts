@@ -752,12 +752,27 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
     }
 
     if (file.filePath) {
-      // Move file to mod folder with hash-based filename
-      const { relativePath, hashValue } = await moveToModFolder(file.filePath)
+      let relativePath: string
+      let hashValue: string
+      let originalFileName: string
+
+      // Check if file is already in mods folder (relative path starting with 'files/')
+      if (file.filePath.startsWith('files/')) {
+        // File already moved, use as-is
+        relativePath = file.filePath
+        hashValue = await computeFileHash(relativePath)
+        originalFileName = file.fileName || path.basename(relativePath)
+      } else {
+        // Move file to mod folder with hash-based filename
+        const moved = await moveToModFolder(file.filePath)
+        relativePath = moved.relativePath
+        hashValue = moved.hashValue
+        originalFileName = file.filePath.split(/[\\/]/).pop() || file.filePath
+      }
+
       // Set fileName to the new filename in the mod folder
       const fileName = path.basename(relativePath)
       // Always set name (pretty name), default to original file name if missing
-      const originalFileName = file.filePath.split(/[\\/]/).pop() || file.filePath
       const name = file.name && file.name.trim() ? file.name : originalFileName
       // Create new catalog entry with an ID
       const createdFile: IModFile = {
@@ -766,7 +781,7 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
         fileName,
         id: Date.now(),
         hashValue,
-        filePath: relativePath, // Use the new relative path in mods folder
+        filePath: relativePath, // Use the relative path in mods folder
         loadOrder: file.loadOrder ?? {},
         requiredBy: file.requiredBy ?? [],
         sidecarOnly: file.sidecarOnly ?? false,

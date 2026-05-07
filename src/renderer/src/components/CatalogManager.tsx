@@ -158,19 +158,21 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       fileType = 'WAD'
     }
 
-    const exists = files.some((f) => f.filePath === addForm.filePath || f.fileName === fileName)
-    if (exists) {
-      toast({
-        title: 'File already exists',
-        description: 'This file is already in your catalog',
-        variant: 'destructive'
-      })
-      return
-    }
-
     try {
+      // Move file first to get hash-based filename
       const newFilePathMoved = await handleMoveFileToModFolder(addForm.filePath)
       const hashValue = await api.computeHash(newFilePathMoved)
+
+      // Check for duplicates based on hashValue (content-based)
+      const exists = files.some((f) => f.hashValue === hashValue)
+      if (exists) {
+        toast({
+          title: 'File already exists',
+          description: 'This file is already in your catalog',
+          variant: 'destructive'
+        })
+        return
+      }
 
       const selfRefCheck = addForm.loadOrder.some(
         (r) => r.isNew && !r.isMain && r.filePath === addForm.filePath
