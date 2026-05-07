@@ -1,6 +1,8 @@
 import { app, shell, BrowserWindow, ipcMain, nativeImage } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import https from 'https'
+import { IncomingMessage } from 'http'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { startServer } from './server'
 import { autoUpdater } from 'electron-updater'
@@ -62,7 +64,7 @@ function getInstallType(): IInstallType {
   const execPath = process.execPath
 
   // Log ALL env vars that might indicate AppImage
-  const envKeys = Object.keys(process.env).filter(k => k.includes('APP'))
+  const envKeys = Object.keys(process.env).filter((k) => k.includes('APP'))
   debug(`[InstallType] Possible AppImage env vars: ${envKeys.join(', ')}`)
   debug(`[InstallType] APPDIR: ${process.env.APPDIR || 'NOT SET'}`)
   debug(`[InstallType] APPIMAGE: ${process.env.APPIMAGE || 'NOT SET'}`)
@@ -194,7 +196,7 @@ async function checkForUpdates(options: { manual?: boolean } = {}): Promise<void
     // For system installs (deb/AUR), electron-updater can't find updates
     // because it looks for AppImage files. So we call GitHub API directly.
     const installType = getInstallType()
-    
+
     if (installType.isSystemInstalled && !installType.isAppImage) {
       // System install - check GitHub releases directly
       debug(`[AutoUpdater] System install detected, checking GitHub API directly`)
@@ -217,9 +219,9 @@ async function checkGitHubRelease(): Promise<void> {
   debug(`[AutoUpdater] Checking GitHub for latest version (current: ${currentVersion})`)
 
   return new Promise((resolve) => {
-    const req = require('https').get(
+    const req = https.get(
       'https://api.github.com/repos/mikkelrask/uaclaunchcontrol/releases/latest',
-      (res: any) => {
+      (res: IncomingMessage) => {
         let data = ''
         res.on('data', (chunk: string) => { data += chunk })
         res.on('end', () => {
@@ -274,7 +276,7 @@ async function checkGitHubRelease(): Promise<void> {
 
 app.whenReady().then(async () => {
   await startServer()
-  
+
   // Log install type on startup
   const installType = getInstallType()
   debug(`[Startup] Install type: ${JSON.stringify(installType)}`)
@@ -317,7 +319,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('trigger-fake-update', () => {
     const installType = getInstallType()
     debug(`[FakeUpdate] Install type: ${JSON.stringify(installType)}`)
-    
+
     mainWindow?.webContents.send('update-status', {
       status: 'available',
       version: '0.2.4',
