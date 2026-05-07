@@ -630,19 +630,27 @@ export async function moveFile(filePath: string, newPath: string): Promise<strin
 // Special helper to move a file into the mods/files folder and return the relative path
 export async function moveToModFolder(
   sourcePath: string
-): Promise<{ fullPath: string; relativePath: string }> {
+): Promise<{ fullPath: string; relativePath: string; hashValue: string }> {
   try {
     const settings = await getSettings()
     const modsDir = resolvePath(settings.modsDirectory || path.join(CONFIG_DIR, 'mods'))
-    const fileName = path.basename(sourcePath)
-    const relativePath = path.join('files', fileName)
+    const resolvedSource = resolvePath(sourcePath)
+    const originalFileName = path.basename(resolvedSource)
+    const hashValue = await computeFileHash(resolvedSource)
+    if (!hashValue) {
+      throw new Error('Failed to compute MD5 hash for file')
+    }
+    const ext = path.extname(originalFileName)
+    const baseName = path.basename(originalFileName, ext)
+    const newFileName = `${baseName}-${hashValue}${ext}`
+    const relativePath = path.join('files', newFileName)
     const fullPath = path.join(modsDir, relativePath)
 
     await fs.ensureDir(path.join(modsDir, 'files'))
-    await fs.copy(resolvePath(sourcePath), fullPath, { overwrite: true })
+    await fs.copy(resolvedSource, fullPath, { overwrite: true })
 
-    debug(`Moved file to mod folder: ${fullPath} (relative: ${relativePath})`)
-    return { fullPath, relativePath }
+    debug(`Moved file to mod folder: ${fullPath} (relative: ${relativePath}, hash: ${hashValue})`)
+    return { fullPath, relativePath, hashValue }
   } catch (error: unknown) {
     console.error('Error moving file to mod folder:', error)
     throw new Error(
@@ -744,12 +752,13 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
     }
 
     if (file.filePath) {
-      // Always set fileName from filePath
-      const fileName = file.filePath.split(/[\\/]/).pop() || file.filePath
-      // Always set name (pretty name), default to fileName if missing
-      const name = file.name && file.name.trim() ? file.name : fileName
-      // Compute MD5 hash of the file
-      const hashValue = await computeFileHash(file.filePath)
+      // Move file to mod folder with hash-based filename
+      const { relativePath, hashValue } = await moveToModFolder(file.filePath)
+      // Set fileName to the new filename in the mod folder
+      const fileName = path.basename(relativePath)
+      // Always set name (pretty name), default to original file name if missing
+      const originalFileName = file.filePath.split(/[\\/]/).pop() || file.filePath
+      const name = file.name && file.name.trim() ? file.name : originalFileName
       // Create new catalog entry with an ID
       const createdFile: IModFile = {
         ...file,
@@ -757,6 +766,7 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
         fileName,
         id: Date.now(),
         hashValue,
+        filePath: relativePath, // Use the new relative path in mods folder
         loadOrder: file.loadOrder ?? {},
         requiredBy: file.requiredBy ?? [],
         sidecarOnly: file.sidecarOnly ?? false,
