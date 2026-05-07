@@ -709,7 +709,7 @@ export const InstallPage: React.FC = () => {
                                 <FormControl>
                                   <Textarea
                                     placeholder="Enter a fitting description"
-                                    className="bg-app-primary border-app"
+                                    className="bg-app-primary border-app h-[126px]"
                                     {...field}
                                   />
                                 </FormControl>
