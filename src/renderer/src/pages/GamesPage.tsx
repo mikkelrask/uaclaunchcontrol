@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'wouter'
 // import { useLocation } from 'wouter';
@@ -15,32 +15,17 @@ type ViewMode = 'grid' | 'list' | 'detail'
 
 export const GamesPage: React.FC = () => {
   // State
-  const [activeVersion, setActiveVersion] = useState<string | null>(null)
+  const [activeVersion, setActiveVersion] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('version')
+  })
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('search') || ''
+  })
   const [selectedModId, setSelectedModId] = useState<string | null>(null)
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
-
-  useEffect(() => {
-    // Extract query parameters from the window location
-    const params = new URLSearchParams(window.location.search)
-
-    // Handle search query
-    const search = params.get('search')
-    if (search) {
-      setSearchQuery(search)
-    } else {
-      setSearchQuery('')
-    }
-
-    // Handle version filter
-    const version = params.get('version')
-    if (version) {
-      setActiveVersion(version)
-    } else {
-      setActiveVersion(null)
-    }
-  }, []) // Only run on initial load
 
   // Fetch data
   const { data: versions = [] } = useQuery<IDoomVersion[]>({
@@ -152,7 +137,7 @@ export const GamesPage: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">
-                {filteredMods?.map((mod) => {
+                {filteredMods?.map((mod): React.ReactNode => {
                   const version = getVersionForMod(mod)
                   if (!version) return null
 
@@ -171,6 +156,7 @@ export const GamesPage: React.FC = () => {
         </div>
 
         <GameSettingsModal
+          key={selectedModId || 'new'}
           modId={selectedModId}
           isOpen={isSettingsModalOpen}
           onClose={handleCloseSettingsModal}

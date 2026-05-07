@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,12 +13,13 @@ import {
 } from '@/components/ui/select'
 import { DataTable } from '@/components/ui/data-table'
 import { getCatalogColumns } from '@/components/catalog-columns'
-import { IModFile, IAppSettings } from "@shared/schema"
+import { IModFile, IAppSettings } from '@shared/schema'
 import { Trash2, Plus, FolderOpen, Check, ChevronUp, ChevronDown, Upload } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { api } from '@/api'
+import { api, IRegistryMod } from '@/api'
 import { gameService } from '@/lib/gameService'
 import { REGISTRY_API_URL } from '@shared/registry-config'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 interface CatalogManagerProps {
   files: IModFile[]
@@ -37,7 +38,12 @@ interface RequiredModEntry {
 
 export function CatalogManager({ files, onChange }: CatalogManagerProps): React.ReactElement {
   const { toast } = useToast()
-  const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
+  const queryClient = useQueryClient()
+  const { data: catalogFiles = [] } = useQuery({
+    queryKey: ['mod-file-catalog'],
+    queryFn: () => gameService.getModFileCatalog()
+  })
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<IModFile | null>(null)
@@ -65,20 +71,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
   const [lastLookupHash, setLastLookupHash] = useState<string | null>(null)
   const [lastLookupFound, setLastLookupFound] = useState<boolean>(false)
-  const [lastLookupData, setLastLookupData] = useState<any>(null)
-
-  const loadCatalogFiles = async (): Promise<void> => {
-    try {
-      const allFiles = await gameService.getModFileCatalog()
-      setCatalogFiles(Array.isArray(allFiles) ? allFiles : [])
-    } catch (error) {
-      console.error('Failed to load catalog files:', error)
-    }
-  }
-
-  useEffect(() => {
-    loadCatalogFiles()
-  }, [])
+  const [lastLookupData, setLastLookupData] = useState<IRegistryMod | null>(null)
 
   const availableRequiredFiles = catalogFiles.filter((f) => !f.sidecarOnly && f.hashValue)
 
@@ -136,7 +129,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     return result
   }
 
-  const resetLookupState = () => {
+  const resetLookupState = (): void => {
     setLastLookupHash(null)
     setLastLookupFound(false)
     setLastLookupData(null)
@@ -209,7 +202,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           shouldSubmit = true
         } else if (lastLookupData) {
           // Hash in registry - check if user provided NEW info
-          const urlInRegistry = lastLookupData.urls?.some((u: any) => u.url === addForm.url)
+          const urlInRegistry = lastLookupData.urls?.some((u) => u.url === addForm.url)
           const hasNewUrl = !!(addForm.url && !urlInRegistry)
           const hasNewVersion = !!(addForm.version && !lastLookupData.version)
           shouldSubmit = hasNewUrl || hasNewVersion
@@ -217,20 +210,27 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
         if (shouldSubmit && addForm.url) {
           // Fire and forget - get settings for UUID
-          api.getSettings().then(settings => {
-            if (settings?.registryUuid) {
-              api.submitToPending({
-                hash: hashValue,
-                suggested_name: prettyName,
-                url: addForm.url,
-                version: addForm.version || undefined,
-                is_sidecar: addForm.sidecarOnly ? 1 : 0,
-                load_order: processedLoadOrder ? JSON.stringify(processedLoadOrder) : undefined
-              }, settings.registryUuid, REGISTRY_API_URL)
-            }
-          }).catch(() => {
-            // Silently ignore
-          })
+          api
+            .getSettings()
+            .then((settings) => {
+              if (settings?.registryUuid) {
+                api.submitToPending(
+                  {
+                    hash: hashValue,
+                    suggested_name: prettyName,
+                    url: addForm.url,
+                    version: addForm.version || undefined,
+                    is_sidecar: addForm.sidecarOnly ? 1 : 0,
+                    load_order: processedLoadOrder ? JSON.stringify(processedLoadOrder) : undefined
+                  },
+                  settings.registryUuid,
+                  REGISTRY_API_URL
+                )
+              }
+            })
+            .catch(() => {
+              // Silently ignore
+            })
         }
       }
 
@@ -270,7 +270,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       // Fetch fresh authoritative list and notify parent
       const freshCatalog = await gameService.getModFileCatalog()
-      setCatalogFiles(freshCatalog)
+      queryClient.setQueryData(['mod-file-catalog'], freshCatalog)
       onChange(freshCatalog)
     } catch (error) {
       toast({
@@ -286,7 +286,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const result = await api.showOpenDialog({
         title: 'Select Mod File',
         properties: ['openFile'],
-        filters: [{ name: 'Mod stuff', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }]
+        filters: [
+          { name: 'Mod stuff', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }
+        ]
       })
 
       if (!result.canceled && result.filePaths.length > 0) {
@@ -313,13 +315,15 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         let settings: IAppSettings | null = null
         try {
           settings = await api.getSettings()
-          console.log('[Registry] Settings loaded:', { registryLookupEnabled: settings?.registryLookupEnabled })
+          console.log('[Registry] Settings loaded:', {
+            registryLookupEnabled: settings?.registryLookupEnabled
+          })
         } catch {
           console.error('Failed to fetch settings')
         }
 
         // If opted in and hash is available, do the lookup
-        let registryData: any = null
+        let registryData: IRegistryMod | null = null
         if (settings?.registryLookupEnabled && hash) {
           try {
             const apiUrl = REGISTRY_API_URL
@@ -353,7 +357,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         }
 
         // Pre-fill from registry if available
-        const updatedForm: any = {
+        const updatedForm: Partial<typeof addForm> = {
           filePath: selectedPath,
           name: registryData?.family_name || name,
           fileType: fileType,
@@ -372,7 +376,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
               try {
                 const presetDomain = new URL(preset.url).hostname.replace('www.', '')
                 const matchingUrl = registryData.urls.find(
-                  (u: any) => u.domain.replace('www.', '') === presetDomain
+                  (u) => u.domain.replace('www.', '') === presetDomain
                 )
                 if (matchingUrl) {
                   selectedUrl = matchingUrl.url
@@ -401,7 +405,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         }
 
         console.log('[Registry] Setting form with:', updatedForm)
-        setAddForm(updatedForm)
+        setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
         setIsAddModalOpen(true)
       }
     } catch (error) {
@@ -429,7 +433,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     const droppedFiles = e.dataTransfer.files
     if (droppedFiles.length > 0) {
       const file = droppedFiles[0]
-      const droppedPath = (window as any).api.getPathForFile(file) || file.name
+      const droppedPath = window.api.getPathForFile(file) || file.name
 
       const ext = droppedPath.split('.').pop()?.toUpperCase()
       const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'ZIP']
@@ -444,8 +448,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       // Detect file type from extension
       let fileType = 'WAD'
-       if (ext === 'PK3' || ext === 'PK7' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
-       else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
+      if (ext === 'PK3' || ext === 'PK7' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+      else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
 
       const fileName = droppedPath.split(/[\\/]/).pop() || ''
       const name = fileName.replace(/\.[^.]+$/, '')
@@ -463,13 +467,15 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       let settings: IAppSettings | null = null
       try {
         settings = await api.getSettings()
-        console.log('[Registry] Settings loaded:', { registryLookupEnabled: settings?.registryLookupEnabled })
+        console.log('[Registry] Settings loaded:', {
+          registryLookupEnabled: settings?.registryLookupEnabled
+        })
       } catch {
         console.error('Failed to fetch settings')
       }
 
       // If opted in and hash is available, do the lookup
-      let registryData: any = null
+      let registryData: IRegistryMod | null = null
       if (settings?.registryLookupEnabled && hash) {
         try {
           const apiUrl = REGISTRY_API_URL
@@ -503,7 +509,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       // Pre-fill from registry if available
-      const updatedForm: any = {
+      const updatedForm: Partial<typeof addForm> = {
         filePath: droppedPath,
         name: registryData?.family_name || name,
         fileType: fileType,
@@ -522,7 +528,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             try {
               const presetDomain = new URL(preset.url).hostname.replace('www.', '')
               const matchingUrl = registryData.urls.find(
-                (u: any) => u.domain.replace('www.', '') === presetDomain
+                (u) => u.domain.replace('www.', '') === presetDomain
               )
               if (matchingUrl) {
                 selectedUrl = matchingUrl.url
@@ -551,7 +557,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       console.log('[Registry] Setting form with:', updatedForm)
-      setAddForm(updatedForm)
+      setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
       setIsAddModalOpen(true)
     }
   }
@@ -581,7 +587,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const result = await api.showOpenDialog({
         title: 'Select Required Mod File',
         properties: ['openFile'],
-        filters: [{ name: 'DOOM Files', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }]
+        filters: [
+          { name: 'DOOM Files', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }
+        ]
       })
 
       if (!result.canceled && result.filePaths.length > 0) {
@@ -789,7 +797,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         return
       }
 
-      const processedLoadOrder = await processRequiredMods(editForm.loadOrder, selectedFile.hashValue)
+      const processedLoadOrder = await processRequiredMods(
+        editForm.loadOrder,
+        selectedFile.hashValue
+      )
 
       const updates: Partial<IModFile> = {
         name: editForm.name.trim(),
@@ -807,29 +818,38 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       // Submit to pending if hash not in registry and we have URL
       if (hashValue && editForm.url) {
-        api.getSettings().then(async (settings) => {
-          if (settings?.registryLookupEnabled && settings?.registryUuid) {
-            try {
-              const lookup = await api.lookupMod(hashValue, REGISTRY_API_URL)
-              if (!lookup) {
-                // Not in registry, submit to pending
-                await api.submitToPending({
-                  hash: hashValue,
-                  suggested_name: editForm.name.trim(),
-                  url: editForm.url,
-                  version: editForm.version || undefined,
-                  is_sidecar: editForm.sidecarOnly ? 1 : 0,
-                  load_order: processedLoadOrder ? JSON.stringify(processedLoadOrder) : undefined
-                }, settings.registryUuid, REGISTRY_API_URL)
-                console.log('[Registry] Submitted updated file to pending:', hashValue)
+        api
+          .getSettings()
+          .then(async (settings) => {
+            if (settings?.registryLookupEnabled && settings?.registryUuid) {
+              try {
+                const lookup = await api.lookupMod(hashValue, REGISTRY_API_URL)
+                if (!lookup) {
+                  // Not in registry, submit to pending
+                  await api.submitToPending(
+                    {
+                      hash: hashValue,
+                      suggested_name: editForm.name.trim(),
+                      url: editForm.url,
+                      version: editForm.version || undefined,
+                      is_sidecar: editForm.sidecarOnly ? 1 : 0,
+                      load_order: processedLoadOrder
+                        ? JSON.stringify(processedLoadOrder)
+                        : undefined
+                    },
+                    settings.registryUuid,
+                    REGISTRY_API_URL
+                  )
+                  console.log('[Registry] Submitted updated file to pending:', hashValue)
+                }
+              } catch {
+                // Silently ignore - registry lookup failed
               }
-            } catch {
-              // Silently ignore - registry lookup failed
             }
-          }
-        }).catch(() => {
-          // Silently ignore
-        })
+          })
+          .catch(() => {
+            // Silently ignore
+          })
       }
 
       toast({
@@ -841,10 +861,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       // Fetch fresh authoritative list and notify parent
       const freshCatalog = await gameService.getModFileCatalog()
-      setCatalogFiles(freshCatalog)
       onChange(freshCatalog)
       setSelectedFile(null)
-      loadCatalogFiles()
     } catch (error) {
       toast({
         title: 'Error',
@@ -1105,7 +1123,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                 className="w-4 h-4"
               />
               <Label htmlFor="add-sidecar" className="text-sm font-normal">
-                Sidecar mod (Check if this mod doesn't work without other mod files)
+                Sidecar mod (Check if this mod doesn&apos;t work without other mod files)
               </Label>
             </div>
           </div>
@@ -1113,7 +1131,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           <div className="flex justify-end gap-2">
             <Button
               variant="outline"
-              onClick={() => { resetLookupState(); setIsAddModalOpen(false) }}
+              onClick={() => {
+                resetLookupState()
+                setIsAddModalOpen(false)
+              }}
               className="bg-app-secondary"
             >
               Cancel

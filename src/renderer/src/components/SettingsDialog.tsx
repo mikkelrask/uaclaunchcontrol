@@ -76,23 +76,24 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       })
 
     // Fetch doom versions
-    setIsLoadingVersions(true)
-    api
-      .getDoomVersions()
-      .then((versions) => {
+    const fetchVersions = async (): Promise<void> => {
+      setIsLoadingVersions(true)
+      try {
+        const versions = await api.getDoomVersions()
         setDoomVersions(versions)
-      })
-      .catch(() => {
+      } catch {
         toast({
           title: 'Error',
           description: 'Failed to load doom versions',
           variant: 'destructive'
         })
-      })
-      .finally(() => {
+      } finally {
         setIsLoadingVersions(false)
-      })
-  }, [isOpen])
+      }
+    }
+
+    fetchVersions()
+  }, [isOpen, toast])
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -145,7 +146,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   }
 
-    // Handle save
+  // Handle save
   const handleSave = async (): Promise<void> => {
     try {
       const payload = {
@@ -380,14 +381,18 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           onCheckedChange={(checked) => {
                             if (checked && !settings.registryUuid) {
                               const uuid = crypto.randomUUID()
-                              setSettings((s) => ({ ...s, registryLookupEnabled: checked, registryUuid: uuid }))
+                              setSettings((s) => ({
+                                ...s,
+                                registryLookupEnabled: checked,
+                                registryUuid: uuid
+                              }))
                             } else {
                               setSettings((s) => ({ ...s, registryLookupEnabled: checked }))
                             }
                           }}
                         />
                       </div>
-                       <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between">
                         <p className="text-xs text-app-primary font-medium">
                           Manually check for app updates
                         </p>
@@ -649,6 +654,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                   handleVersionChange(selectedWadIndex, 'args', e.target.value)
                                 }
                                 className="bg-app-primary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs text-app-primary font-medium">
+                                Additional Parameters
+                              </span>
+                              <Input
+                                value={doomVersions[selectedWadIndex].parameters || ''}
+                                onChange={(e) =>
+                                  handleVersionChange(
+                                    selectedWadIndex,
+                                    'parameters',
+                                    e.target.value
+                                  )
+                                }
+                                className="bg-app-primary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
+                                placeholder="e.g. -nomonsters -warp 01"
                               />
                             </div>
                             <div className="pt-2">

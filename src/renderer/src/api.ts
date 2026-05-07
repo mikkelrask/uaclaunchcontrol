@@ -1,4 +1,4 @@
-import { IModFile, IMod, IAppSettings, IDoomVersion } from '@shared/schema'
+import { IModFile, IMod, IAppSettings, IDoomVersion, IUpdateInfo } from '@shared/schema'
 
 export interface IRegistryMod {
   family_name: string
@@ -264,30 +264,30 @@ export const api = {
   },
 
   getVersion: async (): Promise<string> => {
-    return await (window as any).api.getAppVersion()
+    return await window.api.getAppVersion()
   },
 
-  onUpdateStatus: (callback: (data: any) => void) => {
-    ;(window as any).api.onUpdateStatus(callback)
+  onUpdateStatus: (callback: (data: IUpdateInfo) => void): void => {
+    window.api.onUpdateStatus(callback)
   },
 
-  checkForUpdates: () => {
-    ;(window as any).api.checkForUpdates()
+  checkForUpdates: (): void => {
+    void window.api.checkForUpdates()
   },
 
-  downloadUpdate: () => {
-    ;(window as any).api.downloadUpdate()
+  downloadUpdate: (): void => {
+    void window.api.downloadUpdate()
   },
 
-  installUpdate: () => {
-    ;(window as any).api.installUpdate()
+  installUpdate: (): void => {
+    void window.api.installUpdate()
   },
 
-  triggerFakeUpdate: () => {
-    ;(window as any).api.triggerFakeUpdate()
+  triggerFakeUpdate: (): void => {
+    void window.api.triggerFakeUpdate()
   },
 
-  getInstallType: () => {
-    return (window as any).api.getInstallType()
+  getInstallType: (): Promise<{ isAppImage: boolean; isSystemInstalled: boolean }> => {
+    return window.api.getInstallType()
   }
 }

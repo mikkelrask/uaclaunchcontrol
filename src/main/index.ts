@@ -223,10 +223,16 @@ async function checkGitHubRelease(): Promise<void> {
       'https://api.github.com/repos/mikkelrask/uaclaunchcontrol/releases/latest',
       (res: IncomingMessage) => {
         let data = ''
-        res.on('data', (chunk: string) => { data += chunk })
+        res.on('data', (chunk: string) => {
+          data += chunk
+        })
         res.on('end', () => {
           try {
-            const release = JSON.parse(data) as { tag_name: string; html_url: string; body?: string }
+            const release = JSON.parse(data) as {
+              tag_name: string
+              html_url: string
+              body?: string
+            }
             const latestVersion = (release.tag_name || '').replace(/^v/, '')
             debug(`[AutoUpdater] Latest version: ${latestVersion}`)
 

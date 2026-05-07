@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 import * as React from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -51,10 +52,10 @@ function Calendar({
         ...classNames
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
+        IconLeft: ({ className, ...props }: React.HTMLAttributes<SVGSVGElement>) => (
           <ChevronLeft className={cn('h-4 w-4', className)} {...props} />
         ),
-        IconRight: ({ className, ...props }) => (
+        IconRight: ({ className, ...props }: React.HTMLAttributes<SVGSVGElement>) => (
           <ChevronRight className={cn('h-4 w-4', className)} {...props} />
         )
       }}

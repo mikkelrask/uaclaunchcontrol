@@ -552,7 +552,7 @@ export async function getModFileCatalog(): Promise<IModFile[]> {
 
     // Migration: requires -> loadOrder
     let migrated = false
-    const migratedData = data.map((file: any) => {
+    const migratedData = data.map((file: IModFile & { requires?: Record<string, number> }) => {
       if (file.requires !== undefined || typeof file.loadOrder === 'number') {
         migrated = true
         const oldRequires = file.requires || {}

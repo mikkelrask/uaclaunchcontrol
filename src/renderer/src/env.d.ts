@@ -1,12 +1,17 @@
 /// <reference types="vite/client" />
 
-interface IVersionData {
-  added?: Array<{ name: string }>
-  removed?: Array<{ name: string }>
-}
+import { IUpdateInfo, IVersionData } from '@shared/schema'
 
 interface ICustomAPI {
   onVersionsUpdated: (callback: (data?: IVersionData) => void) => void
+  onUpdateStatus: (callback: (data: IUpdateInfo) => void) => void
+  getAppVersion: () => Promise<string>
+  checkForUpdates: () => Promise<void>
+  downloadUpdate: () => Promise<void>
+  installUpdate: () => Promise<void>
+  triggerFakeUpdate: () => Promise<void>
+  getInstallType: () => Promise<{ isAppImage: boolean; isSystemInstalled: boolean }>
+  getPathForFile: (file: File) => string
 }
 
 declare global {

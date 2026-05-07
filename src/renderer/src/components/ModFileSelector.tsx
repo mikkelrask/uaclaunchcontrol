@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import {} from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   Select,
   SelectContent,
@@ -25,29 +26,12 @@ export function ModFileSelector({
   onChange
 }: ModFileSelectorProps): React.ReactElement {
   const { toast } = useToast()
-  const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
+  const { data: catalogFiles = [], refetch: loadCatalogFiles } = useQuery({
+    queryKey: ['mod-file-catalog'],
+    queryFn: () => gameService.getModFileCatalog()
+  })
 
   const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)
-
-  const loadCatalogFiles = useCallback(async (): Promise<void> => {
-    try {
-      console.log('Loading catalog files...')
-      const files = await gameService.getModFileCatalog()
-      console.log(`Loaded ${files.length} catalog files:`, files)
-      setCatalogFiles(Array.isArray(files) ? files : [])
-    } catch (error) {
-      console.error('Failed to load catalog files:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to load mod files from catalog',
-        variant: 'destructive'
-      })
-    }
-  }, [toast])
-
-  useEffect(() => {
-    loadCatalogFiles()
-  }, [loadCatalogFiles])
 
   const handleAddFile = (): void => {
     const newFile: IModFile = {
@@ -128,12 +112,12 @@ export function ModFileSelector({
     const catalogFile = catalogFiles.find((f) => f.id === parseInt(catalogFileId + '', 10))
     if (!catalogFile) return
 
-    let newFiles = [...value]
+    const newFiles = [...value]
     const filesToInsert: IModFile[] = []
 
     if (catalogFile.loadOrder && Object.keys(catalogFile.loadOrder).length > 0) {
       const entries = Object.entries(catalogFile.loadOrder).sort((a, b) => a[1] - b[1])
-      for (const [hash, _] of entries) {
+      for (const [hash] of entries) {
         const reqFile = catalogFiles.find((f) => f.hashValue === hash)
         if (reqFile) {
           let fileType = reqFile.fileType

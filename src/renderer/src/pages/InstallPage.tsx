@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/incompatible-library */
 import React, { useState, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
@@ -117,7 +118,7 @@ export const InstallPage: React.FC = () => {
     if (settings?.sourcePortPath && !form.getValues('sourcePort')) {
       form.setValue('sourcePort', settings.sourcePortPath)
     }
-  }, [settings?.sourcePortPath])
+  }, [settings?.sourcePortPath, form])
 
   // Create mod mutation
   const createMutation = useMutation({
@@ -322,7 +323,7 @@ export const InstallPage: React.FC = () => {
   }
 
   const handleJsonDrop = useCallback(
-    async (e: React.DragEvent) => {
+    async (e: React.DragEvent): Promise<void> => {
       const types = Array.from(e.dataTransfer.types || [])
 
       // If this is NOT an external file drop, skip (it's an internal reorder)
@@ -410,7 +411,7 @@ export const InstallPage: React.FC = () => {
         } else {
           toast({ title: 'Import successful', description: 'All files matched from catalog' })
         }
-      } catch (err) {
+      } catch {
         toast({
           title: 'Import failed',
           description: 'Invalid JSON format',
@@ -682,7 +683,7 @@ export const InstallPage: React.FC = () => {
                               onDragOver={handleDragOver}
                               onDrop={handleDrop}
                             >
-                              {files.map((file, index) => {
+                              {files.map((file, index): React.ReactNode => {
                                 const isDragged = draggedIndex === index
                                 const showPlaceholderBefore =
                                   insertionIndex === index && draggedIndex !== index

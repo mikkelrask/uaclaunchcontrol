@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { UpdateInfo } from '@/hooks/useAutoUpdater'
+import { IUpdateInfo } from '@shared/schema'
 import { api } from '@/api'
 import { Download, ExternalLink, RefreshCw } from 'lucide-react'
 import type { IInstallType } from '@shared/schema'
@@ -17,7 +17,7 @@ import type { IInstallType } from '@shared/schema'
 interface UpdateModalProps {
   isOpen: boolean
   onClose: () => void
-  updateInfo: UpdateInfo | null
+  updateInfo: IUpdateInfo | null
   installType: IInstallType | null
 }
 
@@ -28,31 +28,10 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
   installType
 }) => {
   const isSystemInstalled = installType?.isSystemInstalled ?? false
-  const [isDownloading, setIsDownloading] = useState(false)
-  const [downloadProgress, setDownloadProgress] = useState(0)
-
-  useEffect(() => {
-    const handleShowModal = () => {
-      // The modal will be triggered via props from parent
-    }
-
-    window.addEventListener('show-update-modal', handleShowModal)
-    return () => {
-      window.removeEventListener('show-update-modal', handleShowModal)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (updateInfo?.status === 'downloading') {
-      setIsDownloading(true)
-      setDownloadProgress(updateInfo.percent || 0)
-    } else if (updateInfo?.status === 'downloaded') {
-      setIsDownloading(false)
-    }
-  }, [updateInfo])
+  const isDownloading = updateInfo?.status === 'downloading'
+  const downloadProgress = updateInfo?.percent || 0
 
   const handleDownload = (): void => {
-    setIsDownloading(true)
     api.downloadUpdate()
   }
 

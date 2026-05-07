@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 'use client'
 
 import * as React from 'react'
@@ -9,7 +10,8 @@ import {
   useFormContext,
   type ControllerProps,
   type FieldPath,
-  type FieldValues
+  type FieldValues,
+  type ControllerFieldState
 } from 'react-hook-form'
 
 import { cn } from '@/lib/utils'
@@ -31,7 +33,7 @@ const FormField = <
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
 >({
   ...props
-}: ControllerProps<TFieldValues, TName>) => {
+}: ControllerProps<TFieldValues, TName>): React.ReactElement => {
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
       <Controller {...props} />
@@ -39,7 +41,13 @@ const FormField = <
   )
 }
 
-const useFormField = () => {
+const useFormField = (): {
+  id: string
+  name: string
+  formItemId: string
+  formDescriptionId: string
+  formMessageId: string
+} & ControllerFieldState => {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
   const { getFieldState, formState } = useFormContext()
