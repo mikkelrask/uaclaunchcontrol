@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/incompatible-library */
 import React, { useState, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
@@ -35,6 +34,7 @@ import { slugify } from '@/lib/utils'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { CatalogManager } from '@/components/CatalogManager'
 import { api } from '@/api'
+import { Upload } from 'lucide-react'
 
 interface UacModpackImport {
   format: string
@@ -50,6 +50,13 @@ interface UacModpackImport {
     name: string
     hashValue?: string
   }[]
+}
+
+interface WadImportSelection {
+  sourcePath: string
+  fileName: string
+  hashValue: string
+  targetFileName: string
 }
 
 const formSchema = z.object({
@@ -74,6 +81,9 @@ export const InstallPage: React.FC = () => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null)
   const [isJsonDragging, setIsJsonDragging] = useState(false)
+  const [selectedWad, setSelectedWad] = useState<WadImportSelection | null>(null)
+  const [isWadDragging, setIsWadDragging] = useState(false)
+  const [isPreparingWad, setIsPreparingWad] = useState(false)
   // const [currentFilePath, setCurrentFilePath] = useState<string>('');
 
   // Fetch doom versions
@@ -151,6 +161,115 @@ export const InstallPage: React.FC = () => {
   const handleSearch = (query: string): void => {
     // setSearchQuery(query); // Removed unused state
     setLocation(`/?search=${encodeURIComponent(query)}`)
+  }
+
+  const buildHashFileName = (fileName: string, hashValue: string): string => {
+    const extensionIndex = fileName.lastIndexOf('.')
+    if (extensionIndex === -1) return `${fileName}-${hashValue}`
+
+    const baseName = fileName.slice(0, extensionIndex).replace(/(-[a-f0-9]{32})+$/i, '')
+    const extension = fileName.slice(extensionIndex)
+    return `${baseName}-${hashValue}${extension}`
+  }
+
+  const prepareWadImport = async (sourcePath: string): Promise<void> => {
+    const fileName = sourcePath.split(/[\\/]/).pop() || sourcePath
+
+    if (!fileName.toLowerCase().endsWith('.wad')) {
+      toast({
+        title: 'Invalid file',
+        description: 'Please select a .wad file',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    setIsPreparingWad(true)
+    try {
+      const hashValue = await api.computeHash(sourcePath)
+      if (!hashValue) {
+        throw new Error('Failed to compute MD5 hash')
+      }
+
+      setSelectedWad({
+        sourcePath,
+        fileName,
+        hashValue,
+        targetFileName: buildHashFileName(fileName, hashValue)
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `Failed to prepare WAD import: ${error}`,
+        variant: 'destructive'
+      })
+    } finally {
+      setIsPreparingWad(false)
+    }
+  }
+
+  const handleBrowseWad = async (): Promise<void> => {
+    const result = await api.showOpenDialog({
+      title: 'Select WAD File',
+      properties: ['openFile'],
+      filters: [{ name: 'WAD Files', extensions: ['wad'] }],
+      defaultPath: settings?.wadFilesDirectory || undefined
+    })
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      await prepareWadImport(result.filePaths[0])
+    }
+  }
+
+  const importWadMutation = useMutation({
+    mutationFn: (sourcePath: string) => api.importWadFile(sourcePath),
+    onSuccess: (result) => {
+      toast({
+        title: result.alreadyExists ? 'SYSTEM: wad_exists' : 'SYSTEM: wad_imported',
+        description: result.alreadyExists
+          ? `"${result.fileName}" is already in your WAD library. You can make changes in core_settings -> Wad Config.`
+          : `"${result.fileName}" was added. You can make changes in core_settings -> Wad Config.`
+      })
+      setSelectedWad(null)
+      queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to import WAD: ${error}`,
+        variant: 'destructive'
+      })
+    }
+  })
+
+  const handleWadDrop = async (e: React.DragEvent): Promise<void> => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsWadDragging(false)
+
+    const file = e.dataTransfer.files[0]
+    if (!file) return
+
+    const filePath = window.api.getPathForFile(file) || file.name
+    await prepareWadImport(filePath)
+  }
+
+  const handleWadDragOver = (e: React.DragEvent): void => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'copy'
+    setIsWadDragging(true)
+  }
+
+  const handleWadDragLeave = (e: React.DragEvent): void => {
+    e.stopPropagation()
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsWadDragging(false)
+    }
   }
 
   // const removeFile = (index: number) => {
@@ -484,6 +603,12 @@ export const InstallPage: React.FC = () => {
                   >
                     Mod Files
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="wads"
+                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
+                  >
+                    WAD Files
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="install">
@@ -771,6 +896,107 @@ export const InstallPage: React.FC = () => {
                       files={catalogFiles}
                       onChange={(newFiles) => setCatalogFiles(newFiles)}
                     />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="wads">
+                  <div className="space-y-6">
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-8 cursor-pointer transition-all duration-200 ${
+                        isWadDragging
+                          ? 'border-accent-highlight bg-accent-highlight/10'
+                          : 'border-app hover:border-accent-highlight/50 hover:bg-app-primary/50'
+                      }`}
+                      onClick={handleBrowseWad}
+                      onDrop={handleWadDrop}
+                      onDragOver={handleWadDragOver}
+                      onDragLeave={handleWadDragLeave}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          void handleBrowseWad()
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-center gap-2 text-app-muted">
+                        <Upload className="h-5 w-5" />
+                        <span className="text-sm">
+                          {isPreparingWad
+                            ? 'Scanning WAD...'
+                            : 'Drag/drop WAD here, or click to select'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="rounded-md border border-app bg-app-primary p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <h4 className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                            Target Repository
+                          </h4>
+                          <p className="text-sm text-app-secondary break-all mt-1">
+                            {settings?.wadFilesDirectory || '~/.config/uac/wads'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {selectedWad ? (
+                        <>
+                          <Separator />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="block text-xs uppercase tracking-widest text-app-muted font-mono font-bold mb-1">
+                                Source File
+                              </span>
+                              <span className="text-app-primary break-all">
+                                {selectedWad.fileName}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="block text-xs uppercase tracking-widest text-app-muted font-mono font-bold mb-1">
+                                Stored As
+                              </span>
+                              <span className="text-app-primary break-all">
+                                {selectedWad.targetFileName}
+                              </span>
+                            </div>
+                            <div className="md:col-span-2">
+                              <span className="block text-xs uppercase tracking-widest text-app-muted font-mono font-bold mb-1">
+                                MD5
+                              </span>
+                              <code className="text-xs text-app-muted break-all">
+                                {selectedWad.hashValue}
+                              </code>
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2 pt-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="bg-transparent border-app"
+                              onClick={() => setSelectedWad(null)}
+                              disabled={importWadMutation.isPending}
+                            >
+                              Clear
+                            </Button>
+                            <Button
+                              type="button"
+                              className="bg-accent-highlight hover:opacity-90"
+                              onClick={() => importWadMutation.mutate(selectedWad.sourcePath)}
+                              disabled={importWadMutation.isPending}
+                            >
+                              {importWadMutation.isPending ? 'Importing...' : 'Confirm Import'}
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm text-app-muted">
+                          Select a .wad file to review the MD5-based filename before importing.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>

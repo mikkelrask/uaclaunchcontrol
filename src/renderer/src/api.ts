@@ -231,6 +231,17 @@ export const api = {
     if (!response.ok) throw new Error('Failed to move file to mod folder')
     return response.json()
   },
+  importWadFile: async (
+    sourcePath: string
+  ): Promise<{ fileName: string; fullPath: string; hashValue: string; alreadyExists: boolean }> => {
+    const response = await fetch(`${API_BASE}/api/wads/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourcePath })
+    })
+    if (!response.ok) throw new Error('Failed to import WAD file')
+    return response.json()
+  },
   downloadImage: async (url: string, modId: string): Promise<{ fileName: string }> => {
     const response = await fetch(`${API_BASE}/api/mod/download-image`, {
       method: 'POST',

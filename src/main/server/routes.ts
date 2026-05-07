@@ -89,6 +89,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  app.post('/api/wads/import', async (req, res) => {
+    try {
+      const { sourcePath } = req.body
+      if (!sourcePath) {
+        return res.status(400).json({ message: 'Missing sourcePath' })
+      }
+
+      const result = await storage.importWadFile(sourcePath)
+      return res.json(result)
+    } catch (error: unknown) {
+      console.error('Error importing WAD:', error)
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to import WAD'
+      })
+    }
+  })
+
   // Serve mod images dynamically from the images directory
   app.get('/images/:fileName', async (req, res) => {
     try {
