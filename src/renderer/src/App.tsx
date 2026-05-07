@@ -74,7 +74,7 @@ const App: React.FC = () => {
           data.added.forEach((wad) => {
             toast({
               title: 'SYSTEM: wad_watcher',
-              description: `Found and added "${wad.name}" to your library. To update go to core_settings -> wads config`
+              description: `Found and added "${wad.name}" to your library. To update go to core_settings -> WAD Config`
             })
           })
         }
@@ -83,7 +83,7 @@ const App: React.FC = () => {
           data.removed.forEach((wad) => {
             toast({
               title: 'SYSTEM: wad_watcher',
-              description: `The system detected that "${wad.name}" was removed from your library. Launch configurations using this will no longer work`
+              description: `The system detected that "${wad.name}" was removed from your library. Launch protocols using this will no longer work`
             })
           })
         }
@@ -98,8 +98,8 @@ const App: React.FC = () => {
         const info = await api.checkMigration()
         if (info.found && info.path) {
           toast({
-            title: 'SYSTEM: Legacy_Check',
-            description: `Old configuration directory located in ${info.path}. Would you like to import it to the new config-directory?`,
+            title: 'SYSTEM: legacy_check',
+            description: `Legacy configuration directory located in ${info.path}. Would you like to import it to the new config-directory?`,
             duration: 10000,
             action: (
               <ToastAction
@@ -109,9 +109,8 @@ const App: React.FC = () => {
                     const result = await api.executeMigration(info.path!)
                     if (result.success) {
                       toast({
-                        title: 'Data migration success',
-                        description:
-                          'Your legacy configuration has been migrated and moved to ~/.config/uac/.'
+                        title: 'SYSTEM: migration_success',
+                        description: 'Your settings has been migrated and moved to ~/.config/uac/.'
                       })
                       queryClient.invalidateQueries()
                     } else {

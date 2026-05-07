@@ -30,8 +30,7 @@ interface SaveDialogReturn {
   filePath?: string
 }
 
-// Basic API base URL - needs to match the backend port
-const API_BASE = 'http://localhost:7666'
+import { API_BASE } from '@/api'
 
 // Helper function to handle API errors
 async function handleApiResponse<T>(response: Response): Promise<T> {
@@ -225,9 +224,4 @@ export const gameService = {
     })
     return handleApiResponse<SaveDialogReturn>(response)
   }
-}
-
-export async function getModFileCatalog(): Promise<IModFile[]> {
-  const response = await fetch(`${API_BASE}/api/mod-files/catalog`)
-  return handleApiResponse<IModFile[]>(response)
 }

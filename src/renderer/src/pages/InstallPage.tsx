@@ -539,16 +539,16 @@ export const InstallPage: React.FC = () => {
 
         if (missingFiles.length > 0) {
           toast({
-            title: 'Import partially successful',
+            title: 'SYSTEM: failed_successfully',
             description: `${matchedFiles.length} files matched, ${missingFiles.length} missing (shown in red)`
           })
         } else {
-          toast({ title: 'Import successful', description: 'All files matched from catalog' })
+          toast({ title: 'SYSTEM: import_success', description: 'All files matched from catalog' })
         }
       } catch {
         toast({
-          title: 'Import failed',
-          description: 'Invalid JSON format',
+          title: 'FATAL: import_failed',
+          description: 'Invalid JSON format - please check for errors.',
           variant: 'destructive'
         })
       }

@@ -68,8 +68,8 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     }) => gameService.updateMod(id, mod, files),
     onSuccess: (updatedMod, variables) => {
       toast({
-        title: 'Success',
-        description: 'Mod settings saved successfully'
+        title: 'SYSTEM: mod_saved',
+        description: 'Protocol settings successfully saved.'
       })
       queryClient.invalidateQueries({ queryKey: ['/api/mods'] })
       queryClient.setQueryData([`/api/mods/${variables.id}`], {
@@ -80,8 +80,8 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     },
     onError: (error) => {
       toast({
-        title: 'Error',
-        description: `Failed to save settings: ${error}`,
+        title: 'FATAL: settings.save()',
+        description: `Failed to save changes: ${error}`,
         variant: 'destructive'
       })
     }
@@ -92,7 +92,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     mutationFn: (id: string) => gameService.deleteMod(id),
     onSuccess: () => {
       toast({
-        title: 'Success',
+        title: 'SYSTEM: delete_mod',
         description: 'Mod deleted successfully'
       })
       queryClient.invalidateQueries({ queryKey: ['/api/mods'] })
@@ -112,14 +112,14 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     mutationFn: (id: string) => gameService.launchMod(id),
     onSuccess: () => {
       toast({
-        title: 'Game launched',
-        description: `${mod.title} is now running`
+        title: 'SYSTEM: launch_protocol',
+        description: `Process "${mod.title}" is now running`
       })
     },
     onError: (error) => {
       toast({
-        title: 'Launch failed',
-        description: `Failed to launch game: ${error}`,
+        title: 'FATA: launch_protocol',
+        description: `Failed to launch protocol: "${error}"`,
         variant: 'destructive'
       })
     }
@@ -453,7 +453,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="bg-app-secondary text-app-primary border-app max-w-4xl h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
