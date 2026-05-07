@@ -240,7 +240,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 value="wad-config"
                 className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
-                Wad Config
+                WAD Config
               </TabsTrigger>
               <TabsTrigger
                 value="advanced"
@@ -680,7 +680,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                     Hide from Interface
                                   </Label>
                                   <p className="text-xs text-app-muted italic opacity-70">
-                                    Toggling will excluded this wad from the sidebar and wad
+                                    Toggling will excluded this WAD from the sidebar and general WAD
                                     selectors.
                                   </p>
                                 </div>

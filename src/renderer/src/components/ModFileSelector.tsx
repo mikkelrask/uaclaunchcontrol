@@ -1,4 +1,3 @@
-import {} from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Select,
@@ -27,7 +26,7 @@ export function ModFileSelector({
 }: ModFileSelectorProps): React.ReactElement {
   const { toast } = useToast()
   const { data: catalogFiles = [], refetch: loadCatalogFiles } = useQuery({
-    queryKey: ['mod-file-catalog'],
+    queryKey: ['/api/mod-files/catalog'],
     queryFn: () => gameService.getModFileCatalog()
   })
 
@@ -50,16 +49,17 @@ export function ModFileSelector({
       const result = await api.moveToModFolder(sourcePath)
       console.log('[DEBUG] File moved successfully:', result)
       toast({
-        title: 'Success',
-        description: 'File moved to mod folder successfully',
+        title: 'SYSTEM: copy_done',
+        description: 'You mod have been successfully been copied to your mods directory.',
         variant: 'default'
       })
       return result.fullPath
     } catch (error) {
       console.error('Failed to move file:', error)
       toast({
-        title: 'Error',
-        description: 'Failed to move file to mod folder',
+        title: 'FATAL: copy.fail',
+        description:
+          'Could not copy file to mods directory - check settings and mod, and try again.',
         variant: 'destructive'
       })
       return sourcePath

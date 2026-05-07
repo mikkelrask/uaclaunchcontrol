@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import ModFileList from './ModFileList'
 import LaunchOptions from './LaunchOptions'
-import { FolderOpen, Download } from 'lucide-react'
+import { FolderOpen, Download, Gamepad2 } from 'lucide-react'
 import { slugify } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
 
@@ -200,7 +200,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
 
   return (
     <div className="flex-1 overflow-y-auto min-h-0">
-      <div className="space-y-4 p-1">
+      <div className="space-y-4 p-4">
         <div className="mb-4 group relative">
           <button
             type="button"
@@ -361,7 +361,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
         />
       </div>
 
-      <DialogFooter className="flex justify-between mt-6 shrink-0">
+      <DialogFooter className="flex justify-between items-center bg-app-secondary border-t border-app p-4 shrink-0">
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -454,12 +454,22 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-app-secondary text-app-primary border-app max-w-4xl h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
-            {hydratedMod?.title || hydratedMod?.name || 'Mod Settings'}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="bg-app-primary shadow-2xl border-app max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-app bg-app-secondary">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent-highlight/10 rounded-md">
+              <Gamepad2 className="w-5 h-5 text-accent-highlight" />
+            </div>
+            <div>
+              <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
+                {hydratedMod?.title || hydratedMod?.name || 'mod_settings'}
+              </DialogTitle>
+              <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
+                UAC Launch Control // Mod Configuration
+              </DialogDescription>
+            </div>
+          </div>
+        </div>
 
         {isLoading || !hydratedMod ? (
           <div className="p-4 text-center">Loading mod details...</div>

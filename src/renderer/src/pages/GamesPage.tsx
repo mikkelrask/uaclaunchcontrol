@@ -8,7 +8,7 @@ import ViewToggle from '@/components/ViewToggle'
 import GameCard from '@/components/GameCard'
 import GameSettingsModal from '@/components/GameSettingsModal'
 import { gameService } from '@/lib/gameService'
-import { IMod, IDoomVersion } from '../../../shared/schema'
+import { IMod, IDoomVersion } from '@shared/schema'
 import { api } from '@/api'
 
 type ViewMode = 'grid' | 'list' | 'detail'

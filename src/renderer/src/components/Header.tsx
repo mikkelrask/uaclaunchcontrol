@@ -20,75 +20,62 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
+  const isTypingOnInput = (): boolean => {
+    const el = document.activeElement
+    return !!(
+      el &&
+      (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || (el as HTMLElement).isContentEditable)
+    )
+  }
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === '/') {
-        const activeElement = document.activeElement
-        const isTyping =
-          activeElement &&
-          (activeElement.tagName === 'INPUT' ||
-            activeElement.tagName === 'TEXTAREA' ||
-            (activeElement as HTMLElement).isContentEditable)
-
-        if (!isTyping && searchInputRef.current) {
-          event.preventDefault()
-          searchInputRef.current.focus()
-        }
+      if (event.key === '/' && !isTypingOnInput() && searchInputRef.current) {
+        event.preventDefault()
+        searchInputRef.current.focus()
       }
 
-      if (event.key === 'i' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        const activeElement = document.activeElement
-        const isTyping =
-          activeElement &&
-          (activeElement.tagName === 'INPUT' ||
-            activeElement.tagName === 'TEXTAREA' ||
-            (activeElement as HTMLElement).isContentEditable)
-
-        if (!isTyping) {
-          setLocation('/install?tab=install')
-          window.dispatchEvent(new CustomEvent('uac:switch-tab'))
-        }
+      if (
+        event.key === 'i' &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !isTypingOnInput()
+      ) {
+        setLocation('/install?tab=install')
+        window.dispatchEvent(new CustomEvent('uac:switch-tab'))
       }
 
-      if (event.key === 'm' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        const activeElement = document.activeElement
-        const isTyping =
-          activeElement &&
-          (activeElement.tagName === 'INPUT' ||
-            activeElement.tagName === 'TEXTAREA' ||
-            (activeElement as HTMLElement).isContentEditable)
-
-        if (!isTyping) {
-          setLocation('/install?tab=files')
-          window.dispatchEvent(new CustomEvent('uac:switch-tab'))
-        }
+      if (
+        event.key === 'm' &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !isTypingOnInput()
+      ) {
+        setLocation('/install?tab=files')
+        window.dispatchEvent(new CustomEvent('uac:switch-tab'))
       }
 
-      if (event.key === 'w' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        const activeElement = document.activeElement
-        const isTyping =
-          activeElement &&
-          (activeElement.tagName === 'INPUT' ||
-            activeElement.tagName === 'TEXTAREA' ||
-            (activeElement as HTMLElement).isContentEditable)
-
-        if (!isTyping) {
-          setLocation('/install?tab=wads')
-          window.dispatchEvent(new CustomEvent('uac:switch-tab'))
-        }
+      if (
+        event.key === 'w' &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !isTypingOnInput()
+      ) {
+        setLocation('/install?tab=wads')
+        window.dispatchEvent(new CustomEvent('uac:switch-tab'))
       }
 
-      if (event.key === 'l' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        const activeElement = document.activeElement
-        const isTyping =
-          activeElement &&
-          (activeElement.tagName === 'INPUT' ||
-            activeElement.tagName === 'TEXTAREA' ||
-            (activeElement as HTMLElement).isContentEditable)
-
-        if (!isTyping) {
-          setLocation('/')
-        }
+      if (
+        event.key === 'l' &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !isTypingOnInput()
+      ) {
+        setLocation('/')
       }
 
       if (event.key === '.' && (event.ctrlKey || event.metaKey)) {
@@ -96,18 +83,15 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
         setIsSettingsOpen(true)
       }
 
-      if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        const activeElement = document.activeElement
-        const isTyping =
-          activeElement &&
-          (activeElement.tagName === 'INPUT' ||
-            activeElement.tagName === 'TEXTAREA' ||
-            (activeElement as HTMLElement).isContentEditable)
-
-        if (!isTyping) {
-          event.preventDefault()
-          setIsShortcutsOpen(true)
-        }
+      if (
+        event.key === '?' &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !isTypingOnInput()
+      ) {
+        event.preventDefault()
+        setIsShortcutsOpen(true)
       }
     }
 
@@ -143,7 +127,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
           <Input
             ref={searchInputRef}
             type="text"
-            placeholder="DATABASE QUERY"
+            placeholder="DATABASE QUERY /"
             className="bg-app-primary text-app-primary"
             value={searchQuery}
             onChange={(e) => {

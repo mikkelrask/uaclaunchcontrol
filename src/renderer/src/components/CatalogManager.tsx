@@ -2,8 +2,15 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
 import { Combobox } from '@/components/ui/combobox'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -14,7 +21,16 @@ import {
 import { DataTable } from '@/components/ui/data-table'
 import { getCatalogColumns } from '@/components/catalog-columns'
 import { IModFile, IAppSettings } from '@shared/schema'
-import { Trash2, Plus, FolderOpen, Check, ChevronUp, ChevronDown, Upload } from 'lucide-react'
+import {
+  Trash2,
+  Plus,
+  FolderOpen,
+  Check,
+  Pencil,
+  ChevronUp,
+  ChevronDown,
+  Upload
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api, IRegistryMod } from '@/api'
 import { gameService } from '@/lib/gameService'
@@ -40,7 +56,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const { data: catalogFiles = [] } = useQuery({
-    queryKey: ['mod-file-catalog'],
+    queryKey: ['/api/mod-files/catalog'],
     queryFn: () => gameService.getModFileCatalog()
   })
 
@@ -252,8 +268,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       toast({
-        title: 'Success',
-        description: `Added "${prettyName}" to catalog`
+        title: 'SYSTEM: add_success',
+        description: `Added "${prettyName}" to your mod file catalog.`
       })
 
       resetLookupState()
@@ -270,7 +286,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       // Fetch fresh authoritative list and notify parent
       const freshCatalog = await gameService.getModFileCatalog()
-      queryClient.setQueryData(['mod-file-catalog'], freshCatalog)
+      queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
       onChange(freshCatalog)
     } catch (error) {
       toast({
@@ -710,14 +726,14 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       await api.deleteFromCatalog(file.id)
       handleRemoveFile(file.id)
       toast({
-        title: 'Success',
-        description: `Removed "${file.name || file.fileName}" from catalog`
+        title: 'SYSTEM: remove_success',
+        description: `Removed "${file.name || file.fileName}" from your mod file catalog.`
       })
     } catch {
       handleRemoveFile(file.id)
       toast({
-        title: 'Warning',
-        description: 'File removed from view (may need manual deletion from catalog)'
+        title: 'SYSTEM: Warning!',
+        description: `File "${file.name || file.fileName}" removed from view (may need manual deletion from catalog)`
       })
     }
   }
@@ -853,8 +869,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       toast({
-        title: 'Success',
-        description: `Updated "${editForm.name}"`
+        title: 'SYSTEM: save_success',
+        description: `Updated info: "${editForm.name}"`
       })
 
       setIsEditModalOpen(false)
@@ -960,11 +976,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
                 {files.some((f) => f.sidecarOnly) && (
                   <label className="flex items-center gap-2 text-sm text-app-muted cursor-pointer whitespace-nowrap">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={showSidecarOnly}
-                      onChange={(e) => setShowSidecarOnly(e.target.checked)}
-                      className="w-4 h-4"
+                      onCheckedChange={(checked) => setShowSidecarOnly(checked === true)}
                     />
                     Sidecars
                   </label>
@@ -975,14 +989,25 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         )
       })()}
 
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="bg-app-primary border-app max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogTitle>Add Mod File to Catalog</DialogTitle>
-          <DialogDescription>
-            Add a mod file to your catalog. The file will be copied to your mods folder.
-          </DialogDescription>
+      <Dialog open={isAddModalOpen} onOpenChange={(open) => !open && setIsAddModalOpen(false)}>
+        <DialogContent className="bg-app-primary shadow-2xl border-app max-w-md max-h-[80vh] flex flex-col p-0 overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-app bg-app-secondary">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-accent-highlight/10 rounded-md">
+                <Plus className="w-5 h-5 text-accent-highlight" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
+                  add_mod_file
+                </DialogTitle>
+                <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
+                  UAC Launch Control // Catalog Management
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 p-4 overflow-y-auto">
             <div className="space-y-2">
               <Label htmlFor="add-file-select">Select File</Label>
               <div className="flex gap-2">
@@ -1068,12 +1093,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                         disabled={req.isMain}
                         className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
                       />
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={req.sidecarOnly}
-                        onChange={() => handleToggleRequiredSidecar('add', idx)}
+                        onCheckedChange={() => handleToggleRequiredSidecar('add', idx)}
                         disabled={req.isMain}
-                        className="w-4 h-4"
                         title="Sidecar only"
                       />
                       <Button
@@ -1115,12 +1138,12 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             </div>
 
             <div className="flex items-center gap-2">
-              <input
+              <Checkbox
                 id="add-sidecar"
-                type="checkbox"
                 checked={addForm.sidecarOnly}
-                onChange={(e) => setAddForm((prev) => ({ ...prev, sidecarOnly: e.target.checked }))}
-                className="w-4 h-4"
+                onCheckedChange={(checked) =>
+                  setAddForm((prev) => ({ ...prev, sidecarOnly: checked === true }))
+                }
               />
               <Label htmlFor="add-sidecar" className="text-sm font-normal">
                 Sidecar mod (Check if this mod doesn&apos;t work without other mod files)
@@ -1128,7 +1151,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter className="bg-app-secondary border-t border-app p-4 shrink-0">
             <Button
               variant="outline"
               onClick={() => {
@@ -1147,16 +1170,29 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
               <Plus className="h-4 w-4 mr-1" />
               Add to Catalog
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="bg-app-primary border-app max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogTitle>Edit Mod File</DialogTitle>
-          <DialogDescription>Update the mod file details in your catalog.</DialogDescription>
+      <Dialog open={isEditModalOpen} onOpenChange={(open) => !open && setIsEditModalOpen(false)}>
+        <DialogContent className="bg-app-primary shadow-2xl border-app max-w-md max-h-[80vh] flex flex-col p-0 overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-app bg-app-secondary">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-accent-highlight/10 rounded-md">
+                <Pencil className="w-5 h-5 text-accent-highlight" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
+                  edit_mod_file
+                </DialogTitle>
+                <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
+                  UAC Launch Control // Catalog Management
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 p-4 overflow-y-auto">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Name</Label>
               <Input
@@ -1218,12 +1254,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                         disabled={req.isMain}
                         className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
                       />
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={req.sidecarOnly}
-                        onChange={() => handleToggleRequiredSidecar('edit', idx)}
+                        onCheckedChange={() => handleToggleRequiredSidecar('edit', idx)}
                         disabled={req.isMain}
-                        className="w-4 h-4"
                         title="Sidecar only"
                       />
                       <Button
@@ -1265,14 +1299,12 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             </div>
 
             <div className="flex items-center gap-2">
-              <input
+              <Checkbox
                 id="edit-sidecar"
-                type="checkbox"
                 checked={editForm.sidecarOnly}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, sidecarOnly: e.target.checked }))
+                onCheckedChange={(checked) =>
+                  setEditForm((prev) => ({ ...prev, sidecarOnly: checked === true }))
                 }
-                className="w-4 h-4"
               />
               <Label htmlFor="edit-sidecar" className="text-sm font-normal">
                 Sidecar only
@@ -1286,7 +1318,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             )}
           </div>
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter className="bg-app-secondary border-t border-app p-4 shrink-0">
             <Button
               variant="outline"
               onClick={() => setIsEditModalOpen(false)}
@@ -1298,7 +1330,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
               <Check className="h-4 w-4 mr-1" />
               Save Changes
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
