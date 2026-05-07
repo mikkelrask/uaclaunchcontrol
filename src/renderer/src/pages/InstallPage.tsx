@@ -72,7 +72,7 @@ const formSchema = z.object({
 export const InstallPage: React.FC = () => {
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const [, setLocation] = useLocation()
+  const [location, setLocation] = useLocation()
 
   const [activeVersion] = useState<string | null>(null)
   // const [searchQuery] = useState('');
@@ -84,6 +84,7 @@ export const InstallPage: React.FC = () => {
   const [selectedWad, setSelectedWad] = useState<WadImportSelection | null>(null)
   const [isWadDragging, setIsWadDragging] = useState(false)
   const [isPreparingWad, setIsPreparingWad] = useState(false)
+  const [activeTab, setActiveTab] = useState('install')
   // const [currentFilePath, setCurrentFilePath] = useState<string>('');
 
   // Fetch doom versions
@@ -109,6 +110,20 @@ export const InstallPage: React.FC = () => {
       setCatalogFiles(catalogData)
     }
   }, [catalogData])
+
+  useEffect(() => {
+    const handleTabChange = (): void => {
+      const params = new URLSearchParams(window.location.search)
+      const tab = params.get('tab')
+      if (tab === 'install' || tab === 'files' || tab === 'wads') {
+        setActiveTab(tab)
+      }
+    }
+
+    handleTabChange()
+    window.addEventListener('uac:switch-tab', handleTabChange)
+    return () => window.removeEventListener('uac:switch-tab', handleTabChange)
+  }, [location])
 
   // Setup form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -589,7 +604,7 @@ export const InstallPage: React.FC = () => {
               <CardTitle>New Launch Configuration</CardTitle>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="install">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="mb-4 bg-app-primary border-app p-1">
                   <TabsTrigger
                     value="install"

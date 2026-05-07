@@ -45,7 +45,36 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
             (activeElement as HTMLElement).isContentEditable)
 
         if (!isTyping) {
-          setLocation('/install')
+          setLocation('/install?tab=install')
+          window.dispatchEvent(new CustomEvent('uac:switch-tab'))
+        }
+      }
+
+      if (event.key === 'm' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const activeElement = document.activeElement
+        const isTyping =
+          activeElement &&
+          (activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            (activeElement as HTMLElement).isContentEditable)
+
+        if (!isTyping) {
+          setLocation('/install?tab=files')
+          window.dispatchEvent(new CustomEvent('uac:switch-tab'))
+        }
+      }
+
+      if (event.key === 'w' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const activeElement = document.activeElement
+        const isTyping =
+          activeElement &&
+          (activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            (activeElement as HTMLElement).isContentEditable)
+
+        if (!isTyping) {
+          setLocation('/install?tab=wads')
+          window.dispatchEvent(new CustomEvent('uac:switch-tab'))
         }
       }
 

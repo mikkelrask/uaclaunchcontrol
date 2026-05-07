@@ -15,6 +15,8 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
   const shortcuts = [
     { key: '/', description: 'Focus search input' },
     { key: 'i', description: 'Go to Install page' },
+    { key: 'm', description: 'Go to Install > Mod Files tab' },
+    { key: 'w', description: 'Go to Install > WAD Files tab' },
     { key: 'l', description: 'Go to Launch page' },
     { key: 'Ctrl + .', description: 'Open Settings' },
     { key: '?', description: 'Show this help' }
