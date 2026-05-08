@@ -9,11 +9,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Combobox } from '@/components/ui/combobox'
-import { FolderOpenIcon, PlusIcon, TrashIcon } from 'lucide-react'
+import { FolderOpenIcon, PlusIcon, TrashIcon, ExternalLink } from 'lucide-react'
 import { gameService } from '@/lib/gameService'
 import type { IModFile } from '@shared/schema'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
+
+let _nextTempId = Date.now()
 
 interface ModFileSelectorProps {
   value: IModFile[]
@@ -34,7 +36,7 @@ export function ModFileSelector({
 
   const handleAddFile = (): void => {
     const newFile: IModFile = {
-      id: Date.now(),
+      id: ++_nextTempId,
       name: '',
       filePath: '',
       fileType: 'WAD',
@@ -44,16 +46,13 @@ export function ModFileSelector({
     onChange([...value, newFile])
   }
 
-  const handleMoveFileToModFolder = async (sourcePath: string): Promise<string> => {
+  const handleMoveFileToModFolder = async (
+    sourcePath: string
+  ): Promise<{ fullPath: string; relativePath: string; hashValue: string }> => {
     try {
       const result = await api.moveToModFolder(sourcePath)
       console.log('[DEBUG] File moved successfully:', result)
-      toast({
-        title: 'SYSTEM: copy_done',
-        description: 'You mod have been successfully been copied to your mods directory.',
-        variant: 'default'
-      })
-      return result.fullPath
+      return result
     } catch (error) {
       console.error('Failed to move file:', error)
       toast({
@@ -62,7 +61,7 @@ export function ModFileSelector({
           'Could not copy file to mods directory - check settings and mod, and try again.',
         variant: 'destructive'
       })
-      return sourcePath
+      return { fullPath: sourcePath, relativePath: '', hashValue: '' }
     }
   }
 
@@ -181,35 +180,75 @@ export function ModFileSelector({
           detectedType = 'WAD'
         }
 
-        const newFilePath = await handleMoveFileToModFolder(selectedFilePath)
+        const moveResult = await handleMoveFileToModFolder(selectedFilePath)
+        const newFullPath = moveResult.fullPath
+        const relativePath = moveResult.relativePath
+        const fileHashValue = moveResult.hashValue
 
-        let catalogId = Date.now()
-        try {
-          const savedCatalogFile = await api.addToCatalog({
-            name: fileName,
-            filePath: newFilePath,
-            fileType: detectedType,
-            fileName: fileName
-          })
-          catalogId = savedCatalogFile.id
-          loadCatalogFiles()
-        } catch (err) {
-          console.error('Failed to add to catalog eagerly:', err)
+        let fileToUse: IModFile = {
+          id: ++_nextTempId,
+          filePath: relativePath,
+          fileName: fileName,
+          fileType: detectedType,
+          hashValue: fileHashValue,
+          name: fileName,
+          isRequired: true
+        }
+        let isDuplicate = false
+
+        // Check for existing entry by hash — reuse it if found
+        if (fileHashValue) {
+          const existingEntry = catalogFiles.find((f) => f.hashValue === fileHashValue)
+          if (existingEntry) {
+            console.log(
+              `[DEBUG] Duplicate file detected by hash ${fileHashValue}, using existing catalog entry ${existingEntry.id}`
+            )
+            toast({
+              title: 'SYSTEM: already_in_catalog',
+              description: `"${existingEntry.name}" exists in catalog. Using existing entry.`,
+              variant: 'default'
+            })
+            fileToUse = existingEntry
+            isDuplicate = true
+          }
+        }
+
+        if (!isDuplicate) {
+          // Not a duplicate — save to catalog
+          try {
+            const savedCatalogFile = await api.addToCatalog({
+              name: fileName,
+              filePath: relativePath,
+              fileType: detectedType,
+              fileName: fileName,
+              hashValue: fileHashValue
+            })
+            fileToUse = { ...fileToUse, ...savedCatalogFile }
+            loadCatalogFiles()
+            toast({
+              title: 'SYSTEM: copy_done',
+              description: 'Mod file copied to your mods directory.',
+              variant: 'default'
+            })
+          } catch (err) {
+            console.error('Failed to add to catalog eagerly:', err)
+          }
         }
 
         console.log('Selected file:', selectedFilePath)
-        console.log('New file path:', newFilePath)
+        console.log('New file path:', newFullPath)
         console.log('File name:', fileName)
         console.log('Detected type:', detectedType)
 
         const newFiles = [...value]
         newFiles[index] = {
           ...newFiles[index],
-          id: catalogId,
-          filePath: newFilePath,
-          fileName: fileName,
-          fileType: detectedType,
-          name: !newFiles[index].name ? fileName : newFiles[index].name,
+          id: fileToUse.id,
+          filePath: fileToUse.filePath || relativePath,
+          fileName: fileToUse.fileName || fileName,
+          fileType: fileToUse.fileType || detectedType,
+          hashValue: fileToUse.hashValue || fileHashValue,
+          name: !newFiles[index].name ? fileToUse.name : newFiles[index].name,
           isRequired: newFiles[index].isRequired !== undefined ? newFiles[index].isRequired : true
         }
 
@@ -260,7 +299,7 @@ export function ModFileSelector({
         <div className="space-y-3">
           {value.map((file, index) => (
             <div key={index} className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-2">
+              <div className="flex-1 flex items-center gap-1">
                 <Input
                   placeholder="Pretty name"
                   value={file.name || ''}
@@ -268,8 +307,20 @@ export function ModFileSelector({
                   className="bg-app-primary border-app"
                 />
                 {file.version && (
-                  <span className="text-xs text-app-muted whitespace-nowrap">({file.version})</span>
+                  <span className="text-xs text-app-muted whitespace-nowrap shrink-0">
+                    ({file.version})
+                  </span>
                 )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => file.url && window.open(file.url, '_blank')}
+                  className={`p-1 h-8 w-8 shrink-0 ${file.url ? 'text-app-muted hover:text-app-primary' : 'text-app-muted/30 cursor-not-allowed'}`}
+                  title={file.url || 'No URL'}
+                  type="button"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
               </div>
 
               <div className="w-24">
@@ -288,22 +339,14 @@ export function ModFileSelector({
                 </Select>
               </div>
 
-              <div className="flex-1 flex gap-1">
-                <Input
-                  placeholder="File path"
-                  value={file.filePath || ''}
-                  onChange={(e) => handleUpdateFile(index, 'filePath', e.target.value)}
-                  className="bg-app-primary border-app flex-1"
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => handleBrowseFile(index)}
-                  className="border-app"
-                  type="button"
-                >
-                  <FolderOpenIcon className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                onClick={() => handleBrowseFile(index)}
+                className="border-app shrink-0"
+                type="button"
+              >
+                <FolderOpenIcon className="h-4 w-4" />
+              </Button>
 
               <div className="w-32">
                 <Combobox

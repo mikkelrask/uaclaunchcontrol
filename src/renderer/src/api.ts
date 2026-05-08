@@ -222,7 +222,7 @@ export const api = {
   },
   moveToModFolder: async (
     sourcePath: string
-  ): Promise<{ fullPath: string; relativePath: string }> => {
+  ): Promise<{ fullPath: string; relativePath: string; hashValue: string }> => {
     const response = await fetch(`${API_BASE}/api/mod-files/move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

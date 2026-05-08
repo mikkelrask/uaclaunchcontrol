@@ -861,7 +861,7 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
       if (file.filePath.startsWith('files/')) {
         // File already moved, use as-is
         relativePath = file.filePath
-        hashValue = await computeFileHash(relativePath)
+        hashValue = file.hashValue || (await computeFileHash(relativePath))
         originalFileName = file.fileName || path.basename(relativePath)
       } else {
         // Move file to mod folder with hash-based filename
@@ -869,6 +869,15 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
         relativePath = moved.relativePath
         hashValue = moved.hashValue
         originalFileName = file.filePath.split(/[\\/]/).pop() || file.filePath
+      }
+
+      // Check for duplicate by hash — if an entry with this hash already exists, return it
+      if (hashValue) {
+        const existing = catalog.find((entry) => entry.hashValue === hashValue)
+        if (existing) {
+          debug(`Duplicate file detected by hash ${hashValue}, returning existing entry`)
+          return existing
+        }
       }
 
       // Set fileName to the new filename in the mod folder
