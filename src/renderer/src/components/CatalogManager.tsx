@@ -52,6 +52,13 @@ interface RequiredModEntry {
   isMain?: boolean
 }
 
+function deriveFileType(ext: string): string {
+  const upper = ext.toUpperCase()
+  if (upper === 'PK3' || upper === 'PK7' || upper === 'IPK3' || upper === 'ZIP') return 'PK3'
+  if (upper === 'DEH' || upper === 'BEX') return 'DEH'
+  return 'WAD'
+}
+
 export function CatalogManager({ files, onChange }: CatalogManagerProps): React.ReactElement {
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -121,11 +128,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
         const fileName = req.filePath.split(/[\\/]/).pop() || req.filePath
 
-        // Derive fileType from extension
-        const ext = fileName.split('.').pop()?.toUpperCase() || ''
-        let reqFileType = 'WAD'
-        if (ext === 'PK3' || ext === 'PK7' || ext === 'IPK3' || ext === 'ZIP') reqFileType = 'PK3'
-        else if (ext === 'DEH' || ext === 'BEX') reqFileType = 'DEH'
+        const reqFileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
 
         await api.addToCatalog({
           name: req.name,
@@ -156,16 +159,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
     const fileName = addForm.filePath.split(/[\\/]/).pop() || addForm.filePath
     const prettyName = addForm.name.trim() || fileName.replace(/\.[^.]+$/, '')
-    const extension = fileName.split('.').pop()?.toUpperCase() || ''
-    let fileType = 'WAD'
-
-    if (extension === 'PK3' || extension === 'PK7' || extension === 'IPK3' || extension === 'ZIP') {
-      fileType = 'PK3'
-    } else if (extension === 'DEH' || extension === 'BEX') {
-      fileType = 'DEH'
-    } else if (extension === 'WAD') {
-      fileType = 'WAD'
-    }
+    const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
 
     try {
       // Move file first to get hash-based filename
@@ -313,10 +307,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         const name = fileName.replace(/\.[^.]+$/, '')
 
         // Detect file type from extension
-        const ext = fileName.split('.').pop()?.toUpperCase() || ''
-        let fileType = 'WAD'
-        if (ext === 'PK3' || ext === 'PK7' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
-        else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
+        const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
 
         // Compute hash
         let hash = ''
@@ -346,8 +337,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             console.log('[Registry] Looking up hash:', hash, 'at', apiUrl)
             registryData = await api.lookupMod(hash, apiUrl)
             console.log('[Registry] Lookup result:', registryData)
-          } catch (e) {
-            console.error('[Registry] Lookup failed:', e)
+          } catch (error: unknown) {
+            console.error('[Registry] Lookup failed:', error)
           }
         }
 
@@ -463,9 +454,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       // Detect file type from extension
-      let fileType = 'WAD'
-      if (ext === 'PK3' || ext === 'PK7' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
-      else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
+      const fileType = deriveFileType(ext)
 
       const fileName = droppedPath.split(/[\\/]/).pop() || ''
       const name = fileName.replace(/\.[^.]+$/, '')
@@ -498,8 +487,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           console.log('[Registry] Looking up hash:', hash, 'at', apiUrl)
           registryData = await api.lookupMod(hash, apiUrl)
           console.log('[Registry] Lookup result:', registryData)
-        } catch (e) {
-          console.error('[Registry] Lookup failed:', e)
+        } catch (error: unknown) {
+          console.error('[Registry] Lookup failed:', error)
         }
       }
 

@@ -45,8 +45,8 @@ async function handleApiResponse<T>(response: Response): Promise<T> {
         const text = await response.text()
         console.error('API non-json error:', text)
       }
-    } catch (e) {
-      console.error('Failed to parse error response', e)
+    } catch (error: unknown) {
+      console.error('Failed to parse error response', error)
     }
     throw new Error(errorMessage)
   }

@@ -11,8 +11,7 @@ import {
   IDoomVersion,
   ISourcePort,
   IProtocol,
-  IModFile,
-  InsertProtocol
+  IModFile
 } from '../../shared/schema'
 import { debug } from '../../shared/debug'
 
@@ -479,8 +478,8 @@ export function startWadWatcher(): void {
 
       try {
         fs.ensureDirSync(wadDir)
-      } catch (e) {
-        console.error(`[DEBUG] DEBUG: Failed to ensure directory ${wadDir}:`, e)
+      } catch (error: unknown) {
+        console.error(`[DEBUG] DEBUG: Failed to ensure directory ${wadDir}:`, error)
         return
       }
 
@@ -1145,71 +1144,7 @@ export async function getProtocol(protocolId: string): Promise<IProtocol & { fil
   }
 }
 
-// Helper functions (ensureDir, readFile, writeFile, deleteFile) remain the same
-// Ensure directory exists
-/*
-async function ensureDir(dirPath: string): Promise<void> {
-  try {
-    await fs.ensureDir(dirPath);
-  } catch (error: unknown) {
-    console.error(`Error ensuring directory ${dirPath}:`, error);
-  }
-}
-*/
 
-// Read file content
-/*
-async function _readFile<T>(filePath: string, defaultValue: T): Promise<T> {
-  try {
-    if (await fs.pathExists(filePath)) {
-      const content = await fs.readFile(filePath, 'utf-8');
-      return JSON.parse(content);
-    }
-  } catch (error) {
-    console.error(`Error reading ${filePath}:`, error);
-  }
-  return defaultValue;
-}
-*/
-
-// Write file content
-/*
-async function _writeFile<T>(filePath: string, data: T): Promise<boolean> {
-  try {
-    await ensureDir(path.dirname(filePath));
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
-    return true;
-  } catch (error) {
-    console.error(`Error writing ${filePath}:`, error);
-    return false;
-  }
-}
-*/
-
-// Delete a file
-/*
-async function _deleteFile(filePath: string): Promise<boolean> {
-  try {
-    if (await fs.pathExists(filePath)) {
-      await fs.remove(filePath); // fs.remove handles files and directories
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error(`Error deleting ${filePath}:`, error);
-    return false;
-  }
-}
-*/
-
-// Get path for a mod's JSON config file (used internally?)
-/*
-function _getProtocolFilePath(protocolId: string): string {
-  return path.join(MODS_DIR, `${protocolId}.json`);
-}
-*/
-
-// --- API-required stubs ---
 
 export async function getDoomVersion(id: string): Promise<IDoomVersion | undefined> {
   try {
@@ -1221,21 +1156,6 @@ export async function getDoomVersion(id: string): Promise<IDoomVersion | undefin
   }
 }
 
-export async function createDoomVersion(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _data: Partial<IDoomVersion>
-): Promise<IDoomVersion | null> {
-  // TODO: Implement createDoomVersion
-  return null
-}
-
-export async function deleteDoomVersion(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _id: string | number
-): Promise<boolean> {
-  // TODO: Implement deleteDoomVersion
-  return false
-}
 
 export async function updateDoomVersion(
   id: string,
@@ -1252,57 +1172,6 @@ export async function updateDoomVersion(
   return updated
 }
 
-export async function updateSettings(settings: IAppSettings): Promise<IAppSettings> {
-  // TODO: Implement updateSettings
-  return settings
-}
-
-export async function getAvailableModFiles(): Promise<IModFile[] | undefined> {
-  // TODO: Implement getAvailableModFiles
-  return []
-}
-
-export async function getModFilesByType(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _fileType: string
-): Promise<IModFile[]> {
-  // TODO: Implement getModFilesByType
-  return []
-}
-
-export async function createModFile(file: Omit<IModFile, 'id' | 'modId'>): Promise<IModFile> {
-  // TODO: Implement createModFile
-  return file as unknown as IModFile
-}
-
-export async function getProtocolsByDoomVersion(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _versionId: string | number
-): Promise<IProtocol[]> {
-  // TODO: Implement getProtocolsByDoomVersion
-  return []
-}
-
-export async function getModFiles(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _protocolId: string | number
-): Promise<IModFile[]> {
-  // TODO: Implement getModFiles
-  return []
-}
-
-export async function createProtocol(protocol: InsertProtocol): Promise<IProtocol> {
-  // TODO: Implement createProtocol
-  return { ...protocol, id: '', files: [] } as IProtocol
-}
-
-export async function updateProtocol(
-  _id: string | number,
-  _protocol: Partial<IProtocol>
-): Promise<IProtocol | undefined> {
-  // TODO: Implement updateProtocol
-  return _protocol as unknown as IProtocol
-}
 
 export async function deleteProtocol(id: string | number): Promise<boolean | undefined> {
   try {
