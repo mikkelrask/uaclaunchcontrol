@@ -187,12 +187,103 @@ export function initStorage(): boolean {
       startWadWatcher()
     })
 
+    // Run source port migration (settings + old mods)
+    migrateSourcePorts().catch((err) =>
+      console.error('Source port migration failed:', err)
+    )
+
     console.log('Storage initialized successfully')
     return true
   } catch (error: unknown) {
     console.error('Failed to initialize storage:', error)
     isInitialized = false // Reset on failure so it can try again
     return false
+  }
+}
+
+/**
+ * Migrate old sourcePortPath to sourcePorts[] and
+ * backfill sourcePortId on old mod files that still use the legacy sourcePort string.
+ */
+async function migrateSourcePorts(): Promise<void> {
+  try {
+    if (!fs.existsSync(SETTINGS_FILE)) return
+    const settingsData = await fs.readJSON(SETTINGS_FILE)
+    let migrated = false
+
+    // Legacy gzDoomPath → sourcePortPath
+    if (settingsData.gzDoomPath !== undefined) {
+      settingsData.sourcePortPath = settingsData.gzDoomPath
+      delete settingsData.gzDoomPath
+      migrated = true
+    }
+
+    // sourcePortPath → sourcePorts[]
+    if (settingsData.sourcePortPath !== undefined && (!settingsData.sourcePorts || settingsData.sourcePorts.length === 0)) {
+      const oldPath = settingsData.sourcePortPath
+      const newPort: ISourcePort = {
+        id: crypto.randomUUID(),
+        name: 'Default (migrated)',
+        executablePath: oldPath,
+        family: detectFamilyFromPath(oldPath),
+        ignored: false
+      }
+      settingsData.sourcePorts = [newPort]
+      settingsData.defaultSourcePortId = newPort.id
+      delete settingsData.sourcePortPath
+      migrated = true
+      debug('[migrateSourcePorts] Converted sourcePortPath to sourcePort:', newPort)
+    }
+
+    if (migrated) {
+      const merged = { ...DEFAULT_SETTINGS, ...settingsData }
+      await fs.writeJSON(SETTINGS_FILE, merged, { spaces: 2 })
+      debug('[migrateSourcePorts] Saved migrated settings')
+    }
+
+    // 2. Backfill sourcePortId on old mod files
+    const settings = { ...DEFAULT_SETTINGS, ...settingsData }
+    const defaultPortId = settings.defaultSourcePortId || settings.sourcePorts[0]?.id
+    if (!defaultPortId) return
+
+    if (!fs.existsSync(MODS_DIR)) return
+    const modFiles = await fs.readdir(MODS_DIR)
+    let modsMigrated = 0
+
+    for (const filename of modFiles) {
+      if (!filename.endsWith('.json')) continue
+      const modPath = path.join(MODS_DIR, filename)
+      try {
+        const modData = await fs.readJSON(modPath)
+        if (modData.sourcePort !== undefined && modData.sourcePort !== null && !modData.sourcePortId) {
+          const oldVal = String(modData.sourcePort)
+          let match: ISourcePort | undefined
+          if (oldVal.includes('/') || oldVal.includes('\\')) {
+            match = settings.sourcePorts.find(
+              (p) => p.executablePath === oldVal || p.executablePath.endsWith(oldVal)
+            )
+          } else {
+            match = settings.sourcePorts.find(
+              (p) => p.name.toLowerCase().includes(oldVal.toLowerCase()) ||
+                oldVal.toLowerCase().includes(p.name.toLowerCase())
+            ) || settings.sourcePorts.find((p) => p.family === detectFamilyFromPath(oldVal))
+          }
+          modData.sourcePortId = match?.id || defaultPortId
+          delete modData.sourcePort
+          await fs.writeJSON(modPath, modData, { spaces: 2 })
+          modsMigrated++
+          debug(`[migrateSourcePorts] Migrated mod ${filename}: sourcePort → sourcePortId=${modData.sourcePortId}`)
+        }
+      } catch (err) {
+        console.warn(`[migrateSourcePorts] Failed to migrate mod ${filename}:`, err)
+      }
+    }
+
+    if (modsMigrated > 0) {
+      debug(`[migrateSourcePorts] Migrated ${modsMigrated} mod files`)
+    }
+  } catch (err) {
+    console.error('[migrateSourcePorts] Migration failed:', err)
   }
 }
 
