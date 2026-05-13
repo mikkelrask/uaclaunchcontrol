@@ -9,6 +9,7 @@ import {
   IAppSettings,
   IDatabaseLink,
   IDoomVersion,
+  ISourcePort,
   IMod,
   IModFile,
   InsertMod
@@ -36,8 +37,19 @@ const DEFAULT_DATABASE_LINKS: IDatabaseLink[] = [
   { name: 'ITCH', url: 'https://itch.io/game-mods/tag-doom' }
 ]
 
+function detectFamilyFromPath(p: string): ISourcePort['family'] {
+  const lower = p.toLowerCase()
+  if (lower.includes('uzdoom')) return 'uzdoom'
+  if (lower.includes('lzdoom')) return 'lzdoom'
+  if (lower.includes('gzdoom')) return 'gzdoom'
+  if (lower.includes('zdoom')) return 'zdoom'
+  if (lower.includes('zandronum')) return 'zandronum'
+  return 'other'
+}
+
 const DEFAULT_SETTINGS: IAppSettings = {
-  sourcePortPath: 'uzdoom',
+  sourcePorts: [],
+  defaultSourcePortId: undefined,
   theme: 'dark',
   savegamesPath: '~/.config/uac/saves',
   modsDirectory: '~/.config/uac/mods',
@@ -57,7 +69,6 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     slug: 'doom',
     args: '-iwad doom.wad',
     icon: 'doom.png',
-    executable: 'gzdoom',
     parameters: '',
     defaultIwad: 'doom.wad'
   },
@@ -67,7 +78,6 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     slug: 'doom2',
     args: '-iwad doom2.wad',
     icon: 'doom2.png',
-    executable: 'gzdoom',
     parameters: '',
     defaultIwad: 'doom2.wad'
   },
@@ -77,7 +87,6 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     slug: 'tnt',
     args: '-iwad tnt.wad',
     icon: 'tnt.png',
-    executable: 'gzdoom',
     parameters: '',
     defaultIwad: 'tnt.wad'
   },
@@ -87,7 +96,6 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     slug: 'plutonia',
     args: '-iwad plutonia.wad',
     icon: 'plutonia.png',
-    executable: 'gzdoom',
     parameters: '',
     defaultIwad: 'plutonia.wad'
   },
@@ -97,7 +105,6 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     slug: 'freedoom1',
     args: '-iwad freedoom1.wad',
     icon: 'freedoom1.png',
-    executable: 'gzdoom',
     parameters: '',
     defaultIwad: 'freedoom1.wad'
   },
@@ -107,7 +114,6 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     slug: 'freedoom2',
     args: '-iwad freedoom2.wad',
     icon: 'freedoom2.png',
-    executable: 'gzdoom',
     parameters: '',
     defaultIwad: 'freedoom2.wad'
   },
@@ -117,7 +123,6 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     slug: 'heretic',
     args: '-iwad heretic.wad',
     icon: 'heretic.png',
-    executable: 'gzdoom',
     parameters: '',
     defaultIwad: 'heretic.wad'
   },
@@ -127,7 +132,6 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     slug: 'hexen',
     args: '-iwad hexen.wad',
     icon: 'hexen.png',
-    executable: 'gzdoom',
     parameters: '',
     defaultIwad: 'hexen.wad'
   },
@@ -137,7 +141,6 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     slug: 'hexen-deathkings',
     args: '-iwad hexdd.wad',
     icon: 'hexdd.png',
-    executable: 'gzdoom',
     parameters: '-iwad hexdd.wad',
     defaultIwad: 'hexdd.wad'
   }
@@ -219,21 +222,46 @@ export async function getSettings(): Promise<IAppSettings> {
     initStorage() // Ensure directories/files exist
     debug('Reading settings from', SETTINGS_FILE)
     const settingsData = await fs.readJSON(SETTINGS_FILE)
+
+    // Migration: gzDoomPath → sourcePortPath (legacy migration already in place)
     if (settingsData.gzDoomPath !== undefined) {
       settingsData.sourcePortPath = settingsData.gzDoomPath
       delete settingsData.gzDoomPath
-      await fs.writeJSON(SETTINGS_FILE, settingsData, { spaces: 2 })
     }
+
+    // Migration: sourcePortPath → sourcePorts[]
+    if (settingsData.sourcePortPath !== undefined && (!settingsData.sourcePorts || settingsData.sourcePorts.length === 0)) {
+      const oldPath = settingsData.sourcePortPath
+      const newPort: ISourcePort = {
+        id: crypto.randomUUID(),
+        name: 'Default (migrated)',
+        executablePath: oldPath,
+        family: detectFamilyFromPath(oldPath),
+        ignored: false
+      }
+      settingsData.sourcePorts = [newPort]
+      settingsData.defaultSourcePortId = newPort.id
+      delete settingsData.sourcePortPath
+      debug('Migrated legacy sourcePortPath to sourcePorts:', newPort)
+    }
+
     const settings: IAppSettings = { ...DEFAULT_SETTINGS, ...settingsData }
+
+    // If migration happened, persist it so subsequent loads are clean
+    if (settingsData.sourcePorts && settingsData.defaultSourcePortId) {
+      await fs.writeJSON(SETTINGS_FILE, settings, { spaces: 2 })
+    }
+
     debug('Retrieved settings from file:', settings)
 
     // Resolve tildes for all known path fields before sending to UI
     const resolvedSettings: IAppSettings = {
       ...settings,
       configPath: CONFIG_DIR,
-      sourcePortPath: settings.sourcePortPath
-        ? resolvePath(settings.sourcePortPath)
-        : settings.sourcePortPath,
+      sourcePorts: settings.sourcePorts.map((p) => ({
+        ...p,
+        executablePath: resolvePath(p.executablePath)
+      })),
       savegamesPath: settings.savegamesPath
         ? resolvePath(settings.savegamesPath)
         : settings.savegamesPath,
@@ -402,7 +430,7 @@ export async function syncDoomVersions(
 
     // Load existing versions to detect changes
     const oldVersions: IDoomVersion[] = await fs.readJSON(DOOM_VERSIONS_FILE).catch(() => [])
-    const executable = settings.sourcePortPath || 'uzdoom'
+
 
     await fs.ensureDir(wadDir)
     const files = await fs.readdir(wadDir)
@@ -492,7 +520,6 @@ export async function syncDoomVersions(
           slug: id,
           args: `-iwad ${escapePathForCmd(wadPath)}`,
           icon: '',
-          executable: executable,
           parameters: '',
           defaultIwad: wadPath
         })

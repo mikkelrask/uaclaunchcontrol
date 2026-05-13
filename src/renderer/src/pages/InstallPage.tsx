@@ -27,9 +27,10 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/hooks/use-toast'
 import { gameService } from '@/lib/gameService'
-import { IMod, IModFile, IAppSettings, IDoomVersion } from '@shared/schema'
+import { IMod, IModFile, IAppSettings, IDoomVersion, ISourcePort } from '@shared/schema'
 import { slugify } from '@/lib/utils'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { CatalogManager } from '@/components/CatalogManager'
@@ -63,7 +64,7 @@ const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   doomVersionId: z.string().min(1, 'Base game is required'),
-  sourcePort: z.string().min(1, 'Source port is required'),
+  sourcePortId: z.string().min(1, 'Source port is required'),
   saveDirectory: z.string().optional(),
   screenshotPath: z.string().optional(),
   launchParameters: z.string().optional()
@@ -125,6 +126,13 @@ export const InstallPage: React.FC = () => {
     return () => window.removeEventListener('uac:switch-tab', handleTabChange)
   }, [location])
 
+  // Default source port ID from settings
+  const defaultPortId = (settings as IAppSettings)?.sourcePorts?.length
+    ? (settings as IAppSettings).defaultSourcePortId
+      ? (settings as IAppSettings).defaultSourcePortId
+      : (settings as IAppSettings).sourcePorts.find((p) => !p.ignored)?.id || ''
+    : ''
+
   // Setup form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -132,18 +140,23 @@ export const InstallPage: React.FC = () => {
       title: '',
       description: '',
       doomVersionId: '',
-      sourcePort: settings?.sourcePortPath || '',
+      sourcePortId: defaultPortId,
       saveDirectory: '',
       launchParameters: ''
     }
   })
 
-  // Update sourcePort default when settings load
+  // Update sourcePortId default when settings load
   useEffect(() => {
-    if (settings?.sourcePortPath && !form.getValues('sourcePort')) {
-      form.setValue('sourcePort', settings.sourcePortPath)
+    const ports = (settings as IAppSettings)?.sourcePorts
+    if (ports && ports.length > 0 && !form.getValues('sourcePortId')) {
+      const defaultId =
+        (settings as IAppSettings).defaultSourcePortId ||
+        ports.find((p) => !p.ignored)?.id ||
+        ports[0].id
+      form.setValue('sourcePortId', defaultId)
     }
-  }, [settings?.sourcePortPath, form])
+  }, [settings, form])
 
   // Create mod mutation
   const createMutation = useMutation({
@@ -342,7 +355,7 @@ export const InstallPage: React.FC = () => {
       title: data.title,
       description: data.description || '',
       doomVersionId: data.doomVersionId,
-      sourcePort: data.sourcePort,
+      sourcePortId: data.sourcePortId,
       saveDirectory: relativeSaveDir,
       screenshotPath: localScreenshotPath,
       launchParameters: data.launchParameters,
@@ -497,10 +510,16 @@ export const InstallPage: React.FC = () => {
         form.setValue('description', game.description || '')
         form.setValue('launchParameters', game.launchParameters || '')
 
-        // Only import sourcePort if it's a known port name, not a full path
-        const knownPorts = ['gzdoom', 'uzdoom', 'zandronum']
-        if (game.sourcePort && knownPorts.includes(game.sourcePort.toLowerCase())) {
-          form.setValue('sourcePort', game.sourcePort)
+        // Match imported sourcePort against configured ports
+        const ports: ISourcePort[] = (settings as IAppSettings)?.sourcePorts || []
+        if (game.sourcePort && ports.length > 0) {
+          const lower = game.sourcePort.toLowerCase()
+          const matchedPort =
+            ports.find((p) => p.name.toLowerCase().includes(lower) || p.family === lower) ||
+            ports.find((p) => !p.ignored)
+          if (matchedPort) {
+            form.setValue('sourcePortId', matchedPort.id)
+          }
         }
 
         // Trigger saveDirectory slugification
@@ -751,14 +770,25 @@ export const InstallPage: React.FC = () => {
 
                           <FormField
                             control={form.control}
-                            name="sourcePort"
+                            name="sourcePortId"
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
                                   Source Port
                                 </FormLabel>
                                 <FormControl>
-                                  <Input className="bg-app-primary border-app" {...field} />
+                                  <Combobox
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    options={((settings as IAppSettings)?.sourcePorts || [])
+                                      .filter((p) => !p.ignored)
+                                      .map((p) => ({
+                                        value: p.id,
+                                        label: p.version ? `${p.name} ${p.version}` : p.name
+                                      }))}
+                                    placeholder="Select a source port"
+                                    className="w-full bg-app-primary border-app"
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>

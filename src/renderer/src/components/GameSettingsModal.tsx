@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { IMod, IModFile, IDoomVersion, InsertModFile } from '@shared/schema'
+import { Combobox } from '@/components/ui/combobox'
+import { IMod, IModFile, IDoomVersion, InsertModFile, ISourcePort, IAppSettings } from '@shared/schema'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
@@ -41,6 +42,8 @@ interface GameSettingsContentProps {
   modId: string
   onClose: () => void
   doomVersions: IDoomVersion[] | undefined
+  sourcePorts: ISourcePort[]
+  defaultSourcePortId?: string
 }
 
 const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
@@ -48,7 +51,8 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
   initialFiles,
   modId,
   onClose,
-  doomVersions
+  doomVersions,
+  sourcePorts
 }) => {
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -166,6 +170,9 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
 
   const handleExport = (): void => {
     const doomVersion = doomVersions?.find((v) => v.id === mod.doomVersionId)
+    const portName = mod.sourcePortId
+      ? sourcePorts.find((p) => p.id === mod.sourcePortId)?.name || 'gzdoom'
+      : 'gzdoom'
     const exportData = {
       format: 'uac-modpack',
       version: '1.0',
@@ -173,7 +180,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
         title: mod.title || mod.name,
         description: mod.description || '',
         doomVersionSlug: doomVersion?.slug || '',
-        sourcePort: mod.sourcePort || 'gzdoom',
+        sourcePort: portName,
         launchParameters: mod.launchParameters || ''
       },
       files: files.map((f) => ({
@@ -316,17 +323,22 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
 
               <div>
                 <Label
-                  htmlFor="sourcePort"
+                  htmlFor="sourcePortId"
                   className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
                 >
                   Source Port
                 </Label>
-                <Input
-                  id="sourcePort"
-                  name="sourcePort"
-                  value={mod.sourcePort || 'GZDoom'}
-                  onChange={handleInputChange}
-                  className="bg-app-secondary border-app"
+                <Combobox
+                  value={mod.sourcePortId || ''}
+                  onValueChange={(value) => handleSelectChange('sourcePortId', value)}
+                  options={sourcePorts
+                    .filter((p) => !p.ignored)
+                    .map((p) => ({
+                      value: p.id,
+                      label: p.version ? `${p.name} ${p.version}` : p.name
+                    }))}
+                  placeholder="Select a source port"
+                  className="w-full bg-app-secondary border-app"
                 />
               </div>
 
@@ -417,6 +429,16 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
     enabled: !!modId && isOpen
   })
 
+  // Fetch settings for source ports list
+  const { data: settings } = useQuery<IAppSettings>({
+    queryKey: ['/api/settings'],
+    queryFn: () => gameService.getSettings(),
+    enabled: isOpen
+  })
+
+  const sourcePorts: ISourcePort[] = (settings as IAppSettings)?.sourcePorts || []
+  const defaultSourcePortId = (settings as IAppSettings)?.defaultSourcePortId
+
   // Fetch catalog for hydrating files with hashValue
   const { data: catalogFiles } = useQuery({
     queryKey: ['/api/mod-files/catalog'],
@@ -480,6 +502,8 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
             modId={modId!}
             onClose={onClose}
             doomVersions={doomVersions}
+            sourcePorts={sourcePorts}
+            defaultSourcePortId={defaultSourcePortId}
           />
         )}
       </DialogContent>

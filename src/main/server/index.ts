@@ -2,8 +2,6 @@ import express, { type Request, Response, NextFunction } from 'express'
 import { registerRoutes } from './routes'
 const log = console.log
 import * as storage from './storage'
-import { IModFile } from '../../shared/schema'
-import { spawn } from 'child_process' // Import spawn
 import cors from 'cors'
 
 const expressApp = express()
@@ -40,58 +38,6 @@ expressApp.use((req: Request, res: Response, next: NextFunction) => {
 
   next()
 })
-
-// Make launchMod available for import
-export async function launchMod(modId: number): Promise<{ success: boolean; message: string }> {
-  try {
-    const mod = await storage.getMod(modId.toString())
-    if (!mod) {
-      throw new Error(`Mod with ID ${modId} not found`)
-    }
-
-    const modFiles: IModFile[] = (await storage.getModFiles(modId.toString())) || []
-    if (!modFiles.length) {
-      throw new Error(`No mod files found for mod with ID ${modId}`)
-    }
-
-    const settings = await storage.getSettings()
-    console.log('Retrieved settings for launch:', settings)
-
-    if (!settings?.sourcePortPath) {
-      throw new Error('GZDoom executable path not set in settings. Please set it in Settings.')
-    }
-
-    const executable = storage.resolvePath(settings.sourcePortPath)
-    const args: string[] = []
-
-    for (const file of modFiles) {
-      if (!file.filePath) {
-        console.warn(`Mod file ${file.id} has no file path, skipping`)
-        continue
-      }
-      args.push('-file', storage.resolvePath(file.filePath))
-    }
-
-    if (mod.launchParameters) {
-      const customParams = mod.launchParameters.split(' ')
-      args.push(...customParams)
-    }
-
-    console.log(`Launching ${executable} with args:`, args)
-
-    const process = spawn(executable, args, {
-      detached: true,
-      stdio: 'inherit' // Change from 'ignore' to 'inherit' temporarily to debug if needed, or stick to 'ignore'
-    })
-
-    process.unref()
-
-    return { success: true, message: 'Mod launched' }
-  } catch (error: unknown) {
-    console.error('Failed to launch mod:', error)
-    return { success: false, message: error instanceof Error ? error.message : String(error) }
-  }
-}
 
 export async function startServer(): Promise<void> {
   console.log('Starting Production Server...')

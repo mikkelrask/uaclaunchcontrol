@@ -11,7 +11,7 @@ export interface IMod {
   releaseDate?: string
   versionId?: string // ID of Doom version/source port
   doomVersionId?: string // Consistently use string for IDs
-  sourcePort?: string
+  sourcePortId?: string // References ISourcePort.id in settings.sourcePorts
   saveDirectory?: string
   launchParameters?: string
   posterImage?: string
@@ -45,7 +45,6 @@ export interface IDoomVersion {
   name: string
   slug: string
   args: string
-  executable: string
   parameters: string
   defaultIwad: string
   icon: string
@@ -73,9 +72,21 @@ export interface IDatabaseLink {
   url: string
 }
 
+export type SourcePortFamily = 'uzdoom' | 'gzdoom' | 'zdoom' | 'zandronum' | 'lzdoom' | 'other'
+
+export interface ISourcePort {
+  id: string
+  name: string
+  executablePath: string
+  version?: string
+  family: SourcePortFamily
+  ignored?: boolean
+}
+
 // App settings
 export interface IAppSettings {
-  sourcePortPath: string
+  sourcePorts: ISourcePort[]
+  defaultSourcePortId?: string
   theme: string
   savegamesPath?: string
   modsDirectory?: string

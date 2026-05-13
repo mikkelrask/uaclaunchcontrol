@@ -3,12 +3,12 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Settings } from 'lucide-react'
+import { Settings, Eye, EyeOff, Pencil, Trash2, FolderOpen } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import { queryClient } from '@/lib/queryClient'
-import type { IDoomVersion, IAppSettings } from '@shared/schema'
+import type { IDoomVersion, IAppSettings, ISourcePort, SourcePortFamily } from '@shared/schema'
 import {
   Select,
   SelectContent,
@@ -17,7 +17,6 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
-import { FolderOpen } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import uacLogo from '@/assets/UAC Logo.svg'
 
@@ -30,7 +29,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const { toast } = useToast()
   const id = useId()
   const [settings, setSettings] = useState<IAppSettings>({
-    sourcePortPath: '',
+    sourcePorts: [],
+    defaultSourcePortId: undefined,
     theme: 'dark',
     savegamesPath: '',
     modsDirectory: '',
@@ -50,6 +50,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
   // Doom versions state
   const [doomVersions, setDoomVersions] = useState<IDoomVersion[]>([])
+  const [editingPort, setEditingPort] = useState<ISourcePort | null>(null)
+  const [showPortForm, setShowPortForm] = useState(false)
   const [isLoadingVersions, setIsLoadingVersions] = useState(false)
   const [selectedWadIndex, setSelectedWadIndex] = useState(0)
   const [appVersion, setAppVersion] = useState<string>('')
@@ -150,7 +152,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const handleSave = async (): Promise<void> => {
     try {
       const payload = {
-        sourcePortPath: settings.sourcePortPath,
+        sourcePorts: settings.sourcePorts,
+        defaultSourcePortId: settings.defaultSourcePortId,
         savegamesPath: settings.savegamesPath,
         modsDirectory: settings.modsDirectory,
         screenshotsPath: settings.screenshotsPath,
@@ -184,13 +187,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   }
 
-  // Handle folder/file browse
+  // Handle folder browse
   const handleBrowse = async (settingName: string): Promise<void> => {
     const currentPath = settings[settingName as keyof typeof settings] as string | undefined
-    const isFile = settingName === 'sourcePortPath'
 
     const result = await api.showOpenDialog({
-      properties: isFile ? ['openFile'] : ['openDirectory'],
+      properties: ['openDirectory'],
       defaultPath: currentPath
     })
 
@@ -200,6 +202,69 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         [settingName]: result.filePaths[0]
       }))
     }
+  }
+
+  // Source port management
+  const handleAddPort = async (): Promise<void> => {
+    const result = await api.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: 'Executables', extensions: ['*'] }]
+    })
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      const exePath = result.filePaths[0]
+      const fileName = exePath.split(/[\\/]/).pop() || ''
+      const lower = fileName.toLowerCase()
+      let family: SourcePortFamily = 'other'
+      if (lower.includes('uzdoom')) family = 'uzdoom'
+      else if (lower.includes('lzdoom')) family = 'lzdoom'
+      else if (lower.includes('gzdoom')) family = 'gzdoom'
+      else if (lower.includes('zdoom')) family = 'zdoom'
+      else if (lower.includes('zandronum')) family = 'zandronum'
+
+      const newPort: ISourcePort = {
+        id: crypto.randomUUID(),
+        name: fileName.replace(/\.(exe|AppImage)$/i, ''),
+        executablePath: exePath,
+        family,
+        ignored: false
+      }
+      setEditingPort(newPort)
+      setShowPortForm(true)
+    }
+  }
+
+  const handleSavePort = (port: ISourcePort): void => {
+    setSettings((prev) => {
+      const existing = prev.sourcePorts.findIndex((p) => p.id === port.id)
+      let updated: ISourcePort[]
+      if (existing >= 0) {
+        updated = [...prev.sourcePorts]
+        updated[existing] = port
+      } else {
+        updated = [...prev.sourcePorts, port]
+      }
+      return { ...prev, sourcePorts: updated }
+    })
+    setShowPortForm(false)
+    setEditingPort(null)
+  }
+
+  const handleDeletePort = (id: string): void => {
+    setSettings((prev) => {
+      const updated = prev.sourcePorts.filter((p) => p.id !== id)
+      const newDefault =
+        prev.defaultSourcePortId === id
+          ? updated.length > 0
+            ? updated[0].id
+            : undefined
+          : prev.defaultSourcePortId
+      return { ...prev, sourcePorts: updated, defaultSourcePortId: newDefault }
+    })
+  }
+
+  const handleSetDefaultPort = (id: string): void => {
+    setSettings((prev) => ({ ...prev, defaultSourcePortId: id }))
   }
 
   return (
@@ -449,34 +514,117 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
                   CORE INFRASTRUCTURE
                 </Label>
+
+                {/* Source Ports List */}
                 <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3">
-                  <Label
-                    htmlFor={`${id}-sourcePortPath`}
-                    className="text-xs text-app-muted font-bold uppercase tracking-wider"
-                  >
-                    Source Port Executable
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id={`${id}-sourcePortPath`}
-                      name="sourcePortPath"
-                      value={settings.sourcePortPath}
-                      onChange={handleChange}
-                      className="bg-app-primary border-app h-10 text-sm flex-1 focus-visible:ring-2 focus-visible:ring-accent-highlight/40"
-                    />
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
+                      Source Ports
+                    </Label>
                     <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-10 w-10 shrink-0 hover:bg-accent-highlight/10 text-accent-highlight transition-colors border border-app/30"
-                      onClick={() => handleBrowse('sourcePortPath')}
+                      size="sm"
+                      variant="outline"
+                      onClick={handleAddPort}
+                      className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
                     >
-                      <FolderOpen className="w-5 h-5" />
+                      + Add Port
                     </Button>
                   </div>
-                  <p className="text-xs text-app-muted italic opacity-70">
-                    Main system binary used for launching telemetry streams.
-                  </p>
+
+                  {settings.sourcePorts.length === 0 ? (
+                    <p className="text-xs text-app-muted italic py-2">
+                      No source ports configured. Add at least one to launch games.
+                    </p>
+                  ) : (
+                    <div className="space-y-2 pt-1">
+                      {settings.sourcePorts.map((port) => (
+                        <div
+                          key={port.id}
+                          className="flex items-center gap-3 p-2.5 bg-app-primary rounded-lg border border-app group hover:border-accent-highlight/30 transition-colors"
+                        >
+                          {/* Default indicator */}
+                          <button
+                            onClick={() => handleSetDefaultPort(port.id)}
+                            className={`shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${
+                              settings.defaultSourcePortId === port.id
+                                ? 'border-accent-highlight bg-accent-highlight'
+                                : 'border-app-muted/40 hover:border-app-muted'
+                            }`}
+                            title={
+                              settings.defaultSourcePortId === port.id
+                                ? 'Default port'
+                                : 'Set as default'
+                            }
+                          />
+
+                          {/* Family badge */}
+                          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-app-secondary border border-app/50 text-app-muted shrink-0">
+                            {port.family}
+                          </span>
+
+                          {/* Name + version */}
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium text-app-primary block truncate">
+                              {port.name}
+                            </span>
+                            <span className="text-xs text-app-muted truncate block">
+                              {port.version ? `${port.version} — ` : ''}
+                              {port.executablePath}
+                            </span>
+                          </div>
+
+                          {/* Ignored toggle */}
+                          <button
+                            onClick={() =>
+                              handleSavePort({ ...port, ignored: !port.ignored })
+                            }
+                            className={`shrink-0 p-1.5 rounded transition-colors ${
+                              port.ignored
+                                ? 'text-red-400 hover:text-red-300'
+                                : 'text-app-muted hover:text-app-primary'
+                            }`}
+                            title={port.ignored ? 'Show port' : 'Hide port'}
+                          >
+                            {port.ignored ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+
+                          {/* Edit */}
+                          <button
+                            onClick={() => {
+                              setEditingPort(port)
+                              setShowPortForm(true)
+                            }}
+                            className="shrink-0 p-1.5 text-app-muted hover:text-accent-highlight transition-colors rounded"
+                            title="Edit port"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            onClick={() => handleDeletePort(port.id)}
+                            className="shrink-0 p-1.5 text-app-muted hover:text-red-400 transition-colors rounded"
+                            title="Delete port"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {/* Inline Port Form (add/edit) */}
+                {showPortForm && editingPort && (
+                  <PortForm
+                    port={editingPort}
+                    onSave={handleSavePort}
+                    onCancel={() => {
+                      setShowPortForm(false)
+                      setEditingPort(null)
+                    }}
+                  />
+                )}
               </div>
 
               <div className="space-y-6">
@@ -619,23 +767,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                 className="bg-app-secondary border-app h-11 text-base focus-visible:ring-accent-highlight/40"
                               />
                             </div>
-                            <div className="space-y-2">
-                              <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                                Engine Runtime
-                              </Label>
-                              <Input
-                                value={doomVersions[selectedWadIndex].executable}
-                                onChange={(e) =>
-                                  handleVersionChange(
-                                    selectedWadIndex,
-                                    'executable',
-                                    e.target.value
-                                  )
-                                }
-                                className="bg-app-secondary border-app h-11 text-base focus-visible:ring-accent-highlight/40"
-                                placeholder="default: gzdoom"
-                              />
-                            </div>
+                            {/* Engine Runtime removed — source port is now configured per-game via ISourcePort */}
                           </div>
                         </div>
 
@@ -734,6 +866,124 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// ─── Source Port inline form ────────────────────────────────────────────────
+interface PortFormProps {
+  port: ISourcePort
+  onSave: (port: ISourcePort) => void
+  onCancel: () => void
+}
+
+const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
+  const [name, setName] = useState(port.name)
+  const [version, setVersion] = useState(port.version || '')
+  const [family, setFamily] = useState<SourcePortFamily>(port.family)
+  const [executablePath, setExecutablePath] = useState(port.executablePath)
+
+  return (
+    <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3 animate-in slide-in-from-top-2 duration-200">
+      <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+        {port.id ? 'Edit Source Port' : 'New Source Port'}
+      </Label>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-app-muted">Name</Label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="bg-app-primary border-app h-9 text-sm"
+            placeholder="e.g. GZDoom 4.12.2"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-app-muted">Version (optional)</Label>
+          <Input
+            value={version}
+            onChange={(e) => setVersion(e.target.value)}
+            className="bg-app-primary border-app h-9 text-sm"
+            placeholder="e.g. 4.12.2"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs text-app-muted">Executable Path</Label>
+        <div className="flex gap-2">
+          <Input
+            value={executablePath}
+            onChange={(e) => setExecutablePath(e.target.value)}
+            className="bg-app-primary border-app h-9 text-sm flex-1"
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 shrink-0 hover:bg-accent-highlight/10 text-accent-highlight border border-app/30"
+            onClick={async () => {
+              const result = await api.showOpenDialog({
+                properties: ['openFile'],
+                filters: [{ name: 'Executables', extensions: ['*'] }]
+              })
+              if (!result.canceled && result.filePaths.length > 0) {
+                setExecutablePath(result.filePaths[0])
+              }
+            }}
+          >
+            <FolderOpen className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs text-app-muted">Family</Label>
+        <Select
+          value={family}
+          onValueChange={(v) => setFamily(v as SourcePortFamily)}
+        >
+          <SelectTrigger className="bg-app-primary border-app h-9">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-app-secondary border-app">
+            {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'other'] as const).map(
+              (f) => (
+                <SelectItem key={f} value={f} className="text-app-primary">
+                  {f}
+                </SelectItem>
+              )
+            )}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onCancel}
+          className="text-xs bg-transparent border-app hover:bg-app-hover text-app-muted h-8"
+        >
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          onClick={() =>
+            onSave({
+              ...port,
+              name,
+              version: version || undefined,
+              family,
+              executablePath
+            })
+          }
+          disabled={!name.trim() || !executablePath.trim()}
+          className="text-xs bg-accent-highlight text-white hover:bg-accent-highlight/90 h-8"
+        >
+          Save
+        </Button>
+      </div>
+    </div>
   )
 }
 

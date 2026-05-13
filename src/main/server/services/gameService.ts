@@ -85,10 +85,25 @@ export class GameService {
 
       // Need settings for executable path
       const settings = await storage.getSettings()
-      if (!settings.sourcePortPath) {
-        throw new Error('GZDoom executable path not set in settings.')
+
+      // Resolve source port executable: sourcePortId → defaultSourcePortId → first port → error
+      let executable: string | undefined
+      if (mod.sourcePortId) {
+        const port = settings.sourcePorts.find((p) => p.id === mod.sourcePortId)
+        if (port) executable = port.executablePath
       }
-      const executable = storage.resolvePath(settings.sourcePortPath)
+      if (!executable && settings.defaultSourcePortId) {
+        const port = settings.sourcePorts.find((p) => p.id === settings.defaultSourcePortId)
+        if (port) executable = port.executablePath
+      }
+      if (!executable) {
+        const firstPort = settings.sourcePorts.find((p) => !p.ignored)
+        if (firstPort) executable = firstPort.executablePath
+      }
+      if (!executable) {
+        throw new Error('No source ports configured. Add at least one source port in Settings > Paths.')
+      }
+      executable = storage.resolvePath(executable)
 
       // Load Doom version for args
       const doomVersionId = String(mod.doomVersionId)
