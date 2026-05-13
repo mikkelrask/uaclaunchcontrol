@@ -69,11 +69,22 @@ export const GamesPage: React.FC = () => {
   }
 
   // Filter protocols based on search query
-  const filteredProtocols = protocols.filter((p) =>
+  let filteredProtocols = protocols.filter((p) =>
     searchQuery
       ? (p.title || p.name || '').toLowerCase().includes(searchQuery.toLowerCase())
       : true
   )
+
+  // Sort: most recently launched first, never-launched at the bottom
+  filteredProtocols = filteredProtocols.sort((a, b) => {
+    if (a.lastLaunchedAt && b.lastLaunchedAt) {
+      return b.lastLaunchedAt.localeCompare(a.lastLaunchedAt)
+    }
+    if (a.lastLaunchedAt) return -1
+    if (b.lastLaunchedAt) return 1
+    // If neither has been launched, sort alphabetically by title/name
+    return (a.title || a.name || '').localeCompare(b.title || b.name || '')
+  })
 
   // Find version object for each protocol
   const getVersionForProtocol = (p: IProtocol): IDoomVersion | undefined => {

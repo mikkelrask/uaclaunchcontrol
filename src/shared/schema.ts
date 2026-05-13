@@ -12,6 +12,7 @@ export interface IProtocol {
   versionId?: string // ID of Doom version/source port
   doomVersionId?: string // Consistently use string for IDs
   sourcePortId?: string // References ISourcePort.id in settings.sourcePorts
+  lastLaunchedAt?: string // ISO timestamp, updated when protocol is launched
   saveDirectory?: string
   launchParameters?: string
   posterImage?: string

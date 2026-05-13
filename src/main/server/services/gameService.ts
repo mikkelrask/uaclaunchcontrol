@@ -184,6 +184,13 @@ export class GameService {
 
       // Launch the game using fileService
       const success = await fileService.launchGame(executable, args)
+
+      // Record last launched timestamp
+      if (success) {
+        protocol.lastLaunchedAt = new Date().toISOString()
+        await storage.saveProtocol({ ...protocol, files })
+      }
+
       return { success }
     } catch (error: unknown) {
       console.error(`Error launching protocol ${id}:`, error)

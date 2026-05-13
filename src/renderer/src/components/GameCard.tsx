@@ -2,7 +2,7 @@ import React from 'react'
 import { IProtocol, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Button } from '@/components/ui/button'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
 import placeholder from '@renderer/assets/placeholder.png'
@@ -15,14 +15,15 @@ interface GameCardProps {
 
 export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSettingsClick }) => {
   const { toast } = useToast()
-  // const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const launchMutation = useMutation({
     mutationFn: gameService.launchProtocol,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
       toast({
         title: 'SYSTEM: launch_protocol',
-        description: `${protocol.title} is now running.`
+        description: `${protocol.title} launched.`
       })
     },
     onError: (error) => {

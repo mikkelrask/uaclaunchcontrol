@@ -1,10 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { execFile } from 'child_process'
-import util from 'util'
+import { spawn } from 'child_process'
 import { Stats } from 'fs'
-
-const execFilePromise = util.promisify(execFile)
 
 // Service to handle file system operations
 export class FileService {
@@ -67,14 +64,41 @@ export class FileService {
     }
   }
 
-  // Launch a game with parameters
+  // Launch a game with parameters — returns once process is confirmed running
   async launchGame(executable: string, args: string[]): Promise<boolean> {
     try {
-      // Handle macOS .app bundles
       const executablePath = this.resolveExecutablePath(executable)
 
-      await execFilePromise(executablePath, args)
-      return true
+      return await new Promise<boolean>((resolve) => {
+        const proc = spawn(executablePath, args, {
+          detached: true,
+          stdio: 'ignore'
+        })
+
+        // Check window: if the process errors or exits abnormally within
+        // this time, we treat it as a launch failure
+        const checkWindow = 500
+        const timeout = setTimeout(() => {
+          // Still running after check window — good enough
+          proc.unref()
+          resolve(true)
+        }, checkWindow)
+
+        proc.on('error', (err) => {
+          clearTimeout(timeout)
+          console.error('Failed to launch game process:', err)
+          resolve(false)
+        })
+
+        proc.on('exit', (code) => {
+          if (code !== 0) {
+            clearTimeout(timeout)
+            console.error(`Game process exited with code ${code} immediately after launch`)
+            resolve(false)
+          }
+          // code === 0 within the window means it ran and exited cleanly — still a success
+        })
+      })
     } catch (error) {
       console.error('Error launching game:', error)
       return false
