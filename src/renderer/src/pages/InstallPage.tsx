@@ -783,9 +783,10 @@ export const InstallPage: React.FC = () => {
                                     options={((settings as IAppSettings)?.sourcePorts || [])
                                       .filter((p) => !p.ignored)
                                       .map((p) => ({
-                                        value: p.id,
-                                        label: p.version ? `${p.name} ${p.version}` : p.name
-                                      }))}
+                                      value: p.id,
+                                      label: p.name,
+                                      description: p.version
+                                    }))}
                                     placeholder="Select a source port"
                                     className="w-full bg-app-primary border-app"
                                   />

@@ -335,7 +335,8 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
                     .filter((p) => !p.ignored)
                     .map((p) => ({
                       value: p.id,
-                      label: p.version ? `${p.name} ${p.version}` : p.name
+                      label: p.name,
+                      description: p.version
                     }))}
                   placeholder="Select a source port"
                   className="w-full bg-app-secondary border-app"

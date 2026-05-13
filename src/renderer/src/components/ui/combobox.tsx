@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 interface ComboboxProps {
   value: string
   onValueChange: (value: string) => void
-  options: { value: string; label: string }[]
+  options: { value: string; label: string; description?: string }[]
   placeholder?: string
   className?: string
   disabled?: boolean
@@ -49,7 +49,7 @@ export function Combobox({
           className={cn('justify-between font-normal', className)}
           disabled={disabled}
         >
-          {selectedOption?.label || placeholder}
+          {selectedOption ? `${selectedOption.label}${selectedOption.description ? ` (${selectedOption.description})` : ''}` : placeholder}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="15"
@@ -74,13 +74,18 @@ export function Combobox({
             {options.map((opt) => (
               <CommandItem
                 key={opt.value}
-                value={opt.label}
+                value={`${opt.label} ${opt.description || ''}`}
                 onSelect={() => {
                   onValueChange(opt.value)
                   setOpen(false)
                 }}
               >
-                {opt.label}
+                <span>{opt.label}</span>
+                {opt.description && (
+                  <span className="ml-1 text-xs text-muted-foreground opacity-60">
+                    ({opt.description})
+                  </span>
+                )}
               </CommandItem>
             ))}
           </CommandList>
