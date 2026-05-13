@@ -296,6 +296,21 @@ function generateStableId(baseName: string): string {
   return `wad-${baseName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`
 }
 
+function stripMd5Suffix(baseName: string): string {
+  return baseName.replace(/(-[a-f0-9]{32})+$/i, '')
+}
+
+function countMd5Suffixes(baseName: string): number {
+  return baseName.match(/-[a-f0-9]{32}/gi)?.length ?? 0
+}
+
+function wadNamePriority(fileName: string): number {
+  const suffixCount = countMd5Suffixes(fileName.replace(/\.wad$/i, ''))
+  if (suffixCount === 0) return 0
+  if (suffixCount === 1) return 1
+  return 2
+}
+
 // === Doom Versions ===
 // Get all Doom versions
 export async function getDoomVersions(): Promise<IDoomVersion[]> {
@@ -391,7 +406,11 @@ export async function syncDoomVersions(
 
     await fs.ensureDir(wadDir)
     const files = await fs.readdir(wadDir)
-    const wadFiles = files.filter((f) => f.toLowerCase().endsWith('.wad'))
+    const wadFiles = files
+      .filter((f) => f.toLowerCase().endsWith('.wad'))
+      .sort((a, b) => {
+        return wadNamePriority(a) - wadNamePriority(b) || a.localeCompare(b)
+      })
 
     // Create a map of lowercase wad names to full paths
     const wadFileMap = new Map<string, string>()
@@ -400,12 +419,17 @@ export async function syncDoomVersions(
     }
 
     const updatedVersions: IDoomVersion[] = []
+    const seenWadHashes = new Set<string>()
 
     // 1. Check default versions
     for (const def of DEFAULT_DOOM_VERSIONS) {
       const lowerWadName = def.defaultIwad.toLowerCase()
       if (wadFileMap.has(lowerWadName)) {
         const fullPath = wadFileMap.get(lowerWadName)!
+        const hashValue = await computeFileHash(fullPath)
+        if (hashValue) {
+          seenWadHashes.add(hashValue)
+        }
         // Find existing to preserve custom settings like name/icon overrides if any
         // Note: traditionally defaults use their own defaults, but we should check
         const existing = oldVersions.find((v) => v.id === def.id)
@@ -434,7 +458,17 @@ export async function syncDoomVersions(
 
     // 2. Add remaining WADs from disk
     for (const [wadName, wadPath] of wadFileMap) {
+      const hashValue = await computeFileHash(wadPath)
+      if (hashValue && seenWadHashes.has(hashValue)) {
+        debug(`syncDoomVersions: Skipping duplicate WAD content: ${wadPath}`)
+        continue
+      }
+      if (hashValue) {
+        seenWadHashes.add(hashValue)
+      }
+
       const baseName = wadName.replace(/\.wad$/i, '')
+      const displayName = stripMd5Suffix(baseName)
       const id = generateStableId(baseName)
 
       // Check if this wad was already in the list
@@ -443,13 +477,19 @@ export async function syncDoomVersions(
       if (existing) {
         updatedVersions.push({
           ...existing,
+          args: existing.args.includes('-iwad')
+            ? existing.args.replace(
+                /-iwad\s+"[^"]+"|-iwad\s+[^\s]+/,
+                `-iwad ${escapePathForCmd(wadPath)}`
+              )
+            : `-iwad ${escapePathForCmd(wadPath)} ${existing.args}`.trim(),
           defaultIwad: wadPath
         })
       } else {
         updatedVersions.push({
           id,
-          name: baseName,
-          slug: baseName.toLowerCase(),
+          name: displayName,
+          slug: id,
           args: `-iwad ${escapePathForCmd(wadPath)}`,
           icon: '',
           executable: executable,
@@ -552,7 +592,7 @@ export async function getModFileCatalog(): Promise<IModFile[]> {
 
     // Migration: requires -> loadOrder
     let migrated = false
-    const migratedData = data.map((file: any) => {
+    const migratedData = data.map((file: IModFile & { requires?: Record<string, number> }) => {
       if (file.requires !== undefined || typeof file.loadOrder === 'number') {
         migrated = true
         const oldRequires = file.requires || {}
@@ -659,6 +699,67 @@ export async function moveToModFolder(
   }
 }
 
+export async function importWadFile(
+  sourcePath: string
+): Promise<{ fileName: string; fullPath: string; hashValue: string; alreadyExists: boolean }> {
+  try {
+    const settings = await getSettings()
+    const wadDir = resolvePath(settings.wadFilesDirectory || path.join(CONFIG_DIR, 'wads'))
+    const resolvedSource = resolvePath(sourcePath)
+    const originalFileName = path.basename(resolvedSource)
+    const ext = path.extname(originalFileName)
+
+    if (ext.toLowerCase() !== '.wad') {
+      throw new Error('Only .wad files can be imported')
+    }
+
+    const hashValue = await computeFileHash(resolvedSource)
+    if (!hashValue) {
+      throw new Error('Failed to compute MD5 hash for WAD file')
+    }
+
+    await fs.ensureDir(wadDir)
+
+    const baseName = stripMd5Suffix(path.basename(originalFileName, ext))
+    const fileName = `${baseName}-${hashValue}${ext}`
+    const fullPath = path.join(wadDir, fileName)
+
+    const existingWads = await fs.readdir(wadDir)
+    const sortedExistingWads = existingWads
+      .filter((existingFileName) => existingFileName.toLowerCase().endsWith('.wad'))
+      .sort((a, b) => wadNamePriority(a) - wadNamePriority(b) || a.localeCompare(b))
+
+    for (const existingFileName of sortedExistingWads) {
+      if (!existingFileName.toLowerCase().endsWith('.wad')) continue
+
+      const existingPath = path.join(wadDir, existingFileName)
+      const existingHash = await computeFileHash(existingPath)
+      if (existingHash === hashValue) {
+        await syncDoomVersions({ notifyDelta: true })
+        debug(`WAD already imported by hash: ${existingPath} (hash: ${hashValue})`)
+        return {
+          fileName: existingFileName,
+          fullPath: existingPath,
+          hashValue,
+          alreadyExists: true
+        }
+      }
+    }
+
+    await fs.copy(resolvedSource, fullPath, { overwrite: false })
+
+    await syncDoomVersions({ notifyDelta: true })
+
+    debug(`Imported WAD file: ${fullPath} (hash: ${hashValue})`)
+    return { fileName, fullPath, hashValue, alreadyExists: false }
+  } catch (error: unknown) {
+    console.error('Error importing WAD file:', error)
+    throw new Error(
+      `Failed to import WAD file: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
+}
+
 // Copy a local image file to the images directory
 export async function copyImageToImages(sourcePath: string): Promise<string> {
   try {
@@ -760,7 +861,7 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
       if (file.filePath.startsWith('files/')) {
         // File already moved, use as-is
         relativePath = file.filePath
-        hashValue = await computeFileHash(relativePath)
+        hashValue = file.hashValue || (await computeFileHash(relativePath))
         originalFileName = file.fileName || path.basename(relativePath)
       } else {
         // Move file to mod folder with hash-based filename
@@ -768,6 +869,15 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
         relativePath = moved.relativePath
         hashValue = moved.hashValue
         originalFileName = file.filePath.split(/[\\/]/).pop() || file.filePath
+      }
+
+      // Check for duplicate by hash — if an entry with this hash already exists, return it
+      if (hashValue) {
+        const existing = catalog.find((entry) => entry.hashValue === hashValue)
+        if (existing) {
+          debug(`Duplicate file detected by hash ${hashValue}, returning existing entry`)
+          return existing
+        }
       }
 
       // Set fileName to the new filename in the mod folder

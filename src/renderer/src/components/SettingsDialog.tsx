@@ -76,23 +76,24 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       })
 
     // Fetch doom versions
-    setIsLoadingVersions(true)
-    api
-      .getDoomVersions()
-      .then((versions) => {
+    const fetchVersions = async (): Promise<void> => {
+      setIsLoadingVersions(true)
+      try {
+        const versions = await api.getDoomVersions()
         setDoomVersions(versions)
-      })
-      .catch(() => {
+      } catch {
         toast({
           title: 'Error',
           description: 'Failed to load doom versions',
           variant: 'destructive'
         })
-      })
-      .finally(() => {
+      } finally {
         setIsLoadingVersions(false)
-      })
-  }, [isOpen])
+      }
+    }
+
+    fetchVersions()
+  }, [isOpen, toast])
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -145,7 +146,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   }
 
-    // Handle save
+  // Handle save
   const handleSave = async (): Promise<void> => {
     try {
       const payload = {
@@ -239,7 +240,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 value="wad-config"
                 className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
-                Wad Config
+                WAD Config
               </TabsTrigger>
               <TabsTrigger
                 value="advanced"
@@ -380,14 +381,18 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           onCheckedChange={(checked) => {
                             if (checked && !settings.registryUuid) {
                               const uuid = crypto.randomUUID()
-                              setSettings((s) => ({ ...s, registryLookupEnabled: checked, registryUuid: uuid }))
+                              setSettings((s) => ({
+                                ...s,
+                                registryLookupEnabled: checked,
+                                registryUuid: uuid
+                              }))
                             } else {
                               setSettings((s) => ({ ...s, registryLookupEnabled: checked }))
                             }
                           }}
                         />
                       </div>
-                       <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between">
                         <p className="text-xs text-app-primary font-medium">
                           Manually check for app updates
                         </p>
@@ -651,6 +656,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                 className="bg-app-primary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
                               />
                             </div>
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs text-app-primary font-medium">
+                                Additional Parameters
+                              </span>
+                              <Input
+                                value={doomVersions[selectedWadIndex].parameters || ''}
+                                onChange={(e) =>
+                                  handleVersionChange(
+                                    selectedWadIndex,
+                                    'parameters',
+                                    e.target.value
+                                  )
+                                }
+                                className="bg-app-primary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
+                                placeholder="e.g. -nomonsters -warp 01"
+                              />
+                            </div>
                             <div className="pt-2">
                               <div className="flex items-center justify-between pb-4">
                                 <div className="space-y-0.5">
@@ -658,7 +680,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                     Hide from Interface
                                   </Label>
                                   <p className="text-xs text-app-muted italic opacity-70">
-                                    Toggling will excluded this wad from the sidebar and wad
+                                    Toggling will excluded this WAD from the sidebar and general WAD
                                     selectors.
                                   </p>
                                 </div>

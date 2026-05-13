@@ -32,7 +32,7 @@ export function Combobox({
 
   const selectedOption = options.find((opt) => opt.value === value)
 
-  const handleWheel = (e: React.WheelEvent) => {
+  const handleWheel = (e: React.WheelEvent): void => {
     if (listRef.current) {
       e.stopPropagation()
       listRef.current.scrollTop += e.deltaY

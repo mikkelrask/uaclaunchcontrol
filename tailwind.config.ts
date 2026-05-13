@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Aldrich', 'sans-serif'],
+        sans: ['Aldrich', 'NerdFont', 'sans-serif'],
         mono: [
           'ui-monospace',
           'SFMono-Regular',

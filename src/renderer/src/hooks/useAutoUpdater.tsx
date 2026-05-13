@@ -2,22 +2,19 @@ import { useEffect, useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import { ToastAction } from '@/components/ui/toast'
+import { IUpdateInfo } from '@shared/schema'
 
-export interface UpdateInfo {
-  status: 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
-  version?: string
-  releaseNotes?: string
-  percent?: number
-  error?: string
-  isManual?: boolean
-}
-
-export function useAutoUpdater() {
+export function useAutoUpdater(): {
+  updateInfo: IUpdateInfo | null
+  checkForUpdates: () => void
+  downloadUpdate: () => void
+  installUpdate: () => void
+} {
   const { toast } = useToast()
-  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
+  const [updateInfo, setUpdateInfo] = useState<IUpdateInfo | null>(null)
 
   useEffect(() => {
-    api.onUpdateStatus((data: UpdateInfo) => {
+    api.onUpdateStatus((data: IUpdateInfo) => {
       setUpdateInfo(data)
 
       switch (data.status) {
@@ -29,7 +26,6 @@ export function useAutoUpdater() {
               <ToastAction
                 altText="View Update"
                 onClick={() => {
-                  // This will be handled by a modal in App.tsx
                   window.dispatchEvent(new CustomEvent('show-update-modal', { detail: data }))
                 }}
               >
@@ -72,15 +68,15 @@ export function useAutoUpdater() {
     })
   }, [toast])
 
-  const checkForUpdates = () => {
+  const checkForUpdates = (): void => {
     api.checkForUpdates()
   }
 
-  const downloadUpdate = () => {
+  const downloadUpdate = (): void => {
     api.downloadUpdate()
   }
 
-  const installUpdate = () => {
+  const installUpdate = (): void => {
     api.installUpdate()
   }
 

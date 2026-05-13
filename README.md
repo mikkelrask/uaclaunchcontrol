@@ -4,7 +4,7 @@ A modern desktop application for managing and launching Doom mods, built with El
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/mikkelrask/uaclaunchcontrol)
 ![Electron](https://img.shields.io/badge/Electron-Latest-47848F?logo=electron)
-![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
 
 ![UAC Launch Control is Modded Rip and Tear on Easy Mode!](https://github.com/mikkelrask/uaclaunchcontrol/blob/main/IMG/0.2.5.png?raw=true)
@@ -14,17 +14,21 @@ A modern desktop application for managing and launching Doom mods, built with El
 **UAC Launch Control** is a mod launcher for **UZDoom/GZDoom/ZDoom**. It provides an intuitive interface for **organizing your Doom WADs and mod files**, and launching games with custom configurations to test multi mod compatability.
 
 No more having to remember the launch order of your mods, or blindly trusting and launching `.bat` scripts to rip and tear!
+
 #### Key Features
 
 - 🎮 **Game Management**: Organize and launch different configurations of wads, mods and modpacks with ease
-- 📁 **File Catalog**: Maintain a catalog of mod files
-- 📦 **"Mod-linking"**:  if a mod requires another specific, you can set it as required, and the app will always add additional mods when creating a new game instance
+- 📁 **File Catalog**: Maintain a catalog of mod files with search, sidecar flags, and dependency/load-order tracking
+- 📦 **"Mod-linking"**: if a mod requires another specific, you can set it as required, and the app will always add additional mods when creating a new game instance
 - ⚙️ **Custom Launch Parameters**: Configure launch arguments per mod
-- 🔄 **Import and Export**: You can export your favorite configuration and share with your friends with a simple json file, that your friend can import*
-- 🎯 **"Bring your own Source port\*\*"**: UZDoom, GZDoom, Zandronum, and more - if your source port isn't working, let me know in the [issues](https://github.com/mikkelrask/uaclaunchcontrol/issues)!
+- 🔄 **Import and Export**: Export your configuration as a JSON file to share with friends, or drag-and-drop a modpack JSON to import\*
+- 🌐 **UAC Registry**: Community-sourced mod metadata lookups with anonymous submissions (opt-in)
+- 🗺️ **WAD Management**: Import and configure base game WADs with auto-detection and real-time file watching
+- 🎯 **Bring your own Source port**: UZDoom, GZDoom, Zandronum, and more — configure per-mod or globally
+- ⌨️ **Keyboard Shortcuts**: Quick navigation with global hotkeys — see the [Keyboard Shortcuts wiki](https://github.com/mikkelrask/uaclaunchcontrol/wiki/Keyboard-shortcuts) for the full list
+- 🔄 **Auto-Updater**: Automatic update checks with in-app download and install
 
-_\* They still need the actual modfiles - I don't want to keep users away from the communities, or "steal downloads" from mod-developers, as that metric obviously is used to measure a games popularity and the likes._
-\*\* _This have been rolled back for the time being while a better multi-source port solution is getting developed._
+_\* They still need the actual modfiles — the JSON only stores references and load orders. No mod data is shared, keeping support with the original mod creators._
 
 ## Install
 
@@ -32,6 +36,7 @@ _\* They still need the actual modfiles - I don't want to keep users away from t
 **Download** the latest release for you operating system from the **[Releases page](https://github.com/mikkelrask/uaclaunchcontrol/releases)**
 
 More detailed instructions can be found in the **[Install Wiki](https://github.com/mikkelrask/uaclaunchcontrol/wiki/Install-UAC-Launch-Control)**.
+
 ## License
 
 This is free software. Free as in freedom _and_ free beer.

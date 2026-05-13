@@ -88,3 +88,23 @@ export interface IAppSettings {
   registryLookupEnabled?: boolean
   registryUuid?: string
 }
+export interface IUpdateInfo {
+  version: string
+  releaseNotes?: string
+  status:
+    | 'available'
+    | 'downloading'
+    | 'downloaded'
+    | 'error'
+    | 'idle'
+    | 'checking'
+    | 'not-available'
+  percent?: number
+  error?: string
+  isManual?: boolean
+}
+
+export interface IVersionData {
+  added?: Array<{ name: string }>
+  removed?: Array<{ name: string }>
+}

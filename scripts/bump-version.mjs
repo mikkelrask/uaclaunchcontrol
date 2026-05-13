@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import fs from 'fs'
 import path from 'path'
@@ -20,6 +21,11 @@ const TAG = `v${version}`
 console.log(`🔧 Bumping to version ${version} (Tag: ${TAG})...`)
 
 // Helper to read/write JSON
+/**
+ * @param {string} filePath
+ * @param {(json: any) => void} updater
+ * @returns {void}
+ */
 const updateJSON = (filePath, updater) => {
   const abs = path.resolve(filePath)
   if (!fs.existsSync(abs)) return
@@ -29,6 +35,9 @@ const updateJSON = (filePath, updater) => {
 }
 
 // Generate app icons from SVG with all required sizes
+/**
+ * @returns {void}
+ */
 const generateIcons = () => {
   const svgPath = path.resolve('src/renderer/src/assets/uaclaunchcontrol.svg')
   const resourcesDir = path.resolve('resources')

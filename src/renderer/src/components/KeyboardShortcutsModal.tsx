@@ -1,5 +1,11 @@
 import React from 'react'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Keyboard, ExternalLink } from 'lucide-react'
 
@@ -15,6 +21,8 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
   const shortcuts = [
     { key: '/', description: 'Focus search input' },
     { key: 'i', description: 'Go to Install page' },
+    { key: 'm', description: 'Go to Install > Mod Files tab' },
+    { key: 'w', description: 'Go to Install > WAD Files tab' },
     { key: 'l', description: 'Go to Launch page' },
     { key: 'Ctrl + .', description: 'Open Settings' },
     { key: '?', description: 'Show this help' }
@@ -22,22 +30,24 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md p-0 overflow-hidden border-app bg-app-primary shadow-2xl">
-        <div className="flex items-center gap-3 p-4 border-b border-app bg-app-secondary">
-          <div className="p-2 bg-accent-highlight/10 rounded-md">
-            <Keyboard className="w-5 h-5 text-accent-highlight" />
-          </div>
-          <div>
-            <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-              keyboard_protocols
-            </DialogTitle>
-            <p className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-              UAC Launch Control // Shortcuts
-            </p>
+      <DialogContent className="bg-app-primary shadow-2xl border-app max-w-md p-0 overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-app bg-app-secondary">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent-highlight/10 rounded-md">
+              <Keyboard className="w-5 h-5 text-accent-highlight" />
+            </div>
+            <div>
+              <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
+                keyboard_protocols
+              </DialogTitle>
+              <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
+                UAC Launch Control // Shortcuts
+              </DialogDescription>
+            </div>
           </div>
         </div>
 
-        <div className="p-4 space-y-3">
+        <div className="space-y-3 p-4">
           {shortcuts.map((shortcut, index) => (
             <div
               key={index}
@@ -51,7 +61,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
           ))}
         </div>
 
-        <div className="p-4 border-t border-app bg-app-secondary flex items-center justify-between">
+        <DialogFooter className="sm:justify-between items-center bg-app-secondary border-t border-app p-4 shrink-0">
           <span className="text-xs text-app-muted">For more info see</span>
           <Button
             variant="ghost"
@@ -64,7 +74,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
             Wiki
             <ExternalLink className="w-3 h-3" />
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

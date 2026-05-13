@@ -1,6 +1,7 @@
 import React from 'react'
 import { IMod, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
+import { Button } from '@/components/ui/button'
 import { useMutation } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
@@ -106,21 +107,22 @@ export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettings
                     transition-opacity duration-300 bg-app-popover/85
                     flex items-center justify-between p-2"
       >
-        <button
-          type="button"
-          className="px-2 py-1 text-white rounded bg-accent-highlight hover:opacity-90 transition-colors"
+        <Button
+          size="sm"
           onClick={handleLaunch}
           disabled={launchMutation.isPending}
+          className="bg-accent-highlight hover:opacity-90 text-white"
         >
-          {launchMutation.isPending ? 'LAUNCHING...' : ' LAUNCH'}
-        </button>
-        <button
-          type="button"
-          className="px-4 py-1 text-app-primary rounded bg-app-primary hover:bg-app-hover transition-colors"
+          {launchMutation.isPending ? 'LAUNCHING...' : 'LAUNCH'}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={handleSettings}
+          className="bg-app-primary hover:bg-app-hover text-app-primary"
         >
           ADJUST
-        </button>
+        </Button>
       </div>
     </div>
   )

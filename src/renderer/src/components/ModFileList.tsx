@@ -97,12 +97,12 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
             if (value) {
               const catalogFile = catalogFiles.find((f) => f.id?.toString() === value)
               if (catalogFile && catalogFile.filePath) {
-                let updatedFiles = [...files]
+                const updatedFiles = [...files]
                 const usedHashes = new Set(updatedFiles.map((f) => f.hashValue))
 
                 if (catalogFile.loadOrder && Object.keys(catalogFile.loadOrder).length > 0) {
                   const entries = Object.entries(catalogFile.loadOrder).sort((a, b) => a[1] - b[1])
-                  for (const [hash, _] of entries) {
+                  for (const [hash] of entries) {
                     const reqFile = catalogFiles.find((f) => f.hashValue === hash)
                     if (reqFile) {
                       const reqFileHash = generateUniqueId(reqFile.hashValue || '')

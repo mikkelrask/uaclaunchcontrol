@@ -1,4 +1,4 @@
-import { IModFile, IMod, IAppSettings, IDoomVersion } from '@shared/schema'
+import { IModFile, IMod, IAppSettings, IDoomVersion, IUpdateInfo } from '@shared/schema'
 
 export interface IRegistryMod {
   family_name: string
@@ -222,13 +222,24 @@ export const api = {
   },
   moveToModFolder: async (
     sourcePath: string
-  ): Promise<{ fullPath: string; relativePath: string }> => {
+  ): Promise<{ fullPath: string; relativePath: string; hashValue: string }> => {
     const response = await fetch(`${API_BASE}/api/mod-files/move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sourcePath })
     })
     if (!response.ok) throw new Error('Failed to move file to mod folder')
+    return response.json()
+  },
+  importWadFile: async (
+    sourcePath: string
+  ): Promise<{ fileName: string; fullPath: string; hashValue: string; alreadyExists: boolean }> => {
+    const response = await fetch(`${API_BASE}/api/wads/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourcePath })
+    })
+    if (!response.ok) throw new Error('Failed to import WAD file')
     return response.json()
   },
   downloadImage: async (url: string, modId: string): Promise<{ fileName: string }> => {
@@ -264,30 +275,30 @@ export const api = {
   },
 
   getVersion: async (): Promise<string> => {
-    return await (window as any).api.getAppVersion()
+    return await window.api.getAppVersion()
   },
 
-  onUpdateStatus: (callback: (data: any) => void) => {
-    ;(window as any).api.onUpdateStatus(callback)
+  onUpdateStatus: (callback: (data: IUpdateInfo) => void): void => {
+    window.api.onUpdateStatus(callback)
   },
 
-  checkForUpdates: () => {
-    ;(window as any).api.checkForUpdates()
+  checkForUpdates: (): void => {
+    void window.api.checkForUpdates()
   },
 
-  downloadUpdate: () => {
-    ;(window as any).api.downloadUpdate()
+  downloadUpdate: (): void => {
+    void window.api.downloadUpdate()
   },
 
-  installUpdate: () => {
-    ;(window as any).api.installUpdate()
+  installUpdate: (): void => {
+    void window.api.installUpdate()
   },
 
-  triggerFakeUpdate: () => {
-    ;(window as any).api.triggerFakeUpdate()
+  triggerFakeUpdate: (): void => {
+    void window.api.triggerFakeUpdate()
   },
 
-  getInstallType: () => {
-    return (window as any).api.getInstallType()
+  getInstallType: (): Promise<{ isAppImage: boolean; isSystemInstalled: boolean }> => {
+    return window.api.getInstallType()
   }
 }

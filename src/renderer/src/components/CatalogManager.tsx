@@ -1,9 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
 import { Combobox } from '@/components/ui/combobox'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -13,12 +20,22 @@ import {
 } from '@/components/ui/select'
 import { DataTable } from '@/components/ui/data-table'
 import { getCatalogColumns } from '@/components/catalog-columns'
-import { IModFile, IAppSettings } from "@shared/schema"
-import { Trash2, Plus, FolderOpen, Check, ChevronUp, ChevronDown, Upload } from 'lucide-react'
+import { IModFile, IAppSettings } from '@shared/schema'
+import {
+  Trash2,
+  Plus,
+  FolderOpen,
+  Check,
+  Pencil,
+  ChevronUp,
+  ChevronDown,
+  Upload
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { api } from '@/api'
+import { api, IRegistryMod } from '@/api'
 import { gameService } from '@/lib/gameService'
 import { REGISTRY_API_URL } from '@shared/registry-config'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 interface CatalogManagerProps {
   files: IModFile[]
@@ -37,7 +54,12 @@ interface RequiredModEntry {
 
 export function CatalogManager({ files, onChange }: CatalogManagerProps): React.ReactElement {
   const { toast } = useToast()
-  const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
+  const queryClient = useQueryClient()
+  const { data: catalogFiles = [] } = useQuery({
+    queryKey: ['/api/mod-files/catalog'],
+    queryFn: () => gameService.getModFileCatalog()
+  })
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<IModFile | null>(null)
@@ -65,20 +87,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
   const [lastLookupHash, setLastLookupHash] = useState<string | null>(null)
   const [lastLookupFound, setLastLookupFound] = useState<boolean>(false)
-  const [lastLookupData, setLastLookupData] = useState<any>(null)
-
-  const loadCatalogFiles = async (): Promise<void> => {
-    try {
-      const allFiles = await gameService.getModFileCatalog()
-      setCatalogFiles(Array.isArray(allFiles) ? allFiles : [])
-    } catch (error) {
-      console.error('Failed to load catalog files:', error)
-    }
-  }
-
-  useEffect(() => {
-    loadCatalogFiles()
-  }, [])
+  const [lastLookupData, setLastLookupData] = useState<IRegistryMod | null>(null)
 
   const availableRequiredFiles = catalogFiles.filter((f) => !f.sidecarOnly && f.hashValue)
 
@@ -136,7 +145,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     return result
   }
 
-  const resetLookupState = () => {
+  const resetLookupState = (): void => {
     setLastLookupHash(null)
     setLastLookupFound(false)
     setLastLookupData(null)
@@ -209,7 +218,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           shouldSubmit = true
         } else if (lastLookupData) {
           // Hash in registry - check if user provided NEW info
-          const urlInRegistry = lastLookupData.urls?.some((u: any) => u.url === addForm.url)
+          const urlInRegistry = lastLookupData.urls?.some((u) => u.url === addForm.url)
           const hasNewUrl = !!(addForm.url && !urlInRegistry)
           const hasNewVersion = !!(addForm.version && !lastLookupData.version)
           shouldSubmit = hasNewUrl || hasNewVersion
@@ -217,20 +226,27 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
         if (shouldSubmit && addForm.url) {
           // Fire and forget - get settings for UUID
-          api.getSettings().then(settings => {
-            if (settings?.registryUuid) {
-              api.submitToPending({
-                hash: hashValue,
-                suggested_name: prettyName,
-                url: addForm.url,
-                version: addForm.version || undefined,
-                is_sidecar: addForm.sidecarOnly ? 1 : 0,
-                load_order: processedLoadOrder ? JSON.stringify(processedLoadOrder) : undefined
-              }, settings.registryUuid, REGISTRY_API_URL)
-            }
-          }).catch(() => {
-            // Silently ignore
-          })
+          api
+            .getSettings()
+            .then((settings) => {
+              if (settings?.registryUuid) {
+                api.submitToPending(
+                  {
+                    hash: hashValue,
+                    suggested_name: prettyName,
+                    url: addForm.url,
+                    version: addForm.version || undefined,
+                    is_sidecar: addForm.sidecarOnly ? 1 : 0,
+                    load_order: processedLoadOrder ? JSON.stringify(processedLoadOrder) : undefined
+                  },
+                  settings.registryUuid,
+                  REGISTRY_API_URL
+                )
+              }
+            })
+            .catch(() => {
+              // Silently ignore
+            })
         }
       }
 
@@ -252,8 +268,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       toast({
-        title: 'Success',
-        description: `Added "${prettyName}" to catalog`
+        title: 'SYSTEM: add_success',
+        description: `Added "${prettyName}" to your mod file catalog.`
       })
 
       resetLookupState()
@@ -270,7 +286,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       // Fetch fresh authoritative list and notify parent
       const freshCatalog = await gameService.getModFileCatalog()
-      setCatalogFiles(freshCatalog)
+      queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
       onChange(freshCatalog)
     } catch (error) {
       toast({
@@ -286,7 +302,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const result = await api.showOpenDialog({
         title: 'Select Mod File',
         properties: ['openFile'],
-        filters: [{ name: 'Mod stuff', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }]
+        filters: [
+          { name: 'Mod stuff', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }
+        ]
       })
 
       if (!result.canceled && result.filePaths.length > 0) {
@@ -313,13 +331,15 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         let settings: IAppSettings | null = null
         try {
           settings = await api.getSettings()
-          console.log('[Registry] Settings loaded:', { registryLookupEnabled: settings?.registryLookupEnabled })
+          console.log('[Registry] Settings loaded:', {
+            registryLookupEnabled: settings?.registryLookupEnabled
+          })
         } catch {
           console.error('Failed to fetch settings')
         }
 
         // If opted in and hash is available, do the lookup
-        let registryData: any = null
+        let registryData: IRegistryMod | null = null
         if (settings?.registryLookupEnabled && hash) {
           try {
             const apiUrl = REGISTRY_API_URL
@@ -353,7 +373,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         }
 
         // Pre-fill from registry if available
-        const updatedForm: any = {
+        const updatedForm: Partial<typeof addForm> = {
           filePath: selectedPath,
           name: registryData?.family_name || name,
           fileType: fileType,
@@ -372,7 +392,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
               try {
                 const presetDomain = new URL(preset.url).hostname.replace('www.', '')
                 const matchingUrl = registryData.urls.find(
-                  (u: any) => u.domain.replace('www.', '') === presetDomain
+                  (u) => u.domain.replace('www.', '') === presetDomain
                 )
                 if (matchingUrl) {
                   selectedUrl = matchingUrl.url
@@ -401,7 +421,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         }
 
         console.log('[Registry] Setting form with:', updatedForm)
-        setAddForm(updatedForm)
+        setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
         setIsAddModalOpen(true)
       }
     } catch (error) {
@@ -429,7 +449,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     const droppedFiles = e.dataTransfer.files
     if (droppedFiles.length > 0) {
       const file = droppedFiles[0]
-      const droppedPath = (window as any).api.getPathForFile(file) || file.name
+      const droppedPath = window.api.getPathForFile(file) || file.name
 
       const ext = droppedPath.split('.').pop()?.toUpperCase()
       const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'ZIP']
@@ -444,8 +464,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       // Detect file type from extension
       let fileType = 'WAD'
-       if (ext === 'PK3' || ext === 'PK7' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
-       else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
+      if (ext === 'PK3' || ext === 'PK7' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+      else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
 
       const fileName = droppedPath.split(/[\\/]/).pop() || ''
       const name = fileName.replace(/\.[^.]+$/, '')
@@ -463,13 +483,15 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       let settings: IAppSettings | null = null
       try {
         settings = await api.getSettings()
-        console.log('[Registry] Settings loaded:', { registryLookupEnabled: settings?.registryLookupEnabled })
+        console.log('[Registry] Settings loaded:', {
+          registryLookupEnabled: settings?.registryLookupEnabled
+        })
       } catch {
         console.error('Failed to fetch settings')
       }
 
       // If opted in and hash is available, do the lookup
-      let registryData: any = null
+      let registryData: IRegistryMod | null = null
       if (settings?.registryLookupEnabled && hash) {
         try {
           const apiUrl = REGISTRY_API_URL
@@ -503,7 +525,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       // Pre-fill from registry if available
-      const updatedForm: any = {
+      const updatedForm: Partial<typeof addForm> = {
         filePath: droppedPath,
         name: registryData?.family_name || name,
         fileType: fileType,
@@ -522,7 +544,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             try {
               const presetDomain = new URL(preset.url).hostname.replace('www.', '')
               const matchingUrl = registryData.urls.find(
-                (u: any) => u.domain.replace('www.', '') === presetDomain
+                (u) => u.domain.replace('www.', '') === presetDomain
               )
               if (matchingUrl) {
                 selectedUrl = matchingUrl.url
@@ -551,7 +573,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       console.log('[Registry] Setting form with:', updatedForm)
-      setAddForm(updatedForm)
+      setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
       setIsAddModalOpen(true)
     }
   }
@@ -581,7 +603,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const result = await api.showOpenDialog({
         title: 'Select Required Mod File',
         properties: ['openFile'],
-        filters: [{ name: 'DOOM Files', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }]
+        filters: [
+          { name: 'DOOM Files', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }
+        ]
       })
 
       if (!result.canceled && result.filePaths.length > 0) {
@@ -702,14 +726,14 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       await api.deleteFromCatalog(file.id)
       handleRemoveFile(file.id)
       toast({
-        title: 'Success',
-        description: `Removed "${file.name || file.fileName}" from catalog`
+        title: 'SYSTEM: remove_success',
+        description: `Removed "${file.name || file.fileName}" from your mod file catalog.`
       })
     } catch {
       handleRemoveFile(file.id)
       toast({
-        title: 'Warning',
-        description: 'File removed from view (may need manual deletion from catalog)'
+        title: 'SYSTEM: Warning!',
+        description: `File "${file.name || file.fileName}" removed from view (may need manual deletion from catalog)`
       })
     }
   }
@@ -789,7 +813,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         return
       }
 
-      const processedLoadOrder = await processRequiredMods(editForm.loadOrder, selectedFile.hashValue)
+      const processedLoadOrder = await processRequiredMods(
+        editForm.loadOrder,
+        selectedFile.hashValue
+      )
 
       const updates: Partial<IModFile> = {
         name: editForm.name.trim(),
@@ -807,44 +834,51 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       // Submit to pending if hash not in registry and we have URL
       if (hashValue && editForm.url) {
-        api.getSettings().then(async (settings) => {
-          if (settings?.registryLookupEnabled && settings?.registryUuid) {
-            try {
-              const lookup = await api.lookupMod(hashValue, REGISTRY_API_URL)
-              if (!lookup) {
-                // Not in registry, submit to pending
-                await api.submitToPending({
-                  hash: hashValue,
-                  suggested_name: editForm.name.trim(),
-                  url: editForm.url,
-                  version: editForm.version || undefined,
-                  is_sidecar: editForm.sidecarOnly ? 1 : 0,
-                  load_order: processedLoadOrder ? JSON.stringify(processedLoadOrder) : undefined
-                }, settings.registryUuid, REGISTRY_API_URL)
-                console.log('[Registry] Submitted updated file to pending:', hashValue)
+        api
+          .getSettings()
+          .then(async (settings) => {
+            if (settings?.registryLookupEnabled && settings?.registryUuid) {
+              try {
+                const lookup = await api.lookupMod(hashValue, REGISTRY_API_URL)
+                if (!lookup) {
+                  // Not in registry, submit to pending
+                  await api.submitToPending(
+                    {
+                      hash: hashValue,
+                      suggested_name: editForm.name.trim(),
+                      url: editForm.url,
+                      version: editForm.version || undefined,
+                      is_sidecar: editForm.sidecarOnly ? 1 : 0,
+                      load_order: processedLoadOrder
+                        ? JSON.stringify(processedLoadOrder)
+                        : undefined
+                    },
+                    settings.registryUuid,
+                    REGISTRY_API_URL
+                  )
+                  console.log('[Registry] Submitted updated file to pending:', hashValue)
+                }
+              } catch {
+                // Silently ignore - registry lookup failed
               }
-            } catch {
-              // Silently ignore - registry lookup failed
             }
-          }
-        }).catch(() => {
-          // Silently ignore
-        })
+          })
+          .catch(() => {
+            // Silently ignore
+          })
       }
 
       toast({
-        title: 'Success',
-        description: `Updated "${editForm.name}"`
+        title: 'SYSTEM: save_success',
+        description: `Updated info: "${editForm.name}"`
       })
 
       setIsEditModalOpen(false)
 
       // Fetch fresh authoritative list and notify parent
       const freshCatalog = await gameService.getModFileCatalog()
-      setCatalogFiles(freshCatalog)
       onChange(freshCatalog)
       setSelectedFile(null)
-      loadCatalogFiles()
     } catch (error) {
       toast({
         title: 'Error',
@@ -942,11 +976,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
                 {files.some((f) => f.sidecarOnly) && (
                   <label className="flex items-center gap-2 text-sm text-app-muted cursor-pointer whitespace-nowrap">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={showSidecarOnly}
-                      onChange={(e) => setShowSidecarOnly(e.target.checked)}
-                      className="w-4 h-4"
+                      onCheckedChange={(checked) => setShowSidecarOnly(checked === true)}
                     />
                     Sidecars
                   </label>
@@ -957,14 +989,25 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         )
       })()}
 
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="bg-app-primary border-app max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogTitle>Add Mod File to Catalog</DialogTitle>
-          <DialogDescription>
-            Add a mod file to your catalog. The file will be copied to your mods folder.
-          </DialogDescription>
+      <Dialog open={isAddModalOpen} onOpenChange={(open) => !open && setIsAddModalOpen(false)}>
+        <DialogContent className="bg-app-primary shadow-2xl border-app max-w-md max-h-[80vh] flex flex-col p-0 overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-app bg-app-secondary">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-accent-highlight/10 rounded-md">
+                <Plus className="w-5 h-5 text-accent-highlight" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
+                  add_mod_file
+                </DialogTitle>
+                <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
+                  UAC Launch Control // Catalog Management
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 p-4 overflow-y-auto">
             <div className="space-y-2">
               <Label htmlFor="add-file-select">Select File</Label>
               <div className="flex gap-2">
@@ -1050,12 +1093,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                         disabled={req.isMain}
                         className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
                       />
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={req.sidecarOnly}
-                        onChange={() => handleToggleRequiredSidecar('add', idx)}
+                        onCheckedChange={() => handleToggleRequiredSidecar('add', idx)}
                         disabled={req.isMain}
-                        className="w-4 h-4"
                         title="Sidecar only"
                       />
                       <Button
@@ -1097,23 +1138,26 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             </div>
 
             <div className="flex items-center gap-2">
-              <input
+              <Checkbox
                 id="add-sidecar"
-                type="checkbox"
                 checked={addForm.sidecarOnly}
-                onChange={(e) => setAddForm((prev) => ({ ...prev, sidecarOnly: e.target.checked }))}
-                className="w-4 h-4"
+                onCheckedChange={(checked) =>
+                  setAddForm((prev) => ({ ...prev, sidecarOnly: checked === true }))
+                }
               />
               <Label htmlFor="add-sidecar" className="text-sm font-normal">
-                Sidecar mod (Check if this mod doesn't work without other mod files)
+                Sidecar mod (Check if this mod doesn&apos;t work without other mod files)
               </Label>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter className="bg-app-secondary border-t border-app p-4 shrink-0">
             <Button
               variant="outline"
-              onClick={() => { resetLookupState(); setIsAddModalOpen(false) }}
+              onClick={() => {
+                resetLookupState()
+                setIsAddModalOpen(false)
+              }}
               className="bg-app-secondary"
             >
               Cancel
@@ -1126,16 +1170,29 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
               <Plus className="h-4 w-4 mr-1" />
               Add to Catalog
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="bg-app-primary border-app max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogTitle>Edit Mod File</DialogTitle>
-          <DialogDescription>Update the mod file details in your catalog.</DialogDescription>
+      <Dialog open={isEditModalOpen} onOpenChange={(open) => !open && setIsEditModalOpen(false)}>
+        <DialogContent className="bg-app-primary shadow-2xl border-app max-w-md max-h-[80vh] flex flex-col p-0 overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-app bg-app-secondary">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-accent-highlight/10 rounded-md">
+                <Pencil className="w-5 h-5 text-accent-highlight" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
+                  edit_mod_file
+                </DialogTitle>
+                <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
+                  UAC Launch Control // Catalog Management
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 p-4 overflow-y-auto">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Name</Label>
               <Input
@@ -1197,12 +1254,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                         disabled={req.isMain}
                         className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
                       />
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={req.sidecarOnly}
-                        onChange={() => handleToggleRequiredSidecar('edit', idx)}
+                        onCheckedChange={() => handleToggleRequiredSidecar('edit', idx)}
                         disabled={req.isMain}
-                        className="w-4 h-4"
                         title="Sidecar only"
                       />
                       <Button
@@ -1244,14 +1299,12 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             </div>
 
             <div className="flex items-center gap-2">
-              <input
+              <Checkbox
                 id="edit-sidecar"
-                type="checkbox"
                 checked={editForm.sidecarOnly}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, sidecarOnly: e.target.checked }))
+                onCheckedChange={(checked) =>
+                  setEditForm((prev) => ({ ...prev, sidecarOnly: checked === true }))
                 }
-                className="w-4 h-4"
               />
               <Label htmlFor="edit-sidecar" className="text-sm font-normal">
                 Sidecar only
@@ -1265,7 +1318,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             )}
           </div>
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter className="bg-app-secondary border-t border-app p-4 shrink-0">
             <Button
               variant="outline"
               onClick={() => setIsEditModalOpen(false)}
@@ -1277,7 +1330,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
               <Check className="h-4 w-4 mr-1" />
               Save Changes
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
