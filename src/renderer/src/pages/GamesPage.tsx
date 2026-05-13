@@ -8,7 +8,7 @@ import ViewToggle from '@/components/ViewToggle'
 import GameCard from '@/components/GameCard'
 import GameSettingsModal from '@/components/GameSettingsModal'
 import { gameService } from '@/lib/gameService'
-import { IMod, IDoomVersion } from '@shared/schema'
+import { IProtocol, IDoomVersion } from '@shared/schema'
 import { api } from '@/api'
 
 type ViewMode = 'grid' | 'list' | 'detail'
@@ -24,7 +24,7 @@ export const GamesPage: React.FC = () => {
     const params = new URLSearchParams(window.location.search)
     return params.get('search') || ''
   })
-  const [selectedModId, setSelectedModId] = useState<string | null>(null)
+  const [selectedProtocolId, setSelectedProtocolId] = useState<string | null>(null)
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
 
   // Fetch data
@@ -33,9 +33,9 @@ export const GamesPage: React.FC = () => {
     queryFn: api.getDoomVersions
   })
 
-  const { data: mods = [], isLoading: isModsLoading } = useQuery<IMod[]>({
-    queryKey: ['/api/mods', activeVersion, searchQuery],
-    queryFn: () => gameService.getMods(activeVersion || undefined, searchQuery || undefined),
+  const { data: protocols = [], isLoading: isModsLoading } = useQuery<IProtocol[]>({
+    queryKey: ['/api/protocols', activeVersion, searchQuery],
+    queryFn: () => gameService.getProtocols(activeVersion || undefined, searchQuery || undefined),
     enabled: true
   })
 
@@ -59,25 +59,25 @@ export const GamesPage: React.FC = () => {
   }
 
   const handleSettingsClick = (id: string): void => {
-    setSelectedModId(id)
+    setSelectedProtocolId(id)
     setIsSettingsModalOpen(true)
   }
 
   const handleCloseSettingsModal = (): void => {
     setIsSettingsModalOpen(false)
-    setSelectedModId(null)
+    setSelectedProtocolId(null)
   }
 
-  // Filter mods based on search query
-  const filteredMods = mods.filter((mod) =>
+  // Filter protocols based on search query
+  const filteredProtocols = protocols.filter((p) =>
     searchQuery
-      ? (mod.title || mod.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+      ? (p.title || p.name || '').toLowerCase().includes(searchQuery.toLowerCase())
       : true
   )
 
-  // Find version object for each mod
-  const getVersionForMod = (mod: IMod): IDoomVersion | undefined => {
-    return versions.find((v: IDoomVersion) => v.id === mod.doomVersionId)
+  // Find version object for each protocol
+  const getVersionForProtocol = (p: IProtocol): IDoomVersion | undefined => {
+    return versions.find((v: IDoomVersion) => v.id === p.doomVersionId)
   }
 
   return (
@@ -112,7 +112,7 @@ export const GamesPage: React.FC = () => {
                     <div key={i} className="h-40 bg-app-card rounded-lg animate-pulse" />
                   ))}
               </div>
-            ) : filteredMods?.length === 0 ? (
+            ) : filteredProtocols?.length === 0 ? (
               <div className="text-center py-10">
                 <h3 className="text-2xl mb-2">
                   <span className="animate-pulse text-accent-highlight font-bold">FAILURE:</span>{' '}
@@ -137,14 +137,14 @@ export const GamesPage: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">
-                {filteredMods?.map((mod): React.ReactNode => {
-                  const version = getVersionForMod(mod)
+                {filteredProtocols?.map((p): React.ReactNode => {
+                  const version = getVersionForProtocol(p)
                   if (!version) return null
 
                   return (
                     <GameCard
-                      key={mod.id}
-                      mod={mod}
+                      key={p.id}
+                      protocol={p}
                       doomVersion={version}
                       onSettingsClick={handleSettingsClick}
                     />
@@ -156,8 +156,8 @@ export const GamesPage: React.FC = () => {
         </div>
 
         <GameSettingsModal
-          key={selectedModId || 'new'}
-          modId={selectedModId}
+          key={selectedProtocolId || 'new'}
+          protocolId={selectedProtocolId}
           isOpen={isSettingsModalOpen}
           onClose={handleCloseSettingsModal}
           doomVersions={versions.filter((v) => !v.ignored)}

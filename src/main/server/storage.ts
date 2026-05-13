@@ -10,9 +10,9 @@ import {
   IDatabaseLink,
   IDoomVersion,
   ISourcePort,
-  IMod,
+  IProtocol,
   IModFile,
-  InsertMod
+  InsertProtocol
 } from '../../shared/schema'
 import { debug } from '../../shared/debug'
 
@@ -247,16 +247,16 @@ async function migrateSourcePorts(): Promise<void> {
     if (!defaultPortId) return
 
     if (!fs.existsSync(MODS_DIR)) return
-    const modFiles = await fs.readdir(MODS_DIR)
-    let modsMigrated = 0
+    const entries = await fs.readdir(MODS_DIR)
+    let protosMigrated = 0
 
-    for (const filename of modFiles) {
+    for (const filename of entries) {
       if (!filename.endsWith('.json')) continue
-      const modPath = path.join(MODS_DIR, filename)
+      const entryPath = path.join(MODS_DIR, filename)
       try {
-        const modData = await fs.readJSON(modPath)
-        if (modData.sourcePort !== undefined && modData.sourcePort !== null && !modData.sourcePortId) {
-          const oldVal = String(modData.sourcePort)
+        const entryData = await fs.readJSON(entryPath)
+        if (entryData.sourcePort !== undefined && entryData.sourcePort !== null && !entryData.sourcePortId) {
+          const oldVal = String(entryData.sourcePort)
           let match: ISourcePort | undefined
           if (oldVal.includes('/') || oldVal.includes('\\')) {
             match = settings.sourcePorts.find(
@@ -268,19 +268,19 @@ async function migrateSourcePorts(): Promise<void> {
                 oldVal.toLowerCase().includes(p.name.toLowerCase())
             ) || settings.sourcePorts.find((p) => p.family === detectFamilyFromPath(oldVal))
           }
-          modData.sourcePortId = match?.id || defaultPortId
-          delete modData.sourcePort
-          await fs.writeJSON(modPath, modData, { spaces: 2 })
-          modsMigrated++
-          debug(`[migrateSourcePorts] Migrated mod ${filename}: sourcePort → sourcePortId=${modData.sourcePortId}`)
+          entryData.sourcePortId = match?.id || defaultPortId
+          delete entryData.sourcePort
+          await fs.writeJSON(entryPath, entryData, { spaces: 2 })
+          protosMigrated++
+          debug(`[migrateSourcePorts] Migrated protocol ${filename}: sourcePort → sourcePortId=${entryData.sourcePortId}`)
         }
       } catch (err) {
         console.warn(`[migrateSourcePorts] Failed to migrate mod ${filename}:`, err)
       }
     }
 
-    if (modsMigrated > 0) {
-      debug(`[migrateSourcePorts] Migrated ${modsMigrated} mod files`)
+    if (protosMigrated > 0) {
+      debug(`[migrateSourcePorts] Migrated ${protosMigrated} protocol files`)
     }
   } catch (err) {
     console.error('[migrateSourcePorts] Migration failed:', err)
@@ -900,7 +900,7 @@ export async function copyImageToImages(sourcePath: string): Promise<string> {
 }
 
 // Download an image from a URL and save it to the images directory
-export async function downloadImage(url: string, modId: string): Promise<string> {
+export async function downloadImage(url: string, protocolId: string): Promise<string> {
   try {
     await fs.ensureDir(IMAGES_DIR)
 
@@ -919,7 +919,7 @@ export async function downloadImage(url: string, modId: string): Promise<string>
 
     if (extension.length > 5) extension = '.jpg'
 
-    const fileName = `${modId}-poster${extension}`
+    const fileName = `${protocolId}-poster${extension}`
     const filePath = path.join(IMAGES_DIR, fileName)
 
     await fs.writeFile(filePath, response.data)
@@ -1067,89 +1067,81 @@ export async function updateModFileInCatalog(
 }
 
 // === Mods ===
-export async function saveMod(modData: IMod & { files: IModFile[] }): Promise<IMod> {
+export async function saveProtocol(protocolData: IProtocol & { files: IModFile[] }): Promise<IProtocol> {
   // Ensure doomVersionId is always a string
-  if (modData.doomVersionId !== undefined) {
-    modData.doomVersionId = String(modData.doomVersionId)
+  if (protocolData.doomVersionId !== undefined) {
+    protocolData.doomVersionId = String(protocolData.doomVersionId)
   }
   try {
-    initStorage() // Ensure mods directory exists
+    initStorage()
     const settings = await getSettings()
-    const targetModsDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
-    const modFilePath = path.join(targetModsDir, `${modData.id}.json`)
+    const targetDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
+    const filePath = path.join(targetDir, `${protocolData.id}.json`)
 
-    // Compute hashValue for files missing it
-    for (const file of modData.files) {
+    for (const file of protocolData.files) {
       if (!file.hashValue && file.filePath) {
         file.hashValue = await computeFileHash(file.filePath)
       }
     }
 
-    // Data is already in the flat structure { ...IMod, files: [...] }
-    await fs.writeJSON(modFilePath, modData, { spaces: 2 })
-    // Return only the IMod part (without files) as per previous usage?
-    // Or return the whole saved object? Let's return the IMod part for now.
-    const mod = { ...modData }
-    delete (mod as Record<string, unknown>).files
-    return mod as IMod
+    await fs.writeJSON(filePath, protocolData, { spaces: 2 })
+    const protocol = { ...protocolData }
+    delete (protocol as Record<string, unknown>).files
+    return protocol as IProtocol
   } catch (error: unknown) {
     console.error('Error saving mod:', error)
     throw new Error(`Failed to save mod: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
-export async function getMods(): Promise<IMod[]> {
+export async function getProtocols(): Promise<IProtocol[]> {
   try {
-    initStorage() // Ensure mods directory exists
+    initStorage()
     const settings = await getSettings()
-    const targetModsDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
-    const mods: IMod[] = []
-    if (!fs.existsSync(targetModsDir)) {
-      return mods
+    const targetDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
+    const protocols: IProtocol[] = []
+    if (!fs.existsSync(targetDir)) {
+      return protocols
     }
-    const modFiles = await fs.readdir(targetModsDir)
+    const filenames = await fs.readdir(targetDir)
 
-    for (const modFilename of modFiles) {
-      if (modFilename.endsWith('.json')) {
-        const modFilePath = path.join(targetModsDir, modFilename)
+    for (const filename of filenames) {
+      if (filename.endsWith('.json')) {
+        const filePath = path.join(targetDir, filename)
         try {
-          // Read the flat mod data { ...IMod, files: [...] }
-          const modData = await fs.readJSON(modFilePath)
-          // Extract the mod part (excluding files)
-          const mod = { ...modData }
-          delete (mod as Record<string, unknown>).files
-          mods.push(mod as IMod)
+          const data = await fs.readJSON(filePath)
+          const protocol = { ...data }
+          delete (protocol as Record<string, unknown>).files
+          protocols.push(protocol as IProtocol)
         } catch (err: unknown) {
-          console.error(`Error reading mod file ${modFilename}:`, err)
+          console.error(`Error reading protocol file ${filename}:`, err)
         }
       }
     }
-    return mods
+    return protocols
   } catch (error: unknown) {
-    console.error('Error getting mods:', error)
+    console.error('Error getting protocols:', error)
     return []
   }
 }
 
-export async function getMod(modId: string): Promise<IMod & { files: IModFile[] }> {
+export async function getProtocol(protocolId: string): Promise<IProtocol & { files: IModFile[] }> {
   try {
-    initStorage() // Ensure mods directory exists
+    initStorage()
     const settings = await getSettings()
-    const targetModsDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
-    const modFilePath = path.join(targetModsDir, `${modId}.json`)
-    if (!fs.existsSync(modFilePath)) {
-      throw new Error(`Mod ${modId} not found`)
+    const targetDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
+    const filePath = path.join(targetDir, `${protocolId}.json`)
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Protocol ${protocolId} not found`)
     }
-    // Read the flat data { ...IMod, files: [...] }
-    const modData = await fs.readJSON(modFilePath)
-    // Always ensure files is present and is an array
-    if (!Array.isArray(modData.files)) {
-      modData.files = []
+    const data = await fs.readJSON(filePath)
+    if (!Array.isArray(data.files)) {
+      data.files = []
     }
-    return modData as IMod & { files: IModFile[] }
+    return data as IProtocol & { files: IModFile[] }
   } catch (error: unknown) {
-    console.error(`Error getting mod ${modId}:`, error)
-    throw new Error(`Failed to get mod: ${error instanceof Error ? error.message : String(error)}`)
+    console.error(`Error getting protocol ${protocolId}:`, error)
+    throw new Error(`Failed to get protocol: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -1212,8 +1204,8 @@ async function _deleteFile(filePath: string): Promise<boolean> {
 
 // Get path for a mod's JSON config file (used internally?)
 /*
-function _getModFilePath(modId: string): string {
-  return path.join(MODS_DIR, `${modId}.json`);
+function _getProtocolFilePath(protocolId: string): string {
+  return path.join(MODS_DIR, `${protocolId}.json`);
 }
 */
 
@@ -1283,51 +1275,51 @@ export async function createModFile(file: Omit<IModFile, 'id' | 'modId'>): Promi
   return file as unknown as IModFile
 }
 
-export async function getModsByDoomVersion(
+export async function getProtocolsByDoomVersion(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _versionId: string | number
-): Promise<IMod[]> {
-  // TODO: Implement getModsByDoomVersion
+): Promise<IProtocol[]> {
+  // TODO: Implement getProtocolsByDoomVersion
   return []
 }
 
 export async function getModFiles(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _modId: string | number
+  _protocolId: string | number
 ): Promise<IModFile[]> {
   // TODO: Implement getModFiles
   return []
 }
 
-export async function createMod(mod: InsertMod): Promise<IMod> {
-  // TODO: Implement createMod
-  return { ...mod, id: '', files: [] } as IMod
+export async function createProtocol(protocol: InsertProtocol): Promise<IProtocol> {
+  // TODO: Implement createProtocol
+  return { ...protocol, id: '', files: [] } as IProtocol
 }
 
-export async function updateMod(
+export async function updateProtocol(
   _id: string | number,
-  _mod: Partial<IMod>
-): Promise<IMod | undefined> {
-  // TODO: Implement updateMod
-  return _mod as unknown as IMod
+  _protocol: Partial<IProtocol>
+): Promise<IProtocol | undefined> {
+  // TODO: Implement updateProtocol
+  return _protocol as unknown as IProtocol
 }
 
-export async function deleteMod(id: string | number): Promise<boolean | undefined> {
+export async function deleteProtocol(id: string | number): Promise<boolean | undefined> {
   try {
     const settings = await getSettings()
-    const targetModsDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
-    const modFilePath = path.join(targetModsDir, `${id}.json`)
-    debug('Attempting to delete mod file:', modFilePath)
-    if (await fs.pathExists(modFilePath)) {
-      await fs.remove(modFilePath)
-      debug('Deleted mod file:', modFilePath)
+    const targetDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
+    const filePath = path.join(targetDir, `${id}.json`)
+    debug('Attempting to delete protocol file:', filePath)
+    if (await fs.pathExists(filePath)) {
+      await fs.remove(filePath)
+      debug('Deleted protocol file:', filePath)
       return true
     } else {
-      console.warn('[DEBUG] Mod file does not exist:', modFilePath)
+      console.warn('[DEBUG] Protocol file does not exist:', filePath)
       return false
     }
   } catch (error: unknown) {
-    console.error('Error deleting mod:', error)
+    console.error('Error deleting protocol:', error)
     return false
   }
 }

@@ -1,6 +1,6 @@
 // Shared interfaces between main and renderer processes
 
-export interface IMod {
+export interface IProtocol {
   id: string
   name: string
   title?: string // For backward compatibility
@@ -19,7 +19,7 @@ export interface IMod {
   files: IModFile[]
 }
 
-export type InsertMod = Omit<IMod, 'id'>
+export type InsertProtocol = Omit<IProtocol, 'id'>
 
 export interface IModFile {
   id: number

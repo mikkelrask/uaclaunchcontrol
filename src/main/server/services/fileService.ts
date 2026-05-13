@@ -102,12 +102,12 @@ export class FileService {
   }
 }
 
-// In your route handler for POST /api/mods/:id/launch, use the unified launchGame
+// In your route handler for POST /api/protocols/:id/launch, use the unified launchGame
 // Example (pseudo-code):
-// router.post('/api/mods/:id/launch', async (req, res) => {
-//   const modId = req.params.id;
+// router.post('/api/protocols/:id/launch', async (req, res) => {
+//   const protocolId = req.params.id;
 //   try {
-//     const result = await launchGame({ modId });
+//     const result = await launchGame({ protocolId });
 //     if (result.success) {
 //       res.json({ success: true });
 //     } else {

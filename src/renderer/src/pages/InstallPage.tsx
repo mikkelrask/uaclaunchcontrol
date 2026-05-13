@@ -30,7 +30,7 @@ import {
 import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/hooks/use-toast'
 import { gameService } from '@/lib/gameService'
-import { IMod, IModFile, IAppSettings, IDoomVersion, ISourcePort } from '@shared/schema'
+import { IProtocol, IModFile, IAppSettings, IDoomVersion, ISourcePort } from '@shared/schema'
 import { slugify } from '@/lib/utils'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { CatalogManager } from '@/components/CatalogManager'
@@ -160,8 +160,8 @@ export const InstallPage: React.FC = () => {
 
   // Create mod mutation
   const createMutation = useMutation({
-    mutationFn: (data: { mod: Omit<IMod, 'id'>; files: Omit<IModFile, 'id' | 'modId'>[] }) =>
-      gameService.createMod(data.mod, data.files),
+    mutationFn: (data: { protocol: Omit<IProtocol, 'id'>; files: Omit<IModFile, 'id' | 'modId'>[] }) =>
+      gameService.createProtocol(data.protocol, data.files),
     onSuccess: () => {
       toast({
         title: 'SYSTEM: params_accepted',
@@ -349,7 +349,7 @@ export const InstallPage: React.FC = () => {
       }
     }
 
-    const mod: Omit<IMod, 'id'> & { id?: string } = {
+    const protocol: Omit<IProtocol, 'id'> & { id?: string } = {
       id: uniqueId,
       name: data.title,
       title: data.title,
@@ -362,7 +362,7 @@ export const InstallPage: React.FC = () => {
       files: fileData
     }
 
-    console.log('[DEBUG] Final mod object for submission:', mod)
+    console.log('[DEBUG] Final protocol object for submission:', protocol)
     console.log('[DEBUG] files state at submit:', files)
     console.log('[DEBUG] fileData to process:', fileData)
 
@@ -385,7 +385,7 @@ export const InstallPage: React.FC = () => {
       console.warn('[DEBUG] Failed to update some catalog entries:', err)
     }
 
-    createMutation.mutate({ mod, files: fileData })
+    createMutation.mutate({ protocol, files: fileData })
   }
 
   // Wrapper to update file list
@@ -620,7 +620,7 @@ export const InstallPage: React.FC = () => {
             onDragLeave={handleJsonDragLeave}
           >
             <CardHeader>
-              <CardTitle>New Launch Configuration</CardTitle>
+              <CardTitle>New Launch Protocol</CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab}>

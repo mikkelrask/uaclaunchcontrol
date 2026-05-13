@@ -1,5 +1,5 @@
 import React from 'react'
-import { IMod, IDoomVersion } from '@shared/schema'
+import { IProtocol, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Button } from '@/components/ui/button'
 import { useMutation } from '@tanstack/react-query'
@@ -8,80 +8,75 @@ import { useToast } from '@/hooks/use-toast'
 import placeholder from '@renderer/assets/placeholder.png'
 
 interface GameCardProps {
-  mod: IMod
+  protocol: IProtocol
   doomVersion: IDoomVersion
   onSettingsClick: (id: string) => void
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ mod, doomVersion, onSettingsClick }) => {
+export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSettingsClick }) => {
   const { toast } = useToast()
   // const queryClient = useQueryClient();
 
   const launchMutation = useMutation({
-    mutationFn: gameService.launchMod,
+    mutationFn: gameService.launchProtocol,
     onSuccess: () => {
       toast({
         title: 'SYSTEM: launch_protocol',
-        description: `${mod.title} is now running.`
+        description: `${protocol.title} is now running.`
       })
     },
     onError: (error) => {
       toast({
         title: 'FATAL: launch_failed',
-        description: `Could not launch ${mod.title}: ${error}`,
+        description: `Could not launch ${protocol.title}: ${error}`,
         variant: 'destructive'
       })
     }
   })
 
   const handleLaunch = (): void => {
-    launchMutation.mutate(mod.id)
+    launchMutation.mutate(protocol.id)
   }
 
   const handleSettings = (): void => {
-    onSettingsClick(mod.id)
+    onSettingsClick(protocol.id)
   }
 
   // Image fallback path if screenshot not available
   const imagePlaceholder = placeholder
 
-  // Truncate description to a reasonable length for hover display
-  const truncatedDescription = mod.description
-    ? mod.description.length > 120
-      ? mod.description.substring(0, 120) + '...'
-      : mod.description
+  const truncatedDescription = protocol.description
+    ? protocol.description.length > 120
+      ? protocol.description.substring(0, 120) + '...'
+      : protocol.description
     : 'No description available'
 
-  const displayImagePath = mod.screenshotPath
-    ? mod.screenshotPath.startsWith('http') ||
-      mod.screenshotPath.includes('/') ||
-      mod.screenshotPath.includes('\\')
-      ? mod.screenshotPath
-      : `http://localhost:7666/images/${mod.screenshotPath}`
+  const displayImagePath = protocol.screenshotPath
+    ? protocol.screenshotPath.startsWith('http') ||
+      protocol.screenshotPath.includes('/') ||
+      protocol.screenshotPath.includes('\\')
+      ? protocol.screenshotPath
+      : `http://localhost:7666/images/${protocol.screenshotPath}`
     : imagePlaceholder
 
   return (
     <div className="game-card group cursor-pointer relative border shadow-accent-hightlight/20">
-      {/* Using aspect-ratio to enforce 16:9 ratio for screenshots */}
       <div className="aspect-w-16 aspect-h-9 overflow-hidden relative">
         <img
           src={displayImagePath}
-          alt={mod.title}
+          alt={protocol.title}
           className="w-full h-full object-cover group-hover:hue-rotate-90"
           onError={(e) => {
             e.currentTarget.src = imagePlaceholder
           }}
         />
-        {/* Dark gradient overlay - always visible */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
 
-        {/* Game title and icon container - starts at the bottom */}
         <div
           className="absolute inset-x-0 bottom-0 px-4 py-4 flex justify-between items-end
                       transform transition-transform duration-300 group-hover:translate-y-[-130px] z-10"
         >
-          {/* Game title */}
-          <h3 className="text-white lg:text-lg font-bold ">{mod.title}</h3>
+          <h3 className="text-white lg:text-lg font-bold ">{protocol.title}</h3>
 
           {/* Version icon */}
           <DoomVersionIcon

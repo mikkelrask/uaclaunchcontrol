@@ -1,4 +1,4 @@
-import type { IDoomVersion, IMod, IModFile, InsertMod, IAppSettings } from '@shared/schema'
+import type { IDoomVersion, IProtocol, IModFile, InsertProtocol, IAppSettings } from '@shared/schema'
 
 interface OpenDialogOptions {
   title?: string
@@ -103,56 +103,56 @@ export const gameService = {
     }
   },
 
-  // Mod operations
-  async getMods(versionSlug?: string, searchQuery?: string): Promise<IMod[]> {
+  // Protocol operations
+  async getProtocols(versionSlug?: string, searchQuery?: string): Promise<IProtocol[]> {
     const params = new URLSearchParams()
     if (versionSlug) params.append('version', versionSlug)
     if (searchQuery) params.append('search', searchQuery)
 
-    const url = `${API_BASE}/api/mods?${params.toString()}`
+    const url = `${API_BASE}/api/protocols?${params.toString()}`
     const response = await fetch(url)
-    return handleApiResponse<IMod[]>(response)
+    return handleApiResponse<IProtocol[]>(response)
   },
 
-  async getMod(id: string): Promise<{ mod: IMod; files: IModFile[] }> {
-    const response = await fetch(`${API_BASE}/api/mods/${id}`)
-    return handleApiResponse<{ mod: IMod; files: IModFile[] }>(response)
+  async getProtocol(id: string): Promise<{ protocol: IProtocol; files: IModFile[] }> {
+    const response = await fetch(`${API_BASE}/api/protocols/${id}`)
+    return handleApiResponse<{ protocol: IProtocol; files: IModFile[] }>(response)
   },
 
-  async createMod(mod: InsertMod, files: Omit<IModFile, 'id' | 'modId'>[] = []): Promise<IMod> {
-    const response = await fetch(`${API_BASE}/api/mods`, {
+  async createProtocol(protocol: InsertProtocol, files: Omit<IModFile, 'id' | 'modId'>[] = []): Promise<IProtocol> {
+    const response = await fetch(`${API_BASE}/api/protocols`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mod, files })
+      body: JSON.stringify({ protocol, files })
     })
-    return handleApiResponse<IMod>(response)
+    return handleApiResponse<IProtocol>(response)
   },
 
-  async updateMod(
+  async updateProtocol(
     id: string,
-    mod: Partial<IMod>,
+    protocol: Partial<IProtocol>,
     files?: Omit<IModFile, 'id' | 'modId'>[]
-  ): Promise<IMod> {
-    const response = await fetch(`${API_BASE}/api/mods/${id}`, {
+  ): Promise<IProtocol> {
+    const response = await fetch(`${API_BASE}/api/protocols/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mod, files })
+      body: JSON.stringify({ protocol, files })
     })
-    return handleApiResponse<IMod>(response)
+    return handleApiResponse<IProtocol>(response)
   },
 
-  async deleteMod(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE}/api/mods/${id}`, {
+  async deleteProtocol(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/api/protocols/${id}`, {
       method: 'DELETE'
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to delete mod: ${response.status}`)
+      throw new Error(`Failed to delete protocol: ${response.status}`)
     }
   },
 
-  async launchMod(id: string): Promise<{ success: boolean; message: string }> {
-    const response = await fetch(`${API_BASE}/api/mods/${id}/launch`, {
+  async launchProtocol(id: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_BASE}/api/protocols/${id}/launch`, {
       method: 'POST'
     })
     return handleApiResponse<{ success: boolean; message: string }>(response)

@@ -11,8 +11,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json())
   const httpServer = createServer(app)
 
-  // Initialize services and load mods from config
-  await gameService.loadModsFromConfig()
+  // Initialize services and load protocols from config
+  await gameService.loadProtocolsFromConfig()
 
   // === API Routes ===
 
@@ -139,13 +139,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   })
 
   // Download image route
-  app.post('/api/mod/download-image', async (req, res) => {
-    const { url, modId } = req.body
-    if (!url || !modId) {
-      return res.status(400).json({ error: 'Missing url or modId' })
+  app.post('/api/protocol/download-image', async (req, res) => {
+    const { url, protocolId } = req.body
+    if (!url || !protocolId) {
+      return res.status(400).json({ error: 'Missing url or protocolId' })
     }
     try {
-      const fileName = await storage.downloadImage(url, modId)
+      const fileName = await storage.downloadImage(url, protocolId)
       return res.json({ fileName })
     } catch (error: unknown) {
       return res
@@ -178,123 +178,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json(version)
   })
 
-  // === Mods API ===
-  app.get('/api/mods', async (req, res) => {
+  // === Protocols API ===
+  app.get('/api/protocols', async (req, res) => {
     const { version, search } = req.query
 
     try {
-      let mods = await gameService.getAllMods()
+      let protocols = await gameService.getAllProtocols()
 
-      // Filter by version if provided
       if (version && typeof version === 'string') {
-        mods = mods.filter((mod) => mod.doomVersionId === version)
+        protocols = protocols.filter((p) => p.doomVersionId === version)
       }
 
-      // Filter by search query if provided
       if (search && typeof search === 'string') {
-        mods = mods.filter((mod) =>
-          (mod.title || mod.name || '').toLowerCase().includes(search.toLowerCase())
+        protocols = protocols.filter((p) =>
+          (p.title || p.name || '').toLowerCase().includes(search.toLowerCase())
         )
       }
 
-      return res.json(mods)
+      return res.json(protocols)
     } catch (error) {
-      console.error('Error fetching mods:', error)
-      return res.status(500).json({ error: 'Failed to fetch mods' })
+      console.error('Error fetching protocols:', error)
+      return res.status(500).json({ error: 'Failed to fetch protocols' })
     }
   })
 
-  app.get('/api/mods/:id', async (req, res) => {
-    const id = req.params.id // Keep ID as string
-    // if (isNaN(id)) {
-    // return res.status(400).json({ message: "Invalid mod ID" });
-    // }
+  app.get('/api/protocols/:id', async (req, res) => {
+    const id = req.params.id
 
     try {
-      const { mod, files } = await gameService.getMod(id)
-      return res.json({ mod, files })
+      const { protocol, files } = await gameService.getProtocol(id)
+      return res.json({ protocol, files })
     } catch (error: unknown) {
       return res.status(404).json({
-        message: error instanceof Error ? error.message : 'Mod not found'
+        message: error instanceof Error ? error.message : 'Protocol not found'
       })
     }
   })
 
-  app.post('/api/mods', async (req, res) => {
-    const { mod, files } = req.body
+  app.post('/api/protocols', async (req, res) => {
+    const { protocol } = req.body
+    const files = req.body.files || []
 
-    // Basic validation - might need more depending on IMod structure
-    if (!mod || !mod.title /* || !mod.doomVersionId || !mod.sourcePort */) {
-      // Removed version/port checks for now
-      return res.status(400).json({ message: 'Missing required mod properties' })
+    if (!protocol || !protocol.title) {
+      return res.status(400).json({ message: 'Missing required protocol properties' })
     }
 
     try {
-      const savedMod = await gameService.saveMod(mod, files || [])
-      return res.status(201).json(savedMod)
+      const saved = await gameService.saveProtocol(protocol, files)
+      return res.status(201).json(saved)
     } catch (error: unknown) {
       return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to save mod'
+        message: error instanceof Error ? error.message : 'Failed to save protocol'
       })
     }
   })
 
-  app.put('/api/mods/:id', async (req, res) => {
-    const id = req.params.id // Keep ID as string
-    // if (isNaN(id)) {
-    // return res.status(400).json({ message: "Invalid mod ID" });
-    // }
+  app.put('/api/protocols/:id', async (req, res) => {
+    const id = req.params.id
+    const { protocol } = req.body
+    const files = req.body.files || []
 
-    const { mod, files } = req.body
-    if (!mod) {
-      return res.status(400).json({ message: 'Missing mod data' })
+    if (!protocol) {
+      return res.status(400).json({ message: 'Missing protocol data' })
     }
 
-    mod.id = id // Assign string ID
+    protocol.id = id
     try {
-      const updatedMod = await gameService.saveMod(mod, files || [])
-      return res.json(updatedMod)
+      const updated = await gameService.saveProtocol(protocol, files)
+      return res.json(updated)
     } catch (error: unknown) {
       return res.status(404).json({
-        message: error instanceof Error ? error.message : 'Mod not found or failed to update'
+        message: error instanceof Error ? error.message : 'Protocol not found or failed to update'
       })
     }
   })
 
-  app.delete('/api/mods/:id', async (req, res) => {
-    const id = req.params.id // Keep ID as string
-    // if (isNaN(id)) {
-    // return res.status(400).json({ message: "Invalid mod ID" });
-    // }
+  app.delete('/api/protocols/:id', async (req, res) => {
+    const id = req.params.id
 
     try {
-      const success = await gameService.deleteMod(id)
+      const success = await gameService.deleteProtocol(id)
       if (!success) {
-        throw new Error('Mod not found or failed to delete')
+        throw new Error('Protocol not found or failed to delete')
       }
       return res.status(204).send()
     } catch (error: unknown) {
       return res.status(404).json({
-        message: error instanceof Error ? error.message : 'Mod not found or failed to delete'
+        message: error instanceof Error ? error.message : 'Protocol not found or failed to delete'
       })
     }
   })
 
-  // Launch a mod
-  app.post('/api/mods/:id/launch', async (req, res) => {
-    const id = req.params.id // Use string ID
+  // Launch a protocol
+  app.post('/api/protocols/:id/launch', async (req, res) => {
+    const id = req.params.id
     if (!id) {
-      return res.status(400).json({ message: 'Invalid mod ID' })
+      return res.status(400).json({ message: 'Invalid protocol ID' })
     }
     try {
-      const result = await gameService.launchMod(id)
+      const result = await gameService.launchProtocol(id)
       if (!result.success) {
-        throw new Error(result.message || 'Failed to launch mod')
+        throw new Error(result.message || 'Failed to launch protocol')
       }
       return res.json({ success: true })
     } catch (error: unknown) {
       return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to launch mod'
+        message: error instanceof Error ? error.message : 'Failed to launch protocol'
       })
     }
   })

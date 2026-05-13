@@ -1,4 +1,4 @@
-import { IModFile, IMod, IAppSettings, IDoomVersion, IUpdateInfo } from '@shared/schema'
+import { IModFile, IProtocol, IAppSettings, IDoomVersion, IUpdateInfo } from '@shared/schema'
 
 export interface IRegistryMod {
   family_name: string
@@ -154,15 +154,15 @@ export const api = {
     return response.json()
   },
 
-  // Mod operations
-  createMod: async (mod: Omit<IMod, 'id'>): Promise<IMod> => {
-    const response = await fetch(`${API_BASE}/api/mods`, {
+  // Protocol operations
+  createProtocol: async (protocol: Omit<IProtocol, 'id'>): Promise<IProtocol> => {
+    const response = await fetch(`${API_BASE}/api/protocols`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(mod)
+      body: JSON.stringify(protocol)
     })
     if (!response.ok) {
-      throw new Error('Failed to create mod')
+      throw new Error('Failed to create protocol')
     }
     return response.json()
   },
@@ -242,11 +242,11 @@ export const api = {
     if (!response.ok) throw new Error('Failed to import WAD file')
     return response.json()
   },
-  downloadImage: async (url: string, modId: string): Promise<{ fileName: string }> => {
-    const response = await fetch(`${API_BASE}/api/mod/download-image`, {
+  downloadImage: async (url: string, protocolId: string): Promise<{ fileName: string }> => {
+    const response = await fetch(`${API_BASE}/api/protocol/download-image`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, modId })
+      body: JSON.stringify({ url, protocolId })
     })
     if (!response.ok) throw new Error('Failed to download image')
     return response.json()
