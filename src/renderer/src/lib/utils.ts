@@ -17,3 +17,63 @@ export function toFileUrl(filePath: string): string {
   // Use our backend media API to bypass file:// security restrictions
   return `http://localhost:7666/api/media?path=${encodeURIComponent(filePath)}`
 }
+
+export function buildLaunchCommand(options: {
+  executable?: string
+  iwad?: string
+  doomVersionArgs?: string
+  files?: { filePath?: string; fileName?: string; name?: string }[]
+  saveDirectory?: string
+  launchParameters?: string
+}): string {
+  const parts: string[] = []
+
+  // Source port executable
+  if (options.executable) {
+    const escaped = options.executable.includes(' ')
+      ? `"${options.executable}"`
+      : options.executable
+    parts.push(escaped)
+  } else {
+    parts.push('[source-port]')
+  }
+
+  // IWAD / base args
+  if (options.doomVersionArgs) {
+    parts.push(options.doomVersionArgs)
+  } else if (options.iwad) {
+    const escaped =
+      options.iwad.includes(' ') ? `"${options.iwad}"` : options.iwad
+    parts.push(`-iwad ${escaped}`)
+  } else {
+    parts.push('-iwad [base-wad]')
+  }
+
+  // Mod files (-file)
+  const filePaths =
+    options.files
+      ?.map((f) => f.filePath || f.name || f.fileName)
+      .filter(Boolean) || []
+  if (filePaths.length > 0) {
+    parts.push('-file')
+    filePaths.forEach((fp) => {
+      const escaped = fp!.includes(' ') ? `"${fp}"` : fp!
+      parts.push(escaped!)
+    })
+  }
+
+  // Save directory
+  if (options.saveDirectory) {
+    const escaped = options.saveDirectory.includes(' ')
+      ? `"${options.saveDirectory}"`
+      : options.saveDirectory
+    parts.push('-savedir', escaped)
+  }
+
+  // Custom launch parameters
+  if (options.launchParameters) {
+    parts.push(options.launchParameters)
+  }
+
+  return parts.join(' ')
+}

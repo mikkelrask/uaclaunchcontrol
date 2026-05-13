@@ -45,7 +45,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     selectedPresetIndex: 0,
     configPath: '',
     autoUpdateEnabled: true,
-    registryLookupEnabled: false
+    registryLookupEnabled: false,
+    showLaunchPreview: true
   })
 
   // Doom versions state
@@ -163,7 +164,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         selectedPresetIndex: settings.selectedPresetIndex,
         autoUpdateEnabled: settings.autoUpdateEnabled,
         registryLookupEnabled: settings.registryLookupEnabled,
-        registryUuid: settings.registryUuid
+        registryUuid: settings.registryUuid,
+        showLaunchPreview: settings.showLaunchPreview
       }
       await api.updateSettings(payload)
 
@@ -352,6 +354,22 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           LIGHT
                         </Button>
                       </div>
+                    </div>
+                    <div className="p-4 bg-app-secondary border border-app rounded-lg flex items-center justify-between shadow-md">
+                      <div className="space-y-0.5">
+                        <Label className="text-xs text-app-primary font-medium">
+                          Launch Preview
+                        </Label>
+                        <p className="text-[10px] text-app-muted leading-tight">
+                          Show the generated launch command in settings and install page.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings.showLaunchPreview ?? true}
+                        onCheckedChange={(checked) =>
+                          setSettings((s) => ({ ...s, showLaunchPreview: checked }))
+                        }
+                      />
                     </div>
                   </div>
                   <div className="space-y-3">

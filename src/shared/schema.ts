@@ -99,6 +99,7 @@ export interface IAppSettings {
   autoUpdateEnabled?: boolean
   registryLookupEnabled?: boolean
   registryUuid?: string
+  showLaunchPreview?: boolean
 }
 export interface IUpdateInfo {
   version: string

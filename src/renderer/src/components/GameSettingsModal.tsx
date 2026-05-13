@@ -26,7 +26,7 @@ import { api } from '@/api'
 import ModFileList from './ModFileList'
 import LaunchOptions from './LaunchOptions'
 import { FolderOpen, Download, Gamepad2 } from 'lucide-react'
-import { slugify } from '@/lib/utils'
+import { slugify, buildLaunchCommand } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
 
 interface GameSettingsModalProps {
@@ -44,6 +44,7 @@ interface GameSettingsContentProps {
   doomVersions: IDoomVersion[] | undefined
   sourcePorts: ISourcePort[]
   defaultSourcePortId?: string
+  showLaunchPreview?: boolean
 }
 
 const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
@@ -52,12 +53,28 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
   protocolId,
   onClose,
   doomVersions,
-  sourcePorts
+  sourcePorts,
+  showLaunchPreview = true
 }) => {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const [protocol, setProtocol] = useState<IProtocol>(initialProtocol)
   const [files, setFiles] = useState<InsertModFile[]>(initialFiles)
+
+  // Compute launch command preview
+  const launchCommand = useMemo(() => {
+    const sourcePort = sourcePorts.find((p) => p.id === protocol.sourcePortId)
+    const doomVersion = doomVersions?.find((v) => v.id === protocol.doomVersionId)
+
+    return buildLaunchCommand({
+      executable: sourcePort?.executablePath,
+      iwad: doomVersion?.defaultIwad,
+      doomVersionArgs: doomVersion?.args,
+      files,
+      saveDirectory: protocol.saveDirectory,
+      launchParameters: protocol.launchParameters
+    })
+  }, [protocol, files, sourcePorts, doomVersions])
 
   // Update protocol mutation
   const updateMutation = useMutation({
@@ -208,88 +225,88 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
   return (
     <div className="flex-1 overflow-y-auto min-h-0">
       <div className="space-y-4 p-4">
-        <div className="mb-4 group relative">
-          <button
-            type="button"
-            className="w-full h-64 rounded overflow-hidden relative"
-            onClick={async () => {
-              const result = await api.showOpenDialog({
-                title: 'Select Screenshot',
-                properties: ['openFile'],
-                filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }]
-              })
-              if (!result.canceled && result.filePaths.length > 0) {
-                try {
-                  const { fileName } = await api.uploadScreenshot(result.filePaths[0])
-                  setProtocol((prev) => ({ ...prev, screenshotPath: fileName }))
-                  toast({
-                    title: 'Screenshot updated',
-                    description: 'New screenshot saved. Click Save to apply.'
-                  })
-                } catch (error) {
-                  toast({
-                    title: 'Error',
-                    description: `Failed to upload screenshot: ${error}`,
-                    variant: 'destructive'
-                  })
+        <div className="flex gap-4 mb-4">
+          <div className="w-1/3 group">
+            <button
+              type="button"
+              className="w-full rounded overflow-hidden relative"
+              onClick={async () => {
+                const result = await api.showOpenDialog({
+                  title: 'Select Screenshot',
+                  properties: ['openFile'],
+                  filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }]
+                })
+                if (!result.canceled && result.filePaths.length > 0) {
+                  try {
+                    const { fileName } = await api.uploadScreenshot(result.filePaths[0])
+                    setProtocol((prev) => ({ ...prev, screenshotPath: fileName }))
+                    toast({
+                      title: 'Screenshot updated',
+                      description: 'New screenshot saved. Click Save to apply.'
+                    })
+                  } catch (error) {
+                    toast({
+                      title: 'Error',
+                      description: `Failed to upload screenshot: ${error}`,
+                      variant: 'destructive'
+                    })
+                  }
                 }
-              }
-            }}
-          >
-            <img
-              src={
-                protocol.screenshotPath
-                  ? protocol.screenshotPath.startsWith('http') ||
-                    protocol.screenshotPath.includes('/') ||
-                    protocol.screenshotPath.includes('\\')
-                    ? protocol.screenshotPath
-                    : `http://localhost:7666/images/${protocol.screenshotPath}`
-                  : placeholder
-              }
-              alt={protocol.title}
-              className="w-full h-64 object-cover"
-            />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-              <span className="text-white text-sm font-medium flex items-center gap-2">
-                <FolderOpen className="h-5 w-5" />
-                Change Screenshot
-              </span>
-            </div>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4">
-          <div>
-            <Label
-              htmlFor="title"
-              className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
+              }}
             >
-              Label
-            </Label>
-            <Input
-              id="title"
-              name="title"
-              value={protocol.title || protocol.name || ''}
-              onChange={handleInputChange}
-              className="bg-app-primary border-app "
-            />
+              <img
+                src={
+                  protocol.screenshotPath
+                    ? protocol.screenshotPath.startsWith('http') ||
+                      protocol.screenshotPath.includes('/') ||
+                      protocol.screenshotPath.includes('\\')
+                      ? protocol.screenshotPath
+                      : `http://localhost:7666/images/${protocol.screenshotPath}`
+                    : placeholder
+                }
+                alt={protocol.title}
+                className="w-full aspect-video object-cover"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded">
+                <span className="text-white text-sm font-medium flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5" />
+                  Change Screenshot
+                </span>
+              </div>
+            </button>
           </div>
-
-          <div>
-            <Label
-              htmlFor="description"
-              className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
-            >
-              Description
-            </Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={protocol.description || ''}
-              onChange={handleInputChange}
-              className="bg-app-primary border-app"
-              rows={3}
-            />
+          <div className="flex-1 space-y-4">
+            <div>
+              <Label
+                htmlFor="title"
+                className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
+              >
+                Label
+              </Label>
+              <Input
+                id="title"
+                name="title"
+                value={protocol.title || protocol.name || ''}
+                onChange={handleInputChange}
+                className="bg-app-primary border-app "
+              />
+            </div>
+            <div>
+              <Label
+                htmlFor="description"
+                className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
+              >
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={protocol.description || ''}
+                onChange={handleInputChange}
+                className="bg-app-primary border-app"
+                rows={3}
+              />
+            </div>
           </div>
         </div>
 
@@ -374,6 +391,16 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
         />
       </div>
 
+      {showLaunchPreview && launchCommand && (
+        <div className="px-4 py-2 bg-app-primary border-t border-app shrink-0">
+          <div className="text-[10px] uppercase tracking-widest text-app-muted font-mono font-bold mb-0.5 opacity-60">
+            Launch Preview
+          </div>
+          <code className="text-xs text-app-muted font-mono break-all opacity-70">
+            {launchCommand}
+          </code>
+        </div>
+      )}
       <DialogFooter className="flex justify-between items-center bg-app-secondary border-t border-app p-4 shrink-0">
         <div className="flex gap-2">
           <Button
@@ -439,6 +466,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
 
   const sourcePorts: ISourcePort[] = (settings as IAppSettings)?.sourcePorts || []
   const defaultSourcePortId = (settings as IAppSettings)?.defaultSourcePortId
+  const showLaunchPreview = (settings as IAppSettings)?.showLaunchPreview ?? true
 
   // Fetch catalog for hydrating files with hashValue
   const { data: catalogFiles } = useQuery({
@@ -505,6 +533,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
             doomVersions={doomVersions}
             sourcePorts={sourcePorts}
             defaultSourcePortId={defaultSourcePortId}
+            showLaunchPreview={showLaunchPreview}
           />
         )}
       </DialogContent>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -31,7 +31,7 @@ import { Combobox } from '@/components/ui/combobox'
 import { useToast } from '@/hooks/use-toast'
 import { gameService } from '@/lib/gameService'
 import { IProtocol, IModFile, IAppSettings, IDoomVersion, ISourcePort } from '@shared/schema'
-import { slugify } from '@/lib/utils'
+import { slugify, buildLaunchCommand } from '@/lib/utils'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { CatalogManager } from '@/components/CatalogManager'
 import { api } from '@/api'
@@ -157,6 +157,36 @@ export const InstallPage: React.FC = () => {
       form.setValue('sourcePortId', defaultId)
     }
   }, [settings, form])
+
+  // Compute launch command preview
+  const watchedSourcePortId = form.watch('sourcePortId')
+  const watchedDoomVersionId = form.watch('doomVersionId')
+  const watchedSaveDir = form.watch('saveDirectory')
+  const watchedLaunchParams = form.watch('launchParameters')
+
+  const launchCommand = useMemo(() => {
+    const sp = (settings as IAppSettings)?.sourcePorts?.find(
+      (p) => p.id === watchedSourcePortId
+    )
+    const dv = versions.find((v) => v.id === watchedDoomVersionId)
+
+    return buildLaunchCommand({
+      executable: sp?.executablePath,
+      iwad: dv?.defaultIwad,
+      doomVersionArgs: dv?.args,
+      files,
+      saveDirectory: watchedSaveDir,
+      launchParameters: watchedLaunchParams
+    })
+  }, [
+    watchedSourcePortId,
+    watchedDoomVersionId,
+    watchedSaveDir,
+    watchedLaunchParams,
+    files,
+    settings,
+    versions
+  ])
 
   // Create mod mutation
   const createMutation = useMutation({
@@ -918,6 +948,17 @@ export const InstallPage: React.FC = () => {
                           </div>
                         )}
                       </div>
+
+                      {(settings as IAppSettings)?.showLaunchPreview !== false && launchCommand && (
+                        <div className="bg-app-primary border border-app rounded p-3">
+                          <p className="text-[10px] uppercase tracking-widest text-app-muted font-mono font-bold mb-0.5 opacity-60">
+                            Launch Preview
+                          </p>
+                          <code className="text-xs text-app-muted font-mono break-all opacity-70">
+                            {launchCommand}
+                          </code>
+                        </div>
+                      )}
 
                       <div className="flex justify-end">
                         <Button
