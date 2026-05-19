@@ -269,7 +269,7 @@ export const InstallPage: React.FC = () => {
         title: 'SYSTEM: params_accepted',
         description: 'Successfully added new launch configuration.'
       })
-      queryClient.invalidateQueries({ queryKey: ['/api/mods'] })
+      queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
       form.reset()
       setFiles([])
       // Navigate to the Games page
