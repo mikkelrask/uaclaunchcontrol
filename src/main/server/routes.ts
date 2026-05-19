@@ -73,6 +73,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  app.post('/api/file-read', async (req, res) => {
+    try {
+      const { filePath } = req.body
+      if (!filePath) return res.status(400).json({ message: 'Missing filePath' })
+      const resolved = storage.resolvePath(filePath)
+      if (!fs.existsSync(resolved)) {
+        return res.status(404).json({ message: 'File not found' })
+      }
+      const content = await fs.readFile(resolved, 'utf-8')
+      return res.json({ content })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ message: error instanceof Error ? error.message : 'Failed to read file' })
+    }
+  })
+
   app.post('/api/move-file', async (req, res) => {
     console.log('POST /api/move-file received with body:', req.body)
     const { filePath, newPath } = req.body

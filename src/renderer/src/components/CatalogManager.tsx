@@ -59,6 +59,55 @@ function deriveFileType(ext: string): string {
   return 'WAD'
 }
 
+interface BatParseResult {
+  modFiles: string[]
+}
+
+function parseBatContent(content: string): BatParseResult {
+  const lines = content.replace(/\r\n/g, '\n').split('\n')
+  const modFiles: string[] = []
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (
+      !trimmed ||
+      trimmed.toLowerCase().startsWith('::') ||
+      trimmed.toLowerCase().startsWith('@echo') ||
+      trimmed.toLowerCase().startsWith('rem ')
+    )
+      continue
+
+    const tokens: string[] = []
+    const regex = /[^\s"']+|"([^"]*)"|'([^']*)'/g
+    let match
+    while ((match = regex.exec(trimmed)) !== null) {
+      tokens.push(match[1] || match[2] || match[0])
+    }
+
+    const fileIndex = tokens.findIndex((t) => t.toLowerCase() === '-file')
+    if (fileIndex >= 0) {
+      for (let i = fileIndex + 1; i < tokens.length; i++) {
+        const token = tokens[i]
+        if (token.startsWith('-')) break
+        modFiles.push(token)
+      }
+    }
+  }
+
+  return { modFiles }
+}
+
+function resolveRelativePaths(basePath: string, files: string[]): string[] {
+  const lastSep = Math.max(basePath.lastIndexOf('\\'), basePath.lastIndexOf('/'))
+  if (lastSep <= 0) return files
+  const baseDir = basePath.substring(0, lastSep)
+  const sep = basePath.includes('\\') ? '\\' : '/'
+  return files.map((file) => {
+    if (/^[a-zA-Z]:[\\/]/.test(file) || file.startsWith('/')) return file
+    return `${baseDir}${sep}${file}`
+  })
+}
+
 export function CatalogManager({ files, onChange }: CatalogManagerProps): React.ReactElement {
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -291,129 +340,170 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     }
   }
 
+  const initializeAddFormFromPath = async (
+    filePath: string
+  ): Promise<Partial<typeof addForm> | null> => {
+    const fileName = filePath.split(/[\\/]/).pop() || ''
+    const name = fileName.replace(/\.[^.]+$/, '')
+    const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
+
+    let hash = ''
+    try {
+      hash = await api.computeHash(filePath)
+      console.log('[Registry] Computed hash:', hash)
+    } catch {
+      console.error('Failed to compute hash')
+    }
+
+    let settings: IAppSettings | null = null
+    try {
+      settings = await api.getSettings()
+    } catch {
+      console.error('Failed to fetch settings')
+    }
+
+    let registryData: IRegistryMod | null = null
+    if (settings?.registryLookupEnabled && hash) {
+      try {
+        registryData = await api.lookupMod(hash, REGISTRY_API_URL)
+      } catch (error: unknown) {
+        console.error('[Registry] Lookup failed:', error)
+      }
+    }
+
+    if (registryData) {
+      setLastLookupHash(hash)
+      setLastLookupFound(true)
+      setLastLookupData(registryData)
+    } else {
+      setLastLookupHash(hash)
+      setLastLookupFound(false)
+      setLastLookupData(null)
+    }
+
+    const mainEntry = {
+      hash: hash || '',
+      name,
+      filePath,
+      isNew: true,
+      offset: 1,
+      sidecarOnly: false,
+      isMain: true
+    }
+
+    const updatedForm: Partial<typeof addForm> = {
+      filePath,
+      name: registryData?.family_name || name,
+      fileType,
+      version: registryData?.version || '',
+      url: '',
+      loadOrder: [mainEntry],
+      sidecarOnly: registryData?.is_sidecar === 1
+    }
+
+    if (registryData?.urls && registryData.urls.length > 0) {
+      let selectedUrl = registryData.urls[0].url
+      if (settings?.databaseLinkPresets && settings?.selectedPresetIndex !== undefined) {
+        const preset = settings.databaseLinkPresets[settings.selectedPresetIndex]
+        if (preset) {
+          try {
+            const presetDomain = new URL(preset.url).hostname.replace('www.', '')
+            const matchingUrl = registryData.urls.find(
+              (u) => u.domain.replace('www.', '') === presetDomain
+            )
+            if (matchingUrl) selectedUrl = matchingUrl.url
+          } catch {
+            // use default
+          }
+        }
+      }
+      updatedForm.url = selectedUrl
+    }
+
+    if (registryData?.load_order) {
+      const loadOrderEntries = Object.entries(registryData.load_order)
+        .filter(([h]) => h !== hash)
+        .map(([h, offset]) => ({
+          hash: h,
+          name: h,
+          filePath: '',
+          isNew: false,
+          offset: offset as number,
+          sidecarOnly: false
+        }))
+      updatedForm.loadOrder = [mainEntry, ...loadOrderEntries]
+    }
+
+    console.log('[Registry] Setting form with:', updatedForm)
+    return updatedForm
+  }
+
   const handleBrowseFile = async (): Promise<void> => {
     try {
       const result = await api.showOpenDialog({
         title: 'Select Mod File',
         properties: ['openFile'],
         filters: [
-          { name: 'Mod stuff', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }
+          {
+            name: 'Mod stuff',
+            extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip', 'bat']
+          }
         ]
       })
 
       if (!result.canceled && result.filePaths.length > 0) {
         const selectedPath = result.filePaths[0]
-        const fileName = selectedPath.split(/[\\/]/).pop() || ''
-        const name = fileName.replace(/\.[^.]+$/, '')
 
-        // Detect file type from extension
-        const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
-
-        // Compute hash
-        let hash = ''
-        try {
-          hash = await api.computeHash(selectedPath)
-          console.log('[Registry] Computed hash:', hash)
-        } catch {
-          console.error('Failed to compute hash')
-        }
-
-        // Fetch settings
-        let settings: IAppSettings | null = null
-        try {
-          settings = await api.getSettings()
-          console.log('[Registry] Settings loaded:', {
-            registryLookupEnabled: settings?.registryLookupEnabled
-          })
-        } catch {
-          console.error('Failed to fetch settings')
-        }
-
-        // If opted in and hash is available, do the lookup
-        let registryData: IRegistryMod | null = null
-        if (settings?.registryLookupEnabled && hash) {
+        if (selectedPath.toLowerCase().endsWith('.bat')) {
           try {
-            const apiUrl = REGISTRY_API_URL
-            console.log('[Registry] Looking up hash:', hash, 'at', apiUrl)
-            registryData = await api.lookupMod(hash, apiUrl)
-            console.log('[Registry] Lookup result:', registryData)
-          } catch (error: unknown) {
-            console.error('[Registry] Lookup failed:', error)
-          }
-        }
+            const content = await api.readFile(selectedPath)
+            const parsed = parseBatContent(content)
+            const resolvedFiles = resolveRelativePaths(selectedPath, parsed.modFiles)
 
-        // Track lookup results
-        if (registryData) {
-          setLastLookupHash(hash)
-          setLastLookupFound(true)
-          setLastLookupData(registryData)
-        } else {
-          setLastLookupHash(hash)
-          setLastLookupFound(false)
-          setLastLookupData(null)
-        }
-
-        const mainEntry = {
-          hash: hash || '',
-          name: name,
-          filePath: selectedPath,
-          isNew: true,
-          offset: 1,
-          sidecarOnly: false,
-          isMain: true
-        }
-
-        // Pre-fill from registry if available
-        const updatedForm: Partial<typeof addForm> = {
-          filePath: selectedPath,
-          name: registryData?.family_name || name,
-          fileType: fileType,
-          version: registryData?.version || '',
-          url: '',
-          loadOrder: [mainEntry],
-          sidecarOnly: registryData?.is_sidecar === 1
-        }
-
-        // URL pre-selection based on user's preferred mod source
-        if (registryData?.urls && registryData.urls.length > 0) {
-          let selectedUrl = registryData.urls[0].url
-          if (settings?.databaseLinkPresets && settings?.selectedPresetIndex !== undefined) {
-            const preset = settings.databaseLinkPresets[settings.selectedPresetIndex]
-            if (preset) {
-              try {
-                const presetDomain = new URL(preset.url).hostname.replace('www.', '')
-                const matchingUrl = registryData.urls.find(
-                  (u) => u.domain.replace('www.', '') === presetDomain
-                )
-                if (matchingUrl) {
-                  selectedUrl = matchingUrl.url
-                }
-              } catch {
-                // use default
-              }
+            if (resolvedFiles.length === 0) {
+              toast({
+                title: 'Error',
+                description: 'No -file entries found in .bat file',
+                variant: 'destructive'
+              })
+              return
             }
-          }
-          updatedForm.url = selectedUrl
-        }
 
-        // Load order from registry
-        if (registryData?.load_order) {
-          const loadOrderEntries = Object.entries(registryData.load_order)
-            .filter(([h]) => h !== hash)
-            .map(([h, offset]) => ({
-              hash: h,
-              name: h,
-              filePath: '',
-              isNew: false,
-              offset: offset as number,
+            const updatedForm = await initializeAddFormFromPath(resolvedFiles[0])
+            if (!updatedForm) return
+
+            const additionalReqs = resolvedFiles.slice(1).map((fp, idx) => ({
+              hash: '',
+              name:
+                fp
+                  .split(/[\\/]/)
+                  .pop()
+                  ?.replace(/\.[^.]+$/, '') || fp,
+              filePath: fp,
+              isNew: true,
+              offset: (updatedForm.loadOrder?.length || 0) + idx + 1,
               sidecarOnly: false
             }))
-          updatedForm.loadOrder = [mainEntry, ...loadOrderEntries]
+
+            updatedForm.loadOrder = [...(updatedForm.loadOrder || []), ...additionalReqs]
+            setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
+            setIsAddModalOpen(true)
+          } catch (error) {
+            console.error('Failed to parse .bat:', error)
+            toast({
+              title: 'Error',
+              description: 'Failed to parse .bat file',
+              variant: 'destructive'
+            })
+          }
+          return
         }
 
-        console.log('[Registry] Setting form with:', updatedForm)
-        setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
-        setIsAddModalOpen(true)
+        const updatedForm = await initializeAddFormFromPath(selectedPath)
+        if (updatedForm) {
+          setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
+          setIsAddModalOpen(true)
+        }
       }
     } catch (error) {
       console.error('Failed to open file dialog:', error)
@@ -443,127 +533,66 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const droppedPath = window.api.getPathForFile(file) || file.name
 
       const ext = droppedPath.split('.').pop()?.toUpperCase()
-      const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'ZIP']
+      const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'ZIP', 'BAT']
       if (!ext || !validExtensions.includes(ext)) {
         toast({
           title: 'FATAL: type_unknow',
-          description: 'Please only use supported files: wad, pk3, pk7, ipk3, deh, bex, zip',
+          description: 'Please only use supported files: wad, pk3, pk7, ipk3, deh, bex, zip, bat',
           variant: 'destructive'
         })
         return
       }
 
-      // Detect file type from extension
-      const fileType = deriveFileType(ext)
-
-      const fileName = droppedPath.split(/[\\/]/).pop() || ''
-      const name = fileName.replace(/\.[^.]+$/, '')
-
-      // Compute hash
-      let hash = ''
-      try {
-        hash = await api.computeHash(droppedPath)
-        console.log('[Registry] Computed hash:', hash)
-      } catch {
-        console.error('Failed to compute hash')
-      }
-
-      // Fetch settings
-      let settings: IAppSettings | null = null
-      try {
-        settings = await api.getSettings()
-        console.log('[Registry] Settings loaded:', {
-          registryLookupEnabled: settings?.registryLookupEnabled
-        })
-      } catch {
-        console.error('Failed to fetch settings')
-      }
-
-      // If opted in and hash is available, do the lookup
-      let registryData: IRegistryMod | null = null
-      if (settings?.registryLookupEnabled && hash) {
+      if (ext === 'BAT') {
         try {
-          const apiUrl = REGISTRY_API_URL
-          console.log('[Registry] Looking up hash:', hash, 'at', apiUrl)
-          registryData = await api.lookupMod(hash, apiUrl)
-          console.log('[Registry] Lookup result:', registryData)
-        } catch (error: unknown) {
-          console.error('[Registry] Lookup failed:', error)
-        }
-      }
+          const content = await file.text()
+          const parsed = parseBatContent(content)
+          const resolvedFiles = resolveRelativePaths(droppedPath, parsed.modFiles)
 
-      // Track lookup results
-      if (registryData) {
-        setLastLookupHash(hash)
-        setLastLookupFound(true)
-        setLastLookupData(registryData)
-      } else {
-        setLastLookupHash(hash)
-        setLastLookupFound(false)
-        setLastLookupData(null)
-      }
-
-      const mainEntry = {
-        hash: hash || '',
-        name: name,
-        filePath: droppedPath,
-        isNew: true,
-        offset: 1,
-        sidecarOnly: false,
-        isMain: true
-      }
-
-      // Pre-fill from registry if available
-      const updatedForm: Partial<typeof addForm> = {
-        filePath: droppedPath,
-        name: registryData?.family_name || name,
-        fileType: fileType,
-        version: registryData?.version || '',
-        url: '',
-        loadOrder: [mainEntry],
-        sidecarOnly: registryData?.is_sidecar === 1
-      }
-
-      // URL pre-selection based on user's preferred mod source
-      if (registryData?.urls && registryData.urls.length > 0) {
-        let selectedUrl = registryData.urls[0].url
-        if (settings?.databaseLinkPresets && settings?.selectedPresetIndex !== undefined) {
-          const preset = settings.databaseLinkPresets[settings.selectedPresetIndex]
-          if (preset) {
-            try {
-              const presetDomain = new URL(preset.url).hostname.replace('www.', '')
-              const matchingUrl = registryData.urls.find(
-                (u) => u.domain.replace('www.', '') === presetDomain
-              )
-              if (matchingUrl) {
-                selectedUrl = matchingUrl.url
-              }
-            } catch {
-              // use default
-            }
+          if (resolvedFiles.length === 0) {
+            toast({
+              title: 'Error',
+              description: 'No -file entries found in .bat file',
+              variant: 'destructive'
+            })
+            return
           }
-        }
-        updatedForm.url = selectedUrl
-      }
 
-      // Load order from registry
-      if (registryData?.load_order) {
-        const loadOrderEntries = Object.entries(registryData.load_order)
-          .filter(([h]) => h !== hash)
-          .map(([h, offset]) => ({
-            hash: h,
-            name: h,
-            filePath: '',
-            isNew: false,
-            offset: offset as number,
+          const updatedForm = await initializeAddFormFromPath(resolvedFiles[0])
+          if (!updatedForm) return
+
+          const additionalReqs = resolvedFiles.slice(1).map((fp, idx) => ({
+            hash: '',
+            name:
+              fp
+                .split(/[\\/]/)
+                .pop()
+                ?.replace(/\.[^.]+$/, '') || fp,
+            filePath: fp,
+            isNew: true,
+            offset: (updatedForm.loadOrder?.length || 0) + idx + 1,
             sidecarOnly: false
           }))
-        updatedForm.loadOrder = [mainEntry, ...loadOrderEntries]
+
+          updatedForm.loadOrder = [...(updatedForm.loadOrder || []), ...additionalReqs]
+          setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
+          setIsAddModalOpen(true)
+        } catch (error) {
+          console.error('Failed to parse .bat:', error)
+          toast({
+            title: 'Error',
+            description: 'Failed to parse .bat file',
+            variant: 'destructive'
+          })
+        }
+        return
       }
 
-      console.log('[Registry] Setting form with:', updatedForm)
-      setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
-      setIsAddModalOpen(true)
+      const updatedForm = await initializeAddFormFromPath(droppedPath)
+      if (updatedForm) {
+        setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
+        setIsAddModalOpen(true)
+      }
     }
   }
 

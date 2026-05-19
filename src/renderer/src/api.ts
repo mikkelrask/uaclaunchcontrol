@@ -300,5 +300,18 @@ export const api = {
 
   getInstallType: (): Promise<{ isAppImage: boolean; isSystemInstalled: boolean }> => {
     return window.api.getInstallType()
+  },
+
+  readFile: async (filePath: string): Promise<string> => {
+    const response = await fetch(`${API_BASE}/api/file-read`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to read file')
+    }
+    const data = await response.json()
+    return data.content
   }
 }

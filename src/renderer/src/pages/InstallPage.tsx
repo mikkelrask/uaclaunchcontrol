@@ -60,6 +60,78 @@ interface WadImportSelection {
   targetFileName: string
 }
 
+interface BatParseResult {
+  sourcePortFamily?: string
+  iwad?: string
+  modFiles: string[]
+  extraParams: string[]
+}
+
+function parseBatContent(content: string): BatParseResult {
+  const lines = content.replace(/\r\n/g, '\n').split('\n')
+  let commandLine = ''
+  let sourcePortFamily: string | undefined
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (
+      !trimmed ||
+      trimmed.toLowerCase().startsWith('::') ||
+      trimmed.toLowerCase().startsWith('@echo') ||
+      trimmed.toLowerCase().startsWith('rem ')
+    )
+      continue
+
+    const portMatch = trimmed.match(/(gzdoom|uzdoom|zandronum|lzdoom|zdoom)\.exe/i)
+    if (portMatch) {
+      commandLine = trimmed
+      sourcePortFamily = portMatch[1].toLowerCase()
+      break
+    }
+  }
+
+  if (!commandLine) {
+    commandLine = lines.find((l) => /-(iwad|file)/i.test(l)) || ''
+  }
+
+  const tokens: string[] = []
+  const regex = /[^\s"']+|"([^"]*)"|'([^']*)'/g
+  let match
+  while ((match = regex.exec(commandLine)) !== null) {
+    tokens.push(match[1] || match[2] || match[0])
+  }
+
+  const iwadIndex = tokens.findIndex((t) => t.toLowerCase() === '-iwad')
+  const iwad = iwadIndex >= 0 && tokens[iwadIndex + 1] ? tokens[iwadIndex + 1] : undefined
+
+  const modFiles: string[] = []
+  const extraParams: string[] = []
+  const fileIndex = tokens.findIndex((t) => t.toLowerCase() === '-file')
+  if (fileIndex >= 0) {
+    for (let i = fileIndex + 1; i < tokens.length; i++) {
+      const token = tokens[i]
+      if (token.startsWith('-')) {
+        extraParams.push(...tokens.slice(i))
+        break
+      }
+      modFiles.push(token)
+    }
+  }
+
+  return { sourcePortFamily, iwad, modFiles, extraParams }
+}
+
+function resolveRelativePaths(basePath: string, files: string[]): string[] {
+  const lastSep = Math.max(basePath.lastIndexOf('\\'), basePath.lastIndexOf('/'))
+  if (lastSep <= 0) return files
+  const baseDir = basePath.substring(0, lastSep)
+  const sep = basePath.includes('\\') ? '\\' : '/'
+  return files.map((file) => {
+    if (/^[a-zA-Z]:[\\/]/.test(file) || file.startsWith('/')) return file
+    return `${baseDir}${sep}${file}`
+  })
+}
+
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
@@ -165,9 +237,7 @@ export const InstallPage: React.FC = () => {
   const watchedLaunchParams = form.watch('launchParameters')
 
   const launchCommand = useMemo(() => {
-    const sp = (settings as IAppSettings)?.sourcePorts?.find(
-      (p) => p.id === watchedSourcePortId
-    )
+    const sp = (settings as IAppSettings)?.sourcePorts?.find((p) => p.id === watchedSourcePortId)
     const dv = versions.find((v) => v.id === watchedDoomVersionId)
 
     return buildLaunchCommand({
@@ -190,8 +260,10 @@ export const InstallPage: React.FC = () => {
 
   // Create mod mutation
   const createMutation = useMutation({
-    mutationFn: (data: { protocol: Omit<IProtocol, 'id'>; files: Omit<IModFile, 'id' | 'modId'>[] }) =>
-      gameService.createProtocol(data.protocol, data.files),
+    mutationFn: (data: {
+      protocol: Omit<IProtocol, 'id'>
+      files: Omit<IModFile, 'id' | 'modId'>[]
+    }) => gameService.createProtocol(data.protocol, data.files),
     onSuccess: () => {
       toast({
         title: 'SYSTEM: params_accepted',
@@ -510,18 +582,126 @@ export const InstallPage: React.FC = () => {
 
       e.preventDefault()
       setIsJsonDragging(false)
-      const jsonFile = e.dataTransfer.files[0]
-      if (!jsonFile || !jsonFile.name.endsWith('.json')) {
+      const droppedFile = e.dataTransfer.files[0]
+      if (!droppedFile) return
+
+      // Handle .bat file drops
+      if (droppedFile.name.toLowerCase().endsWith('.bat')) {
+        try {
+          const text = await droppedFile.text()
+          const parsed = parseBatContent(text)
+
+          const baseName = droppedFile.name.replace(/\.bat$/i, '')
+          form.setValue('title', baseName)
+
+          // Match source port
+          const ports: ISourcePort[] = (settings as IAppSettings)?.sourcePorts || []
+          const batPortFamily = parsed.sourcePortFamily
+          if (batPortFamily && ports.length > 0) {
+            const matchedPort =
+              ports.find(
+                (p) => p.family === batPortFamily || p.name.toLowerCase().includes(batPortFamily)
+              ) || ports.find((p) => !p.ignored)
+            if (matchedPort) {
+              form.setValue('sourcePortId', matchedPort.id)
+            }
+          } else if (ports.length > 0) {
+            const defaultPort = ports.find((p) => !p.ignored) || ports[0]
+            if (defaultPort) form.setValue('sourcePortId', defaultPort.id)
+          }
+
+          // Match doom version by iwad (case-insensitive)
+          if (parsed.iwad && versions.length > 0) {
+            const iwadLower = parsed.iwad.toLowerCase()
+            const matchedVersion = versions.find(
+              (v) => v.defaultIwad && v.defaultIwad.toLowerCase() === iwadLower
+            )
+            if (matchedVersion) {
+              form.setValue('doomVersionId', matchedVersion.id.toString())
+            }
+          }
+
+          // Set launch parameters from extra params
+          if (parsed.extraParams.length > 0) {
+            form.setValue('launchParameters', parsed.extraParams.join(' '))
+          }
+
+          // Resolve mod file paths relative to bat file location
+          const batPath = window.api.getPathForFile(droppedFile) || droppedFile.name
+          const resolvedFiles = resolveRelativePaths(batPath, parsed.modFiles)
+
+          // Build file list by computing hashes and checking catalog
+          const catalogData = await gameService.getModFileCatalog()
+          const finalFiles: IModFile[] = []
+
+          for (const filePath of resolvedFiles) {
+            const fileName = filePath.split(/[\\/]/).pop() || filePath
+            const ext = fileName.split('.').pop()?.toUpperCase() || ''
+            let fileType = 'WAD'
+            if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+            else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
+
+            let hashValue = ''
+            try {
+              hashValue = await api.computeHash(filePath)
+            } catch {
+              console.warn(`Failed to compute hash for ${filePath}`)
+            }
+
+            if (hashValue) {
+              const catalogMatch = catalogData.find((c) => c.hashValue === hashValue)
+              if (catalogMatch) {
+                finalFiles.push({ ...catalogMatch, isRequired: true })
+                continue
+              }
+            }
+
+            finalFiles.push({
+              id: Date.now() + Math.random(),
+              name: fileName.replace(/\.[^.]+$/, ''),
+              fileName,
+              filePath,
+              fileType,
+              isRequired: true,
+              hashValue
+            })
+          }
+
+          setFiles(finalFiles)
+
+          if (parsed.modFiles.length === 0) {
+            toast({
+              title: 'SYSTEM: bat_parsed',
+              description: 'No -file entries found in .bat file.'
+            })
+          } else {
+            toast({
+              title: 'SYSTEM: bat_parsed',
+              description: `Prepopulated from .bat: ${finalFiles.length} mod file(s).`
+            })
+          }
+        } catch (error) {
+          console.error('Failed to parse .bat:', error)
+          toast({
+            title: 'FATAL: bat_parse_failed',
+            description: 'Failed to parse .bat file.',
+            variant: 'destructive'
+          })
+        }
+        return
+      }
+
+      if (!droppedFile.name.endsWith('.json')) {
         toast({
           title: 'Invalid file',
-          description: 'Please drop a JSON file',
+          description: 'Please drop a JSON or .bat file',
           variant: 'destructive'
         })
         return
       }
 
       try {
-        const text = await jsonFile.text()
+        const text = await droppedFile.text()
         const importData: UacModpackImport = JSON.parse(text)
 
         if (importData.format !== 'uac-modpack') {
@@ -602,7 +782,7 @@ export const InstallPage: React.FC = () => {
         })
       }
     },
-    [toast, form, versions]
+    [toast, form, versions, settings]
   )
 
   const handleJsonDragOver = (e: React.DragEvent): void => {
@@ -813,10 +993,10 @@ export const InstallPage: React.FC = () => {
                                     options={((settings as IAppSettings)?.sourcePorts || [])
                                       .filter((p) => !p.ignored)
                                       .map((p) => ({
-                                      value: p.id,
-                                      label: p.name,
-                                      description: p.version
-                                    }))}
+                                        value: p.id,
+                                        label: p.name,
+                                        description: p.version
+                                      }))}
                                     placeholder="Select a source port"
                                     className="w-full bg-app-primary border-app"
                                   />
