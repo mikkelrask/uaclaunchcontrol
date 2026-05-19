@@ -88,7 +88,7 @@ function parseBatContent(content: string): BatParseResult {
     if (fileIndex >= 0) {
       for (let i = fileIndex + 1; i < tokens.length; i++) {
         const token = tokens[i]
-        if (token.startsWith('-')) break
+        if (token.startsWith('-') || token.startsWith('+')) break
         modFiles.push(token)
       }
     }
@@ -446,15 +446,16 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         filters: [
           {
             name: 'Mod stuff',
-            extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip', 'bat']
+            extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip', 'bat', 'cmd']
           }
         ]
       })
 
       if (!result.canceled && result.filePaths.length > 0) {
         const selectedPath = result.filePaths[0]
+        const lowerPath = selectedPath.toLowerCase()
 
-        if (selectedPath.toLowerCase().endsWith('.bat')) {
+        if (lowerPath.endsWith('.bat') || lowerPath.endsWith('.cmd')) {
           try {
             const content = await api.readFile(selectedPath)
             const parsed = parseBatContent(content)
@@ -489,10 +490,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
             setIsAddModalOpen(true)
           } catch (error) {
-            console.error('Failed to parse .bat:', error)
+            console.error('Failed to parse script:', error)
             toast({
               title: 'Error',
-              description: 'Failed to parse .bat file',
+              description: 'Failed to parse script file',
               variant: 'destructive'
             })
           }
@@ -533,17 +534,18 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const droppedPath = window.api.getPathForFile(file) || file.name
 
       const ext = droppedPath.split('.').pop()?.toUpperCase()
-      const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'ZIP', 'BAT']
+      const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'ZIP', 'BAT', 'CMD']
       if (!ext || !validExtensions.includes(ext)) {
         toast({
           title: 'FATAL: type_unknow',
-          description: 'Please only use supported files: wad, pk3, pk7, ipk3, deh, bex, zip, bat',
+          description:
+            'Please only use supported files: wad, pk3, pk7, ipk3, deh, bex, zip, bat, cmd',
           variant: 'destructive'
         })
         return
       }
 
-      if (ext === 'BAT') {
+      if (ext === 'BAT' || ext === 'CMD') {
         try {
           const content = await file.text()
           const parsed = parseBatContent(content)
@@ -552,7 +554,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           if (resolvedFiles.length === 0) {
             toast({
               title: 'Error',
-              description: 'No -file entries found in .bat file',
+              description: 'No -file entries found in script file',
               variant: 'destructive'
             })
             return
@@ -578,10 +580,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
           setIsAddModalOpen(true)
         } catch (error) {
-          console.error('Failed to parse .bat:', error)
+          console.error('Failed to parse script:', error)
           toast({
             title: 'Error',
-            description: 'Failed to parse .bat file',
+            description: 'Failed to parse script file',
             variant: 'destructive'
           })
         }

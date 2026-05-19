@@ -110,7 +110,7 @@ function parseBatContent(content: string): BatParseResult {
   if (fileIndex >= 0) {
     for (let i = fileIndex + 1; i < tokens.length; i++) {
       const token = tokens[i]
-      if (token.startsWith('-')) {
+      if (token.startsWith('-') || token.startsWith('+')) {
         extraParams.push(...tokens.slice(i))
         break
       }
@@ -585,13 +585,15 @@ export const InstallPage: React.FC = () => {
       const droppedFile = e.dataTransfer.files[0]
       if (!droppedFile) return
 
-      // Handle .bat file drops
-      if (droppedFile.name.toLowerCase().endsWith('.bat')) {
+      // Handle .bat / .cmd file drops
+      const lowerName = droppedFile.name.toLowerCase()
+      if (lowerName.endsWith('.bat') || lowerName.endsWith('.cmd')) {
         try {
           const text = await droppedFile.text()
           const parsed = parseBatContent(text)
 
-          const baseName = droppedFile.name.replace(/\.bat$/i, '')
+          const ext = lowerName.endsWith('.bat') ? '.bat' : '.cmd'
+          const baseName = droppedFile.name.replace(new RegExp(`\\${ext}$`, 'i'), '')
           form.setValue('title', baseName)
 
           // Match source port
@@ -610,12 +612,14 @@ export const InstallPage: React.FC = () => {
             if (defaultPort) form.setValue('sourcePortId', defaultPort.id)
           }
 
-          // Match doom version by iwad (case-insensitive)
+          // Match doom version by iwad (case-insensitive, basename only)
           if (parsed.iwad && versions.length > 0) {
-            const iwadLower = parsed.iwad.toLowerCase()
-            const matchedVersion = versions.find(
-              (v) => v.defaultIwad && v.defaultIwad.toLowerCase() === iwadLower
-            )
+            const iwadLower = parsed.iwad.toLowerCase().split(/[\\/]/).pop() || ''
+            const matchedVersion = versions.find((v) => {
+              if (!v.defaultIwad) return false
+              const versionIwadName = v.defaultIwad.toLowerCase().split(/[\\/]/).pop() || ''
+              return versionIwadName === iwadLower
+            })
             if (matchedVersion) {
               form.setValue('doomVersionId', matchedVersion.id.toString())
             }
@@ -694,7 +698,7 @@ export const InstallPage: React.FC = () => {
       if (!droppedFile.name.endsWith('.json')) {
         toast({
           title: 'Invalid file',
-          description: 'Please drop a JSON or .bat file',
+          description: 'Please drop a JSON, .bat or .cmd file',
           variant: 'destructive'
         })
         return
