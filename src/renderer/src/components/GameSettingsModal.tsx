@@ -18,7 +18,14 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Combobox } from '@/components/ui/combobox'
-import { IProtocol, IModFile, IDoomVersion, InsertModFile, ISourcePort, IAppSettings } from '@shared/schema'
+import {
+  IProtocol,
+  IModFile,
+  IDoomVersion,
+  InsertModFile,
+  ISourcePort,
+  IAppSettings
+} from '@shared/schema'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
@@ -61,6 +68,11 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
   const [protocol, setProtocol] = useState<IProtocol>(initialProtocol)
   const [files, setFiles] = useState<InsertModFile[]>(initialFiles)
 
+  const { data: settings } = useQuery<IAppSettings>({
+    queryKey: ['/api/settings'],
+    queryFn: gameService.getSettings
+  })
+
   // Compute launch command preview
   const launchCommand = useMemo(() => {
     const sourcePort = sourcePorts.find((p) => p.id === protocol.sourcePortId)
@@ -72,9 +84,11 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
       doomVersionArgs: doomVersion?.args,
       files,
       saveDirectory: protocol.saveDirectory,
-      launchParameters: protocol.launchParameters
+      launchParameters: protocol.launchParameters,
+      modsDirectory: settings?.modsDirectory,
+      savegamesPath: settings?.savegamesPath
     })
-  }, [protocol, files, sourcePorts, doomVersions])
+  }, [protocol, files, sourcePorts, doomVersions, settings])
 
   // Update protocol mutation
   const updateMutation = useMutation({
@@ -476,7 +490,8 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   })
 
   const { hydratedProtocol, hydratedFiles } = useMemo(() => {
-    if (!data || !('protocol' in data) || !data.protocol) return { hydratedProtocol: null, hydratedFiles: [] }
+    if (!data || !('protocol' in data) || !data.protocol)
+      return { hydratedProtocol: null, hydratedFiles: [] }
 
     const proto = data.protocol as IProtocol
     const protoFiles = (data.files || []) as IModFile[]

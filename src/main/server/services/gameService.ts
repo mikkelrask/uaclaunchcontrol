@@ -8,7 +8,6 @@ import { debug } from '../../../shared/debug'
 
 // Service to handle game-related operations
 export class GameService {
-
   async getAllProtocols(): Promise<IProtocol[]> {
     return storage.getProtocols()
   }
@@ -80,7 +79,9 @@ export class GameService {
         if (firstPort) executable = firstPort.executablePath
       }
       if (!executable) {
-        throw new Error('No source ports configured. Add at least one source port in Settings > Paths.')
+        throw new Error(
+          'No source ports configured. Add at least one source port in Settings > Paths.'
+        )
       }
       executable = storage.resolvePath(executable)
 
@@ -112,7 +113,7 @@ export class GameService {
             if (isAbsolute) {
               fullPath = path.resolve(storage.resolvePath(file.filePath))
             } else {
-              const modsDir = storage.resolvePath(settings.modsDirectory || '')
+              const modsDir = storage.resolvePath(settings.modsDirectory || MODS_DIR)
               fullPath = path.join(modsDir, 'files', file.filePath)
               debug(`Resolved relative file: ${file.filePath} -> ${fullPath} (modsDir: ${modsDir})`)
             }

@@ -18,6 +18,10 @@ export function toFileUrl(filePath: string): string {
   return `http://localhost:7666/api/media?path=${encodeURIComponent(filePath)}`
 }
 
+function looksAbsolute(filePath: string): boolean {
+  return filePath.startsWith('/') || filePath.startsWith('~') || /^[a-zA-Z]:[\\/]/.test(filePath)
+}
+
 export function buildLaunchCommand(options: {
   executable?: string
   iwad?: string
@@ -25,6 +29,8 @@ export function buildLaunchCommand(options: {
   files?: { filePath?: string; fileName?: string; name?: string }[]
   saveDirectory?: string
   launchParameters?: string
+  modsDirectory?: string
+  savegamesPath?: string
 }): string {
   const parts: string[] = []
 
@@ -42,8 +48,7 @@ export function buildLaunchCommand(options: {
   if (options.doomVersionArgs) {
     parts.push(options.doomVersionArgs)
   } else if (options.iwad) {
-    const escaped =
-      options.iwad.includes(' ') ? `"${options.iwad}"` : options.iwad
+    const escaped = options.iwad.includes(' ') ? `"${options.iwad}"` : options.iwad
     parts.push(`-iwad ${escaped}`)
   } else {
     parts.push('-iwad [base-wad]')
@@ -52,7 +57,17 @@ export function buildLaunchCommand(options: {
   // Mod files (-file)
   const filePaths =
     options.files
-      ?.map((f) => f.filePath || f.name || f.fileName)
+      ?.map((f) => {
+        let fp = f.filePath || f.name || f.fileName || ''
+        if (fp && options.modsDirectory && !looksAbsolute(fp)) {
+          if (fp.startsWith('files/') || fp.startsWith('files\\')) {
+            fp = `${options.modsDirectory}/${fp}`
+          } else {
+            fp = `${options.modsDirectory}/files/${fp}`
+          }
+        }
+        return fp
+      })
       .filter(Boolean) || []
   if (filePaths.length > 0) {
     parts.push('-file')
@@ -63,10 +78,12 @@ export function buildLaunchCommand(options: {
   }
 
   // Save directory
-  if (options.saveDirectory) {
-    const escaped = options.saveDirectory.includes(' ')
-      ? `"${options.saveDirectory}"`
-      : options.saveDirectory
+  if (options.saveDirectory || options.savegamesPath) {
+    let saveDir = options.saveDirectory || options.savegamesPath || ''
+    if (saveDir && !looksAbsolute(saveDir) && options.savegamesPath) {
+      saveDir = `${options.savegamesPath}/${saveDir}`
+    }
+    const escaped = saveDir.includes(' ') ? `"${saveDir}"` : saveDir
     parts.push('-savedir', escaped)
   }
 

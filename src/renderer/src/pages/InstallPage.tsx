@@ -246,7 +246,9 @@ export const InstallPage: React.FC = () => {
       doomVersionArgs: dv?.args,
       files,
       saveDirectory: watchedSaveDir,
-      launchParameters: watchedLaunchParams
+      launchParameters: watchedLaunchParams,
+      modsDirectory: (settings as IAppSettings)?.modsDirectory,
+      savegamesPath: (settings as IAppSettings)?.savegamesPath
     })
   }, [
     watchedSourcePortId,
