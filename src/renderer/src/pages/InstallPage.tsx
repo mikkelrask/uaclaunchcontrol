@@ -35,7 +35,7 @@ import { slugify, buildLaunchCommand } from '@/lib/utils'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { CatalogManager } from '@/components/CatalogManager'
 import { api } from '@/api'
-import { Upload } from 'lucide-react'
+import { Upload, FolderOpen } from 'lucide-react'
 
 interface UacModpackImport {
   format: string
@@ -918,14 +918,54 @@ export const InstallPage: React.FC = () => {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                                  Screenshot/Cover URL (Optional)
+                                  Screenshot/Cover (Optional)
                                 </FormLabel>
                                 <FormControl>
-                                  <Input
-                                    placeholder="Enter screenshot URL"
-                                    className="bg-app-primary border-app"
-                                    {...field}
-                                  />
+                                  <div className="flex gap-2">
+                                    <Input
+                                      placeholder="Enter screenshot URL"
+                                      className="bg-app-primary border-app flex-1"
+                                      {...field}
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      className="bg-app-primary border-app shrink-0 h-10 w-10"
+                                      onClick={async () => {
+                                        const result = await api.showOpenDialog({
+                                          title: 'Select Screenshot',
+                                          properties: ['openFile'],
+                                          filters: [
+                                            {
+                                              name: 'Images',
+                                              extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp']
+                                            }
+                                          ]
+                                        })
+                                        if (!result.canceled && result.filePaths.length > 0) {
+                                          try {
+                                            const { fileName } = await api.uploadScreenshot(
+                                              result.filePaths[0]
+                                            )
+                                            field.onChange(fileName)
+                                            toast({
+                                              title: 'Screenshot uploaded',
+                                              description: 'Local image selected.'
+                                            })
+                                          } catch (error) {
+                                            toast({
+                                              title: 'Error',
+                                              description: `Failed to upload screenshot: ${error}`,
+                                              variant: 'destructive'
+                                            })
+                                          }
+                                        }
+                                      }}
+                                    >
+                                      <FolderOpen className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
