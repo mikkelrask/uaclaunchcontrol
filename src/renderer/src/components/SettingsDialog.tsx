@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useId } from 'react'
+import React, { useState, useEffect, useId, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -46,7 +46,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     configPath: '',
     autoUpdateEnabled: true,
     registryLookupEnabled: false,
-    showLaunchPreview: true
+    showLaunchPreview: true,
+    customThemeCss: ''
   })
 
   // Doom versions state
@@ -56,6 +57,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const [isLoadingVersions, setIsLoadingVersions] = useState(false)
   const [selectedWadIndex, setSelectedWadIndex] = useState(0)
   const [appVersion, setAppVersion] = useState<string>('')
+
+  // Snapshot of the saved theme for revert-on-close
+  const savedRef = useRef<{ theme: string; customThemeCss?: string }>({
+    theme: 'dark',
+    customThemeCss: ''
+  })
 
   // Fetch settings from API when dialog opens
   useEffect(() => {
@@ -71,6 +78,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       .getSettings()
       .then((data) => {
         if (data) {
+          savedRef.current = { theme: data.theme, customThemeCss: data.customThemeCss }
           setSettings((prev) => ({ ...prev, ...data }))
         }
       })
@@ -149,6 +157,50 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   }
 
+  // Live-preview theme changes immediately on the DOM
+  useEffect(() => {
+    if (!isOpen) return
+
+    document.documentElement.classList.remove('dark', 'light', 'terminal', 'custom')
+    document.documentElement.classList.add(settings.theme)
+
+    const existingStyle = document.getElementById('custom-theme-style')
+    if (settings.theme === 'custom' && settings.customThemeCss) {
+      if (existingStyle) {
+        existingStyle.textContent = settings.customThemeCss
+      } else {
+        const style = document.createElement('style')
+        style.id = 'custom-theme-style'
+        style.textContent = settings.customThemeCss
+        document.head.appendChild(style)
+      }
+    } else if (existingStyle) {
+      existingStyle.remove()
+    }
+  }, [isOpen, settings.theme, settings.customThemeCss])
+
+  // Restore saved theme when closing without saving
+  const handleClose = useCallback((): void => {
+    document.documentElement.classList.remove('dark', 'light', 'terminal', 'custom')
+    document.documentElement.classList.add(savedRef.current.theme)
+
+    const existingStyle = document.getElementById('custom-theme-style')
+    if (savedRef.current.theme === 'custom' && savedRef.current.customThemeCss) {
+      if (existingStyle) {
+        existingStyle.textContent = savedRef.current.customThemeCss
+      } else {
+        const style = document.createElement('style')
+        style.id = 'custom-theme-style'
+        style.textContent = savedRef.current.customThemeCss
+        document.head.appendChild(style)
+      }
+    } else if (existingStyle) {
+      existingStyle.remove()
+    }
+
+    onClose()
+  }, [onClose])
+
   // Handle save
   const handleSave = async (): Promise<void> => {
     try {
@@ -165,7 +217,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         autoUpdateEnabled: settings.autoUpdateEnabled,
         registryLookupEnabled: settings.registryLookupEnabled,
         registryUuid: settings.registryUuid,
-        showLaunchPreview: settings.showLaunchPreview
+        showLaunchPreview: settings.showLaunchPreview,
+        customThemeCss: settings.customThemeCss
       }
       await api.updateSettings(payload)
 
@@ -174,6 +227,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
       // Invalidate queries to trigger global theme sync
       await queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
+
+      // Update savedRef so close-restore is a no-op (theme is already persisted)
+      savedRef.current = { theme: settings.theme, customThemeCss: settings.customThemeCss }
 
       toast({
         title: 'SYSTEM: core_settings',
@@ -270,7 +326,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-4xl p-0 overflow-hidden border-app bg-app-primary shadow-2xl h-[85vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-app bg-app-secondary">
           <div className="flex items-center gap-3">
@@ -328,32 +384,35 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     </Label>
                     <div className="p-4 bg-app-secondary border border-app rounded-lg flex items-center justify-between shadow-md">
                       <span className="text-sm font-medium text-app-primary">App Theme</span>
-                      <div className="flex gap-2 p-1 bg-app-primary/50 rounded-md border border-app">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSettings((s) => ({ ...s, theme: 'dark' }))}
-                          className={`h-8 text-xs transition-all ${
-                            settings.theme === 'dark'
-                              ? 'bg-accent-highlight text-white shadow-sm'
-                              : 'text-app-muted hover:text-app-primary'
-                          }`}
-                        >
-                          DARK
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSettings((s) => ({ ...s, theme: 'light' }))}
-                          className={`h-8 text-xs transition-all ${
-                            settings.theme === 'light'
-                              ? 'bg-accent-highlight text-white shadow-sm'
-                              : 'text-app-muted hover:text-app-primary'
-                          }`}
-                        >
-                          LIGHT
-                        </Button>
-                      </div>
+                      <Select
+                        value={settings.theme}
+                        onValueChange={(value) =>
+                          setSettings((s) => ({
+                            ...s,
+                            theme: value as IAppSettings['theme']
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="bg-app-primary border-app text-app-primary w-44">
+                          <SelectValue placeholder="Select theme" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-app-secondary border-app text-app-primary">
+                          {[
+                            { value: 'dark', label: 'UAC PHOBOS — Default, dark/red' },
+                            { value: 'light', label: 'MAYKR — Bright argent energy' },
+                            { value: 'terminal', label: 'UAC TERMINAL — Green phosphor' },
+                            { value: 'custom', label: 'CUSTOM — User-defined palette' }
+                          ].map(({ value, label }) => (
+                            <SelectItem
+                              key={value}
+                              value={value}
+                              className="focus:bg-app-hover focus:text-app-primary"
+                            >
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="p-4 bg-app-secondary border border-app rounded-lg flex items-center justify-between shadow-md">
                       <div className="space-y-0.5">
@@ -593,9 +652,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
                           {/* Ignored toggle */}
                           <button
-                            onClick={() =>
-                              handleSavePort({ ...port, ignored: !port.ignored })
-                            }
+                            onClick={() => handleSavePort({ ...port, ignored: !port.ignored })}
                             className={`shrink-0 p-1.5 rounded transition-colors ${
                               port.ignored
                                 ? 'text-red-400 hover:text-red-300'
@@ -603,7 +660,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                             }`}
                             title={port.ignored ? 'Show port' : 'Hide port'}
                           >
-                            {port.ignored ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {port.ignored ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
                           </button>
 
                           {/* Edit */}
@@ -859,10 +920,101 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               )}
             </TabsContent>
 
-            <TabsContent value="advanced" className="space-y-4 mt-0 p-6 items-center">
-              <p className="text-app-secondary italic text-center mt-[20%]">
-                <span className="bold">Permission denied.</span> Red keycard required.
-              </p>
+            <TabsContent value="advanced" className="space-y-4 mt-0 p-6">
+              <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
+                CUSTOM THEME EDITOR
+              </Label>
+              <div className="bg-app-secondary p-4 rounded-xl border border-app space-y-4">
+                {settings.theme === 'custom' ? (
+                  <>
+                    <div className="space-y-2">
+                      <p className="text-xs text-app-muted leading-relaxed">
+                        Paste HSL variable overrides below. Each line should follow the format:
+                        <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50">
+                          --variable-name: hue saturation lightness;
+                        </code>
+                        Example:
+                        <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50 whitespace-pre">
+                          --bg-primary: 220 18% 5%; --text-primary: 210 20% 92%; --accent-highlight:
+                          0 84% 60%;
+                        </code>
+                        Wrap the overrides in{' '}
+                        <code className="font-mono text-xs">.custom &#123; ... &#125;</code> or just
+                        paste the variable lines — the app will wrap them automatically.
+                      </p>
+                    </div>
+                    <textarea
+                      className="w-full h-64 bg-app-primary border border-app rounded-md p-3 font-mono text-xs text-app-primary resize-none focus:outline-none focus:ring-1 focus:ring-accent-highlight/40"
+                      value={settings.customThemeCss || ''}
+                      onChange={(e) =>
+                        setSettings((s) => ({ ...s, customThemeCss: e.target.value }))
+                      }
+                      placeholder={`--bg-primary: 220 18% 5%;\n--text-primary: 210 20% 92%;\n--accent-highlight: 0 84% 60%;`}
+                      spellCheck={false}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSettings((s) => ({
+                            ...s,
+                            customThemeCss: s.customThemeCss
+                              ? `.custom {\n${s.customThemeCss}\n}`
+                              : ''
+                          }))
+                        }}
+                        className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
+                      >
+                        Wrap in .custom &#123; &#125;
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Copy dark theme values as a starter
+                          const darkThemeVars = [
+                            '--bg-primary: 220 18% 5%;',
+                            '--bg-secondary: 220 15% 9%;',
+                            '--bg-tertiary: 220 12% 14%;',
+                            '--bg-card: 220 18% 8%;',
+                            '--bg-popover: 220 18% 9%;',
+                            '--bg-muted: 220 10% 18%;',
+                            '--bg-sidebar: 220 18% 6%;',
+                            '--bg-hover: 220 12% 16%;',
+                            '',
+                            '--text-primary: 210 20% 92%;',
+                            '--text-secondary: 215 12% 70%;',
+                            '--text-muted: 215 10% 75%;',
+                            '--text-sidebar: 210 20% 92%;',
+                            '--text-card: 210 20% 92%;',
+                            '--text-popover: 210 20% 92%;',
+                            '',
+                            '--accent-highlight: 0 84% 60%;',
+                            '--accent-destructive: 0 65% 45%;',
+                            '',
+                            '--border: 220 12% 18%;'
+                          ].join('\n')
+                          setSettings((s) => ({
+                            ...s,
+                            customThemeCss: darkThemeVars
+                          }))
+                        }}
+                        className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
+                      >
+                        Reset to defaults
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-12 text-center">
+                    <p className="text-app-muted italic text-sm">
+                      Select <span className="font-bold not-italic text-app-primary">CUSTOM</span>{' '}
+                      in the General tab to enable the theme editor.
+                    </p>
+                  </div>
+                )}
+              </div>
             </TabsContent>
           </div>
         </Tabs>
@@ -870,7 +1022,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         <div className="flex justify-between items-center p-4 border-t border-app bg-app-secondary shrink-0">
           <Button
             variant="outline"
-            onClick={onClose}
+            onClick={handleClose}
             className="text-xs uppercase bg-transparent border-app hover:bg-app-hover text-app-muted hover:text-app-primary h-9 px-6"
           >
             Abort
@@ -956,21 +1108,16 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
 
       <div className="space-y-1.5">
         <Label className="text-xs text-app-muted">Family</Label>
-        <Select
-          value={family}
-          onValueChange={(v) => setFamily(v as SourcePortFamily)}
-        >
+        <Select value={family} onValueChange={(v) => setFamily(v as SourcePortFamily)}>
           <SelectTrigger className="bg-app-primary border-app h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-app-secondary border-app">
-            {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'other'] as const).map(
-              (f) => (
-                <SelectItem key={f} value={f} className="text-app-primary">
-                  {f}
-                </SelectItem>
-              )
-            )}
+            {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'other'] as const).map((f) => (
+              <SelectItem key={f} value={f} className="text-app-primary">
+                {f}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

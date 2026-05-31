@@ -57,10 +57,25 @@ const App: React.FC = () => {
   // Apply theme globally whenever settings change
   useEffect(() => {
     if (settings?.theme) {
-      document.documentElement.classList.remove('dark', 'light')
+      document.documentElement.classList.remove('dark', 'light', 'terminal', 'custom')
       document.documentElement.classList.add(settings.theme)
+
+      // Inject custom theme CSS when 'custom' theme is active
+      const existingStyle = document.getElementById('custom-theme-style')
+      if (settings.theme === 'custom' && settings.customThemeCss) {
+        if (existingStyle) {
+          existingStyle.textContent = settings.customThemeCss
+        } else {
+          const style = document.createElement('style')
+          style.id = 'custom-theme-style'
+          style.textContent = settings.customThemeCss
+          document.head.appendChild(style)
+        }
+      } else if (existingStyle) {
+        existingStyle.remove()
+      }
     }
-  }, [settings?.theme])
+  }, [settings?.theme, settings?.customThemeCss])
 
   useEffect(() => {
     // Listen for version updates from the main process

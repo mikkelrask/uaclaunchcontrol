@@ -85,10 +85,12 @@ export interface ISourcePort {
 }
 
 // App settings
+export type ThemeMode = 'dark' | 'light' | 'terminal' | 'custom'
+
 export interface IAppSettings {
   sourcePorts: ISourcePort[]
   defaultSourcePortId?: string
-  theme: string
+  theme: ThemeMode
   savegamesPath?: string
   modsDirectory?: string
   screenshotsPath?: string
@@ -100,6 +102,7 @@ export interface IAppSettings {
   registryLookupEnabled?: boolean
   registryUuid?: string
   showLaunchPreview?: boolean
+  customThemeCss?: string
 }
 export interface IUpdateInfo {
   version: string
