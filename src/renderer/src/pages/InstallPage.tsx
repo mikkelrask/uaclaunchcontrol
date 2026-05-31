@@ -50,6 +50,7 @@ interface UacModpackImport {
   files: {
     name: string
     hashValue?: string
+    url?: string
   }[]
 }
 
@@ -762,7 +763,8 @@ export const InstallPage: React.FC = () => {
               filePath: '',
               fileType: 'PK3',
               isRequired: true,
-              hashValue: impFile.hashValue
+              hashValue: impFile.hashValue,
+              url: impFile.url || ''
             })
           }
         }

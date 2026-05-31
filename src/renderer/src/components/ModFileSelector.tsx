@@ -132,7 +132,9 @@ export function ModFileSelector({
             filePath: reqFile.filePath,
             fileType: fileType || 'WAD',
             fileName: reqFile.fileName,
-            isRequired: true
+            isRequired: true,
+            hashValue: reqFile.hashValue || '',
+            url: reqFile.url || ''
           })
         }
       }
@@ -150,7 +152,9 @@ export function ModFileSelector({
         filePath: catalogFile.filePath,
         fileType: fileType || 'WAD',
         fileName: catalogFile.fileName,
-        isRequired: true
+        isRequired: true,
+        hashValue: catalogFile.hashValue || '',
+        url: catalogFile.url || ''
       })
     }
 

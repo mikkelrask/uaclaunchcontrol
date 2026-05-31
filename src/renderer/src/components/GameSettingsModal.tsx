@@ -168,7 +168,8 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
       fileType: f.fileType,
       loadOrder: f.loadOrder,
       isRequired: f.isRequired,
-      hashValue: f.hashValue
+      hashValue: f.hashValue,
+      url: f.url || ''
     }))
 
     updateMutation.mutate({
@@ -217,7 +218,8 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
       files: files.map((f) => ({
         name: f.name || f.fileName,
         hashValue: f.hashValue || '',
-        loadOrder: f.loadOrder ?? 0
+        loadOrder: f.loadOrder ?? 0,
+        url: f.url || ''
       }))
     }
 
@@ -505,7 +507,8 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
           return {
             ...file,
             hashValue: file.hashValue || catalogMatch.hashValue || '',
-            filePath: file.filePath || catalogMatch.filePath || ''
+            filePath: file.filePath || catalogMatch.filePath || '',
+            url: file.url || catalogMatch.url || ''
           }
         }
         return file

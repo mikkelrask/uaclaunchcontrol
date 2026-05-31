@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { IModFile, InsertModFile } from '@shared/schema'
-import { Trash, ChevronUp, ChevronDown, Plus } from 'lucide-react'
+import { Trash, ChevronUp, ChevronDown, Plus, ExternalLink } from 'lucide-react'
 import { Combobox } from '@/components/ui/combobox'
 import { gameService } from '@/lib/gameService'
 
@@ -78,6 +78,19 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                 {(file.name || file.fileName)?.slice(0, 30)}
                 {file.version && ` (${file.version})`}
               </span>
+              {file.url && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    window.open(file.url, '_blank')
+                  }}
+                  className="p-1 h-6 w-6 shrink-0 text-app-muted hover:text-app-primary"
+                  title={file.url}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </button>
+              )}
             </div>
             <button
               type="button"
@@ -123,7 +136,8 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                           fileType: reqFileType,
                           isRequired: true,
                           name: reqFile.name || '',
-                          hashValue: reqFileHash
+                          hashValue: reqFileHash,
+                          url: reqFile.url || ''
                         } as InsertModFile)
                       }
                     }
@@ -144,7 +158,8 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                     fileType,
                     isRequired: true,
                     name: catalogFile.name || '',
-                    hashValue: generateUniqueId(catalogFile.hashValue || '')
+                    hashValue: generateUniqueId(catalogFile.hashValue || ''),
+                    url: catalogFile.url || ''
                   } as InsertModFile)
                 }
 
