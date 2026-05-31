@@ -242,10 +242,13 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     <div className="flex-1 overflow-y-auto min-h-0">
       <div className="space-y-4 p-4">
         <div className="flex gap-4 mb-4">
-          <div className="w-1/3 group">
+          <div className="w-1/3">
+            <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+              Screenshot
+            </Label>
             <button
               type="button"
-              className="w-full rounded overflow-hidden relative"
+              className="w-full rounded overflow-hidden relative group"
               onClick={async () => {
                 const result = await api.showOpenDialog({
                   title: 'Select Screenshot',
