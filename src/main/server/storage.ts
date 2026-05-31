@@ -15,6 +15,9 @@ import {
 } from '../../shared/schema'
 import { debug } from '../../shared/debug'
 
+// Debounce timer for WAD watcher events
+let wadSyncTimer: ReturnType<typeof setTimeout> | null = null
+
 // Define storage paths (Aligned with local-structure.txt)
 const CONFIG_DIR = path.join(os.homedir(), '.config', 'uac')
 const DATA_DIR = path.join(CONFIG_DIR, 'data') // For extra data
@@ -182,8 +185,8 @@ export function initStorage(): boolean {
       debug(`Created default mod file catalog at ${MOD_FILE_CATALOG}`)
     }
 
-    // Sync Doom versions on startup
-    syncDoomVersions().then(() => {
+    // Sync Doom versions on startup — skip hash to avoid startup delay
+    syncDoomVersions({ skipHash: true }).then(() => {
       startWadWatcher()
     })
 
@@ -458,6 +461,10 @@ import type { FSWatcher } from 'chokidar'
 let wadWatcher: FSWatcher | null = null
 
 export function stopWadWatcher(): void {
+  if (wadSyncTimer) {
+    clearTimeout(wadSyncTimer)
+    wadSyncTimer = null
+  }
   if (wadWatcher) {
     wadWatcher.close()
     wadWatcher = null
@@ -486,15 +493,22 @@ export function startWadWatcher(): void {
 
       wadWatcher = chokidar.watch(wadDir, {
         persistent: true,
-        ignoreInitial: false,
+        ignoreInitial: true,
         usePolling: true,
         interval: 100
       })
 
       wadWatcher.on('all', (event, filePath) => {
         if (filePath.toLowerCase().endsWith('.wad')) {
-          debug(`WAD change detected (${event}): ${filePath}. Syncing...`)
-          syncDoomVersions({ notifyDelta: true })
+          // Debounce: coalesce rapid events (common with polling) into one sync
+          if (wadSyncTimer) {
+            clearTimeout(wadSyncTimer)
+          }
+          wadSyncTimer = setTimeout(() => {
+            wadSyncTimer = null
+            debug(`WAD change detected (${event}): ${filePath}. Syncing...`)
+            syncDoomVersions({ notifyDelta: true })
+          }, 500)
         }
       })
 
@@ -511,7 +525,7 @@ export function startWadWatcher(): void {
 
 // Sync Doom versions by scanning the WAD directory
 export async function syncDoomVersions(
-  options: { notifyDelta?: boolean } = {}
+  options: { notifyDelta?: boolean; skipHash?: boolean } = {}
 ): Promise<IDoomVersion[]> {
   try {
     initStorage()
@@ -545,9 +559,13 @@ export async function syncDoomVersions(
       const lowerWadName = def.defaultIwad.toLowerCase()
       if (wadFileMap.has(lowerWadName)) {
         const fullPath = wadFileMap.get(lowerWadName)!
-        const hashValue = await computeFileHash(fullPath)
-        if (hashValue) {
-          seenWadHashes.add(hashValue)
+        // Only hash on non-initial runs — dedup is a nice-to-have, not a startup blocker
+        let hashValue = ''
+        if (!options.skipHash) {
+          hashValue = await computeFileHash(fullPath)
+          if (hashValue) {
+            seenWadHashes.add(hashValue)
+          }
         }
         // Find existing to preserve custom settings like name/icon overrides if any
         // Note: traditionally defaults use their own defaults, but we should check
@@ -577,13 +595,16 @@ export async function syncDoomVersions(
 
     // 2. Add remaining WADs from disk
     for (const [wadName, wadPath] of wadFileMap) {
-      const hashValue = await computeFileHash(wadPath)
-      if (hashValue && seenWadHashes.has(hashValue)) {
-        debug(`syncDoomVersions: Skipping duplicate WAD content: ${wadPath}`)
-        continue
-      }
-      if (hashValue) {
-        seenWadHashes.add(hashValue)
+      let hashValue = ''
+      if (!options.skipHash) {
+        hashValue = await computeFileHash(wadPath)
+        if (hashValue && seenWadHashes.has(hashValue)) {
+          debug(`syncDoomVersions: Skipping duplicate WAD content: ${wadPath}`)
+          continue
+        }
+        if (hashValue) {
+          seenWadHashes.add(hashValue)
+        }
       }
 
       const baseName = wadName.replace(/\.wad$/i, '')
