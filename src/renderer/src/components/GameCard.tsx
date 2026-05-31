@@ -66,7 +66,7 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
         <img
           src={displayImagePath}
           alt={protocol.title}
-          className="w-full h-full object-cover group-hover:hue-rotate-90"
+          className="w-full h-full object-cover  group-hover:zoom-125 group-hover:blur-sm ease-in duration-250"
           onError={(e) => {
             e.currentTarget.src = imagePlaceholder
           }}
