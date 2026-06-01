@@ -375,211 +375,208 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <TabsContent value="general" className="space-y-8 mt-0 p-6">
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                      Visual Interface
-                    </Label>
-                    <div className="p-4 bg-app-secondary border border-app rounded-lg flex items-center justify-between shadow-md">
-                      <span className="text-sm font-medium text-app-primary">App Theme</span>
-                      <Select
-                        value={settings.theme}
-                        onValueChange={(value) =>
-                          setSettings((s) => ({
-                            ...s,
-                            theme: value as IAppSettings['theme']
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="bg-app-primary border-app text-app-primary w-44">
-                          <SelectValue placeholder="Select theme" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-app-secondary border-app text-app-primary">
-                          {[
-                            { value: 'dark', label: 'UAC PHOBOS — Default, dark/red' },
-                            { value: 'light', label: 'MAYKR — Bright argent energy' },
-                            { value: 'terminal', label: 'UAC TERMINAL — Green phosphor' },
-                            { value: 'custom', label: 'CUSTOM — User-defined palette' }
-                          ].map(({ value, label }) => (
-                            <SelectItem
-                              key={value}
-                              value={value}
-                              className="focus:bg-app-hover focus:text-app-primary"
-                            >
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+            <TabsContent value="general" className="space-y-4 mt-0 p-6">
+              <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-5">
+                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                  PREFERENCES
+                </Label>
+
+                <div className="flex items-start justify-between gap-6">
+                  <div className="min-w-0">
+                    <Label className="text-sm font-medium text-app-primary">App Theme</Label>
+                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                      Visual colour profile for the terminal.
+                    </p>
+                  </div>
+                  <Select
+                    value={settings.theme}
+                    onValueChange={(value) =>
+                      setSettings((s) => ({
+                        ...s,
+                        theme: value as IAppSettings['theme']
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="bg-app-primary border-app text-app-primary w-[260px] shrink-0">
+                      <SelectValue placeholder="Select theme" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-app-secondary border-app text-app-primary">
+                      {[
+                        { value: 'dark', label: 'UAC PHOBOS — Default, dark/red' },
+                        { value: 'light', label: 'MAYKR — Bright argent energy' },
+                        { value: 'terminal', label: 'PLUTONIA TERMINAL — Green phosphor' },
+                        { value: 'custom', label: 'CUSTOM — User-defined palette' }
+                      ].map(({ value, label }) => (
+                        <SelectItem
+                          key={value}
+                          value={value}
+                          className="focus:bg-app-hover focus:text-app-primary"
+                        >
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-start justify-between gap-6">
+                  <div className="min-w-0">
+                    <Label className="text-sm font-medium text-app-primary">Database Link</Label>
+                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                      Navigation shortcut to your preferred source of mods.
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <Select
+                      value={settings.selectedPresetIndex.toString()}
+                      onValueChange={(value) =>
+                        setSettings((s) => ({
+                          ...s,
+                          selectedPresetIndex: parseInt(value, 10)
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="bg-app-primary border-app text-app-primary w-[260px] shrink-0">
+                        <SelectValue placeholder="Select a database" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-app-secondary border-app text-app-primary">
+                        {settings.databaseLinkPresets.map((preset, index) => (
+                          <SelectItem
+                            key={index}
+                            value={index.toString()}
+                            className="focus:bg-app-hover focus:text-app-primary"
+                          >
+                            {preset.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p
+                      className="text-[10px] text-app-muted truncate max-w-48 text-right"
+                      title={settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
+                    >
+                      {settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-6">
+                  <div className="min-w-0">
+                    <Label className="text-sm font-medium text-app-primary">Launch Preview</Label>
+                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                      Show the generated launch command in settings and install page.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.showLaunchPreview ?? true}
+                    onCheckedChange={(checked) =>
+                      setSettings((s) => ({ ...s, showLaunchPreview: checked }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="bg-app-secondary/50 p-4 rounded-xl border border-app border-dashed space-y-4">
+                {appVersion && (
+                  <>
+                    <div className="flex items-center justify-between pt-2">
+                      <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
+                        LIVE SYSTEM
+                      </Label>
+                      <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted border border-app">
+                        E1M{appVersion}
+                      </span>
                     </div>
-                    <div className="p-4 bg-app-secondary border border-app rounded-lg flex items-center justify-between shadow-md">
+                    <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label className="text-xs text-app-primary font-medium">
-                          Launch Preview
+                          Check for updates on Startup
                         </Label>
                         <p className="text-[10px] text-app-muted leading-tight">
-                          Show the generated launch command in settings and install page.
+                          Automatically notify about application updates. <br />
+                          Updating is always optional - new updates will never be downloaded/applied
+                          without interaction.
                         </p>
                       </div>
                       <Switch
-                        checked={settings.showLaunchPreview ?? true}
+                        checked={settings.autoUpdateEnabled ?? true}
                         onCheckedChange={(checked) =>
-                          setSettings((s) => ({ ...s, showLaunchPreview: checked }))
+                          setSettings((s) => ({ ...s, autoUpdateEnabled: checked }))
                         }
                       />
                     </div>
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                      EXTERNAL REPOS
-                    </Label>
-                    <div className="p-4 bg-app-secondary border border-app rounded-lg flex flex-col gap-3 shadow-md">
-                      <span className="text-xs text-app-muted">DATABASE LINK</span>
-                      <p className="text-[10px] text-app-muted leading-tight">
-                        Changes the navigation shortcut to your preferred source of mods.
-                      </p>
-                      <Select
-                        value={settings.selectedPresetIndex.toString()}
-                        onValueChange={(value) =>
-                          setSettings((s) => ({
-                            ...s,
-                            selectedPresetIndex: parseInt(value, 10)
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="bg-app-primary border-app text-app-primary h-10">
-                          <SelectValue placeholder="Select a database" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-app-secondary border-app text-app-primary">
-                          {settings.databaseLinkPresets.map((preset, index) => (
-                            <SelectItem
-                              key={index}
-                              value={index.toString()}
-                              className="focus:bg-app-hover focus:text-app-primary"
-                            >
-                              {preset.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <div className="flex items-center gap-2 pt-2">
-                        <span className="text-xs text-app-muted">URL:</span>
-                        <span className="text-xs text-app-primary truncate flex-1">
-                          {settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
-                  TECHNICAL SPECIFICATIONS
-                </Label>
-                <div className="bg-app-secondary/50 p-4 rounded-xl border border-app border-dashed space-y-4">
-                  {appVersion && (
-                    <>
-                      <div className="flex items-center justify-between pt-2">
-                        <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                          LIVE SYSTEM
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-xs text-app-primary font-medium">
+                          Registry Lookup
                         </Label>
-                        <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted border border-app">
-                          E1M{appVersion}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-xs text-app-primary font-medium">
-                            Check for updates on Startup
-                          </Label>
-                          <p className="text-[10px] text-app-muted leading-tight">
-                            Automatically notify about application updates. <br />
-                            Updating is always optional - new updates will never be
-                            downloaded/applied without interaction.
-                          </p>
-                        </div>
-                        <Switch
-                          checked={settings.autoUpdateEnabled ?? true}
-                          onCheckedChange={(checked) =>
-                            setSettings((s) => ({ ...s, autoUpdateEnabled: checked }))
-                          }
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-xs text-app-primary font-medium">
-                            Registry Lookup
-                          </Label>
-                          <p className="text-[10px] text-app-muted leading-tight">
-                            Look up mod files in the online registry when adding to catalog.
-                            <br />
-                            Requires an active connection to the UAC Registry.
-                          </p>
-                        </div>
-                        <Switch
-                          checked={settings.registryLookupEnabled ?? false}
-                          onCheckedChange={(checked) => {
-                            if (checked && !settings.registryUuid) {
-                              const uuid = crypto.randomUUID()
-                              setSettings((s) => ({
-                                ...s,
-                                registryLookupEnabled: checked,
-                                registryUuid: uuid
-                              }))
-                            } else {
-                              setSettings((s) => ({ ...s, registryLookupEnabled: checked }))
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-app-primary font-medium">
-                          Manually check for app updates
+                        <p className="text-[10px] text-app-muted leading-tight">
+                          Look up mod files in the online registry when adding to catalog.
+                          <br />
+                          Requires an active connection to the UAC Registry.
                         </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => api.checkForUpdates()}
-                          className="text-xs h-7 bg-app-primary hover:bg-app-hover text-app-primary border-app"
-                        >
-                          Check
-                        </Button>
                       </div>
-                    </>
-                  )}
-                  <div className="flex items-center justify-between border-t pt-6 border-app/30">
-                    <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                      Application Ini
-                    </Label>
-                    <span className="text-xs px-2 py-0.5 rounded bg-accent-highlight/10 text-accent-highlight/60 font-mono border border-accent-highlight/25">
-                      RESTRICTED AREA
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="bg-app-primary/40 border border-app h-10 px-3 text-sm flex-1 flex items-center text-app-muted opacity-80 rounded-md truncate">
-                      {settings.configPath}
+                      <Switch
+                        checked={settings.registryLookupEnabled ?? false}
+                        onCheckedChange={(checked) => {
+                          if (checked && !settings.registryUuid) {
+                            const uuid = crypto.randomUUID()
+                            setSettings((s) => ({
+                              ...s,
+                              registryLookupEnabled: checked,
+                              registryUuid: uuid
+                            }))
+                          } else {
+                            setSettings((s) => ({ ...s, registryLookupEnabled: checked }))
+                          }
+                        }}
+                      />
                     </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-app-primary font-medium">
+                        Manually check for app updates
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => api.checkForUpdates()}
+                        className="text-xs h-7 bg-app-primary hover:bg-app-hover text-app-primary border-app"
+                      >
+                        Check
+                      </Button>
+                    </div>
+                  </>
+                )}
+                <div className="flex items-center justify-between border-t pt-6 border-app/30">
+                  <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
+                    Application Ini
+                  </Label>
+                  <span className="text-xs px-2 py-0.5 rounded bg-accent-highlight/10 text-accent-highlight/60 font-mono border border-accent-highlight/25">
+                    RESTRICTED AREA
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <div className="bg-app-primary/40 border border-app h-10 px-3 text-sm flex-1 flex items-center text-app-muted opacity-80 rounded-md truncate">
+                    {settings.configPath}
                   </div>
-                  <p className="text-xs text-app-muted italic opacity-70">
-                    Internal master directory for settings, telemetry catalogues, and system state.
-                  </p>
                 </div>
-                <div className="flex-col items-center pt-8 border-t border-dashed">
-                  <img
-                    src={uacLogo}
-                    alt=""
-                    className="w-12 opacity-30 hover:opacity-60 mx-auto animate-pulse color-accent-highlight"
-                  />
-                  <p className="text-xs text-app-muted text-center transition-opacity opacity-30 italic uppercase mt-2">
-                    This software is developed by The Union Aerospace Corporation, UAC.
-                    <br />
-                    Unauthorized access or usage outside Phobos facility is strictly prohibited
-                    <br />
-                    Any violations will result in termination.
-                  </p>
-                </div>
+                <p className="text-xs text-app-muted italic opacity-70">
+                  Internal master directory for settings, telemetry catalogues, and system state.
+                </p>
+              </div>
+              <div className="flex-col items-center pt-8 border-t border-dashed">
+                <img
+                  src={uacLogo}
+                  alt=""
+                  className="w-12 opacity-30 hover:opacity-60 mx-auto animate-pulse color-accent-highlight"
+                />
+                <p className="text-xs text-app-muted text-center transition-opacity opacity-30 italic uppercase mt-2">
+                  This software is developed by The Union Aerospace Corporation, UAC.
+                  <br />
+                  Unauthorized access or usage outside Phobos facility is strictly prohibited
+                  <br />
+                  Any violations will result in termination.
+                </p>
               </div>
             </TabsContent>
 
