@@ -407,6 +407,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  app.post('/api/mod-files/unzip-scan', async (req, res) => {
+    try {
+      const { zipFilePath } = req.body
+      if (!zipFilePath) {
+        return res.status(400).json({ message: 'Missing zipFilePath' })
+      }
+      const result = await storage.unzipAndScan(zipFilePath)
+      return res.json(result)
+    } catch (error: unknown) {
+      console.error('Error in POST /api/mod-files/unzip-scan:', error)
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to unzip and scan archive'
+      })
+    }
+  })
+
+  app.post('/api/mod-files/unzip-import', async (req, res) => {
+    try {
+      const { tempDir, filesToImport } = req.body
+      if (!tempDir || !Array.isArray(filesToImport)) {
+        return res.status(400).json({ message: 'Missing tempDir or filesToImport' })
+      }
+      const result = await storage.importUnzippedFiles(tempDir, filesToImport)
+      return res.json(result)
+    } catch (error: unknown) {
+      console.error('Error in POST /api/mod-files/unzip-import:', error)
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to import unzipped files'
+      })
+    }
+  })
+
   // Update a Doom version (e.g., for ignoring/hiding)
   app.put('/api/versions/:id', async (req, res) => {
     try {
