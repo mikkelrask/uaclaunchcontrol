@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Archive, Upload } from 'lucide-react'
 import type { ZipScanResult } from '@/types/zipImport'
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter
@@ -110,93 +110,120 @@ export function ZipImportModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Import ZIP Archive</DialogTitle>
-          <DialogDescription>
-            {`${supportedCount} file(s) to import, ${skippedCount} skipped`}
-            {batName ? ` — .bat detected: ${batName}` : ''}
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Supported files table */}
-        {fileMeta.length > 0 && (
-          <div className="mt-4 space-y-2">
-            <div className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 text-xs font-semibold uppercase text-muted-foreground px-1">
-              <span></span>
-              <span>File</span>
-              <span>Name</span>
-              <span>Version</span>
-              <span>URL</span>
+      <DialogContent className="bg-app-primary shadow-2xl border-app max-w-4xl max-h-[85vh] p-0 overflow-hidden flex flex-col">
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between p-4 border-b border-app bg-app-secondary shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent-highlight/10 rounded-md">
+              <Archive className="w-5 h-5 text-accent-highlight" />
             </div>
-            {scanResult!.supported.map((f, idx) => (
-              <div
-                key={f.tempPath}
-                className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 items-center"
-              >
-                <input
-                  type="checkbox"
-                  checked={fileMeta[idx]?.enabled ?? true}
-                  onChange={(e) =>
-                    setFileMeta((prev) => {
-                      const copy = [...prev]
-                      copy[idx] = { ...copy[idx], enabled: e.target.checked }
-                      return copy
-                    })
-                  }
-                  className="w-4 h-4"
-                />
-                <div className="text-sm truncate" title={f.fileName}>
-                  <span className="font-mono text-xs text-muted-foreground mr-1">[{f.fileType}]</span>
-                  {f.fileName}
-                  {f.isReferencedByBat && (
-                    <span className="ml-1 text-xs text-yellow-500">.bat</span>
-                  )}
-                </div>
-                <input
-                  className="border rounded p-1 text-sm bg-background"
-                  placeholder="Display name"
-                  value={fileMeta[idx]?.name ?? ''}
-                  onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
-                />
-                <input
-                  className="border rounded p-1 text-sm bg-background"
-                  placeholder="Version"
-                  value={fileMeta[idx]?.version ?? ''}
-                  onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
-                />
-                <input
-                  className="border rounded p-1 text-sm bg-background w-40"
-                  placeholder="URL"
-                  value={fileMeta[idx]?.url ?? ''}
-                  onChange={(e) => handleMetaChange(idx, 'url', e.target.value)}
-                />
+            <div>
+              <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
+                import zip archive
+              </DialogTitle>
+              <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
+                {supportedCount} file{supportedCount !== 1 ? 's' : ''} to import
+                {skippedCount > 0 ? ` · ${skippedCount} skipped` : ''}
+                {batName ? ` · .bat detected: ${batName}` : ''}
+              </DialogDescription>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Body ── */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Supported files table */}
+          {fileMeta.length > 0 && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono px-1">
+                <span></span>
+                <span>File</span>
+                <span>Display Name</span>
+                <span>Version</span>
+                <span>URL</span>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Skipped files */}
-        {skippedCount > 0 && (
-          <div className="mt-4">
-            <p className="text-sm font-semibold text-muted-foreground mb-1">Skipped files</p>
-            <ul className="text-xs space-y-1">
-              {scanResult!.skipped.map((s, i) => (
-                <li key={i} className="text-muted-foreground">
-                  <span className="font-mono">{s.fileName}</span> — {s.reason}
-                </li>
+              {scanResult.supported.map((f, idx) => (
+                <div
+                  key={f.tempPath}
+                  className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 items-center"
+                >
+                  <input
+                    type="checkbox"
+                    checked={fileMeta[idx]?.enabled ?? true}
+                    onChange={(e) =>
+                      setFileMeta((prev) => {
+                        const copy = [...prev]
+                        copy[idx] = { ...copy[idx], enabled: e.target.checked }
+                        return copy
+                      })
+                    }
+                    className="w-4 h-4 accent-accent-highlight"
+                  />
+                  <div className="text-sm truncate" title={f.fileName}>
+                    <span className="font-mono text-xs text-app-muted mr-1">[{f.fileType}]</span>
+                    {f.fileName}
+                    {f.isReferencedByBat && (
+                      <span className="ml-1 text-xs text-yellow-500">.bat</span>
+                    )}
+                  </div>
+                  <input
+                    className="border border-app rounded p-1 text-sm bg-app-primary"
+                    placeholder="Display name"
+                    value={fileMeta[idx]?.name ?? ''}
+                    onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
+                  />
+                  <input
+                    className="border border-app rounded p-1 text-sm bg-app-primary"
+                    placeholder="Version"
+                    value={fileMeta[idx]?.version ?? ''}
+                    onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
+                  />
+                  <input
+                    className="border border-app rounded p-1 text-sm bg-app-primary w-40"
+                    placeholder="URL"
+                    value={fileMeta[idx]?.url ?? ''}
+                    onChange={(e) => handleMetaChange(idx, 'url', e.target.value)}
+                  />
+                </div>
               ))}
-            </ul>
-          </div>
-        )}
+            </div>
+          )}
 
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={importing}>
-            Cancel
-          </Button>
-          <Button onClick={handleImport} disabled={importing || supportedCount === 0}>
-            {importing ? 'Importing…' : `Import ${supportedCount} file(s)`}
-          </Button>
+          {/* Skipped files */}
+          {skippedCount > 0 && (
+            <div>
+              <p className="text-sm font-semibold text-app-muted mb-1">Skipped files</p>
+              <ul className="text-xs space-y-1">
+                {scanResult.skipped.map((s, i) => (
+                  <li key={i} className="text-app-muted">
+                    <span className="font-mono">{s.fileName}</span> — {s.reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* ── Footer ── */}
+        <DialogFooter className="bg-app-secondary border-t border-app p-4 shrink-0">
+          <div className="flex justify-between w-full">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={importing}
+              className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleImport}
+              disabled={importing || supportedCount === 0}
+              className="bg-accent-highlight hover:opacity-90 text-white"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {importing ? 'Importing…' : `Import ${supportedCount} file${supportedCount !== 1 ? 's' : ''}`}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
