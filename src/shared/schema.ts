@@ -103,6 +103,7 @@ export interface IAppSettings {
   registryUuid?: string
   showLaunchPreview?: boolean
   customThemeCss?: string
+  defaultView?: 'grid' | 'list' | 'detail'
 }
 export interface IUpdateInfo {
   version: string

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'wouter'
 // import { useLocation } from 'wouter';
@@ -10,7 +10,7 @@ import GameDetailCard from '@/components/GameDetailCard'
 import GameListCard from '@/components/GameListCard'
 import GameSettingsModal from '@/components/GameSettingsModal'
 import { gameService } from '@/lib/gameService'
-import { IProtocol, IDoomVersion } from '@shared/schema'
+import { IProtocol, IDoomVersion, IAppSettings } from '@shared/schema'
 import { api } from '@/api'
 
 type ViewMode = 'grid' | 'list' | 'detail'
@@ -21,7 +21,20 @@ export const GamesPage: React.FC = () => {
     const params = new URLSearchParams(window.location.search)
     return params.get('version')
   })
+  // Read default view from settings
+  const { data: settingsData } = useQuery<IAppSettings>({
+    queryKey: ['/api/settings'],
+    queryFn: gameService.getSettings
+  })
+
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
+
+  // Sync viewMode from settings once they load
+  useEffect(() => {
+    if (settingsData?.defaultView) {
+      setViewMode(settingsData.defaultView)
+    }
+  }, [settingsData?.defaultView])
   const [searchQuery, setSearchQuery] = useState(() => {
     const params = new URLSearchParams(window.location.search)
     return params.get('search') || ''

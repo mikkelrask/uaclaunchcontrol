@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Settings, Eye, EyeOff, Pencil, Trash2, FolderOpen } from 'lucide-react'
+import { Settings, Eye, EyeOff, Pencil, Trash2, FolderOpen, LayoutGrid, List, BookOpen } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
@@ -47,7 +47,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     autoUpdateEnabled: true,
     registryLookupEnabled: false,
     showLaunchPreview: true,
-    customThemeCss: ''
+    customThemeCss: '',
+    defaultView: 'grid'
   })
 
   // Doom versions state
@@ -218,7 +219,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         registryLookupEnabled: settings.registryLookupEnabled,
         registryUuid: settings.registryUuid,
         showLaunchPreview: settings.showLaunchPreview,
-        customThemeCss: settings.customThemeCss
+        customThemeCss: settings.customThemeCss,
+        defaultView: settings.defaultView
       }
       await api.updateSettings(payload)
 
@@ -457,6 +459,35 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     >
                       {settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
                     </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-6">
+                  <div className="min-w-0">
+                    <Label className="text-sm font-medium text-app-primary">Default View</Label>
+                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                      Starting view mode when opening the games page.
+                    </p>
+                  </div>
+                  <div className="flex rounded-lg border border-app overflow-hidden shrink-0">
+                    {[
+                      { value: 'grid' as const, icon: LayoutGrid, label: 'Grid' },
+                      { value: 'list' as const, icon: List, label: 'List' },
+                      { value: 'detail' as const, icon: BookOpen, label: 'Detail' }
+                    ].map(({ value, icon: Icon, label }) => (
+                      <button
+                        key={value}
+                        onClick={() => setSettings((s) => ({ ...s, defaultView: value }))}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+                          settings.defaultView === value
+                            ? 'bg-accent-highlight text-white'
+                            : 'bg-app-primary text-app-muted hover:text-app-primary hover:bg-app-hover'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span className="max-sm:sr-only">{label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
