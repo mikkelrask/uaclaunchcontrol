@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
+import { Play, Settings } from 'lucide-react'
 import placeholder from '@renderer/assets/placeholder.png'
 
 interface GameCardProps {
@@ -109,7 +110,12 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
           disabled={launchMutation.isPending}
           className="bg-accent-highlight hover:opacity-90 text-white"
         >
-          {launchMutation.isPending ? 'LAUNCHING...' : 'LAUNCH'}
+          {launchMutation.isPending ? 'LAUNCHING...' : (
+            <>
+              <Play className="w-4 h-4 mr-1.5 fill-current" />
+              LAUNCH
+            </>
+          )}
         </Button>
         <Button
           variant="ghost"
@@ -117,7 +123,10 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
           onClick={handleSettings}
           className="bg-app-primary hover:bg-app-hover text-app-primary"
         >
-          ADJUST
+          <>
+              <Settings className="w-4 h-4 mr-1.5" />
+              ADJUST
+            </>
         </Button>
       </div>
     </div>
