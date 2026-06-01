@@ -15,6 +15,7 @@ import { api } from '@/api'
 import { IAppSettings, IInstallType } from '@shared/schema'
 import { useAutoUpdater } from '@/hooks/useAutoUpdater'
 import UpdateModal from '@/components/UpdateModal'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 const AppRouter: React.FC = () => {
   return (
@@ -166,7 +167,9 @@ const App: React.FC = () => {
         updateInfo={updateInfo}
         installType={installType}
       />
-      <AppRouter />
+      <ErrorBoundary>
+        <AppRouter />
+      </ErrorBoundary>
     </TooltipProvider>
   )
 }

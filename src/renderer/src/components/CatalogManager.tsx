@@ -36,6 +36,8 @@ import { api, IRegistryMod } from '@/api'
 import { gameService } from '@/lib/gameService'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { ZipImportModal } from '@/components/ZipImportModal';
+import { ZipScanResult } from '@/types/zipImport';
 
 interface CatalogManagerProps {
   files: IModFile[]
@@ -119,6 +121,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<IModFile | null>(null)
+
+  const [isZipModalOpen, setIsZipModalOpen] = useState(false)
+  const [zipScanResult, setZipScanResult] = useState<ZipScanResult | null>(null);
 
   const [addForm, setAddForm] = useState({
     name: '',
@@ -454,6 +459,26 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       if (!result.canceled && result.filePaths.length > 0) {
         const selectedPath = result.filePaths[0]
 
+        if (selectedPath.toLowerCase().endsWith('.zip')) {
+          try {
+            toast({
+              title: 'Extracting archive...',
+              description: 'Analyzing zip contents.'
+            })
+            const scan = (await api.unzipScan(selectedPath)) as ZipScanResult
+            setZipScanResult(scan)
+            setIsZipModalOpen(true)
+          } catch (error) {
+            console.error(error)
+            toast({
+              title: 'Failed to process ZIP',
+              description: error instanceof Error ? error.message : 'Failed to scan zip file',
+              variant: 'destructive'
+            })
+          }
+          return
+        }
+
         if (selectedPath.toLowerCase().endsWith('.bat')) {
           try {
             const content = await api.readFile(selectedPath)
@@ -540,6 +565,26 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           description: 'Please only use supported files: wad, pk3, pk7, ipk3, deh, bex, zip, bat',
           variant: 'destructive'
         })
+        return
+      }
+
+      if (ext === 'ZIP') {
+        try {
+          toast({
+            title: 'Extracting archive...',
+            description: 'Analyzing zip contents.'
+          })
+          const scan = (await api.unzipScan(droppedPath)) as ZipScanResult
+          setZipScanResult(scan)
+          setIsZipModalOpen(true)
+        } catch (error) {
+          console.error(error)
+          toast({
+            title: 'Failed to process ZIP',
+            description: error instanceof Error ? error.message : 'Failed to scan zip file',
+            variant: 'destructive'
+          })
+        }
         return
       }
 
@@ -1351,6 +1396,18 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ZipImportModal
+        open={isZipModalOpen}
+        onOpenChange={setIsZipModalOpen}
+        scanResult={zipScanResult}
+        onImportComplete={async () => {
+          const freshCatalog = await gameService.getModFileCatalog()
+          queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
+          onChange(freshCatalog)
+          setZipScanResult(null)
+        }}
+      />
     </div>
   )
 }
