@@ -7,6 +7,7 @@ import Header from '@/components/Header'
 import ViewToggle from '@/components/ViewToggle'
 import GameCard from '@/components/GameCard'
 import GameDetailCard from '@/components/GameDetailCard'
+import GameListCard from '@/components/GameListCard'
 import GameSettingsModal from '@/components/GameSettingsModal'
 import { gameService } from '@/lib/gameService'
 import { IProtocol, IDoomVersion } from '@shared/schema'
@@ -146,6 +147,22 @@ export const GamesPage: React.FC = () => {
                     </>
                   )}
                 </p>
+              </div>
+            ) : viewMode === 'list' ? (
+              <div className="flex flex-col gap-3">
+                {filteredProtocols?.map((p): React.ReactNode => {
+                  const version = getVersionForProtocol(p)
+                  if (!version) return null
+
+                  return (
+                    <GameListCard
+                      key={p.id}
+                      protocol={p}
+                      doomVersion={version}
+                      onSettingsClick={handleSettingsClick}
+                    />
+                  )
+                })}
               </div>
             ) : viewMode === 'detail' ? (
               <div className="flex flex-col gap-8">
