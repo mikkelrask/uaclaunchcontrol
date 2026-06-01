@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
 import ViewToggle from '@/components/ViewToggle'
 import GameCard from '@/components/GameCard'
+import GameDetailCard from '@/components/GameDetailCard'
 import GameSettingsModal from '@/components/GameSettingsModal'
 import { gameService } from '@/lib/gameService'
 import { IProtocol, IDoomVersion } from '@shared/schema'
@@ -145,6 +146,22 @@ export const GamesPage: React.FC = () => {
                     </>
                   )}
                 </p>
+              </div>
+            ) : viewMode === 'detail' ? (
+              <div className="flex flex-col gap-8">
+                {filteredProtocols?.map((p): React.ReactNode => {
+                  const version = getVersionForProtocol(p)
+                  if (!version) return null
+
+                  return (
+                    <GameDetailCard
+                      key={p.id}
+                      protocol={p}
+                      doomVersion={version}
+                      onSettingsClick={handleSettingsClick}
+                    />
+                  )
+                })}
               </div>
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">

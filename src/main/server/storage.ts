@@ -1115,6 +1115,35 @@ export async function saveProtocol(protocolData: IProtocol & { files: IModFile[]
   }
 }
 
+/** Enrich each file in a protocol with catalogue metadata (url, name, version). */
+async function enrichFilesWithCatalog(
+  files: IModFile[]
+): Promise<IModFile[]> {
+  if (files.length === 0) return files
+  try {
+    const catalog = await getModFileCatalog()
+    const byHash = new Map<string, IModFile>()
+    for (const entry of catalog) {
+      if (entry.hashValue) {
+        byHash.set(entry.hashValue, entry)
+      }
+    }
+    return files.map((f) => {
+      if (!f.hashValue) return f
+      const catalogEntry = byHash.get(f.hashValue)
+      if (!catalogEntry) return f
+      return {
+        ...f,
+        url: f.url || catalogEntry.url || '',
+        name: f.name || catalogEntry.name || '',
+        version: f.version || catalogEntry.version || ''
+      }
+    })
+  } catch {
+    return files
+  }
+}
+
 export async function getProtocols(): Promise<IProtocol[]> {
   try {
     initStorage()
@@ -1132,7 +1161,10 @@ export async function getProtocols(): Promise<IProtocol[]> {
         try {
           const data = await fs.readJSON(filePath)
           const protocol = { ...data }
-          delete (protocol as Record<string, unknown>).files
+          if (!Array.isArray(protocol.files)) {
+            protocol.files = []
+          }
+          protocol.files = await enrichFilesWithCatalog(protocol.files)
           protocols.push(protocol as IProtocol)
         } catch (err: unknown) {
           console.error(`Error reading protocol file ${filename}:`, err)
@@ -1159,6 +1191,7 @@ export async function getProtocol(protocolId: string): Promise<IProtocol & { fil
     if (!Array.isArray(data.files)) {
       data.files = []
     }
+    data.files = await enrichFilesWithCatalog(data.files)
     return data as IProtocol & { files: IModFile[] }
   } catch (error: unknown) {
     console.error(`Error getting protocol ${protocolId}:`, error)
