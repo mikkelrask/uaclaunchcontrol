@@ -6,7 +6,17 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
 import placeholder from '@renderer/assets/placeholder.png'
-import { ExternalLink, Clock, Play, Settings, FileCode, User, Tag, Calendar, Terminal } from 'lucide-react'
+import {
+  ExternalLink,
+  Clock,
+  Play,
+  Settings,
+  FileCode,
+  User,
+  Tag,
+  Calendar,
+  Terminal
+} from 'lucide-react'
 
 interface GameDetailCardProps {
   protocol: IProtocol
@@ -165,9 +175,7 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
           <div>
             {/* Description */}
             <div className="mb-6">
-              <h3 className="text-sm font-bold text-app-muted tracking-widest mb-2">
-                // ABOUT
-              </h3>
+              <h3 className="text-sm font-bold text-app-muted tracking-widest mb-2">// ABOUT</h3>
               <p className="text-app-primary leading-relaxed text-sm">
                 {protocol.description || 'No description available.'}
               </p>
@@ -193,9 +201,7 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
                           {getFileTypeLabel(f.fileType || f.type)}
                         </span>
                         {f.version && (
-                          <span className="text-xs text-app-muted shrink-0">
-                            v{f.version}
-                          </span>
+                          <span className="text-xs text-app-muted shrink-0">v{f.version}</span>
                         )}
                         {hasUrl && (
                           <ExternalLink className="w-3 h-3 shrink-0 text-accent-highlight/60 ml-auto" />
@@ -235,15 +241,21 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
           {/* ── Right column: Metadata panel ── */}
           <div className="space-y-4">
             <div className="bg-app-secondary/50 rounded-lg border border-app/40 p-4 space-y-3">
-              <h3 className="text-sm font-bold text-app-muted tracking-widest mb-1">
-                // DETAILS
-              </h3>
+              <h3 className="text-sm font-bold text-app-muted tracking-widest mb-1">// DETAILS</h3>
 
               {protocol.author && (
-                <InfoRow label="Author" value={protocol.author} icon={<User className="w-3.5 h-3.5 text-accent-highlight" />} />
+                <InfoRow
+                  label="Author"
+                  value={protocol.author}
+                  icon={<User className="w-3.5 h-3.5 text-accent-highlight" />}
+                />
               )}
               {protocol.version && (
-                <InfoRow label="Version" value={`v${protocol.version}`} icon={<Tag className="w-3.5 h-3.5 text-accent-highlight" />} />
+                <InfoRow
+                  label="Version"
+                  value={`v${protocol.version}`}
+                  icon={<Tag className="w-3.5 h-3.5 text-accent-highlight" />}
+                />
               )}
               {protocol.releaseDate && (
                 <InfoRow
@@ -256,8 +268,12 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
                   icon={<Calendar className="w-3.5 h-3.5 text-accent-highlight" />}
                 />
               )}
-              <InfoRow label="Base Game" value={doomVersion.name} icon={<Tag className="w-3.5 h-3.5 text-accent-highlight" />} />
-            {protocol.lastLaunchedAt && (
+              <InfoRow
+                label="Base Game"
+                value={doomVersion.name}
+                icon={<Tag className="w-3.5 h-3.5 text-accent-highlight" />}
+              />
+              {protocol.lastLaunchedAt && (
                 <InfoRow
                   label="Last Played"
                   value={formatDate(protocol.lastLaunchedAt)}
@@ -265,7 +281,12 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
                 />
               )}
               {protocol.launchParameters && (
-                <InfoRow label="Parameters" value={protocol.launchParameters} icon={<Terminal className="w-3.5 h-3.5 text-accent-highlight" />} mono />
+                <InfoRow
+                  label="Parameters"
+                  value={protocol.launchParameters}
+                  icon={<Terminal className="w-3.5 h-3.5 text-accent-highlight" />}
+                  mono
+                />
               )}
             </div>
 

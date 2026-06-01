@@ -1,4 +1,10 @@
-import type { IDoomVersion, IProtocol, IModFile, InsertProtocol, IAppSettings } from '@shared/schema'
+import type {
+  IDoomVersion,
+  IProtocol,
+  IModFile,
+  InsertProtocol,
+  IAppSettings
+} from '@shared/schema'
 
 interface OpenDialogOptions {
   title?: string
@@ -119,7 +125,10 @@ export const gameService = {
     return handleApiResponse<{ protocol: IProtocol; files: IModFile[] }>(response)
   },
 
-  async createProtocol(protocol: InsertProtocol, files: Omit<IModFile, 'id' | 'modId'>[] = []): Promise<IProtocol> {
+  async createProtocol(
+    protocol: InsertProtocol,
+    files: Omit<IModFile, 'id' | 'modId'>[] = []
+  ): Promise<IProtocol> {
     const response = await fetch(`${API_BASE}/api/protocols`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

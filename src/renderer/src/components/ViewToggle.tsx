@@ -35,9 +35,7 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
               title={label}
             >
               <Icon className={`h-4 w-4 ${active ? 'text-accent-highlight' : ''}`} />
-              {active && (
-                <span className="text-[10px] uppercase tracking-wider">{label}</span>
-              )}
+              {active && <span className="text-[10px] uppercase tracking-wider">{label}</span>}
             </button>
           )
         })}

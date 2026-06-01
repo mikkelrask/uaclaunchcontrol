@@ -110,7 +110,9 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
           disabled={launchMutation.isPending}
           className="bg-accent-highlight hover:opacity-90 text-white"
         >
-          {launchMutation.isPending ? 'LAUNCHING...' : (
+          {launchMutation.isPending ? (
+            'LAUNCHING...'
+          ) : (
             <>
               <Play className="w-4 h-4 mr-1.5 fill-current" />
               LAUNCH
@@ -124,9 +126,9 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
           className="bg-app-primary hover:bg-app-hover text-app-primary"
         >
           <>
-              <Settings className="w-4 h-4 mr-1.5" />
-              ADJUST
-            </>
+            <Settings className="w-4 h-4 mr-1.5" />
+            ADJUST
+          </>
         </Button>
       </div>
     </div>

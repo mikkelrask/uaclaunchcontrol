@@ -49,7 +49,9 @@ export function Combobox({
           className={cn('justify-between font-normal', className)}
           disabled={disabled}
         >
-          {selectedOption ? `${selectedOption.label}${selectedOption.description ? ` (${selectedOption.description})` : ''}` : placeholder}
+          {selectedOption
+            ? `${selectedOption.label}${selectedOption.description ? ` (${selectedOption.description})` : ''}`
+            : placeholder}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="15"
