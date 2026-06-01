@@ -367,7 +367,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               </TabsTrigger>
               <TabsTrigger
                 value="advanced"
-                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all opacity-50"
+                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
                 Advanced
               </TabsTrigger>
@@ -922,95 +922,92 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 CUSTOM THEME EDITOR
               </Label>
               <div className="bg-app-secondary p-4 rounded-xl border border-app space-y-4">
-                {settings.theme === 'custom' ? (
-                  <>
-                    <div className="space-y-2">
-                      <p className="text-xs text-app-muted leading-relaxed">
-                        Paste HSL variable overrides below. Each line should follow the format:
-                        <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50">
-                          --variable-name: hue saturation lightness;
-                        </code>
-                        Example:
-                        <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50 whitespace-pre">
-                          --bg-primary: 220 18% 5%; --text-primary: 210 20% 92%; --accent-highlight:
-                          0 84% 60%;
-                        </code>
-                        Wrap the overrides in{' '}
-                        <code className="font-mono text-xs">.custom &#123; ... &#125;</code> or just
-                        paste the variable lines — the app will wrap them automatically.
-                      </p>
-                    </div>
-                    <textarea
-                      className="w-full h-64 bg-app-primary border border-app rounded-md p-3 font-mono text-xs text-app-primary resize-none focus:outline-none focus:ring-1 focus:ring-accent-highlight/40"
-                      value={settings.customThemeCss || ''}
-                      onChange={(e) =>
-                        setSettings((s) => ({ ...s, customThemeCss: e.target.value }))
-                      }
-                      placeholder={`--bg-primary: 220 18% 5%;\n--text-primary: 210 20% 92%;\n--accent-highlight: 0 84% 60%;`}
-                      spellCheck={false}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSettings((s) => ({
-                            ...s,
-                            customThemeCss: s.customThemeCss
-                              ? `.custom {\n${s.customThemeCss}\n}`
-                              : ''
-                          }))
-                        }}
-                        className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
-                      >
-                        Wrap in .custom &#123; &#125;
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Copy dark theme values as a starter
-                          const darkThemeVars = [
-                            '--bg-primary: 220 18% 5%;',
-                            '--bg-secondary: 220 15% 9%;',
-                            '--bg-tertiary: 220 12% 14%;',
-                            '--bg-card: 220 18% 8%;',
-                            '--bg-popover: 220 18% 9%;',
-                            '--bg-muted: 220 10% 18%;',
-                            '--bg-sidebar: 220 18% 6%;',
-                            '--bg-hover: 220 12% 16%;',
-                            '',
-                            '--text-primary: 210 20% 92%;',
-                            '--text-secondary: 215 12% 70%;',
-                            '--text-muted: 215 10% 75%;',
-                            '--text-sidebar: 210 20% 92%;',
-                            '--text-card: 210 20% 92%;',
-                            '--text-popover: 210 20% 92%;',
-                            '',
-                            '--accent-highlight: 0 84% 60%;',
-                            '--accent-destructive: 0 65% 45%;',
-                            '',
-                            '--border: 220 12% 18%;'
-                          ].join('\n')
-                          setSettings((s) => ({
-                            ...s,
-                            customThemeCss: darkThemeVars
-                          }))
-                        }}
-                        className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
-                      >
-                        Reset to defaults
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="py-12 text-center">
-                    <p className="text-app-muted italic text-sm">
-                      Select <span className="font-bold not-italic text-app-primary">CUSTOM</span>{' '}
-                      in the General tab to enable the theme editor.
-                    </p>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <p className="text-xs text-app-muted leading-relaxed">
+                    Paste HSL variable overrides below. Each line should follow the format:
+                    <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50">
+                      --variable-name: hue saturation lightness;
+                    </code>
+                    Example:
+                    <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50 whitespace-pre">
+                      --bg-primary: 220 18% 5%; --text-primary: 210 20% 92%; --accent-highlight: 0
+                      84% 60%;
+                    </code>
+                    Wrap the overrides in{' '}
+                    <code className="font-mono text-xs">.custom &#123; ... &#125;</code> or just
+                    paste the variable lines — the app will wrap them automatically.
+                  </p>
+                  <p className="text-xs text-app-muted leading-relaxed">
+                    See the{' '}
+                    <a
+                      href="https://github.com/mikkelrask/uaclaunchcontrol/wiki/Theming#custom-theme"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-accent-highlight transition-colors"
+                    >
+                      Theming guide on GitHub
+                    </a>{' '}
+                    for the full variable reference and examples.
+                  </p>
+                </div>
+                <textarea
+                  className="w-full h-64 bg-app-primary border border-app rounded-md p-3 font-mono text-xs text-app-primary resize-none focus:outline-none focus:ring-1 focus:ring-accent-highlight/40"
+                  value={settings.customThemeCss || ''}
+                  onChange={(e) => setSettings((s) => ({ ...s, customThemeCss: e.target.value }))}
+                  placeholder={`--bg-primary: 220 18% 5%;\n--text-primary: 210 20% 92%;\n--accent-highlight: 0 84% 60%;`}
+                  spellCheck={false}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSettings((s) => ({
+                        ...s,
+                        customThemeCss: s.customThemeCss ? `.custom {\n${s.customThemeCss}\n}` : ''
+                      }))
+                    }}
+                    className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
+                  >
+                    Wrap in .custom &#123; &#125;
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Copy dark theme values as a starter
+                      const darkThemeVars = [
+                        '--bg-primary: 220 18% 5%;',
+                        '--bg-secondary: 220 15% 9%;',
+                        '--bg-tertiary: 220 12% 14%;',
+                        '--bg-card: 220 18% 8%;',
+                        '--bg-popover: 220 18% 9%;',
+                        '--bg-muted: 220 10% 18%;',
+                        '--bg-sidebar: 220 18% 6%;',
+                        '--bg-hover: 220 12% 16%;',
+                        '',
+                        '--text-primary: 210 20% 92%;',
+                        '--text-secondary: 215 12% 70%;',
+                        '--text-muted: 215 10% 75%;',
+                        '--text-sidebar: 210 20% 92%;',
+                        '--text-card: 210 20% 92%;',
+                        '--text-popover: 210 20% 92%;',
+                        '',
+                        '--accent-highlight: 0 84% 60%;',
+                        '--accent-destructive: 0 65% 45%;',
+                        '',
+                        '--border: 220 12% 18%;'
+                      ].join('\n')
+                      setSettings((s) => ({
+                        ...s,
+                        customThemeCss: darkThemeVars
+                      }))
+                    }}
+                    className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
+                  >
+                    Reset to defaults
+                  </Button>
+                </div>
               </div>
             </TabsContent>
           </div>
