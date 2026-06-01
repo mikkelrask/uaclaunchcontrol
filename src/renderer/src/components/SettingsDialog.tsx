@@ -378,7 +378,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             <TabsContent value="general" className="space-y-4 mt-0 p-6">
               <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-5">
                 <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                  PREFERENCES
+                  INTERFACE
                 </Label>
 
                 <div className="flex items-start justify-between gap-6">
