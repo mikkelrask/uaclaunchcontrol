@@ -56,7 +56,8 @@ interface RequiredModEntry {
 
 function deriveFileType(ext: string): string {
   const upper = ext.toUpperCase()
-  if (upper === 'PK3' || upper === 'PK7' || upper === 'IPK3' || upper === 'ZIP') return 'PK3'
+  if (upper === 'ZIP') return 'ZIP'
+  if (upper === 'PK3' || upper === 'PK7' || upper === 'IPK3') return 'PK3'
   if (upper === 'DEH' || upper === 'BEX') return 'DEH'
   return 'WAD'
 }
@@ -1036,6 +1037,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                     </SelectItem>
                     <SelectItem value="DEH" className="text-xs">
                       DEH
+                    </SelectItem>
+                    <SelectItem value="ZIP" className="text-xs">
+                      ZIP
                     </SelectItem>
                   </SelectContent>
                 </Select>

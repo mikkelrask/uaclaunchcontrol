@@ -1440,14 +1440,15 @@ async function scanDirRecursive(dir: string, baseDir: string = dir): Promise<str
 
 function getFileType(fileName: string): string {
   const ext = path.extname(fileName).toUpperCase()
-  if (ext === '.PK3' || ext === '.PK7' || ext === '.IPK3' || ext === '.ZIP') return 'PK3'
+  if (ext === '.ZIP') return 'ZIP'
+  if (ext === '.PK3' || ext === '.PK7' || ext === '.IPK3') return 'PK3'
   if (ext === '.DEH' || ext === '.BEX') return 'DEH'
   return 'WAD'
 }
 
 function isSupportedFileType(fileName: string): boolean {
   const ext = path.extname(fileName).toUpperCase()
-  return ['.WAD', '.PK3', '.PK7', '.IPK3', '.DEH', '.BEX'].includes(ext)
+  return ['.WAD', '.PK3', '.PK7', '.IPK3', '.DEH', '.BEX', '.ZIP'].includes(ext)
 }
 
 export interface IUnzipScanResult {
