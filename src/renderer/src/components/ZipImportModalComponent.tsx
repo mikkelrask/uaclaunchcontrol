@@ -224,7 +224,7 @@ export function ZipImportModal({
         // Import the zip file itself as a single mod
         const fileName = zipFilePath.split(/[\\/]/).pop() || zipFilePath
         const zipNameValue = zipName || fileName.replace(/\.zip$/i, '')
-        const fileType = 'PK3' // .zip → PK3 (same as getFileType does)
+        const fileType = 'ZIP'
 
         const created = await api.addToCatalog({
           name: zipNameValue,
