@@ -310,8 +310,8 @@ export const InstallPage: React.FC = () => {
 
     if (!fileName.toLowerCase().endsWith('.wad')) {
       toast({
-        title: 'Invalid file',
-        description: 'Please select a .wad file',
+        title: 'WARNING: invalid_file',
+        description: 'Not a UAC supported file (.wad)',
         variant: 'destructive'
       })
       return
@@ -332,7 +332,7 @@ export const InstallPage: React.FC = () => {
       })
     } catch (error) {
       toast({
-        title: 'Error',
+        title: 'FATA: err_139',
         description: `Failed to prepare WAD import: ${error}`,
         variant: 'destructive'
       })
@@ -368,7 +368,7 @@ export const InstallPage: React.FC = () => {
     },
     onError: (error) => {
       toast({
-        title: 'Error',
+        title: 'FATAL: err_482',
         description: `Failed to import WAD: ${error}`,
         variant: 'destructive'
       })
@@ -697,8 +697,8 @@ export const InstallPage: React.FC = () => {
 
       if (!droppedFile.name.endsWith('.json')) {
         toast({
-          title: 'Invalid file',
-          description: 'Please drop a JSON or .bat file',
+          title: 'FATAL: corrupt_file',
+          description: 'Please drop a valid JSON or .bat file',
           variant: 'destructive'
         })
         return
@@ -710,8 +710,8 @@ export const InstallPage: React.FC = () => {
 
         if (importData.format !== 'uac-modpack') {
           toast({
-            title: 'Invalid format',
-            description: 'Not a UAC modpack JSON',
+            title: 'FATAL: format_unknown',
+            description: 'Provided file is not a UAC Export JSON',
             variant: 'destructive'
           })
           return
@@ -951,13 +951,13 @@ export const InstallPage: React.FC = () => {
                                             )
                                             field.onChange(fileName)
                                             toast({
-                                              title: 'Screenshot uploaded',
-                                              description: 'Local image selected.'
+                                              title: 'SYSTEM: image_ul',
+                                              description: 'Image added successfully.'
                                             })
                                           } catch (error) {
                                             toast({
-                                              title: 'Error',
-                                              description: `Failed to upload screenshot: ${error}`,
+                                              title: 'FATAL: err_284',
+                                              description: `Failed to upload image: ${error}`,
                                               variant: 'destructive'
                                             })
                                           }

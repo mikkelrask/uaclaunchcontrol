@@ -244,8 +244,8 @@ export function ZipImportModal({
         }
 
         toast({
-          title: 'Import complete',
-          description: `"${zipNameValue}" added as a single mod file.`
+          title: 'SYSTEM: archive_accepted',
+          description: `"${zipNameValue}" added to catalog.`
         })
       } else {
         // Import individual extracted files
@@ -285,7 +285,7 @@ export function ZipImportModal({
         }
 
         toast({
-          title: 'Import complete',
+          title: 'SYSTEM: archive_extracted',
           description: `${filesToImport.length} file(s) added to catalog.`
         })
       }
@@ -294,7 +294,7 @@ export function ZipImportModal({
       onOpenChange(false)
     } catch (e) {
       toast({
-        title: 'Import failed',
+        title: 'FATAL: err_586',
         description: (e as Error).message,
         variant: 'destructive'
       })

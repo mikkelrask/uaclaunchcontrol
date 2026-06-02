@@ -153,7 +153,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     },
     onError: (error) => {
       toast({
-        title: 'FATA: launch_protocol',
+        title: 'FATAL: launch_protocol',
         description: `Failed to launch protocol: "${error}"`,
         variant: 'destructive'
       })
