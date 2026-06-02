@@ -9,6 +9,8 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 
@@ -208,39 +210,36 @@ export function ZipImportModal({
           )}
 
           {importAsZip ? (
-            /* ── Zip-as-mod form ── */
-            <div className="space-y-3 p-2">
-              <div>
-                <label className="text-xs font-semibold uppercase text-app-muted tracking-widest font-mono block mb-1">
-                  Display Name
-                </label>
-                <input
-                  className="border border-app rounded p-2 text-sm bg-app-primary w-full"
-                  placeholder="e.g. My Cool Mod"
+            /* ── Zip-as-mod form (matches add_mod_file modal style) ── */
+            <div className="space-y-4 p-2">
+              <div className="space-y-2">
+                <Label htmlFor="zip-as-name">Name</Label>
+                <Input
+                  id="zip-as-name"
                   value={zipName}
                   onChange={(e) => setZipName(e.target.value)}
+                  placeholder="Pretty name for the mod"
+                  className="bg-app-secondary border-app"
                 />
               </div>
-              <div>
-                <label className="text-xs font-semibold uppercase text-app-muted tracking-widest font-mono block mb-1">
-                  Version
-                </label>
-                <input
-                  className="border border-app rounded p-2 text-sm bg-app-primary w-full"
-                  placeholder="e.g. 1.0"
+              <div className="space-y-2">
+                <Label htmlFor="zip-as-version">Version</Label>
+                <Input
+                  id="zip-as-version"
                   value={zipVersion}
                   onChange={(e) => setZipVersion(e.target.value)}
+                  placeholder="e.g., 1.0, v2.1"
+                  className="bg-app-secondary border-app"
                 />
               </div>
-              <div>
-                <label className="text-xs font-semibold uppercase text-app-muted tracking-widest font-mono block mb-1">
-                  URL
-                </label>
-                <input
-                  className="border border-app rounded p-2 text-sm bg-app-primary w-full"
-                  placeholder="https://www.moddb.com/mods/..."
+              <div className="space-y-2">
+                <Label htmlFor="zip-as-url">URL (ModDB, forum)</Label>
+                <Input
+                  id="zip-as-url"
                   value={zipUrl}
                   onChange={(e) => setZipUrl(e.target.value)}
+                  placeholder="https://www.moddb.com/mods/..."
+                  className="bg-app-secondary border-app"
                 />
               </div>
             </div>
