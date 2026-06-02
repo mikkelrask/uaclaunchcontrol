@@ -75,6 +75,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     customThemeCss: ''
   })
 
+  // Track whether the initial fetch has completed so live-preview doesn't
+  // briefly apply the default theme before the saved one arrives.
+  const fetchedRef = useRef(false)
+
   // Fetch settings from API when dialog opens
   useEffect(() => {
     if (!isOpen) return
@@ -91,6 +95,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         if (data) {
           savedRef.current = { theme: data.theme, customThemeCss: data.customThemeCss }
           setSettings((prev) => ({ ...prev, ...data }))
+          fetchedRef.current = true
         }
       })
       .catch(() => {
@@ -170,7 +175,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
   // Live-preview theme changes immediately on the DOM
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen || !fetchedRef.current) return
 
     document.documentElement.classList.remove('dark', 'light', 'terminal', 'custom')
     document.documentElement.classList.add(settings.theme)
@@ -192,6 +197,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
   // Restore saved theme when closing without saving
   const handleClose = useCallback((): void => {
+    fetchedRef.current = false
     document.documentElement.classList.remove('dark', 'light', 'terminal', 'custom')
     document.documentElement.classList.add(savedRef.current.theme)
 
