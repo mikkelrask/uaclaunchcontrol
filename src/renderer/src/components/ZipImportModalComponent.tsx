@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Archive, Upload } from 'lucide-react'
 import type { ZipScanResult } from '@/types/zipImport'
 import {
@@ -12,7 +12,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { api } from '@/api'
+import { api, type IRegistryMod } from '@/api'
+import { REGISTRY_API_URL } from '@shared/registry-config'
+import type { IModFile } from '@shared/schema'
 
 export interface ZipImportModalProps {
   open: boolean
@@ -45,19 +47,122 @@ export function ZipImportModal({
   const [zipName, setZipName] = useState('')
   const [zipVersion, setZipVersion] = useState('')
   const [zipUrl, setZipUrl] = useState('')
+  const [zipHash, setZipHash] = useState('')
+  const registryCache = useRef<Map<string, IRegistryMod | null>>(new Map())
 
+  // ── Registry lookup helpers ──
+  const doRegistryLookup = async (
+    hash: string
+  ): Promise<{ found: boolean; data: IRegistryMod | null }> => {
+    const cached = registryCache.current.get(hash)
+    if (cached !== undefined) return { found: cached !== null, data: cached }
+
+    try {
+      const settings = await api.getSettings()
+      if (!settings.registryLookupEnabled) {
+        registryCache.current.set(hash, null)
+        return { found: false, data: null }
+      }
+      const data = await api.lookupMod(hash, REGISTRY_API_URL)
+      registryCache.current.set(hash, data)
+      return { found: data !== null, data }
+    } catch {
+      registryCache.current.set(hash, null)
+      return { found: false, data: null }
+    }
+  }
+
+  const pickBestUrl = (urls: { url: string; domain: string }[]): string => {
+    if (urls.length === 0) return ''
+    if (urls.length === 1) return urls[0].url
+    const moddb = urls.find((u) => u.domain.includes('moddb.com'))
+    if (moddb) return moddb.url
+    return urls[0].url
+  }
+
+  const submitToRegistry = (
+    hash: string,
+    name: string,
+    version: string,
+    url: string,
+    sidecarOnly: boolean
+  ): void => {
+    const cached = registryCache.current.get(hash)
+    let shouldSubmit = false
+    if (cached === null) {
+      // Hash not found in registry → new submission
+      shouldSubmit = true
+    } else if (cached) {
+      // Hash found — submit only if user provided new info
+      const urlInRegistry = cached.urls?.some((u) => u.url === url)
+      const hasNewUrl = !!url && !urlInRegistry
+      const hasNewVersion = !!version && !cached.version
+      shouldSubmit = hasNewUrl || hasNewVersion
+    }
+    if (!shouldSubmit) return
+
+    api
+      .getSettings()
+      .then((settings) => {
+        if (settings?.registryUuid) {
+          api.submitToPending(
+            {
+              hash,
+              suggested_name: name,
+              url,
+              version: version || undefined,
+              is_sidecar: sidecarOnly ? 1 : 0
+            },
+            settings.registryUuid,
+            REGISTRY_API_URL
+          )
+        }
+      })
+      .catch(() => {
+        // fire-and-forget
+      })
+  }
+
+  // ── Init fileMeta from scan result ──
   useEffect(() => {
     if (scanResult?.supported) {
-      setFileMeta(
-        scanResult.supported.map((f) => ({
-          tempPath: f.tempPath,
-          name: f.name || f.fileName.replace(/\.[^.]+$/, ''),
-          version: '',
-          url: '',
-          sidecarOnly: false,
-          enabled: true
-        }))
-      )
+      const initial = scanResult.supported.map((f) => ({
+        tempPath: f.tempPath,
+        name: f.name || f.fileName.replace(/\.[^.]+$/, ''),
+        version: '',
+        url: '',
+        sidecarOnly: false,
+        enabled: true
+      }))
+      setFileMeta(initial)
+
+      // Registry lookup for each file that has a hash
+      const doLookups = async (): Promise<void> => {
+        const updates: { index: number; name: string; version: string; url: string }[] = []
+        for (let i = 0; i < scanResult.supported.length; i++) {
+          const f = scanResult.supported[i]
+          if (!f.hashValue) continue
+          const { data } = await doRegistryLookup(f.hashValue)
+          if (data) {
+            updates.push({
+              index: i,
+              name: data.family_name,
+              version: data.version || '',
+              url: pickBestUrl(data.urls)
+            })
+          }
+        }
+        if (updates.length > 0) {
+          setFileMeta((prev) => {
+            const copy = [...prev]
+            for (const u of updates) {
+              copy[u.index] = { ...copy[u.index], name: u.name, version: u.version, url: u.url }
+            }
+            return copy
+          })
+        }
+      }
+      doLookups()
     }
   }, [scanResult])
 
@@ -70,9 +175,33 @@ export function ZipImportModal({
       setZipName(defaultName)
       setZipVersion('')
       setZipUrl('')
+      setZipHash('')
       setImportAsZip(false)
     }
   }, [open, scanResult, zipFilePath])
+
+  // ── Registry lookup for zip-as-is when checkbox is toggled ──
+  useEffect(() => {
+    if (!importAsZip || !zipFilePath) return
+
+    const doLookup = async (): Promise<void> => {
+      try {
+        const hash = await api.computeHash(zipFilePath)
+        setZipHash(hash)
+        if (!hash) return
+        const { data } = await doRegistryLookup(hash)
+        if (data) {
+          if (data.family_name) setZipName(data.family_name)
+          if (data.version) setZipVersion(data.version)
+          const url = pickBestUrl(data.urls)
+          if (url) setZipUrl(url)
+        }
+      } catch {
+        // hash computation or lookup failed silently
+      }
+    }
+    doLookup()
+  }, [importAsZip, zipFilePath])
 
   const handleMetaChange = (
     index: number,
@@ -97,7 +226,7 @@ export function ZipImportModal({
         const zipNameValue = zipName || fileName.replace(/\.zip$/i, '')
         const fileType = 'PK3' // .zip → PK3 (same as getFileType does)
 
-        await api.addToCatalog({
+        const created = await api.addToCatalog({
           name: zipNameValue,
           filePath: zipFilePath,
           fileType,
@@ -108,12 +237,18 @@ export function ZipImportModal({
           sidecarOnly: false
         })
 
+        // Submit to pending registry if appropriate
+        const finalHash = created.hashValue || zipHash
+        if (finalHash && zipUrl) {
+          submitToRegistry(finalHash, zipNameValue, zipVersion, zipUrl, false)
+        }
+
         toast({
           title: 'Import complete',
           description: `"${zipNameValue}" added as a single mod file.`
         })
       } else {
-        // Existing behavior: import individual extracted files
+        // Import individual extracted files
         const filesToImport = fileMeta
           .filter((m) => m.enabled)
           .map(
@@ -136,7 +271,18 @@ export function ZipImportModal({
             })
           )
 
-        await api.unzipImport(scanResult.tempDir, filesToImport)
+        const importedFiles = (await api.unzipImport(
+          scanResult.tempDir,
+          filesToImport
+        )) as IModFile[]
+
+        // Submit each imported file to pending registry if appropriate
+        for (const file of importedFiles) {
+          const meta = filesToImport.find((m) => m.name === file.name)
+          if (file.hashValue && meta?.url) {
+            submitToRegistry(file.hashValue, meta.name, meta.version, meta.url, meta.sidecarOnly)
+          }
+        }
 
         toast({
           title: 'Import complete',
