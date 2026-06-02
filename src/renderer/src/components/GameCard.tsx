@@ -5,13 +5,32 @@ import { Button } from '@/components/ui/button'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
-import { Play, Settings } from 'lucide-react'
+import { formatPlaytime } from '@/lib/utils'
+import { Play, Settings, Clock, Hourglass } from 'lucide-react'
 import placeholder from '@renderer/assets/placeholder.png'
 
 interface GameCardProps {
   protocol: IProtocol
   doomVersion: IDoomVersion
   onSettingsClick: (id: string) => void
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
 }
 
 export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSettingsClick }) => {
@@ -90,11 +109,25 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
 
         {/* Description panel that appears on hover */}
         <div
-          className="absolute inset-0 px-4 py-4 flex items-end justify-center
+          className="absolute inset-0 px-4 py-4 flex flex-col items-center justify-end
                       bg-black/60 opacity-0 group-hover:opacity-100
                       transition-opacity duration-300 pt-24 pb-16"
         >
           <p className="text-white text-sm">{truncatedDescription}</p>
+          <div className="flex items-center gap-3 mt-2">
+            {protocol.lastLaunchedAt && (
+              <span className="text-xs text-white/60 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatDate(protocol.lastLaunchedAt)}
+              </span>
+            )}
+            {formatPlaytime(protocol.playtimeSeconds) && (
+              <span className="text-xs text-white/60 flex items-center gap-1">
+                <Hourglass className="w-3 h-3" />
+                {formatPlaytime(protocol.playtimeSeconds)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

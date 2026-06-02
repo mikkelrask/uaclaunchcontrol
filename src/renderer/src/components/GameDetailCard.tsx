@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
+import { formatPlaytime } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
 import {
   ExternalLink,
@@ -15,7 +16,8 @@ import {
   User,
   Tag,
   Calendar,
-  Terminal
+  Terminal,
+  Hourglass
 } from 'lucide-react'
 
 interface GameDetailCardProps {
@@ -129,11 +131,21 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
                 {protocol.title}
               </h2>
               {protocol.lastLaunchedAt && (
-                <div className="flex items-center gap-1 mt-1">
-                  <Clock className="w-3.5 h-3.5 text-app-muted" />
-                  <span className="text-xs text-app-muted">
-                    Last played {formatDate(protocol.lastLaunchedAt)}
-                  </span>
+                <div className="flex items-center gap-3 mt-1">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-app-muted" />
+                    <span className="text-xs text-app-muted">
+                      Last played {formatDate(protocol.lastLaunchedAt)}
+                    </span>
+                  </div>
+                  {formatPlaytime(protocol.playtimeSeconds) && (
+                    <div className="flex items-center gap-1">
+                      <Hourglass className="w-3.5 h-3.5 text-app-muted" />
+                      <span className="text-xs text-app-muted">
+                        {formatPlaytime(protocol.playtimeSeconds)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -278,6 +290,13 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
                   label="Last Played"
                   value={formatDate(protocol.lastLaunchedAt)}
                   icon={<Clock className="w-3.5 h-3.5 text-accent-highlight" />}
+                />
+              )}
+              {formatPlaytime(protocol.playtimeSeconds) && (
+                <InfoRow
+                  label="Total Playtime"
+                  value={formatPlaytime(protocol.playtimeSeconds)!}
+                  icon={<Hourglass className="w-3.5 h-3.5 text-accent-highlight" />}
                 />
               )}
               {protocol.launchParameters && (

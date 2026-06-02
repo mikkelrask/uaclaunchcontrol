@@ -2,6 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { spawn } from 'child_process'
 import { Stats } from 'fs'
+import { BrowserWindow } from 'electron'
 
 // Service to handle file system operations
 export class FileService {
@@ -64,39 +65,71 @@ export class FileService {
     }
   }
 
-  // Launch a game with parameters — returns once process is confirmed running
-  async launchGame(executable: string, args: string[]): Promise<boolean> {
+  // Launch a game with parameters — returns once process is confirmed running.
+  // If protocolId is provided, the process is monitored after the initial check
+  // window and a 'game-crashed' IPC event is sent to all BrowserWindows if the
+  // game later exits with a non-zero code.
+  async launchGame(executable: string, args: string[], protocolId?: string): Promise<boolean> {
     try {
       const executablePath = this.resolveExecutablePath(executable)
 
+      const startTime = Date.now()
+
       return await new Promise<boolean>((resolve) => {
+        let settled = false
+
         const proc = spawn(executablePath, args, {
           detached: true,
           stdio: 'ignore'
         })
 
-        // Check window: if the process errors or exits abnormally within
-        // this time, we treat it as a launch failure
+        const finish = (result: boolean): void => {
+          if (settled) return
+          settled = true
+          clearTimeout(timeout)
+          resolve(result)
+        }
+
+        const sendGameExited = (exitCode: number | null): void => {
+          const sessionSeconds = Math.round((Date.now() - startTime) / 1000)
+          const wins = BrowserWindow.getAllWindows()
+          for (const win of wins) {
+            win.webContents.send('game-exited', {
+              protocolId,
+              exitCode,
+              sessionSeconds,
+              clean: exitCode === 0
+            })
+          }
+        }
+
+        // Check window: if the process exits abnormally within this
+        // time, we treat it as a launch failure
         const checkWindow = 500
         const timeout = setTimeout(() => {
-          // Still running after check window — good enough
+          // Still running after check window — treat as launched successfully
           proc.unref()
-          resolve(true)
+          finish(true)
         }, checkWindow)
 
         proc.on('error', (err) => {
-          clearTimeout(timeout)
           console.error('Failed to launch game process:', err)
-          resolve(false)
+          finish(false)
         })
 
         proc.on('exit', (code) => {
-          if (code !== 0) {
-            clearTimeout(timeout)
+          if (code === 0 && !settled) {
+            // Clean exit within window — process ran and finished OK
+            finish(true)
+          } else if (!settled) {
+            // Non-zero or null exit within window — launch failure
             console.error(`Game process exited with code ${code} immediately after launch`)
-            resolve(false)
+            finish(false)
           }
-          // code === 0 within the window means it ran and exited cleanly — still a success
+
+          // Fire-and-forget: notify frontend about every exit
+          // (regardless of timing or exit code) so it can record playtime
+          sendGameExited(code)
         })
       })
     } catch (error) {

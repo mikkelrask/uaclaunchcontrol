@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
+import { formatPlaytime } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
-import { Play, Settings, Clock, ExternalLink, FileCode } from 'lucide-react'
+import { Play, Settings, Clock, Hourglass, ExternalLink, FileCode } from 'lucide-react'
 
 interface GameListCardProps {
   protocol: IProtocol
@@ -121,6 +122,12 @@ export const GameListCard: React.FC<GameListCardProps> = ({
                 <span className="text-xs text-app-muted flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   {formatDate(protocol.lastLaunchedAt)}
+                </span>
+              )}
+              {formatPlaytime(protocol.playtimeSeconds) && (
+                <span className="text-xs text-app-muted flex items-center gap-1">
+                  <Hourglass className="w-3 h-3" />
+                  {formatPlaytime(protocol.playtimeSeconds)}
                 </span>
               )}
               {fileCount > 0 && (

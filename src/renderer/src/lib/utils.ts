@@ -94,3 +94,10 @@ export function buildLaunchCommand(options: {
 
   return parts.join(' ')
 }
+
+/** Format accumulated playtime as "Total: X.X hrs" (Steam-style guilt trip). */
+export function formatPlaytime(seconds?: number): string | null {
+  if (!seconds || seconds <= 0) return null
+  const hours = seconds / 3600
+  return `Total: ${hours.toFixed(1)} hrs`
+}

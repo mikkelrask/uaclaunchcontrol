@@ -305,6 +305,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  // Record playtime for a protocol session
+  app.post('/api/protocols/:id/playtime', async (req, res) => {
+    const id = req.params.id
+    const { sessionSeconds } = req.body
+    if (typeof sessionSeconds !== 'number' || sessionSeconds <= 0) {
+      return res.status(400).json({ message: 'Invalid sessionSeconds' })
+    }
+    try {
+      await storage.addPlaytime(id, sessionSeconds)
+      return res.json({ success: true })
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to record playtime'
+      })
+    }
+  })
+
   // === Mod Files API === // New Section
   app.get('/api/mod-files/catalog', async (_req, res) => {
     try {

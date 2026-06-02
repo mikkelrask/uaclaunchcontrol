@@ -278,6 +278,24 @@ export const api = {
     return await window.api.getAppVersion()
   },
 
+  onGameExited: (
+    callback: (data: {
+      protocolId?: string
+      exitCode: number | null
+      sessionSeconds: number
+      clean: boolean
+    }) => void
+  ): void => {
+    window.api.onGameExited(callback)
+  },
+
+  addPlaytime: async (protocolId: string, sessionSeconds: number): Promise<void> => {
+    await fetch(`${API_BASE}/api/protocols/${protocolId}/playtime`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionSeconds })
+    })
+  },
   onUpdateStatus: (callback: (data: IUpdateInfo) => void): void => {
     window.api.onUpdateStatus(callback)
   },

@@ -107,6 +107,32 @@ const App: React.FC = () => {
     }
   }, [toast])
 
+  // Listen for game exits (clean or crash) to record playtime and show crash toasts
+  useEffect(() => {
+    if (window.api?.onGameExited) {
+      window.api.onGameExited((data) => {
+        if (!data.protocolId) return
+
+        // Record playtime (fire-and-forget)
+        if (data.sessionSeconds > 0) {
+          api.addPlaytime(data.protocolId, data.sessionSeconds)
+          // Refresh protocol data so playtime/lastLaunchedAt update in UI
+          queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
+        }
+
+        // Show crash toast for non-clean exits
+        if (!data.clean) {
+          const codeStr = data.exitCode === null ? 'a signal' : `exit code ${data.exitCode}`
+          toast({
+            title: 'Game Crashed',
+            description: `The game process terminated with ${codeStr} after ${data.sessionSeconds}s of playtime. Check your mods and configuration for compatibility issues.`,
+            variant: 'destructive'
+          })
+        }
+      })
+    }
+  }, [toast])
+
   // Migration check on startup
   useEffect(() => {
     const checkAndPromptMigration = async (): Promise<void> => {

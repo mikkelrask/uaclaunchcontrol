@@ -184,7 +184,7 @@ export class GameService {
       console.log('Launching command:', quotedExecutable, quotedArgs.join(' '))
 
       // Launch the game using fileService
-      const success = await fileService.launchGame(executable, args)
+      const success = await fileService.launchGame(executable, args, protocol.id)
 
       // Record last launched timestamp
       if (success) {

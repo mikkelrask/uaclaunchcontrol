@@ -3,6 +3,14 @@ import { electronAPI } from '@electron-toolkit/preload'
 const api = {
   onVersionsUpdated: (callback: (data?: unknown) => void) =>
     ipcRenderer.on('doom-versions-updated', (_event, data) => callback(data)),
+  onGameExited: (
+    callback: (data: {
+      protocolId?: string
+      exitCode: number | null
+      sessionSeconds: number
+      clean: boolean
+    }) => void
+  ) => ipcRenderer.on('game-exited', (_event, data) => callback(data)),
   onUpdateStatus: (callback: (data: unknown) => void) =>
     ipcRenderer.on('update-status', (_event, data) => callback(data)),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),

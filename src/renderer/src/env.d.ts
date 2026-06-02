@@ -4,6 +4,14 @@ import { IUpdateInfo, IVersionData } from '@shared/schema'
 
 interface ICustomAPI {
   onVersionsUpdated: (callback: (data?: IVersionData) => void) => void
+  onGameExited: (
+    callback: (data: {
+      protocolId?: string
+      exitCode: number | null
+      sessionSeconds: number
+      clean: boolean
+    }) => void
+  ) => void
   onUpdateStatus: (callback: (data: IUpdateInfo) => void) => void
   getAppVersion: () => Promise<string>
   checkForUpdates: () => Promise<void>

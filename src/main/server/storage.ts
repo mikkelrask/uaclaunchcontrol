@@ -1238,6 +1238,29 @@ export async function updateDoomVersion(
   return updated
 }
 
+// Add playtime to a protocol's accumulated playtime
+export async function addPlaytime(id: string, sessionSeconds: number): Promise<void> {
+  try {
+    const settings = await getSettings()
+    const targetDir = settings.modsDirectory ? resolvePath(settings.modsDirectory) : MODS_DIR
+    const filePath = path.join(targetDir, `${id}.json`)
+
+    if (!fs.existsSync(filePath)) {
+      console.warn(`addPlaytime: Protocol ${id} not found`)
+      return
+    }
+
+    const data = await fs.readJSON(filePath)
+    const current = data.playtimeSeconds || 0
+    data.playtimeSeconds = current + sessionSeconds
+    await fs.writeJSON(filePath, data, { spaces: 2 })
+
+    debug(`Added ${sessionSeconds}s playtime to protocol ${id} (total: ${data.playtimeSeconds}s)`)
+  } catch (error: unknown) {
+    console.error(`Error adding playtime to protocol ${id}:`, error)
+  }
+}
+
 export async function deleteProtocol(id: string | number): Promise<boolean | undefined> {
   try {
     const settings = await getSettings()
