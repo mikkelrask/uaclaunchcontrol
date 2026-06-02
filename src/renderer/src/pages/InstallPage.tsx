@@ -641,7 +641,8 @@ export const InstallPage: React.FC = () => {
             const fileName = filePath.split(/[\\/]/).pop() || filePath
             const ext = fileName.split('.').pop()?.toUpperCase() || ''
             let fileType = 'WAD'
-            if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+            if (ext === 'ZIP') fileType = 'ZIP'
+            else if (ext === 'PK3' || ext === 'IPK3') fileType = 'PK3'
             else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
 
             let hashValue = ''

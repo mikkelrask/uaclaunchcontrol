@@ -5,6 +5,7 @@ import axios from 'axios'
 import chokidar from 'chokidar'
 import crypto from 'crypto'
 import { BrowserWindow } from 'electron'
+import AdmZip from 'adm-zip'
 import {
   IAppSettings,
   IDatabaseLink,
@@ -191,9 +192,7 @@ export function initStorage(): boolean {
     })
 
     // Run source port migration (settings + old mods)
-    migrateSourcePorts().catch((err) =>
-      console.error('Source port migration failed:', err)
-    )
+    migrateSourcePorts().catch((err) => console.error('Source port migration failed:', err))
 
     console.log('Storage initialized successfully')
     return true
@@ -222,7 +221,10 @@ async function migrateSourcePorts(): Promise<void> {
     }
 
     // sourcePortPath → sourcePorts[]
-    if (settingsData.sourcePortPath !== undefined && (!settingsData.sourcePorts || settingsData.sourcePorts.length === 0)) {
+    if (
+      settingsData.sourcePortPath !== undefined &&
+      (!settingsData.sourcePorts || settingsData.sourcePorts.length === 0)
+    ) {
       const oldPath = settingsData.sourcePortPath
       const newPort: ISourcePort = {
         id: crypto.randomUUID(),
@@ -258,7 +260,11 @@ async function migrateSourcePorts(): Promise<void> {
       const entryPath = path.join(MODS_DIR, filename)
       try {
         const entryData = await fs.readJSON(entryPath)
-        if (entryData.sourcePort !== undefined && entryData.sourcePort !== null && !entryData.sourcePortId) {
+        if (
+          entryData.sourcePort !== undefined &&
+          entryData.sourcePort !== null &&
+          !entryData.sourcePortId
+        ) {
           const oldVal = String(entryData.sourcePort)
           let match: ISourcePort | undefined
           if (oldVal.includes('/') || oldVal.includes('\\')) {
@@ -266,16 +272,20 @@ async function migrateSourcePorts(): Promise<void> {
               (p) => p.executablePath === oldVal || p.executablePath.endsWith(oldVal)
             )
           } else {
-            match = settings.sourcePorts.find(
-              (p) => p.name.toLowerCase().includes(oldVal.toLowerCase()) ||
-                oldVal.toLowerCase().includes(p.name.toLowerCase())
-            ) || settings.sourcePorts.find((p) => p.family === detectFamilyFromPath(oldVal))
+            match =
+              settings.sourcePorts.find(
+                (p) =>
+                  p.name.toLowerCase().includes(oldVal.toLowerCase()) ||
+                  oldVal.toLowerCase().includes(p.name.toLowerCase())
+              ) || settings.sourcePorts.find((p) => p.family === detectFamilyFromPath(oldVal))
           }
           entryData.sourcePortId = match?.id || defaultPortId
           delete entryData.sourcePort
           await fs.writeJSON(entryPath, entryData, { spaces: 2 })
           protosMigrated++
-          debug(`[migrateSourcePorts] Migrated protocol ${filename}: sourcePort → sourcePortId=${entryData.sourcePortId}`)
+          debug(
+            `[migrateSourcePorts] Migrated protocol ${filename}: sourcePort → sourcePortId=${entryData.sourcePortId}`
+          )
         }
       } catch (err) {
         console.warn(`[migrateSourcePorts] Failed to migrate mod ${filename}:`, err)
@@ -324,7 +334,10 @@ export async function getSettings(): Promise<IAppSettings> {
     }
 
     // Migration: sourcePortPath → sourcePorts[]
-    if (settingsData.sourcePortPath !== undefined && (!settingsData.sourcePorts || settingsData.sourcePorts.length === 0)) {
+    if (
+      settingsData.sourcePortPath !== undefined &&
+      (!settingsData.sourcePorts || settingsData.sourcePorts.length === 0)
+    ) {
       const oldPath = settingsData.sourcePortPath
       const newPort: ISourcePort = {
         id: crypto.randomUUID(),
@@ -535,7 +548,6 @@ export async function syncDoomVersions(
 
     // Load existing versions to detect changes
     const oldVersions: IDoomVersion[] = await fs.readJSON(DOOM_VERSIONS_FILE).catch(() => [])
-
 
     await fs.ensureDir(wadDir)
     const files = await fs.readdir(wadDir)
@@ -1088,7 +1100,9 @@ export async function updateModFileInCatalog(
 }
 
 // === Mods ===
-export async function saveProtocol(protocolData: IProtocol & { files: IModFile[] }): Promise<IProtocol> {
+export async function saveProtocol(
+  protocolData: IProtocol & { files: IModFile[] }
+): Promise<IProtocol> {
   // Ensure doomVersionId is always a string
   if (protocolData.doomVersionId !== undefined) {
     protocolData.doomVersionId = String(protocolData.doomVersionId)
@@ -1116,9 +1130,7 @@ export async function saveProtocol(protocolData: IProtocol & { files: IModFile[]
 }
 
 /** Enrich each file in a protocol with catalogue metadata (url, name, version). */
-async function enrichFilesWithCatalog(
-  files: IModFile[]
-): Promise<IModFile[]> {
+async function enrichFilesWithCatalog(files: IModFile[]): Promise<IModFile[]> {
   if (files.length === 0) return files
   try {
     const catalog = await getModFileCatalog()
@@ -1195,11 +1207,11 @@ export async function getProtocol(protocolId: string): Promise<IProtocol & { fil
     return data as IProtocol & { files: IModFile[] }
   } catch (error: unknown) {
     console.error(`Error getting protocol ${protocolId}:`, error)
-    throw new Error(`Failed to get protocol: ${error instanceof Error ? error.message : String(error)}`)
+    throw new Error(
+      `Failed to get protocol: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
-
-
 
 export async function getDoomVersion(id: string): Promise<IDoomVersion | undefined> {
   try {
@@ -1210,7 +1222,6 @@ export async function getDoomVersion(id: string): Promise<IDoomVersion | undefin
     return undefined
   }
 }
-
 
 export async function updateDoomVersion(
   id: string,
@@ -1226,7 +1237,6 @@ export async function updateDoomVersion(
   await saveDoomVersions(versions)
   return updated
 }
-
 
 export async function deleteProtocol(id: string | number): Promise<boolean | undefined> {
   try {
@@ -1349,5 +1359,333 @@ async function patchLegacyPaths(directory: string): Promise<void> {
     }
   } catch (error) {
     console.error(`[MIGRATION] Error patching paths in ${directory}:`, error)
+  }
+}
+
+interface BatParseResult {
+  sourcePortFamily?: string
+  iwad?: string
+  modFiles: string[]
+  extraParams: string[]
+}
+
+function parseBatContent(content: string): BatParseResult {
+  const lines = content.replace(/\r\n/g, '\n').split('\n')
+  let commandLine = ''
+  let sourcePortFamily: string | undefined
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (
+      !trimmed ||
+      trimmed.toLowerCase().startsWith('::') ||
+      trimmed.toLowerCase().startsWith('@echo') ||
+      trimmed.toLowerCase().startsWith('rem ')
+    )
+      continue
+
+    const portMatch = trimmed.match(/(gzdoom|uzdoom|zandronum|lzdoom|zdoom)\.exe/i)
+    if (portMatch) {
+      commandLine = trimmed
+      sourcePortFamily = portMatch[1].toLowerCase()
+      break
+    }
+  }
+
+  if (!commandLine) {
+    commandLine = lines.find((l) => /-(iwad|file)/i.test(l)) || ''
+  }
+
+  const tokens: string[] = []
+  const regex = /[^\s"']+|"([^"]*)"|'([^']*)'/g
+  let match
+  while ((match = regex.exec(commandLine)) !== null) {
+    tokens.push(match[1] || match[2] || match[0])
+  }
+
+  const iwadIndex = tokens.findIndex((t) => t.toLowerCase() === '-iwad')
+  const iwad = iwadIndex >= 0 && tokens[iwadIndex + 1] ? tokens[iwadIndex + 1] : undefined
+
+  const modFiles: string[] = []
+  const extraParams: string[] = []
+  const fileIndex = tokens.findIndex((t) => t.toLowerCase() === '-file')
+  if (fileIndex >= 0) {
+    for (let i = fileIndex + 1; i < tokens.length; i++) {
+      const token = tokens[i]
+      if (token.startsWith('-')) {
+        extraParams.push(...tokens.slice(i))
+        break
+      }
+      modFiles.push(token)
+    }
+  }
+
+  return { sourcePortFamily, iwad, modFiles, extraParams }
+}
+
+async function scanDirRecursive(dir: string, baseDir: string = dir): Promise<string[]> {
+  const files = await fs.readdir(dir)
+  const results: string[] = []
+  for (const file of files) {
+    const fullPath = path.join(dir, file)
+    const stat = await fs.stat(fullPath)
+    if (stat.isDirectory()) {
+      results.push(...(await scanDirRecursive(fullPath, baseDir)))
+    } else {
+      results.push(fullPath)
+    }
+  }
+  return results
+}
+
+function getFileType(fileName: string): string {
+  const ext = path.extname(fileName).toUpperCase()
+  if (ext === '.ZIP') return 'ZIP'
+  if (ext === '.PK3' || ext === '.PK7' || ext === '.IPK3') return 'PK3'
+  if (ext === '.DEH' || ext === '.BEX') return 'DEH'
+  return 'WAD'
+}
+
+function isSupportedFileType(fileName: string): boolean {
+  const ext = path.extname(fileName).toUpperCase()
+  return ['.WAD', '.PK3', '.PK7', '.IPK3', '.DEH', '.BEX', '.ZIP'].includes(ext)
+}
+
+export interface IUnzipScanResult {
+  tempDir: string
+  supported: {
+    tempPath: string
+    fileName: string
+    relativePath: string
+    fileType: string
+    hashValue: string
+    name: string
+    isReferencedByBat: boolean
+  }[]
+  skipped: {
+    fileName: string
+    relativePath: string
+    reason: string
+  }[]
+  batFiles?: {
+    fileName: string
+    relativePath: string
+    sourcePortFamily?: string
+    iwad?: string
+    modFiles: string[]
+    extraParams: string[]
+  }
+}
+
+export async function unzipAndScan(zipFilePath: string): Promise<IUnzipScanResult> {
+  const resolvedZipPath = resolvePath(zipFilePath)
+  if (!fs.existsSync(resolvedZipPath)) {
+    throw new Error(`Zip file not found: ${resolvedZipPath}`)
+  }
+
+  const uniqueId = `extract-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  const tempExtractDir = path.join(os.tmpdir(), 'uac', 'temp_extract', uniqueId)
+  await fs.ensureDir(tempExtractDir)
+
+  try {
+    const zip = new AdmZip(resolvedZipPath)
+    zip.extractAllTo(tempExtractDir, true)
+
+    const allFilePaths = await scanDirRecursive(tempExtractDir)
+
+    // Look for any .bat or .cmd files
+    const batFilePaths = allFilePaths.filter((fp) => {
+      const ext = path.extname(fp).toLowerCase()
+      return ext === '.bat' || ext === '.cmd'
+    })
+
+    let batFileResult: IUnzipScanResult['batFiles'] | undefined
+    let batReferencedFiles: string[] = []
+
+    if (batFilePaths.length > 0) {
+      const batPath = batFilePaths[0]
+      const batContent = await fs.readFile(batPath, 'utf-8')
+      const parsed = parseBatContent(batContent)
+
+      batFileResult = {
+        fileName: path.basename(batPath),
+        relativePath: path.relative(tempExtractDir, batPath),
+        sourcePortFamily: parsed.sourcePortFamily,
+        iwad: parsed.iwad,
+        modFiles: parsed.modFiles,
+        extraParams: parsed.extraParams
+      }
+
+      const batDir = path.dirname(batPath)
+      batReferencedFiles = parsed.modFiles.map((file) => {
+        const normalizedFile = file.replace(/\\/g, '/')
+        return path.resolve(batDir, normalizedFile)
+      })
+    }
+
+    const supportedFiles: IUnzipScanResult['supported'] = []
+    const skippedFiles: IUnzipScanResult['skipped'] = []
+
+    for (const filePath of allFilePaths) {
+      const fileName = path.basename(filePath)
+      const relativePath = path.relative(tempExtractDir, filePath)
+
+      const ext = path.extname(filePath).toLowerCase()
+      if (ext === '.bat' || ext === '.cmd') {
+        continue
+      }
+
+      if (isSupportedFileType(fileName)) {
+        const hashValue = await computeFileHash(filePath)
+        const fileType = getFileType(fileName)
+        const prettyName = fileName.replace(/\.[^.]+$/, '')
+
+        const isReferencedByBat = batReferencedFiles.some((refPath) => {
+          return path.resolve(filePath) === path.resolve(refPath)
+        })
+
+        supportedFiles.push({
+          tempPath: filePath,
+          fileName,
+          relativePath,
+          fileType,
+          hashValue,
+          name: prettyName,
+          isReferencedByBat
+        })
+      } else {
+        skippedFiles.push({
+          fileName,
+          relativePath,
+          reason: `Unsupported file extension (${ext || 'no extension'})`
+        })
+      }
+    }
+
+    return {
+      tempDir: tempExtractDir,
+      supported: supportedFiles,
+      skipped: skippedFiles,
+      batFiles: batFileResult
+    }
+  } catch (error) {
+    try {
+      await fs.remove(tempExtractDir)
+    } catch {
+      // ignore cleanup errors
+    }
+    throw error
+  }
+}
+
+export interface IZipImportFile {
+  tempPath: string
+  name: string
+  version?: string
+  url?: string
+  sidecarOnly: boolean
+  loadOrder: Record<string, number>
+}
+
+export async function importUnzippedFiles(
+  tempDir: string,
+  filesToImport: IZipImportFile[]
+): Promise<IModFile[]> {
+  try {
+    const importedModFiles: IModFile[] = []
+    const settings = await getSettings()
+    const modsDir = resolvePath(settings.modsDirectory || path.join(CONFIG_DIR, 'mods'))
+    const catalog = await getModFileCatalog()
+
+    const movedFilesMap = new Map<
+      string,
+      { relativePath: string; fileName: string; hashValue: string }
+    >()
+
+    for (const file of filesToImport) {
+      const resolvedTempPath = resolvePath(file.tempPath)
+      if (!fs.existsSync(resolvedTempPath)) {
+        throw new Error(`Temporary file not found for import: ${resolvedTempPath}`)
+      }
+
+      const originalFileName = path.basename(resolvedTempPath)
+      const hashValue = await computeFileHash(resolvedTempPath)
+      if (!hashValue) {
+        throw new Error(`Failed to compute hash for file: ${originalFileName}`)
+      }
+
+      const ext = path.extname(originalFileName)
+      const baseName = path.basename(originalFileName, ext)
+      const newFileName = `${baseName}-${hashValue}${ext}`
+      const relativePath = path.join('files', newFileName)
+      const fullPath = path.join(modsDir, relativePath)
+
+      await fs.ensureDir(path.join(modsDir, 'files'))
+      await fs.copy(resolvedTempPath, fullPath, { overwrite: true })
+
+      movedFilesMap.set(file.tempPath, {
+        relativePath,
+        fileName: newFileName,
+        hashValue
+      })
+    }
+
+    for (const file of filesToImport) {
+      const moved = movedFilesMap.get(file.tempPath)!
+      const existingIndex = catalog.findIndex((entry) => entry.hashValue === moved.hashValue)
+
+      const resolvedLoadOrder: Record<string, number> = {}
+      if (file.loadOrder) {
+        for (const [key, offset] of Object.entries(file.loadOrder)) {
+          if (movedFilesMap.has(key)) {
+            const refHash = movedFilesMap.get(key)!.hashValue
+            resolvedLoadOrder[refHash] = offset
+          } else {
+            resolvedLoadOrder[key] = offset
+          }
+        }
+      }
+
+      if (moved.hashValue && !resolvedLoadOrder[moved.hashValue]) {
+        resolvedLoadOrder[moved.hashValue] = 1
+      }
+
+      const fileType = getFileType(moved.fileName)
+
+      const catalogEntry: IModFile = {
+        id: existingIndex >= 0 ? catalog[existingIndex].id : Date.now(),
+        name: file.name || moved.fileName.replace(/\.[^.]+$/, ''),
+        fileName: moved.fileName,
+        filePath: moved.relativePath,
+        fileType,
+        hashValue: moved.hashValue,
+        version: file.version || '',
+        url: file.url || '',
+        sidecarOnly: file.sidecarOnly || false,
+        loadOrder: resolvedLoadOrder,
+        requiredBy: existingIndex >= 0 ? catalog[existingIndex].requiredBy || [] : []
+      }
+
+      if (existingIndex >= 0) {
+        catalog[existingIndex] = catalogEntry
+      } else {
+        catalog.push(catalogEntry)
+      }
+
+      importedModFiles.push(catalogEntry)
+    }
+
+    await fs.writeJSON(MOD_FILE_CATALOG, catalog, { spaces: 2 })
+
+    await fs.remove(tempDir)
+
+    return importedModFiles
+  } catch (error) {
+    try {
+      await fs.remove(tempDir)
+    } catch {
+      // ignore cleanup errors
+    }
+    throw error
   }
 }

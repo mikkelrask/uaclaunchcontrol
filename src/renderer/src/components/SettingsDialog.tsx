@@ -3,7 +3,17 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Settings, Eye, EyeOff, Pencil, Trash2, FolderOpen, LayoutGrid, List, BookOpen } from 'lucide-react'
+import {
+  Settings,
+  Eye,
+  EyeOff,
+  Pencil,
+  Trash2,
+  FolderOpen,
+  LayoutGrid,
+  List,
+  BookOpen
+} from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'

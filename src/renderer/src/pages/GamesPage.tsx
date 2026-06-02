@@ -85,9 +85,7 @@ export const GamesPage: React.FC = () => {
 
   // Filter protocols based on search query
   let filteredProtocols = protocols.filter((p) =>
-    searchQuery
-      ? (p.title || p.name || '').toLowerCase().includes(searchQuery.toLowerCase())
-      : true
+    searchQuery ? (p.title || p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) : true
   )
 
   // Sort: most recently launched first, never-launched at the bottom

@@ -257,7 +257,9 @@ async function checkGitHubRelease(): Promise<void> {
         releaseNotes: release.body || ''
       })
     } else {
-      console.log(`[Updater] No update available (GitHub: ${latestVersion}, local: ${currentVersion})`)
+      console.log(
+        `[Updater] No update available (GitHub: ${latestVersion}, local: ${currentVersion})`
+      )
       mainWindow?.webContents.send('update-status', {
         status: 'not-available',
         version: currentVersion,

@@ -313,5 +313,29 @@ export const api = {
     }
     const data = await response.json()
     return data.content
+  },
+
+  unzipScan: async (zipFilePath: string): Promise<unknown> => {
+    const response = await fetch(`${API_BASE}/api/mod-files/unzip-scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ zipFilePath })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to unzip and scan archive')
+    }
+    return response.json()
+  },
+
+  unzipImport: async (tempDir: string, filesToImport: unknown[]): Promise<unknown[]> => {
+    const response = await fetch(`${API_BASE}/api/mod-files/unzip-import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tempDir, filesToImport })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to import files from archive')
+    }
+    return response.json()
   }
 }
