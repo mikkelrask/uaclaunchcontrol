@@ -12,11 +12,12 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 
-interface ZipImportModalProps {
+export interface ZipImportModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   scanResult: ZipScanResult | null
   onImportComplete: () => void
+  zipFilePath?: string
 }
 
 interface FileMeta {
@@ -32,11 +33,16 @@ export function ZipImportModal({
   open,
   onOpenChange,
   scanResult,
-  onImportComplete
-}: ZipImportModalProps) {
+  onImportComplete,
+  zipFilePath
+}: ZipImportModalProps): React.ReactElement | null {
   const { toast } = useToast()
   const [fileMeta, setFileMeta] = useState<FileMeta[]>([])
   const [importing, setImporting] = useState(false)
+  const [importAsZip, setImportAsZip] = useState(false)
+  const [zipName, setZipName] = useState('')
+  const [zipVersion, setZipVersion] = useState('')
+  const [zipUrl, setZipUrl] = useState('')
 
   useEffect(() => {
     if (scanResult?.supported) {
@@ -53,11 +59,24 @@ export function ZipImportModal({
     }
   }, [scanResult])
 
+  // Reset zip-as-mod form when modal opens with a new scan
+  useEffect(() => {
+    if (open && scanResult?.supported?.[0]) {
+      const pathParts = (zipFilePath || '').split(/[\\/]/)
+      const lastPart = pathParts.pop() || ''
+      const defaultName = lastPart.replace(/\.zip$/i, '')
+      setZipName(defaultName)
+      setZipVersion('')
+      setZipUrl('')
+      setImportAsZip(false)
+    }
+  }, [open, scanResult, zipFilePath])
+
   const handleMetaChange = (
     index: number,
     field: keyof Omit<FileMeta, 'tempPath' | 'enabled'>,
     value: string | boolean
-  ) => {
+  ): void => {
     setFileMeta((prev) => {
       const copy = [...prev]
       copy[index] = { ...copy[index], [field]: value }
@@ -65,28 +84,63 @@ export function ZipImportModal({
     })
   }
 
-  const handleImport = async () => {
+  const handleImport = async (): Promise<void> => {
     if (!scanResult) return
     setImporting(true)
 
     try {
-      const filesToImport = fileMeta
-        .filter((m) => m.enabled)
-        .map((m) => ({
-          tempPath: m.tempPath,
-          name: m.name,
-          version: m.version,
-          url: m.url,
-          sidecarOnly: m.sidecarOnly,
-          loadOrder: {} as Record<string, number>
-        }))
+      if (importAsZip && zipFilePath) {
+        // Import the zip file itself as a single mod
+        const fileName = zipFilePath.split(/[\\/]/).pop() || zipFilePath
+        const zipNameValue = zipName || fileName.replace(/\.zip$/i, '')
+        const fileType = 'PK3' // .zip → PK3 (same as getFileType does)
 
-      await api.unzipImport(scanResult.tempDir, filesToImport)
+        await api.addToCatalog({
+          name: zipNameValue,
+          filePath: zipFilePath,
+          fileType,
+          fileName,
+          version: zipVersion || '',
+          url: zipUrl || '',
+          hashValue: '', // will be computed server-side
+          sidecarOnly: false
+        })
 
-      toast({
-        title: 'Import complete',
-        description: `${filesToImport.length} file(s) added to catalog.`
-      })
+        toast({
+          title: 'Import complete',
+          description: `"${zipNameValue}" added as a single mod file.`
+        })
+      } else {
+        // Existing behavior: import individual extracted files
+        const filesToImport = fileMeta
+          .filter((m) => m.enabled)
+          .map(
+            (
+              m
+            ): {
+              tempPath: string
+              name: string
+              version: string
+              url: string
+              sidecarOnly: boolean
+              loadOrder: Record<string, number>
+            } => ({
+              tempPath: m.tempPath,
+              name: m.name,
+              version: m.version,
+              url: m.url,
+              sidecarOnly: m.sidecarOnly,
+              loadOrder: {} as Record<string, number>
+            })
+          )
+
+        await api.unzipImport(scanResult.tempDir, filesToImport)
+
+        toast({
+          title: 'Import complete',
+          description: `${filesToImport.length} file(s) added to catalog.`
+        })
+      }
 
       onImportComplete()
       onOpenChange(false)
@@ -104,6 +158,7 @@ export function ZipImportModal({
   const supportedCount = fileMeta.filter((m) => m.enabled).length
   const skippedCount = scanResult?.skipped?.length ?? 0
   const batName = scanResult?.batFiles?.fileName
+  const zipBaseName = (zipFilePath || '').split(/[\\/]/).pop() || ''
 
   // Guard against render with null scanResult (can happen during close transition)
   if (!scanResult) return null
@@ -122,9 +177,11 @@ export function ZipImportModal({
                 import zip archive
               </DialogTitle>
               <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                {supportedCount} file{supportedCount !== 1 ? 's' : ''} to import
-                {skippedCount > 0 ? ` · ${skippedCount} skipped` : ''}
-                {batName ? ` · .bat detected: ${batName}` : ''}
+                {importAsZip
+                  ? 'Import zip as a single mod file'
+                  : `${supportedCount} file${supportedCount !== 1 ? 's' : ''} to import`}
+                {!importAsZip && skippedCount > 0 ? ` · ${skippedCount} skipped` : ''}
+                {!importAsZip && batName ? ` · .bat detected: ${batName}` : ''}
               </DialogDescription>
             </div>
           </div>
@@ -132,75 +189,136 @@ export function ZipImportModal({
 
         {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Supported files table */}
-          {fileMeta.length > 0 && (
-            <div className="space-y-2">
-              <div className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono px-1">
-                <span></span>
-                <span>File</span>
-                <span>Display Name</span>
-                <span>Version</span>
-                <span>URL</span>
-              </div>
-              {scanResult.supported.map((f, idx) => (
-                <div
-                  key={f.tempPath}
-                  className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 items-center"
-                >
-                  <input
-                    type="checkbox"
-                    checked={fileMeta[idx]?.enabled ?? true}
-                    onChange={(e) =>
-                      setFileMeta((prev) => {
-                        const copy = [...prev]
-                        copy[idx] = { ...copy[idx], enabled: e.target.checked }
-                        return copy
-                      })
-                    }
-                    className="w-4 h-4 accent-accent-highlight"
-                  />
-                  <div className="text-sm truncate" title={f.fileName}>
-                    <span className="font-mono text-xs text-app-muted mr-1">[{f.fileType}]</span>
-                    {f.fileName}
-                    {f.isReferencedByBat && (
-                      <span className="ml-1 text-xs text-yellow-500">.bat</span>
-                    )}
-                  </div>
-                  <input
-                    className="border border-app rounded p-1 text-sm bg-app-primary"
-                    placeholder="Display name"
-                    value={fileMeta[idx]?.name ?? ''}
-                    onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
-                  />
-                  <input
-                    className="border border-app rounded p-1 text-sm bg-app-primary"
-                    placeholder="Version"
-                    value={fileMeta[idx]?.version ?? ''}
-                    onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
-                  />
-                  <input
-                    className="border border-app rounded p-1 text-sm bg-app-primary w-40"
-                    placeholder="URL"
-                    value={fileMeta[idx]?.url ?? ''}
-                    onChange={(e) => handleMetaChange(idx, 'url', e.target.value)}
-                  />
-                </div>
-              ))}
-            </div>
+          {/* ── Import-as-zip checkbox ── */}
+          {zipFilePath && (
+            <label className="flex items-center gap-2 p-2 rounded border border-app bg-app-secondary/50 cursor-pointer hover:bg-app-secondary transition-colors">
+              <input
+                type="checkbox"
+                checked={importAsZip}
+                onChange={(e) => setImportAsZip(e.target.checked)}
+                className="w-4 h-4 accent-accent-highlight"
+              />
+              <span className="text-sm font-medium text-app-primary">
+                Import <span className="font-mono text-accent-highlight">{zipBaseName}</span> as is
+              </span>
+              <span className="text-xs text-app-muted ml-auto">
+                (source ports support .zip files as mods)
+              </span>
+            </label>
           )}
 
-          {/* Skipped files */}
-          {skippedCount > 0 && (
-            <div>
-              <p className="text-sm font-semibold text-app-muted mb-1">Skipped files</p>
-              <ul className="text-xs space-y-1">
-                {scanResult.skipped.map((s, i) => (
-                  <li key={i} className="text-app-muted">
-                    <span className="font-mono">{s.fileName}</span> — {s.reason}
-                  </li>
-                ))}
-              </ul>
+          {importAsZip ? (
+            /* ── Zip-as-mod form ── */
+            <div className="space-y-3 p-2">
+              <div>
+                <label className="text-xs font-semibold uppercase text-app-muted tracking-widest font-mono block mb-1">
+                  Display Name
+                </label>
+                <input
+                  className="border border-app rounded p-2 text-sm bg-app-primary w-full"
+                  placeholder="e.g. My Cool Mod"
+                  value={zipName}
+                  onChange={(e) => setZipName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase text-app-muted tracking-widest font-mono block mb-1">
+                  Version
+                </label>
+                <input
+                  className="border border-app rounded p-2 text-sm bg-app-primary w-full"
+                  placeholder="e.g. 1.0"
+                  value={zipVersion}
+                  onChange={(e) => setZipVersion(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase text-app-muted tracking-widest font-mono block mb-1">
+                  URL
+                </label>
+                <input
+                  className="border border-app rounded p-2 text-sm bg-app-primary w-full"
+                  placeholder="https://www.moddb.com/mods/..."
+                  value={zipUrl}
+                  onChange={(e) => setZipUrl(e.target.value)}
+                />
+              </div>
             </div>
+          ) : (
+            /* ── Supported files table ── */
+            <>
+              {fileMeta.length > 0 && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono px-1">
+                    <span></span>
+                    <span>File</span>
+                    <span>Display Name</span>
+                    <span>Version</span>
+                    <span>URL</span>
+                  </div>
+                  {scanResult.supported.map((f, idx) => (
+                    <div
+                      key={f.tempPath}
+                      className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 items-center"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={fileMeta[idx]?.enabled ?? true}
+                        onChange={(e) =>
+                          setFileMeta((prev) => {
+                            const copy = [...prev]
+                            copy[idx] = { ...copy[idx], enabled: e.target.checked }
+                            return copy
+                          })
+                        }
+                        className="w-4 h-4 accent-accent-highlight"
+                      />
+                      <div className="text-sm truncate" title={f.fileName}>
+                        <span className="font-mono text-xs text-app-muted mr-1">
+                          [{f.fileType}]
+                        </span>
+                        {f.fileName}
+                        {f.isReferencedByBat && (
+                          <span className="ml-1 text-xs text-yellow-500">.bat</span>
+                        )}
+                      </div>
+                      <input
+                        className="border border-app rounded p-1 text-sm bg-app-primary"
+                        placeholder="Display name"
+                        value={fileMeta[idx]?.name ?? ''}
+                        onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
+                      />
+                      <input
+                        className="border border-app rounded p-1 text-sm bg-app-primary"
+                        placeholder="Version"
+                        value={fileMeta[idx]?.version ?? ''}
+                        onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
+                      />
+                      <input
+                        className="border border-app rounded p-1 text-sm bg-app-primary w-40"
+                        placeholder="URL"
+                        value={fileMeta[idx]?.url ?? ''}
+                        onChange={(e) => handleMetaChange(idx, 'url', e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Skipped files */}
+              {skippedCount > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-app-muted mb-1">Skipped files</p>
+                  <ul className="text-xs space-y-1">
+                    {scanResult.skipped.map((s, i) => (
+                      <li key={i} className="text-app-muted">
+                        <span className="font-mono">{s.fileName}</span> — {s.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -217,11 +335,15 @@ export function ZipImportModal({
             </Button>
             <Button
               onClick={handleImport}
-              disabled={importing || supportedCount === 0}
+              disabled={importing || (importAsZip ? false : supportedCount === 0)}
               className="bg-accent-highlight hover:opacity-90 text-white"
             >
               <Upload className="w-4 h-4 mr-2" />
-              {importing ? 'Importing…' : `Import ${supportedCount} file${supportedCount !== 1 ? 's' : ''}`}
+              {importing
+                ? 'Importing…'
+                : importAsZip
+                  ? `Import ${zipBaseName}`
+                  : `Import ${supportedCount} file${supportedCount !== 1 ? 's' : ''}`}
             </Button>
           </div>
         </DialogFooter>

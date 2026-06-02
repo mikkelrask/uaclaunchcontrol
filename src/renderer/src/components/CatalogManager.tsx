@@ -36,8 +36,8 @@ import { api, IRegistryMod } from '@/api'
 import { gameService } from '@/lib/gameService'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ZipImportModal } from '@/components/ZipImportModal';
-import { ZipScanResult } from '@/types/zipImport';
+import { ZipImportModal } from '@/components/ZipImportModal'
+import { ZipScanResult } from '@/types/zipImport'
 
 interface CatalogManagerProps {
   files: IModFile[]
@@ -123,7 +123,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   const [selectedFile, setSelectedFile] = useState<IModFile | null>(null)
 
   const [isZipModalOpen, setIsZipModalOpen] = useState(false)
-  const [zipScanResult, setZipScanResult] = useState<ZipScanResult | null>(null);
+  const [zipScanResult, setZipScanResult] = useState<ZipScanResult | null>(null)
+  const [zipFilePath, setZipFilePath] = useState<string>('')
 
   const [addForm, setAddForm] = useState({
     name: '',
@@ -467,6 +468,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             })
             const scan = (await api.unzipScan(selectedPath)) as ZipScanResult
             setZipScanResult(scan)
+            setZipFilePath(selectedPath)
             setIsZipModalOpen(true)
           } catch (error) {
             console.error(error)
@@ -576,6 +578,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           })
           const scan = (await api.unzipScan(droppedPath)) as ZipScanResult
           setZipScanResult(scan)
+          setZipFilePath(droppedPath)
           setIsZipModalOpen(true)
         } catch (error) {
           console.error(error)
@@ -1401,11 +1404,13 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         open={isZipModalOpen}
         onOpenChange={setIsZipModalOpen}
         scanResult={zipScanResult}
+        zipFilePath={zipFilePath || undefined}
         onImportComplete={async () => {
           const freshCatalog = await gameService.getModFileCatalog()
           queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
           onChange(freshCatalog)
           setZipScanResult(null)
+          setZipFilePath('')
         }}
       />
     </div>
