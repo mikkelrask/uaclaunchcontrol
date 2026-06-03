@@ -75,6 +75,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     customThemeCss: ''
   })
 
+  // Track the original wadFilesDirectory for change detection
+  const initialWadDirRef = useRef<string>('')
+
   // Track whether the initial fetch has completed so live-preview doesn't
   // briefly apply the default theme before the saved one arrives.
   const fetchedRef = useRef(false)
@@ -94,6 +97,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       .then((data) => {
         if (data) {
           savedRef.current = { theme: data.theme, customThemeCss: data.customThemeCss }
+          initialWadDirRef.current = data.wadFilesDirectory || ''
           setSettings((prev) => ({ ...prev, ...data }))
           fetchedRef.current = true
         }
@@ -240,10 +244,22 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       }
       await api.updateSettings(payload)
 
-      // Also save doom versions
-      await api.updateDoomVersions(doomVersions)
+      // Re-fetch versions from the server (it re-scanned if wad dir changed)
+      const freshVersions = await api.getDoomVersions()
+
+      if (initialWadDirRef.current !== payload.wadFilesDirectory) {
+        // WAD dir changed → server already re-scanned; use its result.
+        // Discard any local edits to versions since they were against the old scan.
+        setDoomVersions(freshVersions)
+        await api.updateDoomVersions(freshVersions)
+      } else {
+        // No directory change → preserve local metadata edits (name, icon, ignored, etc.)
+        setDoomVersions(freshVersions)
+        await api.updateDoomVersions(doomVersions)
+      }
 
       // Invalidate queries to trigger global theme sync
+      await queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
       await queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
 
       // Update savedRef so close-restore is a no-op (theme is already persisted)
@@ -360,6 +376,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               </p>
             </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              api.reenableFirstRun().catch(() => {})
+              onClose()
+              // Dispatch custom event so FirstRunTour picks it up
+              window.dispatchEvent(new CustomEvent('uac:replay-tour'))
+            }}
+            className="text-xs border-app hover:bg-app-hover text-app-muted"
+          >
+            Guided Tour
+          </Button>
         </div>
 
         <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">

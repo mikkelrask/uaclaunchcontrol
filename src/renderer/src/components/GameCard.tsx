@@ -138,6 +138,7 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
                     flex items-center justify-between p-2"
       >
         <Button
+          data-tour="launch-button"
           size="sm"
           onClick={handleLaunch}
           disabled={launchMutation.isPending}
