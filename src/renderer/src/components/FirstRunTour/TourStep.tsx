@@ -97,6 +97,18 @@ function computeTooltipPosition(
       top = targetRect.top + targetRect.height / 2 - tooltipHeight / 2
       left = targetRect.right + gap
       break
+    case 'top-right':
+      top = targetRect.top + gap
+      left = targetRect.right - tooltipWidth - gap
+      break
+    case 'left-top':
+      top = targetRect.top + gap
+      left = targetRect.left - tooltipWidth - gap
+      break
+    case 'bottom-right':
+      top = targetRect.bottom + gap
+      left = targetRect.right - tooltipWidth - gap
+      break
   }
 
   top = Math.max(8, Math.min(top, vh - tooltipHeight - 8))
@@ -131,6 +143,7 @@ export const TourStep: React.FC<TourStepProps> = ({
   const [completed, setCompleted] = useState(false)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const roRef = useRef<ResizeObserver | null>(null)
+  const moRef = useRef<MutationObserver | null>(null)
 
   // Re-read element rect when it or the DOM changes
   const measure = useCallback(() => {
@@ -138,18 +151,39 @@ export const TourStep: React.FC<TourStepProps> = ({
   }, [step.target])
 
   useLayoutEffect(() => {
+    setTargetRect(null)
+
+    const observeTarget = (): boolean => {
+      if (!step.target) return false
+
+      const el = document.querySelector(step.target)
+      if (!el) return false
+
+      roRef.current?.disconnect()
+      const ro = new ResizeObserver(measure)
+      ro.observe(el)
+      roRef.current = ro
+      return true
+    }
+
     const timer = setTimeout(() => {
       measure()
-      if (step.target) {
-        const el = document.querySelector(step.target)
-        if (el) {
-          roRef.current?.disconnect()
-          const ro = new ResizeObserver(measure)
-          ro.observe(el)
-          roRef.current = ro
-        }
+      if (observeTarget()) {
+        moRef.current?.disconnect()
       }
     }, 100)
+
+    if (step.target) {
+      moRef.current?.disconnect()
+      const mo = new MutationObserver(() => {
+        measure()
+        if (observeTarget()) {
+          mo.disconnect()
+        }
+      })
+      mo.observe(document.body, { childList: true, subtree: true })
+      moRef.current = mo
+    }
 
     window.addEventListener('scroll', measure, { passive: true })
     window.addEventListener('resize', measure, { passive: true })
@@ -159,6 +193,7 @@ export const TourStep: React.FC<TourStepProps> = ({
       window.removeEventListener('scroll', measure)
       window.removeEventListener('resize', measure)
       roRef.current?.disconnect()
+      moRef.current?.disconnect()
     }
   }, [measure, step.target])
 
