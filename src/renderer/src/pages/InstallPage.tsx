@@ -32,6 +32,7 @@ import { useToast } from '@/hooks/use-toast'
 import { gameService } from '@/lib/gameService'
 import { IProtocol, IModFile, IAppSettings, IDoomVersion, ISourcePort } from '@shared/schema'
 import { slugify, buildLaunchCommand } from '@/lib/utils'
+import { checkAdvancement, getRankTitle } from '@/lib/advancement'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { CatalogManager } from '@/components/CatalogManager'
 import { api } from '@/api'
@@ -267,11 +268,26 @@ export const InstallPage: React.FC = () => {
       protocol: Omit<IProtocol, 'id'>
       files: Omit<IModFile, 'id' | 'modId'>[]
     }) => gameService.createProtocol(data.protocol, data.files),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: 'SYSTEM: params_accepted',
         description: 'Successfully added new launch configuration.'
       })
+
+      // Check for rank advancement
+      const currentRank = (settings as IAppSettings)?.rank || 'cadet'
+      const advancement = checkAdvancement(currentRank, 1)
+      if (advancement) {
+        const newRank = getRankTitle(advancement)
+        await api.updateSettings({ rank: advancement })
+        toast({
+          title: 'SYSTEM: message_recieved',
+          description: `Congratulations, ${getRankTitle(currentRank)}!<br />You've now been promoted to ${newRank}. No go kill some demons.`,
+          duration: 10000
+        })
+        queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
+      }
+
       queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
       form.reset()
       setFiles([])

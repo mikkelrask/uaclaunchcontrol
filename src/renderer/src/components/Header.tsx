@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import SettingsDialog from './SettingsDialog'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 import { api } from '@/api'
+import { getRankTitle } from '@/lib/advancement'
 import doomGuy from '@/assets/guy,doom.webp'
 
 interface HeaderProps {
@@ -170,7 +171,9 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
           </div>
           <div className="flex-col">
             <div className="text-xs ml-2 mr-1">Guy, Doom</div>
-            <div className="ml-2 text-xs italic text-app-secondary">Marine</div>
+            <div className="ml-2 text-xs italic text-app-secondary">
+              {getRankTitle(settings?.rank)}
+            </div>
           </div>
         </div>
         <button

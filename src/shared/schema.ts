@@ -105,6 +105,7 @@ export interface IAppSettings {
   showLaunchPreview?: boolean
   customThemeCss?: string
   defaultView?: 'grid' | 'list' | 'detail'
+  rank?: string // Advancement rank (cadet, marine, etc.)
 }
 export interface IUpdateInfo {
   version: string
