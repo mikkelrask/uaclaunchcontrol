@@ -151,8 +151,6 @@ export const TourStep: React.FC<TourStepProps> = ({
   }, [step.target])
 
   useLayoutEffect(() => {
-    setTargetRect(null)
-
     const observeTarget = (): boolean => {
       if (!step.target) return false
 
@@ -165,13 +163,6 @@ export const TourStep: React.FC<TourStepProps> = ({
       roRef.current = ro
       return true
     }
-
-    const timer = setTimeout(() => {
-      measure()
-      if (observeTarget()) {
-        moRef.current?.disconnect()
-      }
-    }, 100)
 
     if (step.target) {
       moRef.current?.disconnect()
@@ -188,8 +179,12 @@ export const TourStep: React.FC<TourStepProps> = ({
     window.addEventListener('scroll', measure, { passive: true })
     window.addEventListener('resize', measure, { passive: true })
 
+    // Initial measurement (observers will update on DOM changes)
+    if (step.target) {
+      measure()
+    }
+
     return () => {
-      clearTimeout(timer)
       window.removeEventListener('scroll', measure)
       window.removeEventListener('resize', measure)
       roRef.current?.disconnect()
@@ -199,8 +194,6 @@ export const TourStep: React.FC<TourStepProps> = ({
 
   // ── Completion polling ──────────────────────────────────────────
   useEffect(() => {
-    setCompleted(false) // reset when step changes
-
     if (!step.isComplete) {
       // No completion detector — mark as always-complete so button is active
       setCompleted(true)

@@ -109,14 +109,14 @@ export const TOUR_STEPS: TourStepDef[] = [
   {
     id: 0,
     target: null,
-    title: 'Welcome, Marine',
+    title: 'Welcome, cadet',
     description: `
       <p class="mb-2">
         <strong>UAC Launch Control</strong> is your new home. Your command centre for
-        managing and launching Doom mods and games.
+        managing and launching mission protocols.
       </p>
       <p>
-        To get you start we will quickly walk through:
+        Your training will be brief, but will cover:
       </p>
       <ul class="list-disc list-inside text-sm space-y-1 mt-2">
         <li>Verifying your path settings</li>
