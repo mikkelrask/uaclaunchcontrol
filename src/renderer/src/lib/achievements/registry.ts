@@ -7,7 +7,7 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
   // ── Progression ──
   {
     id: 'first-protocol',
-    title: 'Welcome to Mars',
+    title: 'Welcome to Mars, Marine',
     description: 'Create your first launch protocol.',
     category: 'progression',
     icon: 'Rocket',
@@ -62,20 +62,20 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
   {
     id: 'wad-warrior',
     title: 'WAD Warrior',
-    description: 'Import 15 unique WAD files into your library.',
+    description: 'Import 5 unique WAD files into your library.',
     category: 'collection',
     icon: 'Swords',
     type: 'incremental',
-    conditions: [{ stat: 'totalWadsImported', min: 15 }]
+    conditions: [{ stat: 'totalWadsImported', min: 5 }]
   },
   {
     id: 'uac-engineer',
     title: 'UAC Engineer',
-    description: 'Configure 3 different source ports for launch operations.',
+    description: 'Configure more than 3 different source ports for launch operations.',
     category: 'collection',
     icon: 'Wrench',
     type: 'incremental',
-    conditions: [{ stat: 'totalSourcePortsAdded', min: 3 }]
+    conditions: [{ stat: 'totalSourcePortsAdded', min: 4 }]
   },
   {
     id: 'source-port-collector',
@@ -127,11 +127,11 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
   {
     id: 'veteran',
     title: 'Veteran',
-    description: 'Launch 25 protocols. The UAC keeps you busy.',
+    description: 'Launch 50 protocols. The UAC keeps you busy.',
     category: 'combat',
     icon: 'Shield',
     type: 'incremental',
-    conditions: [{ stat: 'totalProtocolsLaunched', min: 25 }]
+    conditions: [{ stat: 'totalProtocolsLaunched', min: 50 }]
   },
   {
     id: 'endless-war',
@@ -156,20 +156,20 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
   {
     id: 'world-traveler',
     title: 'World Traveler',
-    description: 'Launch at least 5 different protocols.',
+    description: 'Launch at least 10 different protocols.',
     category: 'exploration',
     icon: 'Globe',
     type: 'incremental',
-    conditions: [{ stat: 'distinctProtocolsLaunched', min: 5 }]
+    conditions: [{ stat: 'distinctProtocolsLaunched', min: 10 }]
   },
   {
     id: 'seasoned-operator',
     title: 'Seasoned Operator',
-    description: 'Launch 10 unique protocols. Jack of all trades.',
+    description: 'Launch 25 unique protocols. Jack of all trades.',
     category: 'exploration',
     icon: 'Compass',
     type: 'incremental',
-    conditions: [{ stat: 'distinctProtocolsLaunched', min: 10 }]
+    conditions: [{ stat: 'distinctProtocolsLaunched', min: 25 }]
   },
   {
     id: 'heretic',
@@ -201,7 +201,7 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
   {
     id: 'uac-safety-violation',
     title: 'UAC SAFETY VIOLATION',
-    description: 'What is this nonsense, soldier? Its a goddamn abomination. Carry on, tho.',
+    description: 'What is this nonsense, soldier? Its a goddamn abomination. Carry on.',
     category: 'secret',
     icon: 'AlertTriangle',
     type: 'event-qualifier',
