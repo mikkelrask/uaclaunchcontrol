@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
 import { formatPlaytime } from '@/lib/utils'
+import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { Play, Settings, Clock, Hourglass } from 'lucide-react'
 import placeholder from '@renderer/assets/placeholder.png'
 
@@ -45,6 +46,24 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
         title: 'SYSTEM: launch_protocol',
         description: `${protocol.title} launched.`
       })
+      // Dispatch PROTOCOL_LAUNCHED achievement event
+      dispatchAchievementEvent({
+        type: 'PROTOCOL_LAUNCHED',
+        protocolId: protocol.id
+      })
+        .then((result) => {
+          const unlockToasts = buildUnlockToasts(result)
+          for (const t of unlockToasts) {
+            toast({
+              title: t.title,
+              description: t.description,
+              duration: t.duration as 6000 | 8000
+            })
+          }
+        })
+        .catch((err) => {
+          console.error('Achievement dispatch failed:', err)
+        })
     },
     onError: (error) => {
       toast({

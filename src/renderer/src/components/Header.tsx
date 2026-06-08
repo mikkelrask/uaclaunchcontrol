@@ -5,7 +5,10 @@ import { Settings, Menu } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import SettingsDialog from './SettingsDialog'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
+import AchievementsPopover from './AchievementsPopover'
 import { api } from '@/api'
+import { getRankTitle } from '@/lib/advancement'
+import type { IPlayerData } from '@shared/schema'
 import doomGuy from '@/assets/guy,doom.webp'
 
 interface HeaderProps {
@@ -104,6 +107,12 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
     queryFn: api.getSettings
   })
 
+  const { data: playerData } = useQuery<IPlayerData>({
+    queryKey: ['/api/player-data'],
+    queryFn: api.getPlayerData,
+    staleTime: 30_000
+  })
+
   const databaseLink = settings?.databaseLinkPresets?.[settings?.selectedPresetIndex ?? 0]
 
   const handleSearch = (e: React.FormEvent): void => {
@@ -167,15 +176,19 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
 
       {/* User Profile */}
       <div className="flex items-center space-x-2">
-        <div className="flex items-center bg-app-hover rounded-md p-1">
-          <div className="w-8 h-8 rounded bg-accent-highlight flex items-center justify-center text-white">
-            <img src={doomGuy} alt="Guy, Doom - Space Marine" className="w-8 h-8 rounded" />
-          </div>
-          <div className="flex-col">
-            <div className="text-xs ml-2 mr-1">Guy, Doom</div>
-            <div className="ml-2 text-xs italic text-app-secondary">Marine</div>
-          </div>
-        </div>
+        <AchievementsPopover>
+          <button className="flex items-center bg-app-hover rounded-md p-1 hover:bg-app-hover/80 transition-colors cursor-pointer">
+            <div className="w-8 h-8 rounded bg-accent-highlight flex items-center justify-center text-white">
+              <img src={doomGuy} alt="Guy, Doom - Space Marine" className="w-8 h-8 rounded" />
+            </div>
+            <div className="flex-col text-left">
+              <div className="text-xs ml-2 mr-1">Guy, Doom</div>
+              <div className="ml-2 text-xs italic text-app-secondary">
+                {getRankTitle(playerData?.rank ?? settings?.rank)}
+              </div>
+            </div>
+          </button>
+        </AchievementsPopover>
         <button
           data-tour="settings-button"
           className="w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover"

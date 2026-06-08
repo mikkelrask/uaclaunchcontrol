@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api, IRegistryMod } from '@/api'
+import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { gameService } from '@/lib/gameService'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -321,6 +322,25 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         title: 'SYSTEM: add_success',
         description: `Added "${prettyName}" to your mod file catalog.`
       })
+
+      // Dispatch MOD_FILE_ADDED achievement event
+      dispatchAchievementEvent({
+        type: 'MOD_FILE_ADDED',
+        count: 1
+      })
+        .then((result) => {
+          const unlockToasts = buildUnlockToasts(result)
+          for (const t of unlockToasts) {
+            toast({
+              title: t.title,
+              description: t.description,
+              duration: t.duration as 6000 | 8000
+            })
+          }
+        })
+        .catch((err) => {
+          console.error('Achievement dispatch failed:', err)
+        })
 
       resetLookupState()
       setIsAddModalOpen(false)

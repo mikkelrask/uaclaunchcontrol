@@ -12,6 +12,7 @@ import InstallPage from '@/pages/InstallPage'
 import NotFound from '@/pages/not-found'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api'
+import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { IAppSettings, IInstallType } from '@shared/schema'
 import { useAutoUpdater } from '@/hooks/useAutoUpdater'
 import UpdateModal from '@/components/UpdateModal'
@@ -119,6 +120,26 @@ const App: React.FC = () => {
           api.addPlaytime(data.protocolId, data.sessionSeconds)
           // Refresh protocol data so playtime/lastLaunchedAt update in UI
           queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
+
+          // Dispatch PROTOCOL_EXITED achievement event
+          dispatchAchievementEvent({
+            type: 'PROTOCOL_EXITED',
+            protocolId: data.protocolId,
+            sessionSeconds: data.sessionSeconds
+          })
+            .then((result) => {
+              const unlockToasts = buildUnlockToasts(result)
+              for (const t of unlockToasts) {
+                toast({
+                  title: t.title,
+                  description: t.description,
+                  duration: t.duration as 6000 | 8000
+                })
+              }
+            })
+            .catch((err) => {
+              console.error('Achievement dispatch failed:', err)
+            })
         }
 
         // Show crash toast for non-clean exits

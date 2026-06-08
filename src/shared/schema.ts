@@ -105,6 +105,8 @@ export interface IAppSettings {
   showLaunchPreview?: boolean
   customThemeCss?: string
   defaultView?: 'grid' | 'list' | 'detail'
+  /** @deprecated Migrated to playerData.json — use IPlayerData.rank instead */
+  rank?: string
 }
 export interface IUpdateInfo {
   version: string
@@ -125,4 +127,41 @@ export interface IUpdateInfo {
 export interface IVersionData {
   added?: Array<{ name: string }>
   removed?: Array<{ name: string }>
+}
+
+// ── Player Data / Achievements ──────────────────────────
+// Stored in ~/.config/uac/playerData.json
+
+export interface IPlayerData {
+  /** Current rank id (cadet, marine, sergeant, slayer) */
+  rank: string
+  /** Index of all tracked achievements, keyed by achievement id */
+  achievements: Record<string, IAchievementState>
+  /** Accumulated player stats, used as fuel for achievement progress */
+  stats: IPlayerStats
+}
+
+export interface IAchievementState {
+  /** Whether the achievement has been unlocked */
+  unlocked: boolean
+  /** ISO timestamp of unlock, or undefined */
+  unlockedAt?: string
+  /** Current progress value (e.g. 7 if 7/10 mod files added) */
+  progress: number
+  /** The threshold this achievement needs */
+  target: number
+}
+
+export interface IPlayerStats {
+  totalProtocolsCreated: number
+  totalProtocolsLaunched: number
+  totalModFilesAdded: number
+  totalWadsImported: number
+  totalPlaytimeSeconds: number
+  totalCatalogFilesManaged: number
+  protocolsLaunchedThisSession: number
+  distinctProtocolsLaunched: string[]
+  maxModFilesInSingleProtocol: number
+  totalSourcePortsAdded: number
+  distinctSourcePortFamilies: string[]
 }
