@@ -35,7 +35,13 @@ export function checkAchievement(
     case 'compound': {
       const total = def.conditions.length
       const met = def.conditions.filter((c) => {
-        const value = stats[c.stat] as number
+        let value: number
+        const rawValue = stats[c.stat]
+        if (Array.isArray(rawValue)) {
+          value = rawValue.length
+        } else {
+          value = (rawValue as number) ?? 0
+        }
         return value >= c.min
       }).length
       const progress = Math.round((met / total) * 100)
@@ -55,7 +61,17 @@ export function checkAchievement(
         return { id: def.id, unlocked: false, progress: 0, target: 1 }
       }
 
-      const value = (stats[condition.stat] as number) ?? 0
+      let value: number
+      const rawValue = stats[condition.stat]
+      // Arrays (e.g. distinctProtocolsLaunched, distinctSourcePortFamilies)
+      // must be compared by length — JS will coerce ["uuid"] >= N via toString()
+      // which yields the numeric UUID value, not the count.
+      if (Array.isArray(rawValue)) {
+        value = rawValue.length
+      } else {
+        value = (rawValue as number) ?? 0
+      }
+
       const progress = Math.min(value, condition.min)
       return {
         id: def.id,
@@ -131,7 +147,13 @@ export function checkEventQualifiers(
     } else if (def.conditions.length > 0) {
       // Fallback: treat conditions as stat thresholds against current stats
       qualifies = def.conditions.every((c) => {
-        const value = stats[c.stat] as number
+        const rawValue = stats[c.stat]
+        let value: number
+        if (Array.isArray(rawValue)) {
+          value = rawValue.length
+        } else {
+          value = (rawValue as number) ?? 0
+        }
         return value >= c.min
       })
     }
