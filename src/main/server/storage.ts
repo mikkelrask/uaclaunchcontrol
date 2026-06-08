@@ -27,6 +27,7 @@ const SETTINGS_FILE = path.join(CONFIG_DIR, 'settings.json') // Directly in CONF
 const DOOM_VERSIONS_FILE = path.join(CONFIG_DIR, 'doomVersions.json') // Directly in CONFIG_DIR per local-structure.txt
 const MOD_FILE_CATALOG = path.join(CONFIG_DIR, 'modFileCatalogue.json')
 export const IMAGES_DIR = path.join(CONFIG_DIR, 'data/images')
+const FIRST_RUN_SENTINEL = path.join(CONFIG_DIR, '.first-run-complete')
 
 const LEGACY_CONFIG_DIRS = [
   path.join(os.homedir(), '.config', 'mrdoom'),
@@ -151,6 +152,35 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
 ]
 
 let isInitialized = false
+let _isFirstRun = false
+
+/** Whether the current session is the very first run (fresh config). */
+export function getIsFirstRun(): boolean {
+  return _isFirstRun
+}
+
+/** Mark first-run as dismissed so the tour won't show on next launch. */
+export function dismissFirstRun(): void {
+  _isFirstRun = false
+  try {
+    fs.writeFileSync(FIRST_RUN_SENTINEL, '')
+  } catch {
+    // best-effort
+  }
+}
+
+/** Re-enable the tour by deleting the sentinel. */
+export function reenableFirstRun(): void {
+  _isFirstRun = true
+  try {
+    if (fs.existsSync(FIRST_RUN_SENTINEL)) {
+      fs.unlinkSync(FIRST_RUN_SENTINEL)
+    }
+  } catch {
+    // best-effort
+  }
+}
+
 // Ensure config directories exist and create default files
 export function initStorage(): boolean {
   if (isInitialized) return true
@@ -184,6 +214,11 @@ export function initStorage(): boolean {
     if (!fs.existsSync(MOD_FILE_CATALOG)) {
       fs.writeJSONSync(MOD_FILE_CATALOG, [], { spaces: 2 }) // Default to empty array
       debug(`Created default mod file catalog at ${MOD_FILE_CATALOG}`)
+    }
+
+    // Detect first run: if settings.json was just created AND the sentinel doesn't exist
+    if (!fs.existsSync(FIRST_RUN_SENTINEL)) {
+      _isFirstRun = true
     }
 
     // Sync Doom versions on startup — skip hash to avoid startup delay
@@ -1345,6 +1380,13 @@ export async function executeMigration(sourcePath: string): Promise<boolean> {
 
     // Patch internal JSON paths to point to the new uac directory
     await patchLegacyPaths(CONFIG_DIR)
+
+    // Mark first-run as complete so migrated users don't see the tour
+    try {
+      fs.writeFileSync(FIRST_RUN_SENTINEL, '')
+    } catch {
+      // best-effort
+    }
 
     return true
   } catch (error) {

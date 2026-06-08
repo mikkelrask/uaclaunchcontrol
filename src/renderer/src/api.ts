@@ -362,6 +362,21 @@ export const api = {
     })
   },
 
+  // First-run tour
+  getFirstRun: async (): Promise<{ isFirstRun: boolean }> => {
+    const response = await fetch(`${API_BASE}/api/first-run`)
+    if (!response.ok) throw new Error('Failed to check first run')
+    return response.json()
+  },
+
+  dismissFirstRun: async (): Promise<void> => {
+    await fetch(`${API_BASE}/api/first-run/dismiss`, { method: 'POST' })
+  },
+
+  reenableFirstRun: async (): Promise<void> => {
+    await fetch(`${API_BASE}/api/first-run/reenable`, { method: 'POST' })
+  },
+
   getInstallType: (): Promise<{ isAppImage: boolean; isSystemInstalled: boolean }> => {
     return window.api.getInstallType()
   },

@@ -17,6 +17,7 @@ import { IAppSettings, IInstallType } from '@shared/schema'
 import { useAutoUpdater } from '@/hooks/useAutoUpdater'
 import UpdateModal from '@/components/UpdateModal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { FirstRunTour } from '@/components/FirstRunTour'
 
 const AppRouter: React.FC = () => {
   return (
@@ -217,6 +218,7 @@ const App: React.FC = () => {
       <ErrorBoundary>
         <AppRouter />
       </ErrorBoundary>
+      <FirstRunTour />
     </TooltipProvider>
   )
 }
