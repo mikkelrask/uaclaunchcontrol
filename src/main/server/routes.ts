@@ -64,13 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return fs.createReadStream(resolved).pipe(res)
     } catch (error: unknown) {
       console.error('Error serving media:', error)
-      const message =
-        error instanceof Error
-          ? error instanceof Error
-            ? error.message
-            : 'Failed to serve media'
-          : 'Failed to serve media'
-      return res.status(500).json({ error: message })
+      return res.status(500).json({ error: 'Failed to serve media' })
     }
   })
 
@@ -168,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
+        .json({ error: error instanceof Error ? error.message : 'Failed to download image' })
     }
   })
 
@@ -372,7 +366,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to serve media' })
+        .json({ message: error instanceof Error ? error.message : 'Failed to add file to catalog' })
     }
   })
 
@@ -469,7 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error(`[API] Error updating version ${req.params.id}:`, error)
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to serve media'
+        error: error instanceof Error ? error.message : 'Failed to update version'
       })
     }
   })
@@ -594,7 +588,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
+        .json({
+          error: error instanceof Error ? error.message : 'Failed to check migration status'
+        })
     }
   })
 
@@ -607,7 +603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
+        .json({ error: error instanceof Error ? error.message : 'Failed to execute migration' })
     }
   })
 
