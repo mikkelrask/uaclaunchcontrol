@@ -1,4 +1,12 @@
-import { IModFile, IProtocol, IAppSettings, IDoomVersion, IUpdateInfo } from '@shared/schema'
+import {
+  IModFile,
+  IProtocol,
+  IAppSettings,
+  IDoomVersion,
+  IUpdateInfo,
+  IPlayerData,
+  IPlayerStats
+} from '@shared/schema'
 
 export interface IRegistryMod {
   family_name: string
@@ -314,6 +322,44 @@ export const api = {
 
   triggerFakeUpdate: (): void => {
     void window.api.triggerFakeUpdate()
+  },
+
+  // Player data / achievements
+  getPlayerData: async (): Promise<IPlayerData> => {
+    const response = await fetch(`${API_BASE}/api/player-data`)
+    if (!response.ok) throw new Error('Failed to get player data')
+    return response.json()
+  },
+
+  updatePlayerData: async (data: Partial<IPlayerData>): Promise<IPlayerData> => {
+    const response = await fetch(`${API_BASE}/api/player-data`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) throw new Error('Failed to update player data')
+    return response.json()
+  },
+
+  updatePlayerStats: async (delta: Partial<IPlayerStats>): Promise<IPlayerStats> => {
+    const response = await fetch(`${API_BASE}/api/player-data/stats`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(delta)
+    })
+    if (!response.ok) throw new Error('Failed to update player stats')
+    return response.json()
+  },
+
+  unlockAchievement: async (
+    id: string,
+    state: { progress: number; target: number }
+  ): Promise<void> => {
+    await fetch(`${API_BASE}/api/player-data/achievements/unlock`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, state })
+    })
   },
 
   getInstallType: (): Promise<{ isAppImage: boolean; isSystemInstalled: boolean }> => {

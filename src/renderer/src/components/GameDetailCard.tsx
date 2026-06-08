@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
+import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { formatPlaytime } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
 import {
@@ -73,6 +74,24 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
         title: 'SYSTEM: launch_protocol',
         description: `${protocol.title} launched.`
       })
+      // Dispatch PROTOCOL_LAUNCHED achievement event
+      dispatchAchievementEvent({
+        type: 'PROTOCOL_LAUNCHED',
+        protocolId: protocol.id
+      })
+        .then((result) => {
+          const unlockToasts = buildUnlockToasts(result)
+          for (const t of unlockToasts) {
+            toast({
+              title: t.title,
+              description: t.description,
+              duration: t.duration as 6000 | 8000
+            })
+          }
+        })
+        .catch((err) => {
+          console.error('Achievement dispatch failed:', err)
+        })
     },
     onError: (error) => {
       toast({
@@ -187,7 +206,9 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
           <div>
             {/* Description */}
             <div className="mb-6">
-              <h3 className="text-sm font-bold text-app-muted tracking-widest mb-2">// ABOUT</h3>
+              <h3 className="text-sm font-bold text-app-muted tracking-widest mb-2">
+                {'// ABOUT'}
+              </h3>
               <p className="text-app-primary leading-relaxed text-sm">
                 {protocol.description || 'No description available.'}
               </p>
@@ -197,7 +218,7 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
             {files.length > 0 ? (
               <div>
                 <h3 className="text-sm font-bold text-app-muted tracking-widest mb-2">
-                  // MOD FILES ({files.length})
+                  {`// MOD FILES (${files.length})`}
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {files.map((f, i) => {
@@ -253,7 +274,9 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
           {/* ── Right column: Metadata panel ── */}
           <div className="space-y-4">
             <div className="bg-app-secondary/50 rounded-lg border border-app/40 p-4 space-y-3">
-              <h3 className="text-sm font-bold text-app-muted tracking-widest mb-1">// DETAILS</h3>
+              <h3 className="text-sm font-bold text-app-muted tracking-widest mb-1">
+                {'// DETAILS'}
+              </h3>
 
               {protocol.author && (
                 <InfoRow

@@ -17,6 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
+import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { queryClient } from '@/lib/queryClient'
 import type { IDoomVersion, IAppSettings, ISourcePort, SourcePortFamily } from '@shared/schema'
 import {
@@ -79,6 +80,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   // briefly apply the default theme before the saved one arrives.
   const fetchedRef = useRef(false)
 
+  // Snapshot of source port state at dialog open, for achievement tracking
+  const initialPortCountRef = useRef<number>(0)
+  const initialPortFamiliesRef = useRef<string[]>([])
+
   // Fetch settings from API when dialog opens
   useEffect(() => {
     if (!isOpen) return
@@ -96,6 +101,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
           savedRef.current = { theme: data.theme, customThemeCss: data.customThemeCss }
           setSettings((prev) => ({ ...prev, ...data }))
           fetchedRef.current = true
+          // Capture initial source port state for achievement tracking
+          const activePorts = (data.sourcePorts || []).filter(
+            (p: { ignored?: boolean }) => !p.ignored
+          )
+          initialPortCountRef.current = activePorts.length
+          initialPortFamiliesRef.current = [
+            ...new Set(
+              activePorts.map((p: { family?: string }) => p.family).filter((f): f is string => !!f)
+            )
+          ]
         }
       })
       .catch(() => {
@@ -238,6 +253,36 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         customThemeCss: settings.customThemeCss,
         defaultView: settings.defaultView
       }
+      // Dispatch SOURCE_PORT_ADDED achievements for each newly added port
+      const oldPortCount = initialPortCountRef.current
+      const newPorts = (settings.sourcePorts || []).filter((p) => !p.ignored)
+      const addedCount = newPorts.length - oldPortCount
+      if (addedCount > 0) {
+        // Collect newly seen families
+        const oldFamilies = new Set(initialPortFamiliesRef.current)
+        for (const port of newPorts) {
+          if (port.family && !oldFamilies.has(port.family)) {
+            dispatchAchievementEvent({
+              type: 'SOURCE_PORT_ADDED',
+              count: 1,
+              family: port.family
+            })
+              .then((srcResult) => {
+                const unlockToasts = buildUnlockToasts(srcResult)
+                for (const t of unlockToasts) {
+                  toast({
+                    title: t.title,
+                    description: t.description,
+                    duration: t.duration as 6000 | 8000
+                  })
+                }
+              })
+              .catch(() => {})
+            oldFamilies.add(port.family)
+          }
+        }
+      }
+
       await api.updateSettings(payload)
 
       // Also save doom versions

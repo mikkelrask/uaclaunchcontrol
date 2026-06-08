@@ -32,7 +32,7 @@ import { useToast } from '@/hooks/use-toast'
 import { gameService } from '@/lib/gameService'
 import { IProtocol, IModFile, IAppSettings, IDoomVersion, ISourcePort } from '@shared/schema'
 import { slugify, buildLaunchCommand } from '@/lib/utils'
-import { checkAdvancement, getRankTitle } from '@/lib/advancement'
+import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { CatalogManager } from '@/components/CatalogManager'
 import { api } from '@/api'
@@ -274,18 +274,26 @@ export const InstallPage: React.FC = () => {
         description: 'Successfully added new launch configuration.'
       })
 
-      // Check for rank advancement
-      const currentRank = (settings as IAppSettings)?.rank || 'cadet'
-      const advancement = checkAdvancement(currentRank, 1)
-      if (advancement) {
-        const newRank = getRankTitle(advancement)
-        await api.updateSettings({ rank: advancement })
-        toast({
-          title: 'SYSTEM: message_recieved',
-          description: `Congratulations, ${getRankTitle(currentRank)}!<br />You've now been promoted to ${newRank}. No go kill some demons.`,
-          duration: 10000
+      // Dispatch achievement event for PROTOCOL_CREATED
+      try {
+        const result = await dispatchAchievementEvent({
+          type: 'PROTOCOL_CREATED',
+          count: 1,
+          fileCount: files.length
         })
-        queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
+
+        // Show unlock toasts
+        const unlockToasts = buildUnlockToasts(result)
+        for (const t of unlockToasts) {
+          toast({
+            title: t.title,
+            description: t.description,
+            duration: t.duration as 6000 | 8000
+          })
+        }
+      } catch (err) {
+        // Fire-and-forget: don't block navigation on achievement failures
+        console.error('Achievement dispatch failed:', err)
       }
 
       queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
@@ -381,6 +389,27 @@ export const InstallPage: React.FC = () => {
       })
       setSelectedWad(null)
       queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
+
+      // Dispatch WAD_IMPORTED achievement event (only for new imports)
+      if (!result.alreadyExists) {
+        dispatchAchievementEvent({
+          type: 'WAD_IMPORTED',
+          count: 1
+        })
+          .then((wadResult) => {
+            const unlockToasts = buildUnlockToasts(wadResult)
+            for (const t of unlockToasts) {
+              toast({
+                title: t.title,
+                description: t.description,
+                duration: t.duration as 6000 | 8000
+              })
+            }
+          })
+          .catch((err) => {
+            console.error('Achievement dispatch failed:', err)
+          })
+      }
     },
     onError: (error) => {
       toast({

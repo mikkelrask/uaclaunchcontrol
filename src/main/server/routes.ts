@@ -2,6 +2,7 @@ import type { Express } from 'express'
 import { createServer, type Server } from 'http'
 import { gameService } from './services/gameService'
 import * as storage from './storage'
+import * as playerService from './services/playerService'
 import * as express from 'express'
 import path from 'path'
 import fs from 'fs-extra'
@@ -525,6 +526,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Failed to show open dialog:', error)
       return res.status(500).json({ canceled: true, filePaths: [] })
+    }
+  })
+
+  // === Player Data API ===
+  app.get('/api/player-data', async (_req, res) => {
+    try {
+      const data = await playerService.getPlayerData()
+      return res.json(data)
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to get player data'
+      })
+    }
+  })
+
+  app.put('/api/player-data', async (req, res) => {
+    try {
+      const partial = req.body
+      if (!partial || typeof partial !== 'object') {
+        return res.status(400).json({ message: 'Invalid player data' })
+      }
+      const updated = await playerService.savePlayerData(partial)
+      return res.json(updated)
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to save player data'
+      })
+    }
+  })
+
+  app.put('/api/player-data/stats', async (req, res) => {
+    try {
+      const delta = req.body
+      if (!delta || typeof delta !== 'object') {
+        return res.status(400).json({ message: 'Invalid stats delta' })
+      }
+      const updatedStats = await playerService.updatePlayerStats(delta)
+      return res.json(updatedStats)
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to update player stats'
+      })
+    }
+  })
+
+  app.post('/api/player-data/achievements/unlock', async (req, res) => {
+    try {
+      const { id, state } = req.body
+      if (!id || !state) {
+        return res.status(400).json({ message: 'Missing achievement id or state' })
+      }
+      const result = await playerService.unlockAchievement(id, state)
+      return res.json(result)
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to unlock achievement'
+      })
     }
   })
 
