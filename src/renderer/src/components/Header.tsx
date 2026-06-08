@@ -156,7 +156,10 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
           {databaseLink?.name ?? 'MODDB'}
         </a>
         <Link href="/install">
-          <span className={`nav-tab ${location === '/install' ? 'active' : ''} cursor-pointer`}>
+          <span
+            data-tour="install-tab"
+            className={`nav-tab ${location === '/install' ? 'active' : ''} cursor-pointer`}
+          >
             INSTALL
           </span>
         </Link>
@@ -174,6 +177,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
           </div>
         </div>
         <button
+          data-tour="settings-button"
           className="w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover"
           onClick={openSettings}
         >

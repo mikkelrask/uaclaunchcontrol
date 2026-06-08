@@ -81,7 +81,10 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
     : imagePlaceholder
 
   return (
-    <div className="game-card group cursor-pointer relative border shadow-accent-hightlight/20">
+    <div
+      data-tour="launch-card"
+      className="game-card group cursor-pointer relative border shadow-accent-hightlight/20"
+    >
       <div className="aspect-w-16 aspect-h-9 overflow-hidden relative">
         <img
           src={displayImagePath}
@@ -134,10 +137,11 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
       {/* Action buttons that appear on hover at the bottom */}
       <div
         className="absolute bottom-0 left-0 w-full opacity-0 group-hover:opacity-100
-                    transition-opacity duration-300 bg-app-popover/85
+                    group-focus-within:opacity-100 transition-opacity duration-300 bg-app-popover/85
                     flex items-center justify-between p-2"
       >
         <Button
+          data-tour="launch-button"
           size="sm"
           onClick={handleLaunch}
           disabled={launchMutation.isPending}

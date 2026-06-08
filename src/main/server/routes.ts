@@ -553,5 +553,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  // === First Run API ===
+  app.get('/api/first-run', async (_req, res) => {
+    try {
+      const isFirstRun = storage.getIsFirstRun()
+      return res.json({ isFirstRun })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: error instanceof Error ? error.message : 'Failed to check first run' })
+    }
+  })
+
+  app.post('/api/first-run/dismiss', async (_req, res) => {
+    try {
+      storage.dismissFirstRun()
+      return res.json({ success: true })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: error instanceof Error ? error.message : 'Failed to dismiss first run' })
+    }
+  })
+
+  app.post('/api/first-run/reenable', async (_req, res) => {
+    try {
+      storage.reenableFirstRun()
+      return res.json({ isFirstRun: true })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: error instanceof Error ? error.message : 'Failed to re-enable first run' })
+    }
+  })
+
   return httpServer
 }
