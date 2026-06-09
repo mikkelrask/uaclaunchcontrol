@@ -107,11 +107,11 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
   {
     id: 'wad-connoisseur',
     title: 'WAD Connoisseur',
-    description: 'Import 5 unique WAD files.',
+    description: 'Import 15 unique WAD files.',
     category: 'collection',
     icon: 'FileArchive',
     type: 'incremental',
-    conditions: [{ stat: 'totalWadsImported', min: 5 }]
+    conditions: [{ stat: 'totalWadsImported', min: 15 }]
   },
 
   // ── Combat (Playtime) ──
