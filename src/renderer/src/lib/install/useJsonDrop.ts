@@ -4,7 +4,7 @@ import type { z } from 'zod'
 import type { IModFile, IAppSettings, IDoomVersion, ISourcePort } from '@shared/schema'
 import { gameService } from '@/lib/gameService'
 import { api } from '@/api'
-import { parseBatContent, resolveRelativePaths } from '@/lib/install/parsers'
+import { parseBatContent, resolveRelativePaths, deriveFileType } from '@/lib/install/parsers'
 import type { formSchema } from '@/lib/install/schema'
 import type { UacModpackImport } from '@/lib/install/types'
 
@@ -78,17 +78,6 @@ function matchDoomVersion(
 }
 
 /**
- * Derive a human-readable file type label from a file extension.
- */
-function detectFileType(ext: string): string {
-  const upper = ext.toUpperCase()
-  if (upper === 'ZIP') return 'ZIP'
-  if (upper === 'PK3' || upper === 'IPK3') return 'PK3'
-  if (upper === 'DEH' || upper === 'BEX') return 'DEH'
-  return 'WAD'
-}
-
-/**
  * Build a temporary IModFile for a file path, computing its hash and
  * checking against the existing catalog.
  */
@@ -98,7 +87,7 @@ async function buildFileFromPath(
 ): Promise<IModFile> {
   const fileName = filePath.split(/[\\/]/).pop() || filePath
   const ext = fileName.split('.').pop() || ''
-  const fileType = detectFileType(ext)
+  const fileType = deriveFileType(ext)
 
   let hashValue = ''
   try {

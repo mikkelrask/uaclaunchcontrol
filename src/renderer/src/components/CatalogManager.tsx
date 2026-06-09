@@ -39,6 +39,7 @@ import { REGISTRY_API_URL } from '@shared/registry-config'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ZipImportModal } from '@/components/ZipImportModal'
 import { ZipScanResult } from '@/types/zipImport'
+import { parseBatContent, resolveRelativePaths, deriveFileType } from '@/lib/install/parsers'
 
 interface CatalogManagerProps {
   files: IModFile[]
@@ -53,63 +54,6 @@ interface RequiredModEntry {
   offset: number
   sidecarOnly: boolean
   isMain?: boolean
-}
-
-function deriveFileType(ext: string): string {
-  const upper = ext.toUpperCase()
-  if (upper === 'ZIP') return 'ZIP'
-  if (upper === 'PK3' || upper === 'PK7' || upper === 'IPK3') return 'PK3'
-  if (upper === 'DEH' || upper === 'BEX') return 'DEH'
-  return 'WAD'
-}
-
-interface BatParseResult {
-  modFiles: string[]
-}
-
-function parseBatContent(content: string): BatParseResult {
-  const lines = content.replace(/\r\n/g, '\n').split('\n')
-  const modFiles: string[] = []
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (
-      !trimmed ||
-      trimmed.toLowerCase().startsWith('::') ||
-      trimmed.toLowerCase().startsWith('@echo') ||
-      trimmed.toLowerCase().startsWith('rem ')
-    )
-      continue
-
-    const tokens: string[] = []
-    const regex = /[^\s"']+|"([^"]*)"|'([^']*)'/g
-    let match
-    while ((match = regex.exec(trimmed)) !== null) {
-      tokens.push(match[1] || match[2] || match[0])
-    }
-
-    const fileIndex = tokens.findIndex((t) => t.toLowerCase() === '-file')
-    if (fileIndex >= 0) {
-      for (let i = fileIndex + 1; i < tokens.length; i++) {
-        const token = tokens[i]
-        if (token.startsWith('-')) break
-        modFiles.push(token)
-      }
-    }
-  }
-
-  return { modFiles }
-}
-
-function resolveRelativePaths(basePath: string, files: string[]): string[] {
-  const lastSep = Math.max(basePath.lastIndexOf('\\'), basePath.lastIndexOf('/'))
-  if (lastSep <= 0) return files
-  const baseDir = basePath.substring(0, lastSep)
-  const sep = basePath.includes('\\') ? '\\' : '/'
-  return files.map((file) => {
-    if (/^[a-zA-Z]:[\\/]/.test(file) || file.startsWith('/')) return file
-    return `${baseDir}${sep}${file}`
-  })
 }
 
 export function CatalogManager({ files, onChange }: CatalogManagerProps): React.ReactElement {
