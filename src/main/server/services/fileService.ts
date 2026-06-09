@@ -12,6 +12,7 @@ export class FileService {
       await fs.access(filePath)
       return true
     } catch {
+      console.error('[fileService] fileExists failed:', filePath)
       return false
     }
   }
@@ -21,6 +22,7 @@ export class FileService {
     try {
       return await fs.stat(filePath)
     } catch {
+      console.error('[fileService] getFileInfo failed:', filePath)
       return null
     }
   }
@@ -30,6 +32,7 @@ export class FileService {
     try {
       return await fs.readdir(dirPath)
     } catch {
+      console.error('[fileService] readDirectory failed:', dirPath)
       return []
     }
   }
@@ -39,6 +42,7 @@ export class FileService {
     try {
       return await fs.readFile(filePath, 'utf8')
     } catch {
+      console.error('[fileService] readFile failed:', filePath)
       return null
     }
   }
@@ -51,6 +55,7 @@ export class FileService {
       await fs.writeFile(filePath, data, 'utf8')
       return true
     } catch {
+      console.error('[fileService] writeFile failed:', filePath)
       return false
     }
   }
@@ -61,6 +66,7 @@ export class FileService {
       await fs.unlink(filePath)
       return true
     } catch {
+      console.error('[fileService] deleteFile failed:', filePath)
       return false
     }
   }

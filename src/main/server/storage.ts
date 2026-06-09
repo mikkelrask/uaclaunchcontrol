@@ -165,6 +165,7 @@ export function dismissFirstRun(): void {
   try {
     fs.writeFileSync(FIRST_RUN_SENTINEL, '')
   } catch {
+    console.error('[storage] Failed to write first-run sentinel')
     // best-effort
   }
 }
@@ -177,6 +178,7 @@ export function reenableFirstRun(): void {
       fs.unlinkSync(FIRST_RUN_SENTINEL)
     }
   } catch {
+    console.error('[storage] Failed to remove first-run sentinel')
     // best-effort
   }
 }

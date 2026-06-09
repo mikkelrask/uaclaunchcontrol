@@ -128,6 +128,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         const versions = await api.getDoomVersions()
         setDoomVersions(versions)
       } catch {
+        console.error('[settings] Failed to load doom versions')
         toast({
           title: 'Error',
           description: 'Failed to load doom versions',

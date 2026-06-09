@@ -104,6 +104,7 @@ export const api = {
       }
       return null
     } catch {
+      console.error('[api] computeHash failed for file')
       return null
     }
   },
@@ -131,6 +132,7 @@ export const api = {
       })
       // Silently ignore all responses
     } catch {
+      console.debug('[api] submitToPending network error (silent)')
       // Network error - silently ignore
     }
   },
