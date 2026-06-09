@@ -28,25 +28,4 @@ export function getRankTitle(rankId?: string): string {
   return rank?.title ?? 'Cadet'
 }
 
-/**
- * Check whether the operator should advance to a new rank based on
- * their current rank and the total number of protocols they have created.
- * Returns the new rank id if an advancement should occur, or null.
- *
- * @deprecated Will be replaced by the achievement trigger system in Phase 3.
- * See docs/achievements.md for the new system.
- */
-export function checkAdvancement(currentRank: string, protocolCount: number): string | null {
-  if (currentRank === 'cadet' && protocolCount >= 1) {
-    return 'marine'
-  }
-  if (currentRank === 'marine' && protocolCount >= 10) {
-    return 'sergeant'
-  }
-  // Slayer is now gated behind the compound achievement "the-slayer" in the new system.
-  // This fallback is kept for backward compatibility until triggers are wired.
-  if (currentRank === 'sergeant' && protocolCount >= 20) {
-    return 'slayer'
-  }
-  return null
-}
+
