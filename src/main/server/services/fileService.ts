@@ -159,20 +159,5 @@ export class FileService {
   }
 }
 
-// In your route handler for POST /api/protocols/:id/launch, use the unified launchGame
-// Example (pseudo-code):
-// router.post('/api/protocols/:id/launch', async (req, res) => {
-//   const protocolId = req.params.id;
-//   try {
-//     const result = await launchGame({ protocolId });
-//     if (result.success) {
-//       res.json({ success: true });
-//     } else {
-//       res.status(500).json({ success: false, message: result.message });
-//     }
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// });
-
 export const fileService = new FileService()
+

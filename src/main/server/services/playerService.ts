@@ -298,15 +298,3 @@ export async function unlockAchievement(
   return updated
 }
 
-/**
- * Resolve a rank id to its human-readable title.
- */
-export function getRankTitle(rankId?: string): string {
-  const ranks: Record<string, string> = {
-    cadet: 'Cadet',
-    marine: 'Marine',
-    sergeant: 'Sergeant',
-    slayer: 'Doom Slayer'
-  }
-  return ranks[rankId ?? ''] ?? 'Cadet'
-}
