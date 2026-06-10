@@ -280,6 +280,25 @@ export const InstallPage: React.FC = () => {
       console.warn('[DEBUG] Failed to update some catalog entries:', err)
     }
 
+    // Check if any file has a config template to seed a protocol-specific config
+    const templateFile = files.find((f) => f.configTemplate)
+    if (templateFile?.configTemplate) {
+      try {
+        const protocolConfig = await api.copyConfigForProtocol(
+          templateFile.configTemplate.md5Hash,
+          uniqueId
+        )
+        protocol.protocolConfig = protocolConfig
+        toast({
+          title: 'SYSTEM: config_seeded',
+          description: `Seeded config from "${templateFile.name || templateFile.fileName || 'unknown'}"`
+        })
+      } catch (err) {
+        console.warn('[DEBUG] Failed to seed config for protocol:', err)
+        // Non-fatal — protocol still created without config
+      }
+    }
+
     createMutation.mutate({ protocol, files: fileData })
   }
 

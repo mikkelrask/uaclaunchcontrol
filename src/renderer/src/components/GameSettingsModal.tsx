@@ -78,6 +78,13 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     const sourcePort = sourcePorts.find((p) => p.id === protocol.sourcePortId)
     const doomVersion = doomVersions?.find((v) => v.id === protocol.doomVersionId)
 
+    // Compute config file path for protocol-specific config
+    let configPath: string | undefined
+    if (protocol.protocolConfig?.configFile && settings?.modsDirectory) {
+      const baseDir = settings.modsDirectory.replace(/\/mods$/, '').replace(/\\mods$/, '')
+      configPath = `${baseDir}/data/cfgs/${protocol.protocolConfig.configFile}`
+    }
+
     return buildLaunchCommand({
       executable: sourcePort?.executablePath,
       iwad: doomVersion?.defaultIwad,
@@ -86,7 +93,8 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
       saveDirectory: protocol.saveDirectory,
       launchParameters: protocol.launchParameters,
       modsDirectory: settings?.modsDirectory,
-      savegamesPath: settings?.savegamesPath
+      savegamesPath: settings?.savegamesPath,
+      configPath
     })
   }, [protocol, files, sourcePorts, doomVersions, settings])
 
@@ -200,27 +208,56 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     setProtocol((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleExport = (): void => {
+  const handleExport = async (): Promise<void> => {
     const doomVersion = doomVersions?.find((v) => v.id === protocol.doomVersionId)
     const portName = protocol.sourcePortId
       ? sourcePorts.find((p) => p.id === protocol.sourcePortId)?.name || 'gzdoom'
       : 'gzdoom'
+
+    // Collect config file contents referenced by files and protocol
+    const configs: Record<string, { content: string }> = {}
+
+    // From file configTemplates
+    for (const f of files) {
+      if (f.configTemplate?.md5Hash && !configs[f.configTemplate.md5Hash]) {
+        try {
+          const content = await api.readConfigContent(f.configTemplate.md5Hash)
+          configs[f.configTemplate.md5Hash] = { content }
+        } catch {
+          console.warn(`Failed to read config ${f.configTemplate.md5Hash} for export`)
+        }
+      }
+    }
+
+    // From protocolConfig (the template it was seeded from)
+    if (protocol.protocolConfig?.templateHash && !configs[protocol.protocolConfig.templateHash]) {
+      try {
+        const content = await api.readConfigContent(protocol.protocolConfig.templateHash)
+        configs[protocol.protocolConfig.templateHash] = { content }
+      } catch {
+        console.warn(`Failed to read protocol config ${protocol.protocolConfig.templateHash} for export`)
+      }
+    }
+
     const exportData = {
       format: 'uac-modpack',
-      version: '1.0',
+      version: '1.1',
       game: {
         title: protocol.title || protocol.name,
         description: protocol.description || '',
         doomVersionSlug: doomVersion?.slug || '',
         sourcePort: portName,
-        launchParameters: protocol.launchParameters || ''
+        launchParameters: protocol.launchParameters || '',
+        ...(protocol.protocolConfig ? { protocolConfig: protocol.protocolConfig } : {})
       },
       files: files.map((f) => ({
         name: f.name || f.fileName,
         hashValue: f.hashValue || '',
         loadOrder: f.loadOrder ?? 0,
-        url: f.url || ''
-      }))
+        url: f.url || '',
+        ...(f.configTemplate ? { configHash: f.configTemplate.md5Hash } : {})
+      })),
+      ...(Object.keys(configs).length > 0 ? { configs } : {})
     }
 
     const jsonStr = JSON.stringify(exportData, null, 2)
@@ -234,7 +271,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
 
     toast({
       title: 'Exported',
-      description: 'Modpack JSON downloaded'
+      description: `Modpack downloaded${Object.keys(configs).length > 0 ? ' with configs' : ''}`
     })
   }
 

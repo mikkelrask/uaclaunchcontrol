@@ -418,5 +418,58 @@ export const api = {
       throw new Error('Failed to import files from archive')
     }
     return response.json()
+  },
+
+  // ── Config File API ──────────────────────────────────
+
+  /** Upload a config file: hash it, copy to cfgs dir, return metadata. */
+  uploadConfigFile: async (filePath: string): Promise<{ hash: string; configFile: string }> => {
+    const response = await fetch(`${API_BASE}/api/configs/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to upload config file')
+    }
+    return response.json()
+  },
+
+  /** Copy a config template to a protocol-specific copy. */
+  copyConfigForProtocol: async (
+    templateHash: string,
+    protocolId: string
+  ): Promise<{ configFile: string; templateHash: string }> => {
+    const response = await fetch(`${API_BASE}/api/configs/copy-for-protocol`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateHash, protocolId })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to copy config for protocol')
+    }
+    return response.json()
+  },
+
+  /** Read a config file content by hash (for export). */
+  readConfigContent: async (key: string): Promise<string> => {
+    const response = await fetch(`${API_BASE}/api/configs/${key}`)
+    if (!response.ok) {
+      throw new Error('Failed to read config file')
+    }
+    const data = await response.json()
+    return data.content
+  },
+
+  /** Write a config file content (for import reconstruction). */
+  writeConfigContent: async (key: string, content: string): Promise<void> => {
+    const response = await fetch(`${API_BASE}/api/configs/${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, content })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to write config file')
+    }
   }
 }

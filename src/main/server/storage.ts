@@ -12,7 +12,8 @@ import {
   IDoomVersion,
   ISourcePort,
   IProtocol,
-  IModFile
+  IModFile,
+  ModProtocolConfig
 } from '../../shared/schema'
 import { debug } from '../../shared/debug'
 
@@ -27,6 +28,7 @@ const SETTINGS_FILE = path.join(CONFIG_DIR, 'settings.json') // Directly in CONF
 const DOOM_VERSIONS_FILE = path.join(CONFIG_DIR, 'doomVersions.json') // Directly in CONFIG_DIR per local-structure.txt
 const MOD_FILE_CATALOG = path.join(CONFIG_DIR, 'modFileCatalogue.json')
 export const IMAGES_DIR = path.join(CONFIG_DIR, 'data/images')
+export const CFGS_DIR = path.join(CONFIG_DIR, 'data', 'cfgs')
 const FIRST_RUN_SENTINEL = path.join(CONFIG_DIR, '.first-run-complete')
 
 const LEGACY_CONFIG_DIRS = [
@@ -191,6 +193,7 @@ export function initStorage(): boolean {
     fs.ensureDirSync(CONFIG_DIR)
     fs.ensureDirSync(DATA_DIR) // Ensure data directory exists
     fs.ensureDirSync(MODS_DIR) // Ensure mods directory exists
+    fs.ensureDirSync(CFGS_DIR) // Ensure config files directory exists
 
     // Check for legacy config BEFORE creating new files
     const legacyConfig = checkLegacyConfigSync()
@@ -1022,6 +1025,82 @@ export async function computeFileHash(filePath: string): Promise<string> {
   } catch (error) {
     console.error(`Error computing hash for ${filePath}:`, error)
     return ''
+  }
+}
+
+/**
+ * Copy a config template file to a protocol-specific isolated copy.
+ * 
+ * When a protocol is created with mod files that have a configTemplate,
+ * this function copies the template into a per-protocol file so each
+ * protocol has its own config that users can modify in-game without
+ * affecting other protocols.
+ */
+export async function copyConfigForProtocol(
+  templateHash: string,
+  protocolId: string
+): Promise<ModProtocolConfig> {
+  try {
+    initStorage()
+    const src = path.join(CFGS_DIR, `${templateHash}.cfg`)
+    const dest = path.join(CFGS_DIR, `${protocolId}.cfg`)
+
+    if (!fs.existsSync(src)) {
+      throw new Error(`Config template not found: ${src}`)
+    }
+
+    await fs.copy(src, dest, { overwrite: true })
+    debug(`Copied config template ${templateHash} to protocol ${protocolId}`)
+
+    return {
+      configFile: `${protocolId}.cfg`,
+      templateHash
+    }
+  } catch (error: unknown) {
+    console.error('Error copying config for protocol:', error)
+    throw new Error(
+      `Failed to copy config for protocol: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
+}
+
+/**
+ * Read a config file content by hash or protocolId.
+ * Returns the raw text content of the config file.
+ */
+export async function readConfigFileContent(key: string): Promise<string> {
+  try {
+    initStorage()
+    const filePath = path.join(CFGS_DIR, `${key}.cfg`)
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Config file not found: ${filePath}`)
+    }
+    const content = await fs.readFile(filePath, 'utf-8')
+    return content
+  } catch (error: unknown) {
+    console.error('Error reading config file:', error)
+    throw new Error(
+      `Failed to read config file: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
+}
+
+/**
+ * Write a config file to the cfgs directory (by hash or protocolId).
+ */
+export async function writeConfigFileContent(key: string, content: string): Promise<string> {
+  try {
+    initStorage()
+    const filePath = path.join(CFGS_DIR, `${key}.cfg`)
+    await fs.ensureDir(CFGS_DIR)
+    await fs.writeFile(filePath, content, 'utf-8')
+    debug(`Wrote config file: ${filePath}`)
+    return key
+  } catch (error: unknown) {
+    console.error('Error writing config file:', error)
+    throw new Error(
+      `Failed to write config file: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
 }
 

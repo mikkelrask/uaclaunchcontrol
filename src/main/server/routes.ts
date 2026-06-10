@@ -451,6 +451,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  // === Config File API ===
+
+  /** Copy a config template to a protocol-specific copy. */
+  app.post('/api/configs/copy-for-protocol', async (req, res) => {
+    try {
+      const { templateHash, protocolId } = req.body
+      if (!templateHash || !protocolId) {
+        return res.status(400).json({ message: 'Missing templateHash or protocolId' })
+      }
+      const result = await storage.copyConfigForProtocol(templateHash, protocolId)
+      return res.json(result)
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to copy config for protocol'
+      })
+    }
+  })
+
+  /** Read a config file content by hash or protocolId. */
+  app.get('/api/configs/:key', async (req, res) => {
+    try {
+      const { key } = req.params
+      if (!key) return res.status(400).json({ message: 'Missing config key' })
+      const content = await storage.readConfigFileContent(key)
+      return res.json({ content })
+    } catch (error: unknown) {
+      return res.status(404).json({
+        message: error instanceof Error ? error.message : 'Config file not found'
+      })
+    }
+  })
+
+  /** Write a config file content (for import reconstruction). */
+  app.post('/api/configs/:key', async (req, res) => {
+    try {
+      const { key } = req.params
+      const { content } = req.body
+      if (!key || !content) {
+        return res.status(400).json({ message: 'Missing key or content' })
+      }
+      await storage.writeConfigFileContent(key, content)
+      return res.json({ success: true })
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to write config file'
+      })
+    }
+  })
+
+  /** Hash a file (reused for configs too) */
+  app.post('/api/configs/hash', async (req, res) => {
+    try {
+      const { filePath } = req.body
+      if (!filePath) return res.status(400).json({ message: 'Missing filePath' })
+      const hash = await storage.computeFileHash(filePath)
+      return res.json(hash)
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to compute hash'
+      })
+    }
+  })
+
+  /** Upload a config file: hash it, copy to cfgs dir, return the hash. */
+  app.post('/api/configs/upload', async (req, res) => {
+    try {
+      const { filePath } = req.body
+      if (!filePath) return res.status(400).json({ message: 'Missing filePath' })
+
+      const hash = await storage.computeFileHash(filePath)
+      if (!hash) throw new Error('Failed to compute hash')
+
+      const destPath = path.join(storage.CFGS_DIR, `${hash}.cfg`)
+      await fs.ensureDir(storage.CFGS_DIR)
+
+      const resolved = storage.resolvePath(filePath)
+      await fs.copy(resolved, destPath, { overwrite: true })
+
+      debug(`Uploaded config file: ${filePath} -> ${destPath} (hash: ${hash})`)
+
+      return res.json({ hash, configFile: `${hash}.cfg` })
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to upload config file'
+      })
+    }
+  })
+
   // Update a Doom version (e.g., for ignoring/hiding)
   app.put('/api/versions/:id', async (req, res) => {
     try {

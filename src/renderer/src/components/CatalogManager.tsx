@@ -54,7 +54,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     version: '',
     url: '',
     loadOrder: [],
-    sidecarOnly: false
+    sidecarOnly: false,
+    configTemplate: null
   })
   const {
     isDraggingFile,
@@ -70,7 +71,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     version: '',
     url: '',
     loadOrder: [],
-    sidecarOnly: false
+    sidecarOnly: false,
+    configTemplate: null
   })
 
   const [lastLookupHash, setLastLookupHash] = useState<string | null>(null)
@@ -195,7 +197,13 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         url: addForm.url,
         hashValue,
         loadOrder: processedLoadOrder,
-        sidecarOnly: addForm.sidecarOnly
+        sidecarOnly: addForm.sidecarOnly,
+        configTemplate: addForm.configTemplate
+          ? {
+              configFile: addForm.configTemplate.configFile,
+              md5Hash: addForm.configTemplate.md5Hash
+            }
+          : undefined
       })
 
       // Check if we should submit to pending registry
@@ -289,7 +297,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         version: '',
         url: '',
         loadOrder: [],
-        sidecarOnly: false
+        sidecarOnly: false,
+        configTemplate: null
       })
 
       // Fetch fresh authoritative list and notify parent
@@ -577,6 +586,96 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     }
   }
 
+  /** Browse for a config file to link as template. */
+  const handleBrowseConfigFile = async (): Promise<void> => {
+    try {
+      const result = await api.showOpenDialog({
+        title: 'Select Config File',
+        properties: ['openFile'],
+        filters: [
+          {
+            name: 'Config files',
+            extensions: ['cfg', 'ini', 'conf']
+          }
+        ]
+      })
+
+      if (!result.canceled && result.filePaths.length > 0) {
+        const configPath = result.filePaths[0]
+        const uploadResult = await api.uploadConfigFile(configPath)
+        setAddForm((prev) => ({
+          ...prev,
+          configTemplate: {
+            filePath: configPath,
+            configFile: uploadResult.configFile,
+            md5Hash: uploadResult.hash
+          }
+        }))
+        toast({
+          title: 'SYSTEM: config_linked',
+          description: `Config template linked: ${configPath.split(/[\\/]/).pop()}`
+        })
+      }
+    } catch (error) {
+      console.error('Failed to browse config file:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to link config file',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  /** Clear the config template selection. */
+  const handleClearConfigFile = (): void => {
+    setAddForm((prev) => ({ ...prev, configTemplate: null }))
+  }
+
+  /** Browse for a config file to link as template in the edit dialog. */
+  const handleEditBrowseConfigFile = async (): Promise<void> => {
+    try {
+      const result = await api.showOpenDialog({
+        title: 'Select Config File',
+        properties: ['openFile'],
+        filters: [
+          {
+            name: 'Config files',
+            extensions: ['cfg', 'ini', 'conf']
+          }
+        ]
+      })
+
+      if (!result.canceled && result.filePaths.length > 0) {
+        const configPath = result.filePaths[0]
+        const uploadResult = await api.uploadConfigFile(configPath)
+        setEditForm((prev) => ({
+          ...prev,
+          configTemplate: {
+            filePath: configPath,
+            configFile: uploadResult.configFile,
+            md5Hash: uploadResult.hash
+          }
+        }))
+        toast({
+          title: 'SYSTEM: config_linked',
+          description: `Config template linked: ${configPath.split(/[\\/]/).pop()}`
+        })
+      }
+    } catch (error) {
+      console.error('Failed to browse config file:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to link config file',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  /** Clear the config template selection in edit dialog. */
+  const handleEditClearConfigFile = (): void => {
+    setEditForm((prev) => ({ ...prev, configTemplate: null }))
+  }
+
   const handleDeleteFromCatalog = async (file: IModFile): Promise<void> => {
     if (
       !confirm(`Are you sure you want to remove "${file.name || file.fileName}" from the catalog?`)
@@ -637,7 +736,14 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       version: file.version || '',
       url: file.url || '',
       loadOrder: existingLoadOrder,
-      sidecarOnly: file.sidecarOnly || false
+      sidecarOnly: file.sidecarOnly || false,
+      configTemplate: file.configTemplate
+        ? {
+            filePath: file.configTemplate.configFile,
+            configFile: file.configTemplate.configFile,
+            md5Hash: file.configTemplate.md5Hash
+          }
+        : null
     })
     setIsEditModalOpen(true)
   }
@@ -684,7 +790,13 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         version: editForm.version,
         url: editForm.url,
         loadOrder: processedLoadOrder,
-        sidecarOnly: editForm.sidecarOnly
+        sidecarOnly: editForm.sidecarOnly,
+        configTemplate: editForm.configTemplate
+          ? {
+              configFile: editForm.configTemplate.configFile,
+              md5Hash: editForm.configTemplate.md5Hash
+            }
+          : undefined
       }
 
       if (hashValue) {
@@ -863,6 +975,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         requiredModsActions={addRequiredMods}
         onAddFile={handleAddFile}
         onBrowseFile={handleBrowseFile}
+        onBrowseConfigFile={handleBrowseConfigFile}
+        onClearConfigFile={handleClearConfigFile}
         onCancel={() => {
           resetLookupState()
           setIsAddModalOpen(false)
@@ -878,6 +992,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         selectableFiles={selectableFilesForEdit}
         requiredModsActions={editRequiredMods}
         onSaveEdit={handleSaveEdit}
+        onBrowseConfigFile={handleEditBrowseConfigFile}
+        onClearConfigFile={handleEditClearConfigFile}
       />
 
       <ZipImportModal

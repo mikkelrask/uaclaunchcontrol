@@ -15,17 +15,19 @@ function tokenize(text: string): string[] {
 
 /**
  * Parse a .bat file's content to extract source port, IWAD, mod files,
- * and extra launch parameters.
+ * config files, and extra launch parameters.
  *
  * Scans ALL non-comment lines for `-file` entries, collecting every mod
- * file path found. The first executable line is used to extract the
- * source port family, IWAD, and extra parameters.
+ * file path found. Also scans for `-config` and `+exec` entries to
+ * detect linked config files. The first executable line is used to
+ * extract the source port family, IWAD, and extra parameters.
  */
 export function parseBatContent(content: string): BatParseResult {
   const lines = content.replace(/\r\n/g, '\n').split('\n')
   let commandLine = ''
   let sourcePortFamily: string | undefined
   const allModFiles: string[] = []
+  let configFile: string | undefined
 
   for (const line of lines) {
     const trimmed = line.trim()
@@ -56,6 +58,16 @@ export function parseBatContent(content: string): BatParseResult {
         allModFiles.push(token)
       }
     }
+
+    // Scan for -config <path> or +exec <path>
+    if (!configFile) {
+      const configIdx = tokens.findIndex(
+        (t) => t.toLowerCase() === '-config' || t.toLowerCase() === '+exec'
+      )
+      if (configIdx >= 0 && tokens[configIdx + 1]) {
+        configFile = tokens[configIdx + 1]
+      }
+    }
   }
 
   // Fallback: if no command line found, use first line with -iwad or -file
@@ -83,7 +95,7 @@ export function parseBatContent(content: string): BatParseResult {
     }
   }
 
-  return { sourcePortFamily, iwad, modFiles: allModFiles, extraParams }
+  return { sourcePortFamily, iwad, modFiles: allModFiles, configFile, extraParams }
 }
 
 /**
