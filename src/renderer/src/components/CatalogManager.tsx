@@ -782,7 +782,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       const processedLoadOrder = await processRequiredMods(
         editForm.loadOrder,
-        selectedFile.hashValue
+        hashValue
       )
 
       const updates: Partial<IModFile> = {

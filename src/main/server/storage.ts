@@ -1776,6 +1776,7 @@ export async function importUnzippedFiles(
       })
     }
 
+    let nextId = Date.now()
     for (const file of filesToImport) {
       const moved = movedFilesMap.get(file.tempPath)!
       const existingIndex = catalog.findIndex((entry) => entry.hashValue === moved.hashValue)
@@ -1799,7 +1800,7 @@ export async function importUnzippedFiles(
       const fileType = getFileType(moved.fileName)
 
       const catalogEntry: IModFile = {
-        id: existingIndex >= 0 ? catalog[existingIndex].id : Date.now(),
+        id: existingIndex >= 0 ? catalog[existingIndex].id : nextId++,
         name: file.name || moved.fileName.replace(/\.[^.]+$/, ''),
         fileName: moved.fileName,
         filePath: moved.relativePath,
