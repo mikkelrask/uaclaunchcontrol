@@ -356,6 +356,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       let family: SourcePortFamily = 'other'
       if (lower.includes('uzdoom')) family = 'uzdoom'
       else if (lower.includes('lzdoom')) family = 'lzdoom'
+      else if (lower.includes('helion')) family = 'helion'
       else if (lower.includes('gzdoom')) family = 'gzdoom'
       else if (lower.includes('zdoom')) family = 'zdoom'
       else if (lower.includes('zandronum')) family = 'zandronum'
@@ -1229,7 +1230,7 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-app-secondary border-app">
-            {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'other'] as const).map((f) => (
+            {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'helion', 'other'] as const).map((f) => (
               <SelectItem key={f} value={f} className="text-app-primary">
                 {f}
               </SelectItem>

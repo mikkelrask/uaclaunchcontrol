@@ -47,6 +47,7 @@ function detectFamilyFromPath(p: string): ISourcePort['family'] {
   const lower = p.toLowerCase()
   if (lower.includes('uzdoom')) return 'uzdoom'
   if (lower.includes('lzdoom')) return 'lzdoom'
+  if (lower.includes('helion')) return 'helion'
   if (lower.includes('gzdoom')) return 'gzdoom'
   if (lower.includes('zdoom')) return 'zdoom'
   if (lower.includes('zandronum')) return 'zandronum'
@@ -1530,7 +1531,7 @@ function parseBatContent(content: string): BatParseResult {
     )
       continue
 
-    const portMatch = trimmed.match(/(gzdoom|uzdoom|zandronum|lzdoom|zdoom)\.exe/i)
+    const portMatch = trimmed.match(/(gzdoom|uzdoom|zandronum|lzdoom|zdoom|helion)\.exe/i)
     if (portMatch) {
       commandLine = trimmed
       sourcePortFamily = portMatch[1].toLowerCase()

@@ -41,7 +41,7 @@ export function parseBatContent(content: string): BatParseResult {
 
     // Capture the first executable line for metadata
     if (!commandLine) {
-      const portMatch = trimmed.match(/(gzdoom|uzdoom|zandronum|lzdoom|zdoom)\.exe/i)
+      const portMatch = trimmed.match(/(gzdoom|uzdoom|zandronum|lzdoom|zdoom|helion)\.exe/i)
       if (portMatch) {
         commandLine = trimmed
         sourcePortFamily = portMatch[1].toLowerCase()
