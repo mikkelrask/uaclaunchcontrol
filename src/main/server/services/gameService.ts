@@ -22,6 +22,7 @@ export class GameService {
     try {
       if (!protocol.id) {
         protocol.id = Date.now().toString()
+        protocol.createdAt = new Date().toISOString()
       }
 
       const dataToSave = {
