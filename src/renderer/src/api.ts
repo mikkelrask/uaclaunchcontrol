@@ -21,6 +21,12 @@ export interface IRegistryMod {
 
 export const API_BASE = 'http://localhost:7666'
 
+export interface ScannedPort {
+  path: string
+  name: string
+  family: string
+}
+
 export const api = {
   // Settings operations
   getSettings: (): Promise<IAppSettings> => {
@@ -33,6 +39,14 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings)
     }).then((res) => res.json())
+  },
+
+  scanPorts: async (): Promise<ScannedPort[]> => {
+    const response = await fetch(`${API_BASE}/api/settings/scan-ports`)
+    if (!response.ok) {
+      throw new Error('Failed to scan for source ports')
+    }
+    return response.json()
   },
 
   // File catalog operations
