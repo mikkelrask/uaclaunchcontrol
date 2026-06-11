@@ -1,5 +1,5 @@
 import React from 'react'
-import { LayoutGrid, List, BookOpen, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { LayoutGrid, List, BookOpen, ArrowUp, ArrowDown } from 'lucide-react'
 
 type ViewMode = 'grid' | 'list' | 'detail'
 

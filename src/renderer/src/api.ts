@@ -27,6 +27,28 @@ export interface ScannedPort {
   family: string
 }
 
+export interface PortReleaseAsset {
+  name: string
+  size: number
+  url: string
+}
+
+export interface PortRelease {
+  repo: string
+  tag: string
+  version: string
+  prerelease: boolean
+  publishedAt: string
+  asset: PortReleaseAsset
+}
+
+export interface PortDownloadResult {
+  executablePath: string
+  name: string
+  family: string
+  version: string
+}
+
 export const api = {
   // Settings operations
   getSettings: (): Promise<IAppSettings> => {
@@ -39,6 +61,30 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings)
     }).then((res) => res.json())
+  },
+
+  getPortReleases: async (): Promise<PortRelease[]> => {
+    const response = await fetch(`${API_BASE}/api/ports/releases`)
+    if (!response.ok) throw new Error('Failed to fetch port releases')
+    return response.json()
+  },
+
+  downloadPortRelease: async (
+    downloadUrl: string,
+    assetName: string,
+    family: string,
+    version: string
+  ): Promise<PortDownloadResult> => {
+    const response = await fetch(`${API_BASE}/api/ports/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ downloadUrl, assetName, family, version })
+    })
+    if (!response.ok) {
+      const err = await response.text()
+      throw new Error(err || 'Failed to download port')
+    }
+    return response.json()
   },
 
   scanPorts: async (): Promise<ScannedPort[]> => {

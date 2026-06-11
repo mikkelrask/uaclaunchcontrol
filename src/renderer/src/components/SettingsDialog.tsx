@@ -10,6 +10,7 @@ import {
   Pencil,
   Trash2,
   FolderOpen,
+  Download,
   LayoutGrid,
   List,
   BookOpen
@@ -21,6 +22,7 @@ import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { queryClient } from '@/lib/queryClient'
 import type { IDoomVersion, IAppSettings, ISourcePort, SourcePortFamily } from '@shared/schema'
 import type { ScannedPort } from '@/api'
+import { PortDownloadModal } from '@/components/PortDownloadModal'
 import {
   Select,
   SelectContent,
@@ -347,6 +349,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const [scanning, setScanning] = useState(false)
   const [scanResults, setScanResults] = useState<ScannedPort[] | null>(null)
   const [scanSelections, setScanSelections] = useState<boolean[]>([])
+  const [showPortDownloadModal, setShowPortDownloadModal] = useState(false)
 
   const handleScanPorts = async (): Promise<void> => {
     setScanning(true)
@@ -793,6 +796,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       <Button
                         size="sm"
                         variant="outline"
+                        onClick={() => setShowPortDownloadModal(true)}
+                        className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
+                      >
+                        <Download className="w-3 h-3 mr-1" />
+                        Get Port
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={handleAddPort}
                         className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
                       >
@@ -885,6 +897,31 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     </div>
                   )}
                 </div>
+
+                {/* Port Download Modal */}
+                <PortDownloadModal
+                  open={showPortDownloadModal}
+                  onOpenChange={setShowPortDownloadModal}
+                  onPortDownloaded={(result) => {
+                    setSettings((prev) => ({
+                      ...prev,
+                      sourcePorts: [
+                        ...prev.sourcePorts,
+                        {
+                          id: crypto.randomUUID(),
+                          name: result.name,
+                          executablePath: result.executablePath,
+                          family: result.family as SourcePortFamily,
+                          version: result.version,
+                          ignored: false
+                        }
+                      ]
+                    }))
+                  }}
+                  existingPorts={settings.sourcePorts.map(
+                    (p) => `${p.family}:${p.name}`
+                  )}
+                />
 
                 {/* Scan Results */}
                 {scanResults && scanResults.length > 0 && (

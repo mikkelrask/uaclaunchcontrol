@@ -846,5 +846,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  // === Source Port Downloader ===
+  app.get('/api/ports/releases', async (_req, res) => {
+    try {
+      const { getPortReleases } = await import('./services/portService')
+      const releases = await getPortReleases()
+      return res.json(releases)
+    } catch (error) {
+      console.error('[ports] Failed to fetch releases:', error)
+      return res.status(500).json({ message: 'Failed to fetch releases' })
+    }
+  })
+
+  app.post('/api/ports/download', async (req, res) => {
+    try {
+      const { downloadUrl, assetName, family, version } = req.body
+      if (!downloadUrl || !assetName || !family) {
+        return res.status(400).json({ message: 'downloadUrl, assetName, and family are required' })
+      }
+
+      const { downloadPortRelease } = await import('./services/portService')
+      const result = await downloadPortRelease(downloadUrl, assetName, family, version || '')
+      return res.json(result)
+    } catch (error) {
+      console.error('[ports] Download failed:', error)
+      return res.status(500).json({ message: error instanceof Error ? error.message : 'Download failed' })
+    }
+  })
+
   return httpServer
 }
