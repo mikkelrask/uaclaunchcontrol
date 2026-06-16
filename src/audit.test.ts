@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process'
 
 describe('npm audit', () => {
   it('no high-severity vulnerabilities in dependencies', () => {
-    const result = execSync('npm audit --audit-level=high --production', {
+    const result = execSync('npm audit --audit-level=high --omit=dev', {
       encoding: 'utf8',
       timeout: 30_000
     })

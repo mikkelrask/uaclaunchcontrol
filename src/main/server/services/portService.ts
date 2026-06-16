@@ -29,7 +29,7 @@ export interface DownloadResult {
   version: string
 }
 
-interface GitHubAsset {
+export interface GitHubAsset {
   name: string
   size: number
   browser_download_url: string
@@ -71,7 +71,7 @@ function pickAsset(
   return best
 }
 
-function pickGzdoomAsset(assets: GitHubAsset[]): GitHubAsset | null {
+export function pickGzdoomAsset(assets: GitHubAsset[]): GitHubAsset | null {
   if (isWindows) {
     return pickAsset(assets, [
       { match: (n) => /windows\.zip$/i.test(n), rank: 10 },
@@ -95,7 +95,7 @@ function pickGzdoomAsset(assets: GitHubAsset[]): GitHubAsset | null {
   return null
 }
 
-function pickHelionAsset(assets: GitHubAsset[]): GitHubAsset | null {
+export function pickHelionAsset(assets: GitHubAsset[]): GitHubAsset | null {
   if (isWindows) {
     return pickAsset(assets, [
       { match: (n) => /win-x64_AOT\.zip$/i.test(n), rank: 10 },
@@ -118,7 +118,7 @@ function pickHelionAsset(assets: GitHubAsset[]): GitHubAsset | null {
   return null
 }
 
-function pickUzdoomAsset(assets: GitHubAsset[]): GitHubAsset | null {
+export function pickUzdoomAsset(assets: GitHubAsset[]): GitHubAsset | null {
   if (isWindows) {
     return pickAsset(assets, [
       { match: (n) => /^Windows-.*\.zip$/i.test(n), rank: 10 },

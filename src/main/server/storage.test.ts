@@ -73,6 +73,16 @@ describe('resolvePath', () => {
     expect(result).toBe('/usr/local/bin')
   })
 
+  it('passes Windows paths through unchanged', () => {
+    const result = resolvePath('C:\\Users\\mr\\Doom')
+    expect(result).toBe('C:\\Users\\mr\\Doom')
+  })
+
+  it('passes Windows forward-slash paths through unchanged', () => {
+    const result = resolvePath('C:/Users/mr/Doom')
+    expect(result).toBe('C:/Users/mr/Doom')
+  })
+
   it('handles tilde alone', () => {
     const result = resolvePath('~')
     expect(result).toBe(os.homedir())
