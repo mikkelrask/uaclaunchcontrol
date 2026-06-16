@@ -22,8 +22,7 @@ export interface DispatchResult {
  * Maps an event type to the stat deltas that should be accumulated.
  * Each event type increments one or more stats.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function eventToStatsDelta(event: AchievementEvent): any {
+function eventToStatsDelta(event: AchievementEvent): Partial<IPlayerStats> {
   switch (event.type) {
     case 'PROTOCOL_CREATED':
       return {
