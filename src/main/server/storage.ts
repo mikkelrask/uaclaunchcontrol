@@ -1464,6 +1464,7 @@ export interface IZipImportFile {
   version?: string
   url?: string
   sidecarOnly: boolean
+  category?: string
   loadOrder: Record<string, number>
 }
 
@@ -1543,6 +1544,7 @@ export async function importUnzippedFiles(
         version: file.version || '',
         url: file.url || '',
         sidecarOnly: file.sidecarOnly || false,
+        category: file.category || undefined,
         loadOrder: resolvedLoadOrder,
         requiredBy: existingIndex >= 0 ? catalog[existingIndex].requiredBy || [] : []
       }
