@@ -1,7 +1,6 @@
 import fs from 'fs-extra'
 import path from 'path'
 import os from 'os'
-import axios from 'axios'
 import chokidar from 'chokidar'
 import crypto from 'crypto'
 import { BrowserWindow } from 'electron'
@@ -803,10 +802,11 @@ export async function downloadImage(url: string, protocolId: string): Promise<st
   try {
     await fs.ensureDir(IMAGES_DIR)
 
-    const response = await axios.get(url, { responseType: 'arraybuffer' })
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`HTTP ${res.status} fetching image`)
 
     // Better extension detection from Content-Type or URL
-    const contentType = response.headers['content-type']
+    const contentType = res.headers.get('content-type')
     let extension = ''
     if (contentType === 'image/jpeg') extension = '.jpg'
     else if (contentType === 'image/png') extension = '.png'
@@ -821,9 +821,9 @@ export async function downloadImage(url: string, protocolId: string): Promise<st
     const fileName = `${protocolId}-poster${extension}`
     const filePath = path.join(IMAGES_DIR, fileName)
 
-    await fs.writeFile(filePath, response.data)
+    await fs.writeFile(filePath, Buffer.from(await res.arrayBuffer()))
 
-    debug(`Image downloaded via axios and saved to: ${filePath}`)
+    debug(`Image downloaded via fetch and saved to: ${filePath}`)
     return fileName // Return just the filename
   } catch (error: unknown) {
     console.error('Error downloading image:', error)
