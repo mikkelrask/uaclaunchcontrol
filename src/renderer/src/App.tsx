@@ -4,7 +4,6 @@ import { useHashLocation } from 'wouter/use-hash-location'
 import { queryClient } from './lib/queryClient'
 import { Toaster } from '@/components/ui/toaster'
 import { useToast } from '@/hooks/use-toast'
-import { ToastAction } from '@/components/ui/toast'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 import GamesPage from '@/pages/GamesPage'
@@ -153,57 +152,6 @@ const App: React.FC = () => {
         }
       })
     }
-  }, [toast])
-
-  // Migration check on startup
-  useEffect(() => {
-    const checkAndPromptMigration = async (): Promise<void> => {
-      try {
-        const info = await api.checkMigration()
-        if (info.found && info.path) {
-          toast({
-            title: 'SYSTEM: legacy_check',
-            description: `Legacy configuration directory located in ${info.path}. Would you like to import it to the new config-directory?`,
-            duration: 10000,
-            action: (
-              <ToastAction
-                altText="Import Data"
-                onClick={async () => {
-                  try {
-                    const result = await api.executeMigration(info.path!)
-                    if (result.success) {
-                      toast({
-                        title: 'SYSTEM: migration_success',
-                        description: 'Your settings has been migrated and moved to ~/.config/uac/.'
-                      })
-                      queryClient.invalidateQueries()
-                    } else {
-                      toast({
-                        title: 'Import Failed',
-                        description: 'Something went wrong during migration.',
-                        variant: 'destructive'
-                      })
-                    }
-                  } catch {
-                    toast({
-                      title: 'Warning - System failure',
-                      description: 'Failed to execute migration.',
-                      variant: 'destructive'
-                    })
-                  }
-                }}
-              >
-                Import
-              </ToastAction>
-            )
-          })
-        }
-      } catch (err) {
-        console.error('Migration check failed:', err)
-      }
-    }
-
-    checkAndPromptMigration()
   }, [toast])
 
   return (
