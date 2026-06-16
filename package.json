@@ -51,7 +51,6 @@
     "@tanstack/react-table": "^8.21.3",
     "@types/cors": "^2.8.19",
     "adm-zip": "^0.5.17",
-    "axios": "^1.15.0",
     "chokidar": "^5.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
