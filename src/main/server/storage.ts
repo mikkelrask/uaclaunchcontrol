@@ -10,7 +10,6 @@ import {
   IAppSettings,
   IDatabaseLink,
   IDoomVersion,
-  ISourcePort,
   IProtocol,
   IModFile,
   ModProtocolConfig
@@ -31,28 +30,12 @@ export const IMAGES_DIR = path.join(CONFIG_DIR, 'data/images')
 export const CFGS_DIR = path.join(CONFIG_DIR, 'data', 'cfgs')
 const FIRST_RUN_SENTINEL = path.join(CONFIG_DIR, '.first-run-complete')
 
-const LEGACY_CONFIG_DIRS = [
-  path.join(os.homedir(), '.config', 'mrdoom'),
-  path.join(os.homedir(), '.config', 'uaclaunchcontrol')
-]
-
 const DEFAULT_DATABASE_LINKS: IDatabaseLink[] = [
   { name: 'MODDB', url: 'https://www.moddb.com/games/doom-ii' },
   { name: 'ZDOOM', url: 'https://forum.zdoom.org/' },
   { name: 'DOOMWORLD', url: 'https://www.doomworld.com/' },
   { name: 'ITCH', url: 'https://itch.io/game-mods/tag-doom' }
 ]
-
-function detectFamilyFromPath(p: string): ISourcePort['family'] {
-  const lower = p.toLowerCase()
-  if (lower.includes('uzdoom')) return 'uzdoom'
-  if (lower.includes('lzdoom')) return 'lzdoom'
-  if (lower.includes('helion')) return 'helion'
-  if (lower.includes('gzdoom')) return 'gzdoom'
-  if (lower.includes('zdoom')) return 'zdoom'
-  if (lower.includes('zandronum')) return 'zandronum'
-  return 'other'
-}
 
 const DEFAULT_SETTINGS: IAppSettings = {
   sourcePorts: [],
@@ -196,14 +179,6 @@ export function initStorage(): boolean {
     fs.ensureDirSync(MODS_DIR) // Ensure mods directory exists
     fs.ensureDirSync(CFGS_DIR) // Ensure config files directory exists
 
-    // Check for legacy config BEFORE creating new files
-    const legacyConfig = checkLegacyConfigSync()
-    if (legacyConfig.found) {
-      console.log(`Legacy config found at ${legacyConfig.path}, waiting for migration...`)
-      console.log('Storage initialized successfully (waiting for migration)')
-      return true
-    }
-
     // Create settings file with defaults if it doesn't exist
     if (!fs.existsSync(SETTINGS_FILE)) {
       fs.writeJSONSync(SETTINGS_FILE, DEFAULT_SETTINGS, { spaces: 2 })
@@ -232,9 +207,6 @@ export function initStorage(): boolean {
       startWadWatcher()
     })
 
-    // Run source port migration (settings + old mods)
-    migrateSourcePorts().catch((err) => console.error('Source port migration failed:', err))
-
     console.log('Storage initialized successfully')
     return true
   } catch (error: unknown) {
@@ -244,123 +216,6 @@ export function initStorage(): boolean {
   }
 }
 
-/**
- * Migrate old sourcePortPath to sourcePorts[] and
- * backfill sourcePortId on old mod files that still use the legacy sourcePort string.
- */
-async function migrateSourcePorts(): Promise<void> {
-  try {
-    if (!fs.existsSync(SETTINGS_FILE)) return
-    const settingsData = await fs.readJSON(SETTINGS_FILE)
-    let migrated = false
-
-    // Legacy gzDoomPath → sourcePortPath
-    if (settingsData.gzDoomPath !== undefined) {
-      settingsData.sourcePortPath = settingsData.gzDoomPath
-      delete settingsData.gzDoomPath
-      migrated = true
-    }
-
-    // sourcePortPath → sourcePorts[]
-    if (
-      settingsData.sourcePortPath !== undefined &&
-      (!settingsData.sourcePorts || settingsData.sourcePorts.length === 0)
-    ) {
-      const oldPath = settingsData.sourcePortPath
-      const newPort: ISourcePort = {
-        id: crypto.randomUUID(),
-        name: 'Default (migrated)',
-        executablePath: oldPath,
-        family: detectFamilyFromPath(oldPath),
-        ignored: false
-      }
-      settingsData.sourcePorts = [newPort]
-      settingsData.defaultSourcePortId = newPort.id
-      delete settingsData.sourcePortPath
-      migrated = true
-      debug('[migrateSourcePorts] Converted sourcePortPath to sourcePort:', newPort)
-    }
-
-    if (migrated) {
-      const merged = { ...DEFAULT_SETTINGS, ...settingsData }
-      await fs.writeJSON(SETTINGS_FILE, merged, { spaces: 2 })
-      debug('[migrateSourcePorts] Saved migrated settings')
-    }
-
-    // 2. Backfill sourcePortId on old mod files
-    const settings = { ...DEFAULT_SETTINGS, ...settingsData }
-    const defaultPortId = settings.defaultSourcePortId || settings.sourcePorts[0]?.id
-    if (!defaultPortId) return
-
-    if (!fs.existsSync(MODS_DIR)) return
-    const entries = await fs.readdir(MODS_DIR)
-    let protosMigrated = 0
-
-    for (const filename of entries) {
-      if (!filename.endsWith('.json')) continue
-      const entryPath = path.join(MODS_DIR, filename)
-      try {
-        const entryData = await fs.readJSON(entryPath)
-        if (
-          entryData.sourcePort !== undefined &&
-          entryData.sourcePort !== null &&
-          !entryData.sourcePortId
-        ) {
-          const oldVal = String(entryData.sourcePort)
-          let match: ISourcePort | undefined
-          if (oldVal.includes('/') || oldVal.includes('\\')) {
-            match = settings.sourcePorts.find(
-              (p) => p.executablePath === oldVal || p.executablePath.endsWith(oldVal)
-            )
-          } else {
-            match =
-              settings.sourcePorts.find(
-                (p) =>
-                  p.name.toLowerCase().includes(oldVal.toLowerCase()) ||
-                  oldVal.toLowerCase().includes(p.name.toLowerCase())
-              ) || settings.sourcePorts.find((p) => p.family === detectFamilyFromPath(oldVal))
-          }
-          entryData.sourcePortId = match?.id || defaultPortId
-          delete entryData.sourcePort
-          await fs.writeJSON(entryPath, entryData, { spaces: 2 })
-          protosMigrated++
-          debug(
-            `[migrateSourcePorts] Migrated protocol ${filename}: sourcePort → sourcePortId=${entryData.sourcePortId}`
-          )
-        }
-      } catch (err) {
-        console.warn(`[migrateSourcePorts] Failed to migrate mod ${filename}:`, err)
-      }
-    }
-
-    if (protosMigrated > 0) {
-      debug(`[migrateSourcePorts] Migrated ${protosMigrated} protocol files`)
-    }
-  } catch (err) {
-    console.error('[migrateSourcePorts] Migration failed:', err)
-  }
-}
-
-// Synchronous version for use during init
-function checkLegacyConfigSync(): { found: boolean; path: string | null } {
-  const newConfigHasContent = fs.existsSync(path.join(CONFIG_DIR, 'settings.json'))
-  if (newConfigHasContent) {
-    return { found: false, path: null }
-  }
-
-  for (const legacyPath of LEGACY_CONFIG_DIRS) {
-    if (fs.existsSync(legacyPath)) {
-      const hasContent =
-        fs.existsSync(path.join(legacyPath, 'settings.json')) ||
-        fs.existsSync(path.join(legacyPath, 'mods'))
-      if (hasContent) {
-        return { found: true, path: legacyPath }
-      }
-    }
-  }
-  return { found: false, path: null }
-}
-
 // Get application settings
 export async function getSettings(): Promise<IAppSettings> {
   try {
@@ -368,37 +223,7 @@ export async function getSettings(): Promise<IAppSettings> {
     debug('Reading settings from', SETTINGS_FILE)
     const settingsData = await fs.readJSON(SETTINGS_FILE)
 
-    // Migration: gzDoomPath → sourcePortPath (legacy migration already in place)
-    if (settingsData.gzDoomPath !== undefined) {
-      settingsData.sourcePortPath = settingsData.gzDoomPath
-      delete settingsData.gzDoomPath
-    }
-
-    // Migration: sourcePortPath → sourcePorts[]
-    if (
-      settingsData.sourcePortPath !== undefined &&
-      (!settingsData.sourcePorts || settingsData.sourcePorts.length === 0)
-    ) {
-      const oldPath = settingsData.sourcePortPath
-      const newPort: ISourcePort = {
-        id: crypto.randomUUID(),
-        name: 'Default (migrated)',
-        executablePath: oldPath,
-        family: detectFamilyFromPath(oldPath),
-        ignored: false
-      }
-      settingsData.sourcePorts = [newPort]
-      settingsData.defaultSourcePortId = newPort.id
-      delete settingsData.sourcePortPath
-      debug('Migrated legacy sourcePortPath to sourcePorts:', newPort)
-    }
-
     const settings: IAppSettings = { ...DEFAULT_SETTINGS, ...settingsData }
-
-    // If migration happened, persist it so subsequent loads are clean
-    if (settingsData.sourcePorts && settingsData.defaultSourcePortId) {
-      await fs.writeJSON(SETTINGS_FILE, settings, { spaces: 2 })
-    }
 
     debug('Retrieved settings from file:', settings)
 
@@ -1414,98 +1239,6 @@ export async function deleteModFileFromCatalog(fileId: number): Promise<boolean>
     throw new Error(
       `Failed to delete file from catalog: ${error instanceof Error ? error.message : String(error)}`
     )
-  }
-}
-
-// Migration helpers
-export async function checkLegacyConfig(): Promise<{ found: boolean; path: string | null }> {
-  // If the new config directory already has a settings file, it's considered populated.
-  // No need to check for legacy data – migration has already happened or the user started fresh.
-  const newConfigHasContent = fs.existsSync(path.join(CONFIG_DIR, 'settings.json'))
-  if (newConfigHasContent) {
-    return { found: false, path: null }
-  }
-
-  for (const legacyPath of LEGACY_CONFIG_DIRS) {
-    if (fs.existsSync(legacyPath)) {
-      // Check if it has content (e.g., settings.json or mods folder)
-      const hasContent =
-        fs.existsSync(path.join(legacyPath, 'settings.json')) ||
-        fs.existsSync(path.join(legacyPath, 'mods'))
-      if (hasContent) {
-        return { found: true, path: legacyPath }
-      }
-    }
-  }
-  return { found: false, path: null }
-}
-
-export async function executeMigration(sourcePath: string): Promise<boolean> {
-  try {
-    const resolvedSource = resolvePath(sourcePath)
-    if (!fs.existsSync(resolvedSource)) {
-      throw new Error(`Migration source not found: ${resolvedSource}`)
-    }
-
-    debug(`Migrating from ${resolvedSource} to ${CONFIG_DIR}`)
-
-    // Ensure new config dir exists
-    await fs.ensureDir(CONFIG_DIR)
-
-    // Copy everything from source to current CONFIG_DIR
-    await fs.copy(resolvedSource, CONFIG_DIR, {
-      overwrite: true,
-      errorOnExist: false
-    })
-
-    debug(`Successfully migrated content to ${CONFIG_DIR}`)
-
-    // Patch internal JSON paths to point to the new uac directory
-    await patchLegacyPaths(CONFIG_DIR)
-
-    // Mark first-run as complete so migrated users don't see the tour
-    try {
-      fs.writeFileSync(FIRST_RUN_SENTINEL, '')
-    } catch {
-      // best-effort
-    }
-
-    return true
-  } catch (error) {
-    console.error('[MIGRATION] Migration failed:', error)
-    return false
-  }
-}
-
-/**
- * Recursively scans a directory for .json files and replaces legacy path strings
- * with the new .config/uac standard.
- */
-async function patchLegacyPaths(directory: string): Promise<void> {
-  try {
-    const files = await fs.readdir(directory)
-    for (const file of files) {
-      const fullPath = path.join(directory, file)
-      const stats = await fs.stat(fullPath)
-
-      if (stats.isDirectory()) {
-        await patchLegacyPaths(fullPath)
-      } else if (file.endsWith('.json')) {
-        const content = await fs.readFile(fullPath, 'utf-8')
-        let patched = content
-
-        // Replace all known legacy paths with the new standard
-        patched = patched.replace(/\.config\/mrdoom/g, '.config/uac')
-        patched = patched.replace(/\.config\/uaclaunchcontrol/g, '.config/uac')
-
-        if (patched !== content) {
-          await fs.writeFile(fullPath, patched)
-          debug(`Patched legacy paths in ${fullPath}`)
-        }
-      }
-    }
-  } catch (error) {
-    console.error(`[MIGRATION] Error patching paths in ${directory}:`, error)
   }
 }
 
