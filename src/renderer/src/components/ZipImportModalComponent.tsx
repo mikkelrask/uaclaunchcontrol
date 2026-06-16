@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Archive, Upload } from 'lucide-react'
+import { Archive, Upload, ChevronUp, ChevronDown } from 'lucide-react'
 import type { ZipScanResult } from '@/types/zipImport'
 import {
   Dialog,
@@ -26,11 +26,29 @@ export interface ZipImportModalProps {
 
 interface FileMeta {
   tempPath: string
+  hashValue: string
   name: string
   version: string
   url: string
   sidecarOnly: boolean
   enabled: boolean
+}
+
+/**
+ * Build the load-order record shared by every file in this zip.
+ * Files get offsets 1, 2, 3, … in the order they appear.
+ * Every imported file stores this identical record so that whichever
+ * file a player picks from the catalog, all zip siblings auto-load.
+ */
+function buildZipLoadOrder(fileMeta: FileMeta[]): Record<string, number> {
+  const record: Record<string, number> = {}
+  let offset = 1
+  for (const m of fileMeta) {
+    if (m.enabled && m.hashValue) {
+      record[m.hashValue] = offset++
+    }
+  }
+  return record
 }
 
 export function ZipImportModal({
@@ -85,7 +103,8 @@ export function ZipImportModal({
     name: string,
     version: string,
     url: string,
-    sidecarOnly: boolean
+    sidecarOnly: boolean,
+    loadOrder?: Record<string, number>
   ): void => {
     const cached = registryCache.current.get(hash)
     let shouldSubmit = false
@@ -111,7 +130,8 @@ export function ZipImportModal({
               suggested_name: name,
               url,
               version: version || undefined,
-              is_sidecar: sidecarOnly ? 1 : 0
+              is_sidecar: sidecarOnly ? 1 : 0,
+              load_order: loadOrder ? JSON.stringify(loadOrder) : undefined
             },
             settings.registryUuid,
             REGISTRY_API_URL
@@ -128,6 +148,7 @@ export function ZipImportModal({
     if (scanResult?.supported) {
       const initial = scanResult.supported.map((f) => ({
         tempPath: f.tempPath,
+        hashValue: f.hashValue,
         name: f.name || f.fileName.replace(/\.[^.]+$/, ''),
         version: '',
         url: '',
@@ -205,12 +226,22 @@ export function ZipImportModal({
 
   const handleMetaChange = (
     index: number,
-    field: keyof Omit<FileMeta, 'tempPath' | 'enabled'>,
+    field: keyof Omit<FileMeta, 'tempPath' | 'enabled' | 'hashValue'>,
     value: string | boolean
   ): void => {
     setFileMeta((prev) => {
       const copy = [...prev]
       copy[index] = { ...copy[index], [field]: value }
+      return copy
+    })
+  }
+
+  const moveFile = (index: number, direction: -1 | 1): void => {
+    setFileMeta((prev) => {
+      const copy = [...prev]
+      const target = index + direction
+      if (target < 0 || target >= copy.length) return copy
+      ;[copy[index], copy[target]] = [copy[target], copy[index]]
       return copy
     })
   }
@@ -249,38 +280,39 @@ export function ZipImportModal({
         })
       } else {
         // Import individual extracted files
-        const filesToImport = fileMeta
-          .filter((m) => m.enabled)
-          .map(
-            (
-              m
-            ): {
-              tempPath: string
-              name: string
-              version: string
-              url: string
-              sidecarOnly: boolean
-              loadOrder: Record<string, number>
-            } => ({
-              tempPath: m.tempPath,
-              name: m.name,
-              version: m.version,
-              url: m.url,
-              sidecarOnly: m.sidecarOnly,
-              loadOrder: {} as Record<string, number>
-            })
-          )
+        const activeMeta = fileMeta.filter((m) => m.enabled)
+
+        // Compute the shared load order — same for every file in the zip
+        const zipLoadOrder = buildZipLoadOrder(activeMeta)
+
+        const filesToImport = activeMeta.map((m) => ({
+          tempPath: m.tempPath,
+          name: m.name,
+          version: m.version,
+          url: m.url,
+          sidecarOnly: m.sidecarOnly,
+          loadOrder: zipLoadOrder
+        }))
 
         const importedFiles = (await api.unzipImport(
           scanResult.tempDir,
           filesToImport
         )) as IModFile[]
 
-        // Submit each imported file to pending registry if appropriate
+        // Submit each imported file to pending registry with the shared load order
         for (const file of importedFiles) {
-          const meta = filesToImport.find((m) => m.name === file.name)
+          const meta = activeMeta.find(
+            (m) => m.name === file.name || m.hashValue === file.hashValue
+          )
           if (file.hashValue && meta?.url) {
-            submitToRegistry(file.hashValue, meta.name, meta.version, meta.url, meta.sidecarOnly)
+            submitToRegistry(
+              file.hashValue,
+              meta.name,
+              meta.version,
+              meta.url,
+              meta.sidecarOnly,
+              zipLoadOrder
+            )
           }
         }
 
@@ -394,59 +426,96 @@ export function ZipImportModal({
             <>
               {fileMeta.length > 0 && (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono px-1">
+                  <p className="text-xs text-app-muted italic">
+                    Reorder with the arrow buttons. The order determines each file's position in the shared load order (shown in the # column). When a player adds any of these files to a protocol, all of them auto-load in this order.
+                  </p>
+                  <div className="grid grid-cols-[auto_auto_auto_1fr_1fr_1fr_auto] gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono px-1">
+                    <span></span>
+                    <span>#</span>
                     <span></span>
                     <span>File</span>
                     <span>Display Name</span>
                     <span>Version</span>
                     <span>URL</span>
                   </div>
-                  {scanResult.supported.map((f, idx) => (
-                    <div
-                      key={f.tempPath}
-                      className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 items-center"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={fileMeta[idx]?.enabled ?? true}
-                        onChange={(e) =>
-                          setFileMeta((prev) => {
-                            const copy = [...prev]
-                            copy[idx] = { ...copy[idx], enabled: e.target.checked }
-                            return copy
-                          })
-                        }
-                        className="w-4 h-4 accent-accent-highlight"
-                      />
-                      <div className="text-sm truncate" title={f.fileName}>
-                        <span className="font-mono text-xs text-app-muted mr-1">
-                          [{f.fileType}]
+                  {scanResult.supported.map((f, idx) => {
+                    const meta = fileMeta[idx]
+                    const loadIdx = fileMeta
+                      .filter((m) => m.enabled)
+                      .indexOf(meta!)
+
+                    return (
+                      <div
+                        key={f.tempPath}
+                        className={`grid grid-cols-[auto_auto_auto_1fr_1fr_1fr_auto] gap-2 items-center ${meta?.enabled ? '' : 'opacity-50'}`}
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => moveFile(idx, -1)}
+                            disabled={idx === 0}
+                            className="text-app-muted hover:text-app-primary disabled:opacity-20 p-0.5"
+                          >
+                            <ChevronUp className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveFile(idx, 1)}
+                            disabled={idx >= fileMeta.length - 1}
+                            className="text-app-muted hover:text-app-primary disabled:opacity-20 p-0.5"
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <span className="text-xs font-mono text-app-muted w-5 text-center">
+                          {meta?.enabled ? loadIdx + 1 : '-'}
                         </span>
-                        {f.fileName}
-                        {f.isReferencedByBat && (
-                          <span className="ml-1 text-xs text-yellow-500">.bat</span>
-                        )}
+
+                        <input
+                          type="checkbox"
+                          checked={meta?.enabled ?? true}
+                          onChange={(e) =>
+                            setFileMeta((prev) => {
+                              const copy = [...prev]
+                              copy[idx] = { ...copy[idx], enabled: e.target.checked }
+                              return copy
+                            })
+                          }
+                          className="w-4 h-4 accent-accent-highlight"
+                        />
+
+                        <div className="text-sm truncate" title={f.fileName}>
+                          <span className="font-mono text-xs text-app-muted mr-1">
+                            [{f.fileType}]
+                          </span>
+                          {f.fileName}
+                          {f.isReferencedByBat && (
+                            <span className="ml-1 text-xs text-yellow-500">.bat</span>
+                          )}
+                        </div>
+
+                        <input
+                          className="border border-app rounded p-1 text-sm bg-app-primary"
+                          placeholder="Display name"
+                          value={meta?.name ?? ''}
+                          onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
+                        />
+                        <input
+                          className="border border-app rounded p-1 text-sm bg-app-primary"
+                          placeholder="Version"
+                          value={meta?.version ?? ''}
+                          onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
+                        />
+                        <input
+                          className="border border-app rounded p-1 text-sm bg-app-primary w-40"
+                          placeholder="URL"
+                          value={meta?.url ?? ''}
+                          onChange={(e) => handleMetaChange(idx, 'url', e.target.value)}
+                        />
                       </div>
-                      <input
-                        className="border border-app rounded p-1 text-sm bg-app-primary"
-                        placeholder="Display name"
-                        value={fileMeta[idx]?.name ?? ''}
-                        onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
-                      />
-                      <input
-                        className="border border-app rounded p-1 text-sm bg-app-primary"
-                        placeholder="Version"
-                        value={fileMeta[idx]?.version ?? ''}
-                        onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
-                      />
-                      <input
-                        className="border border-app rounded p-1 text-sm bg-app-primary w-40"
-                        placeholder="URL"
-                        value={fileMeta[idx]?.url ?? ''}
-                        onChange={(e) => handleMetaChange(idx, 'url', e.target.value)}
-                      />
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
 

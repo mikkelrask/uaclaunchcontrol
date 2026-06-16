@@ -10,6 +10,7 @@ import {
   Pencil,
   Trash2,
   FolderOpen,
+  Download,
   LayoutGrid,
   List,
   BookOpen
@@ -20,6 +21,8 @@ import { api } from '@/api'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { queryClient } from '@/lib/queryClient'
 import type { IDoomVersion, IAppSettings, ISourcePort, SourcePortFamily } from '@shared/schema'
+import type { ScannedPort } from '@/api'
+import { PortDownloadModal } from '@/components/PortDownloadModal'
 import {
   Select,
   SelectContent,
@@ -342,6 +345,68 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   }
 
+  // Source port scanning
+  const [scanning, setScanning] = useState(false)
+  const [scanResults, setScanResults] = useState<ScannedPort[] | null>(null)
+  const [scanSelections, setScanSelections] = useState<boolean[]>([])
+  const [showPortDownloadModal, setShowPortDownloadModal] = useState(false)
+
+  const handleScanPorts = async (): Promise<void> => {
+    setScanning(true)
+    try {
+      const results = await api.scanPorts()
+      // Sort: un-configured first, then by family
+      results.sort((a, b) => {
+        const aExisting = settings.sourcePorts.some(
+          (p) => p.executablePath.toLowerCase() === a.path.toLowerCase()
+        )
+        const bExisting = settings.sourcePorts.some(
+          (p) => p.executablePath.toLowerCase() === b.path.toLowerCase()
+        )
+        if (aExisting !== bExisting) return aExisting ? 1 : -1
+        return a.family.localeCompare(b.family)
+      })
+      setScanResults(results)
+      setScanSelections(
+        results.map((r) =>
+          !settings.sourcePorts.some(
+            (p) => p.executablePath.toLowerCase() === r.path.toLowerCase()
+          )
+        )
+      )
+    } catch (e) {
+      console.error('Failed to scan for source ports:', e)
+    } finally {
+      setScanning(false)
+    }
+  }
+
+  const handleImportScanned = (): void => {
+    if (!scanResults) return
+    setSettings((prev) => {
+      const newPorts = [...prev.sourcePorts]
+      for (let i = 0; i < scanResults.length; i++) {
+        if (!scanSelections[i]) continue
+        const r = scanResults[i]
+        const exists = newPorts.some(
+          (p) => p.executablePath.toLowerCase() === r.path.toLowerCase()
+        )
+        if (!exists) {
+          newPorts.push({
+            id: crypto.randomUUID(),
+            name: r.name,
+            executablePath: r.path,
+            family: r.family as SourcePortFamily,
+            ignored: false
+          })
+        }
+      }
+      return { ...prev, sourcePorts: newPorts }
+    })
+    setScanResults(null)
+    setScanSelections([])
+  }
+
   // Source port management
   const handleAddPort = async (): Promise<void> => {
     const result = await api.showOpenDialog({
@@ -356,6 +421,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       let family: SourcePortFamily = 'other'
       if (lower.includes('uzdoom')) family = 'uzdoom'
       else if (lower.includes('lzdoom')) family = 'lzdoom'
+      else if (lower.includes('helion')) family = 'helion'
       else if (lower.includes('gzdoom')) family = 'gzdoom'
       else if (lower.includes('zdoom')) family = 'zdoom'
       else if (lower.includes('zandronum')) family = 'zandronum'
@@ -717,14 +783,34 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
                       Source Ports
                     </Label>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleAddPort}
-                      className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
-                    >
-                      + Add Port
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleScanPorts}
+                        disabled={scanning}
+                        className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
+                      >
+                        {scanning ? 'Scanning…' : 'Scan Path'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowPortDownloadModal(true)}
+                        className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
+                      >
+                        <Download className="w-3 h-3 mr-1" />
+                        Get Port
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleAddPort}
+                        className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
+                      >
+                        + Add Port
+                      </Button>
+                    </div>
                   </div>
 
                   {settings.sourcePorts.length === 0 ? (
@@ -811,6 +897,90 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     </div>
                   )}
                 </div>
+
+                {/* Port Download Modal */}
+                <PortDownloadModal
+                  open={showPortDownloadModal}
+                  onOpenChange={setShowPortDownloadModal}
+                  onPortDownloaded={(result) => {
+                    setSettings((prev) => ({
+                      ...prev,
+                      sourcePorts: [
+                        ...prev.sourcePorts,
+                        {
+                          id: crypto.randomUUID(),
+                          name: result.name,
+                          executablePath: result.executablePath,
+                          family: result.family as SourcePortFamily,
+                          version: result.version,
+                          ignored: false
+                        }
+                      ]
+                    }))
+                  }}
+                  existingPorts={settings.sourcePorts.map(
+                    (p) => `${p.family}:${p.name}`
+                  )}
+                />
+
+                {/* Scan Results */}
+                {scanResults && scanResults.length > 0 && (
+                  <div className="mt-2 border border-accent-highlight/20 rounded-lg p-3 bg-app-secondary/50 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-app-muted">
+                        Found {scanResults.length} port{scanResults.length !== 1 ? 's' : ''}
+                      </span>
+                      {scanSelections.some(Boolean) && (
+                        <Button
+                          size="sm"
+                          onClick={handleImportScanned}
+                          className="text-xs h-7 bg-accent-highlight hover:opacity-90 text-white"
+                        >
+                          Add Selected ({scanSelections.filter(Boolean).length})
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-1 max-h-56 overflow-y-auto">
+                      {scanResults.map((r, i) => {
+                        const alreadyAdded = settings.sourcePorts.some(
+                          (p) => p.executablePath.toLowerCase() === r.path.toLowerCase()
+                        )
+                        return (
+                          <div
+                            key={r.path}
+                            className={`flex items-center gap-2 text-xs py-1 ${alreadyAdded ? 'opacity-60' : ''}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={scanSelections[i] ?? false}
+                              disabled={alreadyAdded}
+                              onChange={() =>
+                                setScanSelections((prev) => {
+                                  const copy = [...prev]
+                                  copy[i] = !copy[i]
+                                  return copy
+                                })
+                              }
+                              className="w-3.5 h-3.5 accent-accent-highlight shrink-0"
+                            />
+                            <span className="font-mono uppercase text-[10px] text-app-muted w-14 shrink-0">
+                              {r.family}
+                            </span>
+                            <span className="flex-1 truncate text-app-primary">{r.name}</span>
+                            <span className="text-app-muted truncate max-w-56 hidden sm:block">
+                              {r.path}
+                            </span>
+                            {alreadyAdded && (
+                              <span className="text-green-500 shrink-0 text-[10px]">
+                                already added
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Inline Port Form (add/edit) */}
                 {showPortForm && editingPort && (
@@ -1229,7 +1399,7 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-app-secondary border-app">
-            {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'other'] as const).map((f) => (
+            {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'helion', 'other'] as const).map((f) => (
               <SelectItem key={f} value={f} className="text-app-primary">
                 {f}
               </SelectItem>

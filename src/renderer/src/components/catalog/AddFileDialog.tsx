@@ -9,7 +9,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, FolderOpen } from 'lucide-react'
+import { Plus, FolderOpen, X } from 'lucide-react'
 import type { IModFile } from '@shared/schema'
 import type { AddFormState } from '@/lib/catalog/types'
 import type { RequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
@@ -25,6 +25,8 @@ interface AddFileDialogProps {
   onAddFile: () => Promise<void>
   onBrowseFile: () => Promise<void>
   onCancel: () => void
+  onBrowseConfigFile: () => Promise<void>
+  onClearConfigFile: () => void
 }
 
 export function AddFileDialog({
@@ -36,7 +38,9 @@ export function AddFileDialog({
   requiredModsActions,
   onAddFile,
   onBrowseFile,
-  onCancel
+  onCancel,
+  onBrowseConfigFile,
+  onClearConfigFile
 }: AddFileDialogProps): React.ReactElement {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,6 +114,47 @@ export function AddFileDialog({
               placeholder="https://www.moddb.com/mods/..."
               className="bg-app-secondary border-app"
             />
+          </div>
+
+          {/* Config Template Section */}
+          <div className="space-y-2">
+            <Label>Config Template (optional)</Label>
+            <p className="text-xs text-app-muted">
+              When this mod is added to a protocol, the config will be copied
+              so each protocol has its own isolated copy.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={form.configTemplate?.filePath || ''}
+                readOnly
+                placeholder="No config linked — global defaults apply"
+                className="bg-app-secondary border-app flex-1 text-xs"
+              />
+              {form.configTemplate ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClearConfigFile}
+                  className="bg-app-secondary border-app"
+                  title="Remove config template"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onBrowseConfigFile}
+                className="bg-app-secondary border-app"
+              >
+                <FolderOpen className="h-4 w-4" />
+              </Button>
+            </div>
+            {form.configTemplate ? (
+              <p className="text-xs text-green-500 font-mono">
+                MD5: {form.configTemplate.md5Hash.slice(0, 16)}...
+              </p>
+            ) : null}
           </div>
 
           <RequiredModsEditor

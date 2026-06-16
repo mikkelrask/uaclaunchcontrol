@@ -186,7 +186,25 @@ async function importFromJsonFile(
     return
   }
 
-  const { game, files: importFiles } = importData
+  const { game, files: importFiles, configs: importConfigs } = importData
+
+  // Write embedded config files to disk
+  if (importConfigs) {
+    const entries = Object.entries(importConfigs)
+    for (const [hash, cfg] of entries) {
+      try {
+        await api.writeConfigContent(hash, cfg.content)
+      } catch (err) {
+        console.warn(`Failed to write config ${hash}:`, err)
+      }
+    }
+    if (entries.length > 0) {
+      toast({
+        title: 'SYSTEM: configs_imported',
+        description: `${entries.length} config file(s) written.`
+      })
+    }
+  }
 
   // Populate form
   form.setValue('title', game.title || '')
@@ -207,8 +225,18 @@ async function importFromJsonFile(
 
   for (const impFile of importFiles) {
     const catalogMatch = catalogData.find((c) => c.hashValue === impFile.hashValue)
+
+    // Attach configTemplate if configHash is present and config content was written
+    const configTemplate = (impFile.configHash && importConfigs?.[impFile.configHash])
+      ? { configFile: `${impFile.configHash}.cfg`, md5Hash: impFile.configHash }
+      : undefined
+
     if (catalogMatch) {
-      matchedFiles.push({ ...catalogMatch })
+      matchedFiles.push({
+        ...catalogMatch,
+        // Preserve existing template or set from import
+        configTemplate: catalogMatch.configTemplate || configTemplate
+      })
     } else {
       missingFiles.push({
         id: Date.now() + Math.random(),
@@ -218,7 +246,8 @@ async function importFromJsonFile(
         fileType: 'PK3',
         isRequired: true,
         hashValue: impFile.hashValue || '',
-        url: impFile.url || ''
+        url: impFile.url || '',
+        configTemplate
       })
     }
   }

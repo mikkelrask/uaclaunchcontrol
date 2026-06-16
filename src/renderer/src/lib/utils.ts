@@ -31,6 +31,11 @@ export function buildLaunchCommand(options: {
   launchParameters?: string
   modsDirectory?: string
   savegamesPath?: string
+  /**
+   * Full resolved path to a per-protocol config file.
+   * When set, adds `-config <path>` to the command line.
+   */
+  configPath?: string
 }): string {
   const parts: string[] = []
 
@@ -75,6 +80,14 @@ export function buildLaunchCommand(options: {
       const escaped = fp!.includes(' ') ? `"${fp}"` : fp!
       parts.push(escaped!)
     })
+  }
+
+  // Config file (-config) — per-protocol isolated copy
+  if (options.configPath) {
+    const escaped = options.configPath.includes(' ')
+      ? `"${options.configPath}"`
+      : options.configPath
+    parts.push('-config', escaped)
   }
 
   // Save directory

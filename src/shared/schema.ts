@@ -13,12 +13,15 @@ export interface IProtocol {
   doomVersionId?: string // Consistently use string for IDs
   sourcePortId?: string // References ISourcePort.id in settings.sourcePorts
   lastLaunchedAt?: string // ISO timestamp, updated when protocol is launched
+  createdAt?: string // ISO timestamp, set when protocol is created
   playtimeSeconds?: number // Total accumulated playtime in seconds
   saveDirectory?: string
   launchParameters?: string
   posterImage?: string
   screenshotPath?: string
   files: IModFile[]
+  /** Per-protocol isolated config copy. Seeded from a catalog template at creation time. */
+  protocolConfig?: ModProtocolConfig
 }
 
 export type InsertProtocol = Omit<IProtocol, 'id'>
@@ -38,6 +41,8 @@ export interface IModFile {
   requiredBy?: string[]
   sidecarOnly?: boolean
   isRequired?: boolean
+  /** Config template from catalog — used to seed protocol-specific copies. */
+  configTemplate?: ModConfigTemplate
 }
 
 export type InsertModFile = Omit<IModFile, 'id'>
@@ -74,7 +79,7 @@ export interface IDatabaseLink {
   url: string
 }
 
-export type SourcePortFamily = 'uzdoom' | 'gzdoom' | 'zdoom' | 'zandronum' | 'lzdoom' | 'other'
+export type SourcePortFamily = 'uzdoom' | 'gzdoom' | 'zdoom' | 'zandronum' | 'lzdoom' | 'helion' | 'other'
 
 export interface ISourcePort {
   id: string
@@ -87,6 +92,32 @@ export interface ISourcePort {
 
 // App settings
 export type ThemeMode = 'dark' | 'light' | 'terminal' | 'custom'
+
+// ── Config Template / Protocol Config ────────────────────
+
+/**
+ * A config template stored on a catalog mod file entry.
+ * When a protocol is created with this mod file, the config
+ * is copied into a protocol-specific file (ModProtocolConfig)
+ * so each protocol has an isolated copy.
+ */
+export interface ModConfigTemplate {
+  /** Filename in ~/.config/uac/data/cfgs/ (e.g. "a1b2c3d4...cfg") */
+  configFile: string
+  /** MD5 hash of the config file content (for change detection) */
+  md5Hash: string
+}
+
+/**
+ * A per-protocol isolated config copy. Created at protocol
+ * creation time by copying from a catalog ModConfigTemplate.
+ */
+export interface ModProtocolConfig {
+  /** Filename in ~/.config/uac/data/cfgs/<protocol-id>.cfg */
+  configFile: string
+  /** MD5 of the template it was seeded from (for staleness detection) */
+  templateHash: string
+}
 
 export interface IAppSettings {
   sourcePorts: ISourcePort[]

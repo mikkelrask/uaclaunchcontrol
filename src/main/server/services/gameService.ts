@@ -22,6 +22,7 @@ export class GameService {
     try {
       if (!protocol.id) {
         protocol.id = Date.now().toString()
+        protocol.createdAt = new Date().toISOString()
       }
 
       const dataToSave = {
@@ -142,14 +143,21 @@ export class GameService {
       }
       const saveArgs: string[] = resolvedSaveDir ? ['-savedir', resolvedSaveDir] : []
 
+      // Add per-protocol config file (-config)
+      let configArgs: string[] = []
+      if (protocol.protocolConfig?.configFile) {
+        const cfgPath = path.join(storage.CFGS_DIR, protocol.protocolConfig.configFile)
+        configArgs = ['-config', cfgPath]
+      }
+
       // Add custom launch parameters
       let customArgs: string[] = []
       if (protocol.launchParameters) {
         customArgs = protocol.launchParameters.split(' ')
       }
 
-      // Combine all args: baseArgs, fileArgs, saveArgs, customArgs
-      const args = [...baseArgs, ...fileArgs, ...saveArgs, ...customArgs]
+      // Combine all args: baseArgs, fileArgs, configArgs, saveArgs, customArgs
+      const args = [...baseArgs, ...fileArgs, ...configArgs, ...saveArgs, ...customArgs]
       // Add IWAD argument if available from doomVersion
       let iwad: string | undefined = undefined
       if (
