@@ -9,9 +9,17 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { Pencil, Check, FolderOpen, X } from 'lucide-react'
 import type { IModFile } from '@shared/schema'
 import type { EditFormState } from '@/lib/catalog/types'
+import { CATEGORIES } from '@shared/categories'
 import type { RequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
 import { RequiredModsEditor } from '@/components/catalog/RequiredModsEditor'
 
@@ -88,6 +96,25 @@ export function EditFileDialog({
               onChange={(e) => setForm((prev) => ({ ...prev, url: e.target.value }))}
               className="bg-app-secondary border-app"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Select
+              value={form.category}
+              onValueChange={(val) => setForm((prev) => ({ ...prev, category: val }))}
+            >
+              <SelectTrigger className="bg-app-secondary border-app">
+                <SelectValue placeholder="Uncategorized" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Config Template Section */}
