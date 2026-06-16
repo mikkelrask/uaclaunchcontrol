@@ -29,7 +29,7 @@ export function useRequiredModsActions(
   loadOrder: RequiredModEntry[],
   setLoadOrder: React.Dispatch<React.SetStateAction<RequiredModEntry[]>>,
   catalogFiles: IModFile[],
-  _toast: ToastLike
+  _toast: ToastLike // eslint-disable-line @typescript-eslint/no-unused-vars
 ): RequiredModsActions {
   const handleAddFromCatalog = useCallback(
     (catalogFileId: number): void => {

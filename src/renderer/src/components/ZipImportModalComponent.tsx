@@ -427,7 +427,7 @@ export function ZipImportModal({
               {fileMeta.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs text-app-muted italic">
-                    Reorder with the arrow buttons. The order determines each file's position in the shared load order (shown in the # column). When a player adds any of these files to a protocol, all of them auto-load in this order.
+                    Reorder with the arrow buttons. The order determines each file&apos;s position in the shared load order (shown in the # column). When a player adds any of these files to a protocol, all of them auto-load in this order.
                   </p>
                   <div className="grid grid-cols-[auto_auto_auto_1fr_1fr_1fr_auto] gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono px-1">
                     <span></span>

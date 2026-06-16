@@ -317,7 +317,7 @@ async function extractTar(
           }
         }
       }
-    } catch {}
+    } catch { /* empty */ }
     return null
   }
 
@@ -427,7 +427,7 @@ async function extractDeb(debPath: string, destDir: string, family: string): Pro
               return full
             }
           }
-        } catch {}
+        } catch { /* empty */ }
         return null
       }
       const walked = walk(tempDir)

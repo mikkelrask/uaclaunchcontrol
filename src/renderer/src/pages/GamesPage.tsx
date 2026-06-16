@@ -28,13 +28,16 @@ export const GamesPage: React.FC = () => {
   })
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const settingsDefaultView = settingsData?.defaultView
 
   // Sync viewMode from settings once they load
   useEffect(() => {
-    if (settingsData?.defaultView) {
-      setViewMode(settingsData.defaultView)
+    if (settingsDefaultView) {
+      const id = requestAnimationFrame(() => setViewMode(settingsDefaultView))
+      return () => cancelAnimationFrame(id)
     }
-  }, [settingsData?.defaultView])
+    return
+  }, [settingsDefaultView])
   // Sort state — persisted to localStorage
   const [sortField, setSortField] = useState<SortField>(() => {
     return (localStorage.getItem('protocolSortField') as SortField) || 'lastPlayed'

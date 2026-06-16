@@ -140,7 +140,7 @@ export const TourStep: React.FC<TourStepProps> = ({
   onSkip
 }) => {
   const [targetRect, setTargetRect] = useState<Rect | null>(null)
-  const [completed, setCompleted] = useState(false)
+  const [completed, setCompleted] = useState(() => !step.isComplete)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const roRef = useRef<ResizeObserver | null>(null)
   const moRef = useRef<MutationObserver | null>(null)
@@ -181,7 +181,7 @@ export const TourStep: React.FC<TourStepProps> = ({
 
     // Initial measurement (observers will update on DOM changes)
     if (step.target) {
-      measure()
+      requestAnimationFrame(() => measure())
     }
 
     return () => {
@@ -194,11 +194,7 @@ export const TourStep: React.FC<TourStepProps> = ({
 
   // ── Completion polling ──────────────────────────────────────────
   useEffect(() => {
-    if (!step.isComplete) {
-      // No completion detector — mark as always-complete so button is active
-      setCompleted(true)
-      return
-    }
+    if (!step.isComplete) return // initialised by useState
 
     const unsub = pollComplete(
       () => step.isComplete!(),

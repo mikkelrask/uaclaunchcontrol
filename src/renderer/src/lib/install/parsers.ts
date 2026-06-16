@@ -102,7 +102,7 @@ export function parseBatContent(content: string): BatParseResult {
  * Derive a human-readable file type label from a file extension.
  */
 export function deriveFileType(ext: string): string {
-  const upper = ext.toUpperCase()
+  const upper = ext.replace(/^\./, '').toUpperCase()
   if (upper === 'ZIP') return 'ZIP'
   if (upper === 'PK3' || upper === 'PK7' || upper === 'IPK3') return 'PK3'
   if (upper === 'DEH' || upper === 'BEX') return 'DEH'

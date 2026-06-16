@@ -297,15 +297,15 @@ function generateStableId(baseName: string): string {
   return `wad-${baseName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`
 }
 
-function stripMd5Suffix(baseName: string): string {
+export function stripMd5Suffix(baseName: string): string {
   return baseName.replace(/(-[a-f0-9]{32})+$/i, '')
 }
 
-function countMd5Suffixes(baseName: string): number {
+export function countMd5Suffixes(baseName: string): number {
   return baseName.match(/-[a-f0-9]{32}/gi)?.length ?? 0
 }
 
-function wadNamePriority(fileName: string): number {
+export function wadNamePriority(fileName: string): number {
   const suffixCount = countMd5Suffixes(fileName.replace(/\.wad$/i, ''))
   if (suffixCount === 0) return 0
   if (suffixCount === 1) return 1
