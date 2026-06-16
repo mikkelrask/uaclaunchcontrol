@@ -6,6 +6,7 @@ export interface AddFormState {
   url: string
   loadOrder: RequiredModEntry[]
   sidecarOnly: boolean
+  category: string
   /** Config template to link with this mod file */
   configTemplate: {
     filePath: string  // Source path (for display / re-upload)
@@ -20,6 +21,7 @@ export interface EditFormState {
   url: string
   loadOrder: RequiredModEntry[]
   sidecarOnly: boolean
+  category: string
   configTemplate: {
     filePath: string
     configFile: string

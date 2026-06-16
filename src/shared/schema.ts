@@ -41,6 +41,7 @@ export interface IModFile {
   requiredBy?: string[]
   sidecarOnly?: boolean
   isRequired?: boolean
+  category?: string
   /** Config template from catalog — used to seed protocol-specific copies. */
   configTemplate?: ModConfigTemplate
 }
