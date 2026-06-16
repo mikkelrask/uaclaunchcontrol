@@ -16,6 +16,7 @@ import { api, IRegistryMod } from '@/api'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { gameService } from '@/lib/gameService'
 import { REGISTRY_API_URL } from '@shared/registry-config'
+import { CATEGORIES } from '@shared/categories'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ZipImportModal } from '@/components/ZipImportModal'
 import { ZipScanResult } from '@/types/zipImport'
@@ -55,6 +56,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     url: '',
     loadOrder: [],
     sidecarOnly: false,
+    category: '',
     configTemplate: null
   })
   const {
@@ -65,6 +67,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   } = useFileDrop()
   const [showSidecarOnly, setShowSidecarOnly] = useState(false)
   const [fileTypeFilter, setFileTypeFilter] = useState<string>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
   const [editForm, setEditForm] = useState<EditFormState>({
     name: '',
@@ -72,6 +75,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     url: '',
     loadOrder: [],
     sidecarOnly: false,
+    category: '',
     configTemplate: null
   })
 
@@ -198,6 +202,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         hashValue,
         loadOrder: processedLoadOrder,
         sidecarOnly: addForm.sidecarOnly,
+        category: addForm.category || undefined,
         configTemplate: addForm.configTemplate
           ? {
               configFile: addForm.configTemplate.configFile,
@@ -298,6 +303,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         url: '',
         loadOrder: [],
         sidecarOnly: false,
+        category: '',
         configTemplate: null
       })
 
@@ -373,6 +379,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       url: '',
       loadOrder: [mainEntry],
       sidecarOnly: registryData?.is_sidecar === 1
+    }
+
+    if (registryData?.category) {
+      updatedForm.category = registryData.category
     }
 
     if (registryData?.urls && registryData.urls.length > 0) {
@@ -737,6 +747,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       url: file.url || '',
       loadOrder: existingLoadOrder,
       sidecarOnly: file.sidecarOnly || false,
+      category: file.category || '',
       configTemplate: file.configTemplate
         ? {
             filePath: file.configTemplate.configFile,
@@ -791,6 +802,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         url: editForm.url,
         loadOrder: processedLoadOrder,
         sidecarOnly: editForm.sidecarOnly,
+        category: editForm.category || undefined,
         configTemplate: editForm.configTemplate
           ? {
               configFile: editForm.configTemplate.configFile,
@@ -903,6 +915,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           fileTypeFilter === 'all'
             ? visibleFiles
             : visibleFiles.filter((f) => f.fileType === fileTypeFilter)
+        const filteredByCategory =
+          categoryFilter === 'all'
+            ? filteredByType
+            : filteredByType.filter((f) => f.category === categoryFilter)
 
         const columns = getCatalogColumns({
           catalogFiles,
@@ -922,7 +938,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         return (
           <DataTable
             columns={columns}
-            data={filteredByType}
+            data={filteredByCategory}
             searchKey="name"
             searchPlaceholder="Search catalog..."
             pageSize={20}
@@ -948,6 +964,22 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                     <SelectItem value="ZIP" className="text-xs">
                       ZIP
                     </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-[130px] h-9 bg-app-primary border-app text-xs">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-app-secondary border-app text-app-primary">
+                    <SelectItem value="all" className="text-xs">
+                      All categories
+                    </SelectItem>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat} className="text-xs">
+                        {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
 

@@ -11,9 +11,17 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { api, type IRegistryMod } from '@/api'
 import { REGISTRY_API_URL } from '@shared/registry-config'
+import { CATEGORIES } from '@shared/categories'
 import type { IModFile } from '@shared/schema'
 
 export interface ZipImportModalProps {
@@ -32,6 +40,7 @@ interface FileMeta {
   url: string
   sidecarOnly: boolean
   enabled: boolean
+  category: string
 }
 
 /**
@@ -66,6 +75,7 @@ export function ZipImportModal({
   const [zipVersion, setZipVersion] = useState('')
   const [zipUrl, setZipUrl] = useState('')
   const [zipHash, setZipHash] = useState('')
+  const [zipCategory, setZipCategory] = useState('')
   const registryCache = useRef<Map<string, IRegistryMod | null>>(new Map())
 
   // ── Registry lookup helpers ──
@@ -153,13 +163,14 @@ export function ZipImportModal({
         version: '',
         url: '',
         sidecarOnly: false,
-        enabled: true
+        enabled: true,
+        category: ''
       }))
       setFileMeta(initial)
 
       // Registry lookup for each file that has a hash
       const doLookups = async (): Promise<void> => {
-        const updates: { index: number; name: string; version: string; url: string }[] = []
+        const updates: { index: number; name: string; version: string; url: string; category: string }[] = []
         for (let i = 0; i < scanResult.supported.length; i++) {
           const f = scanResult.supported[i]
           if (!f.hashValue) continue
@@ -169,7 +180,8 @@ export function ZipImportModal({
               index: i,
               name: data.family_name,
               version: data.version || '',
-              url: pickBestUrl(data.urls)
+              url: pickBestUrl(data.urls),
+              category: data.category || ''
             })
           }
         }
@@ -177,7 +189,7 @@ export function ZipImportModal({
           setFileMeta((prev) => {
             const copy = [...prev]
             for (const u of updates) {
-              copy[u.index] = { ...copy[u.index], name: u.name, version: u.version, url: u.url }
+              copy[u.index] = { ...copy[u.index], name: u.name, version: u.version, url: u.url, category: u.category }
             }
             return copy
           })
@@ -197,6 +209,7 @@ export function ZipImportModal({
       setZipVersion('')
       setZipUrl('')
       setZipHash('')
+      setZipCategory('')
       setImportAsZip(false)
     }
   }, [open, scanResult, zipFilePath])
@@ -214,6 +227,7 @@ export function ZipImportModal({
         if (data) {
           if (data.family_name) setZipName(data.family_name)
           if (data.version) setZipVersion(data.version)
+          if (data.category) setZipCategory(data.category)
           const url = pickBestUrl(data.urls)
           if (url) setZipUrl(url)
         }
@@ -265,7 +279,8 @@ export function ZipImportModal({
           version: zipVersion || '',
           url: zipUrl || '',
           hashValue: '', // will be computed server-side
-          sidecarOnly: false
+          sidecarOnly: false,
+          category: zipCategory || undefined
         })
 
         // Submit to pending registry if appropriate
@@ -291,6 +306,7 @@ export function ZipImportModal({
           version: m.version,
           url: m.url,
           sidecarOnly: m.sidecarOnly,
+          category: m.category || undefined,
           loadOrder: zipLoadOrder
         }))
 
@@ -420,6 +436,21 @@ export function ZipImportModal({
                   className="bg-app-secondary border-app"
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={zipCategory} onValueChange={setZipCategory}>
+                  <SelectTrigger className="bg-app-secondary border-app">
+                    <SelectValue placeholder="Uncategorized" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           ) : (
             /* ── Supported files table ── */
@@ -429,13 +460,14 @@ export function ZipImportModal({
                   <p className="text-xs text-app-muted italic">
                     Reorder with the arrow buttons. The order determines each file&apos;s position in the shared load order (shown in the # column). When a player adds any of these files to a protocol, all of them auto-load in this order.
                   </p>
-                  <div className="grid grid-cols-[auto_auto_auto_1fr_1fr_1fr_auto] gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono px-1">
+                  <div className="grid grid-cols-[auto_auto_auto_1fr_1fr_auto_auto_auto] gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono px-1">
                     <span></span>
                     <span>#</span>
                     <span></span>
                     <span>File</span>
                     <span>Display Name</span>
                     <span>Version</span>
+                    <span>Cat</span>
                     <span>URL</span>
                   </div>
                   {scanResult.supported.map((f, idx) => {
@@ -447,7 +479,7 @@ export function ZipImportModal({
                     return (
                       <div
                         key={f.tempPath}
-                        className={`grid grid-cols-[auto_auto_auto_1fr_1fr_1fr_auto] gap-2 items-center ${meta?.enabled ? '' : 'opacity-50'}`}
+                        className={`grid grid-cols-[auto_auto_auto_1fr_1fr_auto_auto_auto] gap-2 items-center ${meta?.enabled ? '' : 'opacity-50'}`}
                       >
                         <div className="flex flex-col gap-0.5">
                           <button
@@ -502,11 +534,23 @@ export function ZipImportModal({
                           onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
                         />
                         <input
-                          className="border border-app rounded p-1 text-sm bg-app-primary"
+                          className="border border-app rounded p-1 text-sm bg-app-primary w-20"
                           placeholder="Version"
                           value={meta?.version ?? ''}
                           onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
                         />
+                        <select
+                          className="border border-app rounded p-1 text-sm bg-app-primary"
+                          value={meta?.category ?? ''}
+                          onChange={(e) => handleMetaChange(idx, 'category', e.target.value)}
+                        >
+                          <option value="">—</option>
+                          {CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                            </option>
+                          ))}
+                        </select>
                         <input
                           className="border border-app rounded p-1 text-sm bg-app-primary w-40"
                           placeholder="URL"

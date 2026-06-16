@@ -83,6 +83,24 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<
       size: 20
     },
     {
+      accessorKey: 'category',
+      header: ({ column }) => <SortableHeader column={column} title="Category" />,
+      cell: ({ row }) => {
+        const cat = row.original.category
+        if (!cat) return <span className="text-app-muted">–</span>
+        return (
+          <span className="text-xs">
+            {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+          </span>
+        )
+      },
+      filterFn: (row, _columnId, filterValue: string) => {
+        if (!filterValue || filterValue === 'all') return true
+        return row.original.category === filterValue
+      },
+      size: 120
+    },
+    {
       id: 'config',
       header: 'Config',
       cell: ({ row }) => {
