@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'wouter'
 import { ExternalLink } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 // import { useLocation } from 'wouter';
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
@@ -271,23 +278,19 @@ export const GamesPage: React.FC = () => {
                                   {mod.urls[0].domain || 'Download'}
                                 </a>
                               ) : (
-                                <div className="flex items-center gap-1.5">
-                                  <ExternalLink className="w-3 h-3 text-accent-highlight shrink-0" />
-                                  <select
-                                    className="text-xs bg-app-secondary border border-app rounded px-1.5 py-0.5 text-accent-highlight cursor-pointer appearance-none"
-                                    onChange={(e) => {
-                                      if (e.target.value) window.open(e.target.value, '_blank')
-                                      e.target.selectedIndex = 0
-                                    }}
-                                  >
-                                    <option value="">Open download link...</option>
+                                <Select onValueChange={(url) => window.open(url, '_blank')}>
+                                  <SelectTrigger className="h-7 bg-app-secondary border-app text-xs gap-1">
+                                    <ExternalLink className="w-3 h-3 text-accent-highlight shrink-0" />
+                                    <SelectValue placeholder="Downloads" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-app-secondary border-app text-app-primary">
                                     {mod.urls.map((u, j) => (
-                                      <option key={j} value={u.url}>
-                                        {u.domain || 'Download'} ↗
-                                      </option>
+                                      <SelectItem key={j} value={u.url} className="text-xs">
+                                        {u.domain || 'Download'}
+                                      </SelectItem>
                                     ))}
-                                  </select>
-                                </div>
+                                  </SelectContent>
+                                </Select>
                               )}
                             </div>
                           )}
