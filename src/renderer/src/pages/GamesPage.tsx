@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'wouter'
+import { ExternalLink } from 'lucide-react'
 // import { useLocation } from 'wouter';
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
@@ -258,18 +259,36 @@ export const GamesPage: React.FC = () => {
                             )}
                           </p>
                           {mod.urls?.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {mod.urls.slice(0, 3).map((u, j) => (
+                            <div className="mt-2">
+                              {mod.urls.length === 1 ? (
                                 <a
-                                  key={j}
-                                  href={u.url}
+                                  href={mod.urls[0].url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-accent-highlight hover:underline"
+                                  className="inline-flex items-center gap-1.5 text-xs text-accent-highlight hover:underline"
                                 >
-                                  {u.domain || 'Download'}
+                                  <ExternalLink className="w-3 h-3" />
+                                  {mod.urls[0].domain || 'Download'}
                                 </a>
-                              ))}
+                              ) : (
+                                <div className="flex items-center gap-1.5">
+                                  <ExternalLink className="w-3 h-3 text-accent-highlight shrink-0" />
+                                  <select
+                                    className="text-xs bg-app-secondary border border-app rounded px-1.5 py-0.5 text-accent-highlight cursor-pointer appearance-none"
+                                    onChange={(e) => {
+                                      if (e.target.value) window.open(e.target.value, '_blank')
+                                      e.target.selectedIndex = 0
+                                    }}
+                                  >
+                                    <option value="">Open download link...</option>
+                                    {mod.urls.map((u, j) => (
+                                      <option key={j} value={u.url}>
+                                        {u.domain || 'Download'} ↗
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
