@@ -576,6 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!grouped.has(row.hash)) {
           grouped.set(row.hash, {
             family_name: row.family_name,
+            display_name: row.display_name,
             version: row.version,
             category: row.category,
             is_sidecar: row.is_sidecar || 0,

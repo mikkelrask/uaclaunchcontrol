@@ -245,7 +245,9 @@ export const GamesPage: React.FC = () => {
                           className="bg-app-card border border-app rounded-lg p-4"
                         >
                           <p className="text-sm font-medium text-app-primary truncate">
-                            {mod.family_name}
+                            {mod.display_name && mod.display_name !== mod.family_name
+                              ? `${mod.family_name} — ${mod.display_name}`
+                              : mod.family_name}
                           </p>
                           <p className="text-xs text-app-muted mt-1">
                             {mod.version && `v${mod.version}`}
