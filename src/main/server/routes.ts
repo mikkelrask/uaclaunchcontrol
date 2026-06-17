@@ -562,15 +562,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     try {
       const registryUrl = REGISTRY_API_URL
-      const response = await fetch(`${registryUrl}/mod/search?q=${encodeURIComponent(q)}`, {
+      const response = await fetch(`${registryUrl}/api/mods?q=${encodeURIComponent(q)}`, {
         signal: AbortSignal.timeout(5000)
       })
       if (!response.ok) {
         console.warn(`Registry search returned ${response.status}`)
         return res.json([])
       }
-      const data = await response.json()
-      return res.json(data)
+      const rows = await response.json()
+      // Group rows by hash so each mod has an array of urls
+      const grouped = new Map()
+      for (const row of rows) {
+        if (!grouped.has(row.hash)) {
+          grouped.set(row.hash, {
+            family_name: row.family_name,
+            version: row.version,
+            category: row.category,
+            is_sidecar: row.is_sidecar || 0,
+            load_order: row.load_order ? (typeof row.load_order === 'string' ? JSON.parse(row.load_order) : row.load_order) : {},
+            submitted_at: row.submitted_at,
+            approved_at: row.approved_at,
+            urls: []
+          })
+        }
+        if (row.url) {
+          grouped.get(row.hash).urls.push({ url: row.url, domain: row.domain || '' })
+        }
+      }
+      return res.json(Array.from(grouped.values()))
     } catch (error) {
       console.error('Error searching UAC Registry:', error)
       return res.json([]) // Graceful: registry unavailable -> just no results
