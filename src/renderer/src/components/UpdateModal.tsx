@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { IUpdateInfo } from '@shared/schema'
 import { api } from '@/api'
+import { Progress } from '@/components/ui/progress'
 import { Download, ExternalLink, RefreshCw } from 'lucide-react'
 import type { IInstallType } from '@shared/schema'
 
@@ -117,12 +118,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                   {Math.round(downloadProgress)}%
                 </span>
               </div>
-              <div className="h-2 bg-app-primary rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-accent-highlight transition-all duration-300"
-                  style={{ width: `${downloadProgress}%` }}
-                />
-              </div>
+              <Progress value={downloadProgress} className="h-2 bg-app-primary" />
             </div>
           )}
         </div>

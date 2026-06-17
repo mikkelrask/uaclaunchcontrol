@@ -1,4 +1,12 @@
-import { IModFile, IProtocol, IAppSettings, IDoomVersion, IUpdateInfo } from '@shared/schema'
+import {
+  IModFile,
+  IProtocol,
+  IAppSettings,
+  IDoomVersion,
+  IUpdateInfo,
+  IPlayerData,
+  IPlayerStats
+} from '@shared/schema'
 
 export interface IRegistryMod {
   family_name: string
@@ -13,6 +21,34 @@ export interface IRegistryMod {
 
 export const API_BASE = 'http://localhost:7666'
 
+export interface ScannedPort {
+  path: string
+  name: string
+  family: string
+}
+
+export interface PortReleaseAsset {
+  name: string
+  size: number
+  url: string
+}
+
+export interface PortRelease {
+  repo: string
+  tag: string
+  version: string
+  prerelease: boolean
+  publishedAt: string
+  asset: PortReleaseAsset
+}
+
+export interface PortDownloadResult {
+  executablePath: string
+  name: string
+  family: string
+  version: string
+}
+
 export const api = {
   // Settings operations
   getSettings: (): Promise<IAppSettings> => {
@@ -25,6 +61,38 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings)
     }).then((res) => res.json())
+  },
+
+  getPortReleases: async (): Promise<PortRelease[]> => {
+    const response = await fetch(`${API_BASE}/api/ports/releases`)
+    if (!response.ok) throw new Error('Failed to fetch port releases')
+    return response.json()
+  },
+
+  downloadPortRelease: async (
+    downloadUrl: string,
+    assetName: string,
+    family: string,
+    version: string
+  ): Promise<PortDownloadResult> => {
+    const response = await fetch(`${API_BASE}/api/ports/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ downloadUrl, assetName, family, version })
+    })
+    if (!response.ok) {
+      const err = await response.text()
+      throw new Error(err || 'Failed to download port')
+    }
+    return response.json()
+  },
+
+  scanPorts: async (): Promise<ScannedPort[]> => {
+    const response = await fetch(`${API_BASE}/api/settings/scan-ports`)
+    if (!response.ok) {
+      throw new Error('Failed to scan for source ports')
+    }
+    return response.json()
   },
 
   // File catalog operations
@@ -96,6 +164,7 @@ export const api = {
       }
       return null
     } catch {
+      console.error('[api] computeHash failed for file')
       return null
     }
   },
@@ -123,6 +192,7 @@ export const api = {
       })
       // Silently ignore all responses
     } catch {
+      console.debug('[api] submitToPending network error (silent)')
       // Network error - silently ignore
     }
   },
@@ -261,23 +331,28 @@ export const api = {
     if (!response.ok) throw new Error('Failed to upload screenshot')
     return response.json()
   },
-  checkMigration: async (): Promise<{ found: boolean; path: string | null }> => {
-    const response = await fetch(`${API_BASE}/api/migration/check`)
-    return response.json()
-  },
-  executeMigration: async (sourcePath: string): Promise<{ success: boolean }> => {
-    const response = await fetch(`${API_BASE}/api/migration/execute`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sourcePath })
-    })
-    return response.json()
-  },
-
   getVersion: async (): Promise<string> => {
     return await window.api.getAppVersion()
   },
 
+  onGameExited: (
+    callback: (data: {
+      protocolId?: string
+      exitCode: number | null
+      sessionSeconds: number
+      clean: boolean
+    }) => void
+  ): void => {
+    window.api.onGameExited(callback)
+  },
+
+  addPlaytime: async (protocolId: string, sessionSeconds: number): Promise<void> => {
+    await fetch(`${API_BASE}/api/protocols/${protocolId}/playtime`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionSeconds })
+    })
+  },
   onUpdateStatus: (callback: (data: IUpdateInfo) => void): void => {
     window.api.onUpdateStatus(callback)
   },
@@ -298,6 +373,59 @@ export const api = {
     void window.api.triggerFakeUpdate()
   },
 
+  // Player data / achievements
+  getPlayerData: async (): Promise<IPlayerData> => {
+    const response = await fetch(`${API_BASE}/api/player-data`)
+    if (!response.ok) throw new Error('Failed to get player data')
+    return response.json()
+  },
+
+  updatePlayerData: async (data: Partial<IPlayerData>): Promise<IPlayerData> => {
+    const response = await fetch(`${API_BASE}/api/player-data`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) throw new Error('Failed to update player data')
+    return response.json()
+  },
+
+  updatePlayerStats: async (delta: Partial<IPlayerStats>): Promise<IPlayerStats> => {
+    const response = await fetch(`${API_BASE}/api/player-data/stats`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(delta)
+    })
+    if (!response.ok) throw new Error('Failed to update player stats')
+    return response.json()
+  },
+
+  unlockAchievement: async (
+    id: string,
+    state: { progress: number; target: number }
+  ): Promise<void> => {
+    await fetch(`${API_BASE}/api/player-data/achievements/unlock`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, state })
+    })
+  },
+
+  // First-run tour
+  getFirstRun: async (): Promise<{ isFirstRun: boolean }> => {
+    const response = await fetch(`${API_BASE}/api/first-run`)
+    if (!response.ok) throw new Error('Failed to check first run')
+    return response.json()
+  },
+
+  dismissFirstRun: async (): Promise<void> => {
+    await fetch(`${API_BASE}/api/first-run/dismiss`, { method: 'POST' })
+  },
+
+  reenableFirstRun: async (): Promise<void> => {
+    await fetch(`${API_BASE}/api/first-run/reenable`, { method: 'POST' })
+  },
+
   getInstallType: (): Promise<{ isAppImage: boolean; isSystemInstalled: boolean }> => {
     return window.api.getInstallType()
   },
@@ -313,5 +441,82 @@ export const api = {
     }
     const data = await response.json()
     return data.content
+  },
+
+  unzipScan: async (zipFilePath: string): Promise<unknown> => {
+    const response = await fetch(`${API_BASE}/api/mod-files/unzip-scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ zipFilePath })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to unzip and scan archive')
+    }
+    return response.json()
+  },
+
+  unzipImport: async (tempDir: string, filesToImport: unknown[]): Promise<unknown[]> => {
+    const response = await fetch(`${API_BASE}/api/mod-files/unzip-import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tempDir, filesToImport })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to import files from archive')
+    }
+    return response.json()
+  },
+
+  // ── Config File API ──────────────────────────────────
+
+  /** Upload a config file: hash it, copy to cfgs dir, return metadata. */
+  uploadConfigFile: async (filePath: string): Promise<{ hash: string; configFile: string }> => {
+    const response = await fetch(`${API_BASE}/api/configs/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to upload config file')
+    }
+    return response.json()
+  },
+
+  /** Copy a config template to a protocol-specific copy. */
+  copyConfigForProtocol: async (
+    templateHash: string,
+    protocolId: string
+  ): Promise<{ configFile: string; templateHash: string }> => {
+    const response = await fetch(`${API_BASE}/api/configs/copy-for-protocol`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateHash, protocolId })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to copy config for protocol')
+    }
+    return response.json()
+  },
+
+  /** Read a config file content by hash (for export). */
+  readConfigContent: async (key: string): Promise<string> => {
+    const response = await fetch(`${API_BASE}/api/configs/${key}`)
+    if (!response.ok) {
+      throw new Error('Failed to read config file')
+    }
+    const data = await response.json()
+    return data.content
+  },
+
+  /** Write a config file content (for import reconstruction). */
+  writeConfigContent: async (key: string, content: string): Promise<void> => {
+    const response = await fetch(`${API_BASE}/api/configs/${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, content })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to write config file')
+    }
   }
 }

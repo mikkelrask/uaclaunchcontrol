@@ -18,6 +18,10 @@ export function toFileUrl(filePath: string): string {
   return `http://localhost:7666/api/media?path=${encodeURIComponent(filePath)}`
 }
 
+function looksAbsolute(filePath: string): boolean {
+  return filePath.startsWith('/') || filePath.startsWith('~') || /^[a-zA-Z]:[\\/]/.test(filePath)
+}
+
 export function buildLaunchCommand(options: {
   executable?: string
   iwad?: string
@@ -25,6 +29,13 @@ export function buildLaunchCommand(options: {
   files?: { filePath?: string; fileName?: string; name?: string }[]
   saveDirectory?: string
   launchParameters?: string
+  modsDirectory?: string
+  savegamesPath?: string
+  /**
+   * Full resolved path to a per-protocol config file.
+   * When set, adds `-config <path>` to the command line.
+   */
+  configPath?: string
 }): string {
   const parts: string[] = []
 
@@ -42,8 +53,7 @@ export function buildLaunchCommand(options: {
   if (options.doomVersionArgs) {
     parts.push(options.doomVersionArgs)
   } else if (options.iwad) {
-    const escaped =
-      options.iwad.includes(' ') ? `"${options.iwad}"` : options.iwad
+    const escaped = options.iwad.includes(' ') ? `"${options.iwad}"` : options.iwad
     parts.push(`-iwad ${escaped}`)
   } else {
     parts.push('-iwad [base-wad]')
@@ -52,7 +62,17 @@ export function buildLaunchCommand(options: {
   // Mod files (-file)
   const filePaths =
     options.files
-      ?.map((f) => f.filePath || f.name || f.fileName)
+      ?.map((f) => {
+        let fp = f.filePath || f.name || f.fileName || ''
+        if (fp && options.modsDirectory && !looksAbsolute(fp)) {
+          if (fp.startsWith('files/') || fp.startsWith('files\\')) {
+            fp = `${options.modsDirectory}/${fp}`
+          } else {
+            fp = `${options.modsDirectory}/files/${fp}`
+          }
+        }
+        return fp
+      })
       .filter(Boolean) || []
   if (filePaths.length > 0) {
     parts.push('-file')
@@ -62,11 +82,21 @@ export function buildLaunchCommand(options: {
     })
   }
 
+  // Config file (-config) — per-protocol isolated copy
+  if (options.configPath) {
+    const escaped = options.configPath.includes(' ')
+      ? `"${options.configPath}"`
+      : options.configPath
+    parts.push('-config', escaped)
+  }
+
   // Save directory
-  if (options.saveDirectory) {
-    const escaped = options.saveDirectory.includes(' ')
-      ? `"${options.saveDirectory}"`
-      : options.saveDirectory
+  if (options.saveDirectory || options.savegamesPath) {
+    let saveDir = options.saveDirectory || options.savegamesPath || ''
+    if (saveDir && !looksAbsolute(saveDir) && options.savegamesPath) {
+      saveDir = `${options.savegamesPath}/${saveDir}`
+    }
+    const escaped = saveDir.includes(' ') ? `"${saveDir}"` : saveDir
     parts.push('-savedir', escaped)
   }
 
@@ -76,4 +106,11 @@ export function buildLaunchCommand(options: {
   }
 
   return parts.join(' ')
+}
+
+/** Format accumulated playtime as "Total: X.X hrs" (Steam-style guilt trip). */
+export function formatPlaytime(seconds?: number): string | null {
+  if (!seconds || seconds <= 0) return null
+  const hours = seconds / 3600
+  return `Total: ${hours.toFixed(1)} hrs`
 }

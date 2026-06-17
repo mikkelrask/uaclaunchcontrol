@@ -6,6 +6,11 @@ export default defineConfig({
   main: {},
   preload: {},
   renderer: {
+    build: {
+      rollupOptions: {
+        input: resolve('src/renderer/index.html')
+      }
+    },
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),

@@ -8,7 +8,6 @@ import { debug } from '../../../shared/debug'
 
 // Service to handle game-related operations
 export class GameService {
-
   async getAllProtocols(): Promise<IProtocol[]> {
     return storage.getProtocols()
   }
@@ -23,6 +22,7 @@ export class GameService {
     try {
       if (!protocol.id) {
         protocol.id = Date.now().toString()
+        protocol.createdAt = new Date().toISOString()
       }
 
       const dataToSave = {
@@ -80,7 +80,9 @@ export class GameService {
         if (firstPort) executable = firstPort.executablePath
       }
       if (!executable) {
-        throw new Error('No source ports configured. Add at least one source port in Settings > Paths.')
+        throw new Error(
+          'No source ports configured. Add at least one source port in Settings > Paths.'
+        )
       }
       executable = storage.resolvePath(executable)
 
@@ -112,7 +114,7 @@ export class GameService {
             if (isAbsolute) {
               fullPath = path.resolve(storage.resolvePath(file.filePath))
             } else {
-              const modsDir = storage.resolvePath(settings.modsDirectory || '')
+              const modsDir = storage.resolvePath(settings.modsDirectory || MODS_DIR)
               fullPath = path.join(modsDir, 'files', file.filePath)
               debug(`Resolved relative file: ${file.filePath} -> ${fullPath} (modsDir: ${modsDir})`)
             }
@@ -141,14 +143,21 @@ export class GameService {
       }
       const saveArgs: string[] = resolvedSaveDir ? ['-savedir', resolvedSaveDir] : []
 
+      // Add per-protocol config file (-config)
+      let configArgs: string[] = []
+      if (protocol.protocolConfig?.configFile) {
+        const cfgPath = path.join(storage.CFGS_DIR, protocol.protocolConfig.configFile)
+        configArgs = ['-config', cfgPath]
+      }
+
       // Add custom launch parameters
       let customArgs: string[] = []
       if (protocol.launchParameters) {
         customArgs = protocol.launchParameters.split(' ')
       }
 
-      // Combine all args: baseArgs, fileArgs, saveArgs, customArgs
-      const args = [...baseArgs, ...fileArgs, ...saveArgs, ...customArgs]
+      // Combine all args: baseArgs, fileArgs, configArgs, saveArgs, customArgs
+      const args = [...baseArgs, ...fileArgs, ...configArgs, ...saveArgs, ...customArgs]
       // Add IWAD argument if available from doomVersion
       let iwad: string | undefined = undefined
       if (
@@ -183,7 +192,7 @@ export class GameService {
       console.log('Launching command:', quotedExecutable, quotedArgs.join(' '))
 
       // Launch the game using fileService
-      const success = await fileService.launchGame(executable, args)
+      const success = await fileService.launchGame(executable, args, protocol.id)
 
       // Record last launched timestamp
       if (success) {

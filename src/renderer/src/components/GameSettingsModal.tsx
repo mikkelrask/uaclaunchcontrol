@@ -18,7 +18,14 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Combobox } from '@/components/ui/combobox'
-import { IProtocol, IModFile, IDoomVersion, InsertModFile, ISourcePort, IAppSettings } from '@shared/schema'
+import {
+  IProtocol,
+  IModFile,
+  IDoomVersion,
+  InsertModFile,
+  ISourcePort,
+  IAppSettings
+} from '@shared/schema'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
@@ -61,10 +68,22 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
   const [protocol, setProtocol] = useState<IProtocol>(initialProtocol)
   const [files, setFiles] = useState<InsertModFile[]>(initialFiles)
 
+  const { data: settings } = useQuery<IAppSettings>({
+    queryKey: ['/api/settings'],
+    queryFn: gameService.getSettings
+  })
+
   // Compute launch command preview
   const launchCommand = useMemo(() => {
     const sourcePort = sourcePorts.find((p) => p.id === protocol.sourcePortId)
     const doomVersion = doomVersions?.find((v) => v.id === protocol.doomVersionId)
+
+    // Compute config file path for protocol-specific config
+    let configPath: string | undefined
+    if (protocol.protocolConfig?.configFile && settings?.modsDirectory) {
+      const baseDir = settings.modsDirectory.replace(/\/mods$/, '').replace(/\\mods$/, '')
+      configPath = `${baseDir}/data/cfgs/${protocol.protocolConfig.configFile}`
+    }
 
     return buildLaunchCommand({
       executable: sourcePort?.executablePath,
@@ -72,9 +91,12 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
       doomVersionArgs: doomVersion?.args,
       files,
       saveDirectory: protocol.saveDirectory,
-      launchParameters: protocol.launchParameters
+      launchParameters: protocol.launchParameters,
+      modsDirectory: settings?.modsDirectory,
+      savegamesPath: settings?.savegamesPath,
+      configPath
     })
-  }, [protocol, files, sourcePorts, doomVersions])
+  }, [protocol, files, sourcePorts, doomVersions, settings])
 
   // Update protocol mutation
   const updateMutation = useMutation({
@@ -139,7 +161,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     },
     onError: (error) => {
       toast({
-        title: 'FATA: launch_protocol',
+        title: 'FATAL: launch_protocol',
         description: `Failed to launch protocol: "${error}"`,
         variant: 'destructive'
       })
@@ -154,7 +176,8 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
       fileType: f.fileType,
       loadOrder: f.loadOrder,
       isRequired: f.isRequired,
-      hashValue: f.hashValue
+      hashValue: f.hashValue,
+      url: f.url || ''
     }))
 
     updateMutation.mutate({
@@ -185,26 +208,56 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     setProtocol((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleExport = (): void => {
+  const handleExport = async (): Promise<void> => {
     const doomVersion = doomVersions?.find((v) => v.id === protocol.doomVersionId)
     const portName = protocol.sourcePortId
       ? sourcePorts.find((p) => p.id === protocol.sourcePortId)?.name || 'gzdoom'
       : 'gzdoom'
+
+    // Collect config file contents referenced by files and protocol
+    const configs: Record<string, { content: string }> = {}
+
+    // From file configTemplates
+    for (const f of files) {
+      if (f.configTemplate?.md5Hash && !configs[f.configTemplate.md5Hash]) {
+        try {
+          const content = await api.readConfigContent(f.configTemplate.md5Hash)
+          configs[f.configTemplate.md5Hash] = { content }
+        } catch {
+          console.warn(`Failed to read config ${f.configTemplate.md5Hash} for export`)
+        }
+      }
+    }
+
+    // From protocolConfig (the template it was seeded from)
+    if (protocol.protocolConfig?.templateHash && !configs[protocol.protocolConfig.templateHash]) {
+      try {
+        const content = await api.readConfigContent(protocol.protocolConfig.templateHash)
+        configs[protocol.protocolConfig.templateHash] = { content }
+      } catch {
+        console.warn(`Failed to read protocol config ${protocol.protocolConfig.templateHash} for export`)
+      }
+    }
+
     const exportData = {
       format: 'uac-modpack',
-      version: '1.0',
+      version: '1.1',
       game: {
         title: protocol.title || protocol.name,
         description: protocol.description || '',
         doomVersionSlug: doomVersion?.slug || '',
         sourcePort: portName,
-        launchParameters: protocol.launchParameters || ''
+        launchParameters: protocol.launchParameters || '',
+        ...(protocol.protocolConfig ? { protocolConfig: protocol.protocolConfig } : {})
       },
       files: files.map((f) => ({
         name: f.name || f.fileName,
         hashValue: f.hashValue || '',
-        loadOrder: f.loadOrder ?? 0
-      }))
+        loadOrder: f.loadOrder ?? 0,
+        url: f.url || '',
+        ...(f.configTemplate ? { configHash: f.configTemplate.md5Hash } : {})
+      })),
+      ...(Object.keys(configs).length > 0 ? { configs } : {})
     }
 
     const jsonStr = JSON.stringify(exportData, null, 2)
@@ -218,7 +271,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
 
     toast({
       title: 'Exported',
-      description: 'Modpack JSON downloaded'
+      description: `Modpack downloaded${Object.keys(configs).length > 0 ? ' with configs' : ''}`
     })
   }
 
@@ -226,10 +279,13 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     <div className="flex-1 overflow-y-auto min-h-0">
       <div className="space-y-4 p-4">
         <div className="flex gap-4 mb-4">
-          <div className="w-1/3 group">
+          <div className="w-1/3">
+            <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+              Screenshot
+            </Label>
             <button
               type="button"
-              className="w-full rounded overflow-hidden relative"
+              className="w-full rounded overflow-hidden relative group"
               onClick={async () => {
                 const result = await api.showOpenDialog({
                   title: 'Select Screenshot',
@@ -476,7 +532,8 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   })
 
   const { hydratedProtocol, hydratedFiles } = useMemo(() => {
-    if (!data || !('protocol' in data) || !data.protocol) return { hydratedProtocol: null, hydratedFiles: [] }
+    if (!data || !('protocol' in data) || !data.protocol)
+      return { hydratedProtocol: null, hydratedFiles: [] }
 
     const proto = data.protocol as IProtocol
     const protoFiles = (data.files || []) as IModFile[]
@@ -490,7 +547,8 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
           return {
             ...file,
             hashValue: file.hashValue || catalogMatch.hashValue || '',
-            filePath: file.filePath || catalogMatch.filePath || ''
+            filePath: file.filePath || catalogMatch.filePath || '',
+            url: file.url || catalogMatch.url || ''
           }
         }
         return file

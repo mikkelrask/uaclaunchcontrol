@@ -5,12 +5,33 @@ import { Button } from '@/components/ui/button'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
+import { formatPlaytime } from '@/lib/utils'
+import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
+import { Play, Settings, Clock, Hourglass } from 'lucide-react'
 import placeholder from '@renderer/assets/placeholder.png'
 
 interface GameCardProps {
   protocol: IProtocol
   doomVersion: IDoomVersion
   onSettingsClick: (id: string) => void
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
 }
 
 export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSettingsClick }) => {
@@ -25,6 +46,24 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
         title: 'SYSTEM: launch_protocol',
         description: `${protocol.title} launched.`
       })
+      // Dispatch PROTOCOL_LAUNCHED achievement event
+      dispatchAchievementEvent({
+        type: 'PROTOCOL_LAUNCHED',
+        protocolId: protocol.id
+      })
+        .then((result) => {
+          const unlockToasts = buildUnlockToasts(result)
+          for (const t of unlockToasts) {
+            toast({
+              title: t.title,
+              description: t.description,
+              duration: t.duration as 6000 | 8000
+            })
+          }
+        })
+        .catch((err) => {
+          console.error('Achievement dispatch failed:', err)
+        })
     },
     onError: (error) => {
       toast({
@@ -61,12 +100,15 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
     : imagePlaceholder
 
   return (
-    <div className="game-card group cursor-pointer relative border shadow-accent-hightlight/20">
+    <div
+      data-tour="launch-card"
+      className="game-card group cursor-pointer relative border shadow-accent-hightlight/20"
+    >
       <div className="aspect-w-16 aspect-h-9 overflow-hidden relative">
         <img
           src={displayImagePath}
           alt={protocol.title}
-          className="w-full h-full object-cover group-hover:hue-rotate-90"
+          className="w-full h-full object-cover  group-hover:zoom-125 group-hover:blur-sm ease-in duration-250"
           onError={(e) => {
             e.currentTarget.src = imagePlaceholder
           }}
@@ -89,27 +131,49 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
 
         {/* Description panel that appears on hover */}
         <div
-          className="absolute inset-0 px-4 py-4 flex items-end justify-center
+          className="absolute inset-0 px-4 py-4 flex flex-col items-center justify-end
                       bg-black/60 opacity-0 group-hover:opacity-100
                       transition-opacity duration-300 pt-24 pb-16"
         >
           <p className="text-white text-sm">{truncatedDescription}</p>
+          <div className="flex items-center gap-3 mt-2">
+            {protocol.lastLaunchedAt && (
+              <span className="text-xs text-white/60 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatDate(protocol.lastLaunchedAt)}
+              </span>
+            )}
+            {formatPlaytime(protocol.playtimeSeconds) && (
+              <span className="text-xs text-white/60 flex items-center gap-1">
+                <Hourglass className="w-3 h-3" />
+                {formatPlaytime(protocol.playtimeSeconds)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Action buttons that appear on hover at the bottom */}
       <div
         className="absolute bottom-0 left-0 w-full opacity-0 group-hover:opacity-100
-                    transition-opacity duration-300 bg-app-popover/85
+                    group-focus-within:opacity-100 transition-opacity duration-300 bg-app-popover/85
                     flex items-center justify-between p-2"
       >
         <Button
+          data-tour="launch-button"
           size="sm"
           onClick={handleLaunch}
           disabled={launchMutation.isPending}
           className="bg-accent-highlight hover:opacity-90 text-white"
         >
-          {launchMutation.isPending ? 'LAUNCHING...' : 'LAUNCH'}
+          {launchMutation.isPending ? (
+            'LAUNCHING...'
+          ) : (
+            <>
+              <Play className="w-4 h-4 mr-1.5 fill-current" />
+              LAUNCH
+            </>
+          )}
         </Button>
         <Button
           variant="ghost"
@@ -117,7 +181,10 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
           onClick={handleSettings}
           className="bg-app-primary hover:bg-app-hover text-app-primary"
         >
-          ADJUST
+          <>
+            <Settings className="w-4 h-4 mr-1.5" />
+            ADJUST
+          </>
         </Button>
       </div>
     </div>

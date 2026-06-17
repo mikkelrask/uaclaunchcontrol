@@ -42,6 +42,12 @@ import {
   Search,
   Settings2
 } from 'lucide-react'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink
+} from '@/components/ui/pagination'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -212,44 +218,42 @@ export function DataTable<TData, TValue>({
             </SelectContent>
           </Select>
 
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-              className="h-8 w-8 p-0 bg-app-primary border-app"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="h-8 w-8 p-0 bg-app-primary border-app"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="h-8 w-8 p-0 bg-app-primary border-app"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-              className="h-8 w-8 p-0 bg-app-primary border-app"
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </div>
+          <Pagination className="w-auto">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationLink
+                  onClick={() => table.setPageIndex(0)}
+                  className={!table.getCanPreviousPage() ? 'pointer-events-none opacity-40' : ''}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink
+                  onClick={() => table.previousPage()}
+                  className={!table.getCanPreviousPage() ? 'pointer-events-none opacity-40' : ''}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink
+                  onClick={() => table.nextPage()}
+                  className={!table.getCanNextPage() ? 'pointer-events-none opacity-40' : ''}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink
+                  onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                  className={!table.getCanNextPage() ? 'pointer-events-none opacity-40' : ''}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </PaginationLink>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       </div>
     </div>

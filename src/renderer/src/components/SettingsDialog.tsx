@@ -1,14 +1,28 @@
-import React, { useState, useEffect, useId } from 'react'
+import React, { useState, useEffect, useId, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Settings, Eye, EyeOff, Pencil, Trash2, FolderOpen } from 'lucide-react'
+import {
+  Settings,
+  Eye,
+  EyeOff,
+  Pencil,
+  Trash2,
+  FolderOpen,
+  Download,
+  LayoutGrid,
+  List,
+  BookOpen
+} from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
+import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { queryClient } from '@/lib/queryClient'
 import type { IDoomVersion, IAppSettings, ISourcePort, SourcePortFamily } from '@shared/schema'
+import type { ScannedPort } from '@/api'
+import { PortDownloadModal } from '@/components/PortDownloadModal'
 import {
   Select,
   SelectContent,
@@ -46,7 +60,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     configPath: '',
     autoUpdateEnabled: true,
     registryLookupEnabled: false,
-    showLaunchPreview: true
+    showLaunchPreview: true,
+    customThemeCss: '',
+    defaultView: 'grid'
   })
 
   // Doom versions state
@@ -56,6 +72,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const [isLoadingVersions, setIsLoadingVersions] = useState(false)
   const [selectedWadIndex, setSelectedWadIndex] = useState(0)
   const [appVersion, setAppVersion] = useState<string>('')
+
+  // Snapshot of the saved theme for revert-on-close
+  const savedRef = useRef<{ theme: string; customThemeCss?: string }>({
+    theme: 'dark',
+    customThemeCss: ''
+  })
+
+  // Track the original wadFilesDirectory for change detection
+  const initialWadDirRef = useRef<string>('')
+
+  // Track whether the initial fetch has completed so live-preview doesn't
+  // briefly apply the default theme before the saved one arrives.
+  const fetchedRef = useRef(false)
+
+  // Snapshot of source port state at dialog open, for achievement tracking
+  const initialPortCountRef = useRef<number>(0)
+  const initialPortFamiliesRef = useRef<string[]>([])
 
   // Fetch settings from API when dialog opens
   useEffect(() => {
@@ -71,7 +104,20 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       .getSettings()
       .then((data) => {
         if (data) {
+          savedRef.current = { theme: data.theme, customThemeCss: data.customThemeCss }
+          initialWadDirRef.current = data.wadFilesDirectory || ''
           setSettings((prev) => ({ ...prev, ...data }))
+          fetchedRef.current = true
+          // Capture initial source port state for achievement tracking
+          const activePorts = (data.sourcePorts || []).filter(
+            (p: { ignored?: boolean }) => !p.ignored
+          )
+          initialPortCountRef.current = activePorts.length
+          initialPortFamiliesRef.current = [
+            ...new Set(
+              activePorts.map((p: { family?: string }) => p.family).filter((f): f is string => !!f)
+            )
+          ]
         }
       })
       .catch(() => {
@@ -85,6 +131,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         const versions = await api.getDoomVersions()
         setDoomVersions(versions)
       } catch {
+        console.error('[settings] Failed to load doom versions')
         toast({
           title: 'Error',
           description: 'Failed to load doom versions',
@@ -149,6 +196,51 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   }
 
+  // Live-preview theme changes immediately on the DOM
+  useEffect(() => {
+    if (!isOpen || !fetchedRef.current) return
+
+    document.documentElement.classList.remove('dark', 'light', 'terminal', 'custom')
+    document.documentElement.classList.add(settings.theme)
+
+    const existingStyle = document.getElementById('custom-theme-style')
+    if (settings.theme === 'custom' && settings.customThemeCss) {
+      if (existingStyle) {
+        existingStyle.textContent = settings.customThemeCss
+      } else {
+        const style = document.createElement('style')
+        style.id = 'custom-theme-style'
+        style.textContent = settings.customThemeCss
+        document.head.appendChild(style)
+      }
+    } else if (existingStyle) {
+      existingStyle.remove()
+    }
+  }, [isOpen, settings.theme, settings.customThemeCss])
+
+  // Restore saved theme when closing without saving
+  const handleClose = useCallback((): void => {
+    fetchedRef.current = false
+    document.documentElement.classList.remove('dark', 'light', 'terminal', 'custom')
+    document.documentElement.classList.add(savedRef.current.theme)
+
+    const existingStyle = document.getElementById('custom-theme-style')
+    if (savedRef.current.theme === 'custom' && savedRef.current.customThemeCss) {
+      if (existingStyle) {
+        existingStyle.textContent = savedRef.current.customThemeCss
+      } else {
+        const style = document.createElement('style')
+        style.id = 'custom-theme-style'
+        style.textContent = savedRef.current.customThemeCss
+        document.head.appendChild(style)
+      }
+    } else if (existingStyle) {
+      existingStyle.remove()
+    }
+
+    onClose()
+  }, [onClose])
+
   // Handle save
   const handleSave = async (): Promise<void> => {
     try {
@@ -165,15 +257,62 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         autoUpdateEnabled: settings.autoUpdateEnabled,
         registryLookupEnabled: settings.registryLookupEnabled,
         registryUuid: settings.registryUuid,
-        showLaunchPreview: settings.showLaunchPreview
+        showLaunchPreview: settings.showLaunchPreview,
+        customThemeCss: settings.customThemeCss,
+        defaultView: settings.defaultView
       }
+      // Dispatch SOURCE_PORT_ADDED achievements for each newly added port
+      const oldPortCount = initialPortCountRef.current
+      const newPorts = (settings.sourcePorts || []).filter((p) => !p.ignored)
+      const addedCount = newPorts.length - oldPortCount
+      if (addedCount > 0) {
+        // Collect newly seen families
+        const oldFamilies = new Set(initialPortFamiliesRef.current)
+        for (const port of newPorts) {
+          if (port.family && !oldFamilies.has(port.family)) {
+            dispatchAchievementEvent({
+              type: 'SOURCE_PORT_ADDED',
+              count: 1,
+              family: port.family
+            })
+              .then((srcResult) => {
+                const unlockToasts = buildUnlockToasts(srcResult)
+                for (const t of unlockToasts) {
+                  toast({
+                    title: t.title,
+                    description: t.description,
+                    duration: t.duration as 6000 | 8000
+                  })
+                }
+              })
+              .catch(() => {})
+            oldFamilies.add(port.family)
+          }
+        }
+      }
+
       await api.updateSettings(payload)
 
-      // Also save doom versions
-      await api.updateDoomVersions(doomVersions)
+      // Re-fetch versions from the server (it re-scanned if wad dir changed)
+      const freshVersions = await api.getDoomVersions()
+
+      if (initialWadDirRef.current !== payload.wadFilesDirectory) {
+        // WAD dir changed → server already re-scanned; use its result.
+        // Discard any local edits to versions since they were against the old scan.
+        setDoomVersions(freshVersions)
+        await api.updateDoomVersions(freshVersions)
+      } else {
+        // No directory change → preserve local metadata edits (name, icon, ignored, etc.)
+        setDoomVersions(freshVersions)
+        await api.updateDoomVersions(doomVersions)
+      }
 
       // Invalidate queries to trigger global theme sync
+      await queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
       await queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
+
+      // Update savedRef so close-restore is a no-op (theme is already persisted)
+      savedRef.current = { theme: settings.theme, customThemeCss: settings.customThemeCss }
 
       toast({
         title: 'SYSTEM: core_settings',
@@ -206,6 +345,68 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   }
 
+  // Source port scanning
+  const [scanning, setScanning] = useState(false)
+  const [scanResults, setScanResults] = useState<ScannedPort[] | null>(null)
+  const [scanSelections, setScanSelections] = useState<boolean[]>([])
+  const [showPortDownloadModal, setShowPortDownloadModal] = useState(false)
+
+  const handleScanPorts = async (): Promise<void> => {
+    setScanning(true)
+    try {
+      const results = await api.scanPorts()
+      // Sort: un-configured first, then by family
+      results.sort((a, b) => {
+        const aExisting = settings.sourcePorts.some(
+          (p) => p.executablePath.toLowerCase() === a.path.toLowerCase()
+        )
+        const bExisting = settings.sourcePorts.some(
+          (p) => p.executablePath.toLowerCase() === b.path.toLowerCase()
+        )
+        if (aExisting !== bExisting) return aExisting ? 1 : -1
+        return a.family.localeCompare(b.family)
+      })
+      setScanResults(results)
+      setScanSelections(
+        results.map((r) =>
+          !settings.sourcePorts.some(
+            (p) => p.executablePath.toLowerCase() === r.path.toLowerCase()
+          )
+        )
+      )
+    } catch (e) {
+      console.error('Failed to scan for source ports:', e)
+    } finally {
+      setScanning(false)
+    }
+  }
+
+  const handleImportScanned = (): void => {
+    if (!scanResults) return
+    setSettings((prev) => {
+      const newPorts = [...prev.sourcePorts]
+      for (let i = 0; i < scanResults.length; i++) {
+        if (!scanSelections[i]) continue
+        const r = scanResults[i]
+        const exists = newPorts.some(
+          (p) => p.executablePath.toLowerCase() === r.path.toLowerCase()
+        )
+        if (!exists) {
+          newPorts.push({
+            id: crypto.randomUUID(),
+            name: r.name,
+            executablePath: r.path,
+            family: r.family as SourcePortFamily,
+            ignored: false
+          })
+        }
+      }
+      return { ...prev, sourcePorts: newPorts }
+    })
+    setScanResults(null)
+    setScanSelections([])
+  }
+
   // Source port management
   const handleAddPort = async (): Promise<void> => {
     const result = await api.showOpenDialog({
@@ -220,6 +421,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       let family: SourcePortFamily = 'other'
       if (lower.includes('uzdoom')) family = 'uzdoom'
       else if (lower.includes('lzdoom')) family = 'lzdoom'
+      else if (lower.includes('helion')) family = 'helion'
       else if (lower.includes('gzdoom')) family = 'gzdoom'
       else if (lower.includes('zdoom')) family = 'zdoom'
       else if (lower.includes('zandronum')) family = 'zandronum'
@@ -270,7 +472,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-4xl p-0 overflow-hidden border-app bg-app-primary shadow-2xl h-[85vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-app bg-app-secondary">
           <div className="flex items-center gap-3">
@@ -286,6 +488,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               </p>
             </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              api.reenableFirstRun().catch(() => {})
+              onClose()
+              // Dispatch custom event so FirstRunTour picks it up
+              window.dispatchEvent(new CustomEvent('uac:replay-tour'))
+            }}
+            className="text-xs border-app hover:bg-app-hover text-app-muted"
+          >
+            Guided Tour
+          </Button>
         </div>
 
         <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">
@@ -311,7 +526,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               </TabsTrigger>
               <TabsTrigger
                 value="advanced"
-                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all opacity-50"
+                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
                 Advanced
               </TabsTrigger>
@@ -319,208 +534,237 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            <TabsContent value="general" className="space-y-8 mt-0 p-6">
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                      Visual Interface
-                    </Label>
-                    <div className="p-4 bg-app-secondary border border-app rounded-lg flex items-center justify-between shadow-md">
-                      <span className="text-sm font-medium text-app-primary">App Theme</span>
-                      <div className="flex gap-2 p-1 bg-app-primary/50 rounded-md border border-app">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSettings((s) => ({ ...s, theme: 'dark' }))}
-                          className={`h-8 text-xs transition-all ${
-                            settings.theme === 'dark'
-                              ? 'bg-accent-highlight text-white shadow-sm'
-                              : 'text-app-muted hover:text-app-primary'
-                          }`}
+            <TabsContent value="general" className="space-y-4 mt-0 p-6">
+              <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-5">
+                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                  INTERFACE
+                </Label>
+
+                <div className="flex items-start justify-between gap-6">
+                  <div className="min-w-0">
+                    <Label className="text-sm font-medium text-app-primary">App Theme</Label>
+                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                      Visual colour profile for the terminal.
+                    </p>
+                  </div>
+                  <Select
+                    value={settings.theme}
+                    onValueChange={(value) =>
+                      setSettings((s) => ({
+                        ...s,
+                        theme: value as IAppSettings['theme']
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="bg-app-primary border-app text-app-primary w-[260px] shrink-0">
+                      <SelectValue placeholder="Select theme" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-app-secondary border-app text-app-primary">
+                      {[
+                        { value: 'dark', label: 'UAC PHOBOS — Default, dark/red' },
+                        { value: 'light', label: 'MAYKR — Bright argent energy' },
+                        { value: 'terminal', label: 'PLUTONIA TERMINAL — Green phosphor' },
+                        { value: 'custom', label: 'CUSTOM — User-defined palette' }
+                      ].map(({ value, label }) => (
+                        <SelectItem
+                          key={value}
+                          value={value}
+                          className="focus:bg-app-hover focus:text-app-primary"
                         >
-                          DARK
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSettings((s) => ({ ...s, theme: 'light' }))}
-                          className={`h-8 text-xs transition-all ${
-                            settings.theme === 'light'
-                              ? 'bg-accent-highlight text-white shadow-sm'
-                              : 'text-app-muted hover:text-app-primary'
-                          }`}
-                        >
-                          LIGHT
-                        </Button>
-                      </div>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-start justify-between gap-6">
+                  <div className="min-w-0">
+                    <Label className="text-sm font-medium text-app-primary">Database Link</Label>
+                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                      Navigation shortcut to your preferred source of mods.
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <Select
+                      value={settings.selectedPresetIndex.toString()}
+                      onValueChange={(value) =>
+                        setSettings((s) => ({
+                          ...s,
+                          selectedPresetIndex: parseInt(value, 10)
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="bg-app-primary border-app text-app-primary w-[260px] shrink-0">
+                        <SelectValue placeholder="Select a database" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-app-secondary border-app text-app-primary">
+                        {settings.databaseLinkPresets.map((preset, index) => (
+                          <SelectItem
+                            key={index}
+                            value={index.toString()}
+                            className="focus:bg-app-hover focus:text-app-primary"
+                          >
+                            {preset.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p
+                      className="text-[10px] text-app-muted truncate max-w-48 text-right"
+                      title={settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
+                    >
+                      {settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-6">
+                  <div className="min-w-0">
+                    <Label className="text-sm font-medium text-app-primary">Default View</Label>
+                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                      Starting view mode when opening the games page.
+                    </p>
+                  </div>
+                  <div className="flex rounded-lg border border-app overflow-hidden shrink-0">
+                    {[
+                      { value: 'grid' as const, icon: LayoutGrid, label: 'Grid' },
+                      { value: 'list' as const, icon: List, label: 'List' },
+                      { value: 'detail' as const, icon: BookOpen, label: 'Detail' }
+                    ].map(({ value, icon: Icon, label }) => (
+                      <button
+                        key={value}
+                        onClick={() => setSettings((s) => ({ ...s, defaultView: value }))}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+                          settings.defaultView === value
+                            ? 'bg-accent-highlight text-white'
+                            : 'bg-app-primary text-app-muted hover:text-app-primary hover:bg-app-hover'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span className="max-sm:sr-only">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-6">
+                  <div className="min-w-0">
+                    <Label className="text-sm font-medium text-app-primary">Launch Preview</Label>
+                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                      Show the generated launch command in settings and install page.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.showLaunchPreview ?? true}
+                    onCheckedChange={(checked) =>
+                      setSettings((s) => ({ ...s, showLaunchPreview: checked }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="bg-app-secondary/50 p-4 rounded-xl border border-app border-dashed space-y-4">
+                {appVersion && (
+                  <>
+                    <div className="flex items-center justify-between pt-2">
+                      <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
+                        LIVE SYSTEM
+                      </Label>
+                      <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted border border-app">
+                        E1M{appVersion}
+                      </span>
                     </div>
-                    <div className="p-4 bg-app-secondary border border-app rounded-lg flex items-center justify-between shadow-md">
+                    <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label className="text-xs text-app-primary font-medium">
-                          Launch Preview
+                          Check for updates on Startup
                         </Label>
                         <p className="text-[10px] text-app-muted leading-tight">
-                          Show the generated launch command in settings and install page.
+                          Automatically notify about application updates. <br />
+                          Updating is always optional - new updates will never be downloaded/applied
+                          without interaction.
                         </p>
                       </div>
                       <Switch
-                        checked={settings.showLaunchPreview ?? true}
+                        checked={settings.autoUpdateEnabled ?? true}
                         onCheckedChange={(checked) =>
-                          setSettings((s) => ({ ...s, showLaunchPreview: checked }))
+                          setSettings((s) => ({ ...s, autoUpdateEnabled: checked }))
                         }
                       />
                     </div>
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                      EXTERNAL REPOS
-                    </Label>
-                    <div className="p-4 bg-app-secondary border border-app rounded-lg flex flex-col gap-3 shadow-md">
-                      <span className="text-xs text-app-muted">DATABASE LINK</span>
-                      <p className="text-[10px] text-app-muted leading-tight">
-                        Changes the navigation shortcut to your preferred source of mods.
-                      </p>
-                      <Select
-                        value={settings.selectedPresetIndex.toString()}
-                        onValueChange={(value) =>
-                          setSettings((s) => ({
-                            ...s,
-                            selectedPresetIndex: parseInt(value, 10)
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="bg-app-primary border-app text-app-primary h-10">
-                          <SelectValue placeholder="Select a database" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-app-secondary border-app text-app-primary">
-                          {settings.databaseLinkPresets.map((preset, index) => (
-                            <SelectItem
-                              key={index}
-                              value={index.toString()}
-                              className="focus:bg-app-hover focus:text-app-primary"
-                            >
-                              {preset.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <div className="flex items-center gap-2 pt-2">
-                        <span className="text-xs text-app-muted">URL:</span>
-                        <span className="text-xs text-app-primary truncate flex-1">
-                          {settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
-                  TECHNICAL SPECIFICATIONS
-                </Label>
-                <div className="bg-app-secondary/50 p-4 rounded-xl border border-app border-dashed space-y-4">
-                  {appVersion && (
-                    <>
-                      <div className="flex items-center justify-between pt-2">
-                        <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                          LIVE SYSTEM
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="text-xs text-app-primary font-medium">
+                          Registry Lookup
                         </Label>
-                        <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted border border-app">
-                          E1M{appVersion}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-xs text-app-primary font-medium">
-                            Check for updates on Startup
-                          </Label>
-                          <p className="text-[10px] text-app-muted leading-tight">
-                            Automatically notify about application updates. <br />
-                            Updating is always optional - new updates will never be
-                            downloaded/applied without interaction.
-                          </p>
-                        </div>
-                        <Switch
-                          checked={settings.autoUpdateEnabled ?? true}
-                          onCheckedChange={(checked) =>
-                            setSettings((s) => ({ ...s, autoUpdateEnabled: checked }))
-                          }
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-xs text-app-primary font-medium">
-                            Registry Lookup
-                          </Label>
-                          <p className="text-[10px] text-app-muted leading-tight">
-                            Look up mod files in the online registry when adding to catalog.
-                            <br />
-                            Requires an active connection to the UAC Registry.
-                          </p>
-                        </div>
-                        <Switch
-                          checked={settings.registryLookupEnabled ?? false}
-                          onCheckedChange={(checked) => {
-                            if (checked && !settings.registryUuid) {
-                              const uuid = crypto.randomUUID()
-                              setSettings((s) => ({
-                                ...s,
-                                registryLookupEnabled: checked,
-                                registryUuid: uuid
-                              }))
-                            } else {
-                              setSettings((s) => ({ ...s, registryLookupEnabled: checked }))
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-app-primary font-medium">
-                          Manually check for app updates
+                        <p className="text-[10px] text-app-muted leading-tight">
+                          Look up mod files in the online registry when adding to catalog.
+                          <br />
+                          Requires an active connection to the UAC Registry.
                         </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => api.checkForUpdates()}
-                          className="text-xs h-7 bg-app-primary hover:bg-app-hover text-app-primary border-app"
-                        >
-                          Check
-                        </Button>
                       </div>
-                    </>
-                  )}
-                  <div className="flex items-center justify-between border-t pt-6 border-app/30">
-                    <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                      Application Ini
-                    </Label>
-                    <span className="text-xs px-2 py-0.5 rounded bg-accent-highlight/10 text-accent-highlight/60 font-mono border border-accent-highlight/25">
-                      RESTRICTED AREA
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="bg-app-primary/40 border border-app h-10 px-3 text-sm flex-1 flex items-center text-app-muted opacity-80 rounded-md truncate">
-                      {settings.configPath}
+                      <Switch
+                        checked={settings.registryLookupEnabled ?? false}
+                        onCheckedChange={(checked) => {
+                          if (checked && !settings.registryUuid) {
+                            const uuid = crypto.randomUUID()
+                            setSettings((s) => ({
+                              ...s,
+                              registryLookupEnabled: checked,
+                              registryUuid: uuid
+                            }))
+                          } else {
+                            setSettings((s) => ({ ...s, registryLookupEnabled: checked }))
+                          }
+                        }}
+                      />
                     </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-app-primary font-medium">
+                        Manually check for app updates
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => api.checkForUpdates()}
+                        className="text-xs h-7 bg-app-primary hover:bg-app-hover text-app-primary border-app"
+                      >
+                        Check
+                      </Button>
+                    </div>
+                  </>
+                )}
+                <div className="flex items-center justify-between border-t pt-6 border-app/30">
+                  <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
+                    Application Ini
+                  </Label>
+                  <span className="text-xs px-2 py-0.5 rounded bg-accent-highlight/10 text-accent-highlight/60 font-mono border border-accent-highlight/25">
+                    RESTRICTED AREA
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <div className="bg-app-primary/40 border border-app h-10 px-3 text-sm flex-1 flex items-center text-app-muted opacity-80 rounded-md truncate">
+                    {settings.configPath}
                   </div>
-                  <p className="text-xs text-app-muted italic opacity-70">
-                    Internal master directory for settings, telemetry catalogues, and system state.
-                  </p>
                 </div>
-                <div className="flex-col items-center pt-8 border-t border-dashed">
-                  <img
-                    src={uacLogo}
-                    alt=""
-                    className="w-12 opacity-30 hover:opacity-60 mx-auto animate-pulse color-accent-highlight"
-                  />
-                  <p className="text-xs text-app-muted text-center transition-opacity opacity-30 italic uppercase mt-2">
-                    This software is developed by The Union Aerospace Corporation, UAC.
-                    <br />
-                    Unauthorized access or usage outside Phobos facility is strictly prohibited
-                    <br />
-                    Any violations will result in termination.
-                  </p>
-                </div>
+                <p className="text-xs text-app-muted italic opacity-70">
+                  Internal master directory for settings, telemetry catalogues, and system state.
+                </p>
+              </div>
+              <div className="flex-col items-center pt-8 border-t border-dashed">
+                <img
+                  src={uacLogo}
+                  alt=""
+                  className="w-12 opacity-30 hover:opacity-60 mx-auto animate-pulse color-accent-highlight"
+                />
+                <p className="text-xs text-app-muted text-center transition-opacity opacity-30 italic uppercase mt-2">
+                  This software is developed by The Union Aerospace Corporation, UAC.
+                  <br />
+                  Unauthorized access or usage outside Phobos facility is strictly prohibited
+                  <br />
+                  Any violations will result in termination.
+                </p>
               </div>
             </TabsContent>
 
@@ -539,14 +783,34 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
                       Source Ports
                     </Label>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleAddPort}
-                      className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
-                    >
-                      + Add Port
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleScanPorts}
+                        disabled={scanning}
+                        className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
+                      >
+                        {scanning ? 'Scanning…' : 'Scan Path'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowPortDownloadModal(true)}
+                        className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
+                      >
+                        <Download className="w-3 h-3 mr-1" />
+                        Get Port
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleAddPort}
+                        className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
+                      >
+                        + Add Port
+                      </Button>
+                    </div>
                   </div>
 
                   {settings.sourcePorts.length === 0 ? (
@@ -593,9 +857,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
                           {/* Ignored toggle */}
                           <button
-                            onClick={() =>
-                              handleSavePort({ ...port, ignored: !port.ignored })
-                            }
+                            onClick={() => handleSavePort({ ...port, ignored: !port.ignored })}
                             className={`shrink-0 p-1.5 rounded transition-colors ${
                               port.ignored
                                 ? 'text-red-400 hover:text-red-300'
@@ -603,7 +865,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                             }`}
                             title={port.ignored ? 'Show port' : 'Hide port'}
                           >
-                            {port.ignored ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {port.ignored ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
                           </button>
 
                           {/* Edit */}
@@ -631,6 +897,90 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     </div>
                   )}
                 </div>
+
+                {/* Port Download Modal */}
+                <PortDownloadModal
+                  open={showPortDownloadModal}
+                  onOpenChange={setShowPortDownloadModal}
+                  onPortDownloaded={(result) => {
+                    setSettings((prev) => ({
+                      ...prev,
+                      sourcePorts: [
+                        ...prev.sourcePorts,
+                        {
+                          id: crypto.randomUUID(),
+                          name: result.name,
+                          executablePath: result.executablePath,
+                          family: result.family as SourcePortFamily,
+                          version: result.version,
+                          ignored: false
+                        }
+                      ]
+                    }))
+                  }}
+                  existingPorts={settings.sourcePorts.map(
+                    (p) => `${p.family}:${p.name}`
+                  )}
+                />
+
+                {/* Scan Results */}
+                {scanResults && scanResults.length > 0 && (
+                  <div className="mt-2 border border-accent-highlight/20 rounded-lg p-3 bg-app-secondary/50 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-app-muted">
+                        Found {scanResults.length} port{scanResults.length !== 1 ? 's' : ''}
+                      </span>
+                      {scanSelections.some(Boolean) && (
+                        <Button
+                          size="sm"
+                          onClick={handleImportScanned}
+                          className="text-xs h-7 bg-accent-highlight hover:opacity-90 text-white"
+                        >
+                          Add Selected ({scanSelections.filter(Boolean).length})
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-1 max-h-56 overflow-y-auto">
+                      {scanResults.map((r, i) => {
+                        const alreadyAdded = settings.sourcePorts.some(
+                          (p) => p.executablePath.toLowerCase() === r.path.toLowerCase()
+                        )
+                        return (
+                          <div
+                            key={r.path}
+                            className={`flex items-center gap-2 text-xs py-1 ${alreadyAdded ? 'opacity-60' : ''}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={scanSelections[i] ?? false}
+                              disabled={alreadyAdded}
+                              onChange={() =>
+                                setScanSelections((prev) => {
+                                  const copy = [...prev]
+                                  copy[i] = !copy[i]
+                                  return copy
+                                })
+                              }
+                              className="w-3.5 h-3.5 accent-accent-highlight shrink-0"
+                            />
+                            <span className="font-mono uppercase text-[10px] text-app-muted w-14 shrink-0">
+                              {r.family}
+                            </span>
+                            <span className="flex-1 truncate text-app-primary">{r.name}</span>
+                            <span className="text-app-muted truncate max-w-56 hidden sm:block">
+                              {r.path}
+                            </span>
+                            {alreadyAdded && (
+                              <span className="text-green-500 shrink-0 text-[10px]">
+                                already added
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Inline Port Form (add/edit) */}
                 {showPortForm && editingPort && (
@@ -859,10 +1209,98 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               )}
             </TabsContent>
 
-            <TabsContent value="advanced" className="space-y-4 mt-0 p-6 items-center">
-              <p className="text-app-secondary italic text-center mt-[20%]">
-                <span className="bold">Permission denied.</span> Red keycard required.
-              </p>
+            <TabsContent value="advanced" className="space-y-4 mt-0 p-6">
+              <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
+                CUSTOM THEME EDITOR
+              </Label>
+              <div className="bg-app-secondary p-4 rounded-xl border border-app space-y-4">
+                <div className="space-y-2">
+                  <p className="text-xs text-app-muted leading-relaxed">
+                    Paste HSL variable overrides below. Each line should follow the format:
+                    <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50">
+                      --variable-name: hue saturation lightness;
+                    </code>
+                    Example:
+                    <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50 whitespace-pre">
+                      --bg-primary: 220 18% 5%; --text-primary: 210 20% 92%; --accent-highlight: 0
+                      84% 60%;
+                    </code>
+                    Wrap the overrides in{' '}
+                    <code className="font-mono text-xs">.custom &#123; ... &#125;</code> or just
+                    paste the variable lines — the app will wrap them automatically.
+                  </p>
+                  <p className="text-xs text-app-muted leading-relaxed">
+                    See the{' '}
+                    <a
+                      href="https://github.com/mikkelrask/uaclaunchcontrol/wiki/Theming#custom-theme"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-accent-highlight transition-colors"
+                    >
+                      Theming guide on GitHub
+                    </a>{' '}
+                    for the full variable reference and examples.
+                  </p>
+                </div>
+                <textarea
+                  className="w-full h-64 bg-app-primary border border-app rounded-md p-3 font-mono text-xs text-app-primary resize-none focus:outline-none focus:ring-1 focus:ring-accent-highlight/40"
+                  value={settings.customThemeCss || ''}
+                  onChange={(e) => setSettings((s) => ({ ...s, customThemeCss: e.target.value }))}
+                  placeholder={`--bg-primary: 220 18% 5%;\n--text-primary: 210 20% 92%;\n--accent-highlight: 0 84% 60%;`}
+                  spellCheck={false}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSettings((s) => ({
+                        ...s,
+                        customThemeCss: s.customThemeCss ? `.custom {\n${s.customThemeCss}\n}` : ''
+                      }))
+                    }}
+                    className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
+                  >
+                    Wrap in .custom &#123; &#125;
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Copy dark theme values as a starter
+                      const darkThemeVars = [
+                        '--bg-primary: 220 18% 5%;',
+                        '--bg-secondary: 220 15% 9%;',
+                        '--bg-tertiary: 220 12% 14%;',
+                        '--bg-card: 220 18% 8%;',
+                        '--bg-popover: 220 18% 9%;',
+                        '--bg-muted: 220 10% 18%;',
+                        '--bg-sidebar: 220 18% 6%;',
+                        '--bg-hover: 220 12% 16%;',
+                        '',
+                        '--text-primary: 210 20% 92%;',
+                        '--text-secondary: 215 12% 70%;',
+                        '--text-muted: 215 10% 75%;',
+                        '--text-sidebar: 210 20% 92%;',
+                        '--text-card: 210 20% 92%;',
+                        '--text-popover: 210 20% 92%;',
+                        '',
+                        '--accent-highlight: 0 84% 60%;',
+                        '--accent-destructive: 0 65% 45%;',
+                        '',
+                        '--border: 220 12% 18%;'
+                      ].join('\n')
+                      setSettings((s) => ({
+                        ...s,
+                        customThemeCss: darkThemeVars
+                      }))
+                    }}
+                    className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
+                  >
+                    Reset to defaults
+                  </Button>
+                </div>
+              </div>
             </TabsContent>
           </div>
         </Tabs>
@@ -870,7 +1308,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         <div className="flex justify-between items-center p-4 border-t border-app bg-app-secondary shrink-0">
           <Button
             variant="outline"
-            onClick={onClose}
+            onClick={handleClose}
             className="text-xs uppercase bg-transparent border-app hover:bg-app-hover text-app-muted hover:text-app-primary h-9 px-6"
           >
             Abort
@@ -956,21 +1394,16 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
 
       <div className="space-y-1.5">
         <Label className="text-xs text-app-muted">Family</Label>
-        <Select
-          value={family}
-          onValueChange={(v) => setFamily(v as SourcePortFamily)}
-        >
+        <Select value={family} onValueChange={(v) => setFamily(v as SourcePortFamily)}>
           <SelectTrigger className="bg-app-primary border-app h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-app-secondary border-app">
-            {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'other'] as const).map(
-              (f) => (
-                <SelectItem key={f} value={f} className="text-app-primary">
-                  {f}
-                </SelectItem>
-              )
-            )}
+            {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'helion', 'other'] as const).map((f) => (
+              <SelectItem key={f} value={f} className="text-app-primary">
+                {f}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

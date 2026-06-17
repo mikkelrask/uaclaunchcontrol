@@ -1,14 +1,16 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'wouter'
 // import { useLocation } from 'wouter';
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
-import ViewToggle from '@/components/ViewToggle'
+import ViewToggle, { type SortField } from '@/components/ViewToggle'
 import GameCard from '@/components/GameCard'
+import GameDetailCard from '@/components/GameDetailCard'
+import GameListCard from '@/components/GameListCard'
 import GameSettingsModal from '@/components/GameSettingsModal'
 import { gameService } from '@/lib/gameService'
-import { IProtocol, IDoomVersion } from '@shared/schema'
+import { IProtocol, IDoomVersion, IAppSettings } from '@shared/schema'
 import { api } from '@/api'
 
 type ViewMode = 'grid' | 'list' | 'detail'
@@ -19,7 +21,39 @@ export const GamesPage: React.FC = () => {
     const params = new URLSearchParams(window.location.search)
     return params.get('version')
   })
+  // Read default view from settings
+  const { data: settingsData } = useQuery<IAppSettings>({
+    queryKey: ['/api/settings'],
+    queryFn: gameService.getSettings
+  })
+
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const settingsDefaultView = settingsData?.defaultView
+
+  // Sync viewMode from settings once they load
+  useEffect(() => {
+    if (settingsDefaultView) {
+      const id = requestAnimationFrame(() => setViewMode(settingsDefaultView))
+      return () => cancelAnimationFrame(id)
+    }
+    return
+  }, [settingsDefaultView])
+  // Sort state — persisted to localStorage
+  const [sortField, setSortField] = useState<SortField>(() => {
+    return (localStorage.getItem('protocolSortField') as SortField) || 'lastPlayed'
+  })
+  const [sortDesc, setSortDesc] = useState(() => {
+    const stored = localStorage.getItem('protocolSortDesc')
+    return stored !== null ? stored === 'true' : true
+  })
+
+  const handleSortChange = (field: SortField, desc: boolean): void => {
+    setSortField(field)
+    setSortDesc(desc)
+    localStorage.setItem('protocolSortField', field)
+    localStorage.setItem('protocolSortDesc', String(desc))
+  }
+
   const [searchQuery, setSearchQuery] = useState(() => {
     const params = new URLSearchParams(window.location.search)
     return params.get('search') || ''
@@ -70,20 +104,52 @@ export const GamesPage: React.FC = () => {
 
   // Filter protocols based on search query
   let filteredProtocols = protocols.filter((p) =>
-    searchQuery
-      ? (p.title || p.name || '').toLowerCase().includes(searchQuery.toLowerCase())
-      : true
+    searchQuery ? (p.title || p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) : true
   )
 
-  // Sort: most recently launched first, never-launched at the bottom
+  // Sort based on selected field and direction
   filteredProtocols = filteredProtocols.sort((a, b) => {
-    if (a.lastLaunchedAt && b.lastLaunchedAt) {
-      return b.lastLaunchedAt.localeCompare(a.lastLaunchedAt)
+    // Secondary sort: alphabetical — used as tiebreaker within groups
+    const alphaCmp = (a.title || a.name || '').localeCompare(b.title || b.name || '')
+
+    switch (sortField) {
+      case 'lastPlayed': {
+        // Build the descending order comparator (most recent first, A→Z):
+        //   launched before never-launched,
+        //   most recently launched first,
+        //   never-launched sorted A→Z.
+        const aLaunched = !!a.lastLaunchedAt
+        const bLaunched = !!b.lastLaunchedAt
+        let cmp: number
+        if (aLaunched !== bLaunched) {
+          cmp = aLaunched ? -1 : 1
+        } else if (aLaunched) {
+          cmp = -a.lastLaunchedAt!.localeCompare(b.lastLaunchedAt!)
+        } else {
+          cmp = alphaCmp
+        }
+        // sortDesc=true keeps descending; sortDesc=false flips the whole list
+        return sortDesc ? cmp : -cmp
+      }
+      case 'playtime': {
+        const playtimeCmp = (a.playtimeSeconds || 0) - (b.playtimeSeconds || 0)
+        if (playtimeCmp !== 0) return sortDesc ? -playtimeCmp : playtimeCmp
+        // Equal playtime — alphabetical tiebreaker
+        return alphaCmp
+      }
+      case 'alphabetical':
+        return sortDesc ? -alphaCmp : alphaCmp
+      case 'created': {
+        const createdCmp = (a.createdAt || a.id || '').localeCompare(
+          b.createdAt || b.id || ''
+        )
+        if (createdCmp !== 0) return sortDesc ? -createdCmp : createdCmp
+        // Same creation time — alphabetical tiebreaker
+        return alphaCmp
+      }
     }
-    if (a.lastLaunchedAt) return -1
-    if (b.lastLaunchedAt) return 1
-    // If neither has been launched, sort alphabetically by title/name
-    return (a.title || a.name || '').localeCompare(b.title || b.name || '')
+
+    return 0
   })
 
   // Find version object for each protocol
@@ -103,6 +169,9 @@ export const GamesPage: React.FC = () => {
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
             onManageGames={handleManageGames}
+            sortField={sortField}
+            sortDesc={sortDesc}
+            onSortChange={handleSortChange}
           />
 
           <div className="flex-1 overflow-y-auto p-6">
@@ -145,6 +214,38 @@ export const GamesPage: React.FC = () => {
                     </>
                   )}
                 </p>
+              </div>
+            ) : viewMode === 'list' ? (
+              <div className="flex flex-col gap-3">
+                {filteredProtocols?.map((p): React.ReactNode => {
+                  const version = getVersionForProtocol(p)
+                  if (!version) return null
+
+                  return (
+                    <GameListCard
+                      key={p.id}
+                      protocol={p}
+                      doomVersion={version}
+                      onSettingsClick={handleSettingsClick}
+                    />
+                  )
+                })}
+              </div>
+            ) : viewMode === 'detail' ? (
+              <div className="flex flex-col gap-8">
+                {filteredProtocols?.map((p): React.ReactNode => {
+                  const version = getVersionForProtocol(p)
+                  if (!version) return null
+
+                  return (
+                    <GameDetailCard
+                      key={p.id}
+                      protocol={p}
+                      doomVersion={version}
+                      onSettingsClick={handleSettingsClick}
+                    />
+                  )
+                })}
               </div>
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">

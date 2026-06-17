@@ -1,8 +1,6 @@
-import { app, shell, BrowserWindow, ipcMain, nativeImage } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, nativeImage, net } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
-import https from 'https'
-import { IncomingMessage } from 'http'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { startServer } from './server'
 import { autoUpdater } from 'electron-updater'
@@ -216,58 +214,23 @@ async function checkForUpdates(options: { manual?: boolean } = {}): Promise<void
 
 async function checkGitHubRelease(): Promise<void> {
   const currentVersion = app.getVersion()
-  debug(`[AutoUpdater] Checking GitHub for latest version (current: ${currentVersion})`)
+  console.log(`[Updater] Checking GitHub for latest version (current: ${currentVersion})`)
 
-  return new Promise((resolve) => {
-    const req = https.get(
+  try {
+    const response = await net.fetch(
       'https://api.github.com/repos/mikkelrask/uaclaunchcontrol/releases/latest',
-      (res: IncomingMessage) => {
-        let data = ''
-        res.on('data', (chunk: string) => {
-          data += chunk
-        })
-        res.on('end', () => {
-          try {
-            const release = JSON.parse(data) as {
-              tag_name: string
-              html_url: string
-              body?: string
-            }
-            const latestVersion = (release.tag_name || '').replace(/^v/, '')
-            debug(`[AutoUpdater] Latest version: ${latestVersion}`)
-
-            if (latestVersion && latestVersion !== currentVersion) {
-              debug(`[AutoUpdater] Update available: ${latestVersion}`)
-              mainWindow?.webContents.send('update-status', {
-                status: 'available',
-                version: latestVersion,
-                releaseNotes: release.body || ''
-              })
-            } else {
-              debug(`[AutoUpdater] No update available`)
-              mainWindow?.webContents.send('update-status', {
-                status: 'not-available',
-                version: currentVersion,
-                isManual: lastCheckWasManual
-              })
-            }
-          } catch (err) {
-            debug(`[AutoUpdater] GitHub API parse error: ${(err as Error).message}`)
-            if (lastCheckWasManual) {
-              mainWindow?.webContents.send('update-status', {
-                status: 'not-available',
-                version: currentVersion,
-                isManual: true
-              })
-            }
-          }
-          resolve()
-        })
+      {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'UAC-Launch-Control/' + currentVersion,
+          Accept: 'application/vnd.github+json'
+        }
       }
     )
 
-    req.on('error', (err: Error) => {
-      debug(`[AutoUpdater] GitHub API error: ${err.message}`)
+    if (!response.ok) {
+      const body = await response.text()
+      console.log(`[Updater] GitHub API returned ${response.status}: ${body.slice(0, 300)}`)
       if (lastCheckWasManual) {
         mainWindow?.webContents.send('update-status', {
           status: 'not-available',
@@ -275,9 +238,44 @@ async function checkGitHubRelease(): Promise<void> {
           isManual: true
         })
       }
-      resolve()
-    })
-  })
+      return
+    }
+
+    const release = (await response.json()) as {
+      tag_name: string
+      html_url: string
+      body?: string
+    }
+    const latestVersion = (release.tag_name || '').replace(/^v/, '')
+    console.log(`[Updater] GitHub latest: ${latestVersion} | Current: ${currentVersion}`)
+
+    if (latestVersion && latestVersion !== currentVersion) {
+      console.log(`[Updater] Update available: ${latestVersion}`)
+      mainWindow?.webContents.send('update-status', {
+        status: 'available',
+        version: latestVersion,
+        releaseNotes: release.body || ''
+      })
+    } else {
+      console.log(
+        `[Updater] No update available (GitHub: ${latestVersion}, local: ${currentVersion})`
+      )
+      mainWindow?.webContents.send('update-status', {
+        status: 'not-available',
+        version: currentVersion,
+        isManual: lastCheckWasManual
+      })
+    }
+  } catch (err) {
+    console.log(`[Updater] GitHub API error: ${(err as Error).message}`)
+    if (lastCheckWasManual) {
+      mainWindow?.webContents.send('update-status', {
+        status: 'not-available',
+        version: currentVersion,
+        isManual: true
+      })
+    }
+  }
 }
 
 app.whenReady().then(async () => {

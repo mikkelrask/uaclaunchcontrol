@@ -1,7 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { IModFile } from '@shared/schema'
 import { Button } from '@/components/ui/button'
-import { ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, Pencil, Trash2 } from 'lucide-react'
+import { ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, Pencil, Trash2, FileCog } from 'lucide-react'
 
 export interface CatalogColumnCallbacks {
   catalogFiles: IModFile[]
@@ -81,6 +81,46 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<
         return row.original.fileType === filterValue
       },
       size: 20
+    },
+    {
+      accessorKey: 'category',
+      header: ({ column }) => <SortableHeader column={column} title="Category" />,
+      cell: ({ row }) => {
+        const cat = row.original.category
+        if (!cat) return <span className="text-app-muted">–</span>
+        return (
+          <span className="text-xs">
+            {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+          </span>
+        )
+      },
+      filterFn: (row, _columnId, filterValue: string) => {
+        if (!filterValue || filterValue === 'all') return true
+        return row.original.category === filterValue
+      },
+      size: 120
+    },
+    {
+      id: 'config',
+      header: 'Config',
+      cell: ({ row }) => {
+        const file = row.original
+        if (!file.configTemplate) {
+          return <span className="text-app-muted">–</span>
+        }
+        const shortHash = file.configTemplate.md5Hash.slice(0, 8)
+        return (
+          <span
+            className="inline-flex items-center gap-1 text-xs text-green-500 cursor-help"
+            title={`Config: ${file.configTemplate.configFile} (${file.configTemplate.md5Hash})`}
+          >
+            <FileCog className="h-3.5 w-3.5" />
+            {shortHash}…
+          </span>
+        )
+      },
+      enableSorting: false,
+      size: 100
     },
     {
       id: 'dependencies',

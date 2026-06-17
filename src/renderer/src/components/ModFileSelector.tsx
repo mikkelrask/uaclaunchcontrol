@@ -92,7 +92,9 @@ export function ModFileSelector({
     if (field === 'filePath') {
       const fileName = newValue.split(/[\\/]/).pop() || ''
       const extension = fileName.split('.').pop()?.toUpperCase() || ''
-      if (extension === 'PK3' || extension === 'IPK3' || extension === 'ZIP') {
+      if (extension === 'ZIP') {
+        updatedFile.fileType = 'ZIP'
+      } else if (extension === 'PK3' || extension === 'IPK3') {
         updatedFile.fileType = 'PK3'
       } else if (extension === 'DEH' || extension === 'BEX') {
         updatedFile.fileType = 'DEH'
@@ -122,7 +124,8 @@ export function ModFileSelector({
           let fileType = reqFile.fileType
           if (!fileType && reqFile.fileName) {
             const ext = reqFile.fileName.split('.').pop()?.toUpperCase() || ''
-            if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+            if (ext === 'ZIP') fileType = 'ZIP'
+            else if (ext === 'PK3' || ext === 'IPK3') fileType = 'PK3'
             else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
             else fileType = 'WAD'
           }
@@ -132,7 +135,9 @@ export function ModFileSelector({
             filePath: reqFile.filePath,
             fileType: fileType || 'WAD',
             fileName: reqFile.fileName,
-            isRequired: true
+            isRequired: true,
+            hashValue: reqFile.hashValue || '',
+            url: reqFile.url || ''
           })
         }
       }
@@ -140,7 +145,8 @@ export function ModFileSelector({
       let fileType = catalogFile.fileType
       if (!fileType && catalogFile.fileName) {
         const ext = catalogFile.fileName.split('.').pop()?.toUpperCase() || ''
-        if (ext === 'PK3' || ext === 'IPK3' || ext === 'ZIP') fileType = 'PK3'
+        if (ext === 'ZIP') fileType = 'ZIP'
+        else if (ext === 'PK3' || ext === 'IPK3') fileType = 'PK3'
         else if (ext === 'DEH' || ext === 'BEX') fileType = 'DEH'
         else fileType = 'WAD'
       }
@@ -150,7 +156,9 @@ export function ModFileSelector({
         filePath: catalogFile.filePath,
         fileType: fileType || 'WAD',
         fileName: catalogFile.fileName,
-        isRequired: true
+        isRequired: true,
+        hashValue: catalogFile.hashValue || '',
+        url: catalogFile.url || ''
       })
     }
 
@@ -172,7 +180,9 @@ export function ModFileSelector({
 
         const extension = fileName.split('.').pop()?.toUpperCase() || ''
         let detectedType = 'WAD'
-        if (extension === 'PK3' || extension === 'IPK3' || extension === 'ZIP') {
+        if (extension === 'ZIP') {
+          detectedType = 'ZIP'
+        } else if (extension === 'PK3' || extension === 'IPK3') {
           detectedType = 'PK3'
         } else if (extension === 'DEH' || extension === 'BEX') {
           detectedType = 'DEH'
@@ -334,6 +344,7 @@ export function ModFileSelector({
                   <SelectContent className="bg-app-secondary border-app">
                     <SelectItem value="WAD">WAD</SelectItem>
                     <SelectItem value="PK3">PK3</SelectItem>
+                    <SelectItem value="ZIP">ZIP</SelectItem>
                     <SelectItem value="DEH">DEH</SelectItem>
                   </SelectContent>
                 </Select>

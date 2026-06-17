@@ -19,14 +19,13 @@ No more having to remember the launch order of your mods, or blindly trusting an
 
 - 🎮 **Game Management**: Organize and launch different configurations of wads, mods and modpacks with ease
 - 📁 **File Catalog**: Maintain a catalog of mod files with search, sidecar flags, and dependency/load-order tracking
-- 📦 **"Mod-linking"**: if a mod requires another specific, you can set it as required, and the app will always add additional mods when creating a new game instance
+- 📦 **"Mod-dependencies"**: if a mod requires another specific modfile, you can set it as required, and the app will always add additional mods when creating a new game instance
 - ⚙️ **Custom Launch Parameters**: Configure launch arguments per mod
 - 🔄 **Import and Export**: Export your configuration as a JSON file to share with friends, or drag-and-drop a modpack JSON to import\*
 - 🌐 **UAC Registry**: Community-sourced mod metadata lookups with anonymous submissions (opt-in)
 - 🗺️ **WAD Management**: Import and configure base game WADs with auto-detection and real-time file watching
 - 🎯 **Bring your own Source port**: UZDoom, GZDoom, Zandronum, and more — configure per-mod or globally
-- ⌨️ **Keyboard Shortcuts**: Quick navigation with global hotkeys — see the [Keyboard Shortcuts wiki](https://github.com/mikkelrask/uaclaunchcontrol/wiki/Keyboard-shortcuts) for the full list
-- 🔄 **Auto-Updater**: Automatic update checks with in-app download and install
+- ⌨️ **Keyboard Shortcuts**: Quick navigation with global hotkeys — see the [Keyboard Shortcuts wiki](https://uac-soft.online/reference/keyboard-shortcuts/) for the full list
 
 _\* They still need the actual modfiles — the JSON only stores references and load orders. No mod data is shared, keeping support with the original mod creators._
 
@@ -35,7 +34,7 @@ _\* They still need the actual modfiles — the JSON only stores references and 
 **UAC Launch Control** is available for **Windows, MacOS** and **Linux**.
 **Download** the latest release for you operating system from the **[Releases page](https://github.com/mikkelrask/uaclaunchcontrol/releases)**
 
-More detailed instructions can be found in the **[Install Wiki](https://github.com/mikkelrask/uaclaunchcontrol/wiki/Install-UAC-Launch-Control)**.
+More detailed instructions can be found in the **[Install Wiki](https://uac-soft.online/installation/)**.
 
 ## License
 
@@ -45,7 +44,7 @@ This is free software. Free as in freedom _and_ free beer.
 
 Contributions are welcome! Please feel free to submit a Pull Request or raise issues.
 
-For more developer details refer to the [wiki](https://github.com/mikkelrask/uaclaunchcontrol/wiki) or [DeepWiki](https://deepwiki.com/mikkelrask/uaclaunchcontrol) for a more detailed go-through.
+For more developer details refer to the [wiki](https://uac-soft.online/getting-started/) or [DeepWiki](https://deepwiki.com/mikkelrask/uaclaunchcontrol) for a more detailed go-through.
 
 ## Acknowledgments
 
