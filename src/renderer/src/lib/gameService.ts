@@ -120,6 +120,12 @@ export const gameService = {
     return handleApiResponse<IProtocol[]>(response)
   },
 
+  async searchModFileCatalog(query: string): Promise<IModFile[]> {
+    const url = `${API_BASE}/api/mod-files/catalog/search?q=${encodeURIComponent(query)}`
+    const response = await fetch(url)
+    return handleApiResponse<IModFile[]>(response)
+  },
+
   async getProtocol(id: string): Promise<{ protocol: IProtocol; files: IModFile[] }> {
     const response = await fetch(`${API_BASE}/api/protocols/${id}`)
     return handleApiResponse<{ protocol: IProtocol; files: IModFile[] }>(response)

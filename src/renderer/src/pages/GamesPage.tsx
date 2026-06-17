@@ -10,7 +10,7 @@ import GameDetailCard from '@/components/GameDetailCard'
 import GameListCard from '@/components/GameListCard'
 import GameSettingsModal from '@/components/GameSettingsModal'
 import { gameService } from '@/lib/gameService'
-import { IProtocol, IDoomVersion, IAppSettings } from '@shared/schema'
+import { IProtocol, IDoomVersion, IModFile, IAppSettings } from '@shared/schema'
 import { api } from '@/api'
 
 type ViewMode = 'grid' | 'list' | 'detail'
@@ -73,6 +73,12 @@ export const GamesPage: React.FC = () => {
     enabled: true
   })
 
+  const { data: catalogueHits = [] } = useQuery<IModFile[]>({
+    queryKey: ['/api/mod-files/catalog/search', searchQuery],
+    queryFn: () => gameService.searchModFileCatalog(searchQuery),
+    enabled: searchQuery.length > 0
+  })
+
   // Event handlers
   const handleVersionSelect = (version: string): void => {
     setActiveVersion(version === activeVersion ? null : version)
@@ -102,10 +108,9 @@ export const GamesPage: React.FC = () => {
     setSelectedProtocolId(null)
   }
 
-  // Filter protocols based on search query
-  let filteredProtocols = protocols.filter((p) =>
-    searchQuery ? (p.title || p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) : true
-  )
+  // Server-side search handles the heavy lifting (title, description, mod file names)
+  // This just keeps the protocols passthrough for the sort step below
+  let filteredProtocols = protocols
 
   // Sort based on selected field and direction
   filteredProtocols = filteredProtocols.sort((a, b) => {
@@ -191,6 +196,79 @@ export const GamesPage: React.FC = () => {
                   .map((_, i) => (
                     <div key={i} className="h-40 bg-app-card rounded-lg animate-pulse" />
                   ))}
+              </div>
+            ) : searchQuery ? (
+              <div className="space-y-10">
+                {/* Protocols section */}
+                <section>
+                  <h2 className="text-lg font-semibold text-app-primary mb-4">
+                    Protocols ({filteredProtocols.length} match{filteredProtocols.length !== 1 ? 'es' : ''})
+                  </h2>
+                  {filteredProtocols.length > 0 ? (
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">
+                      {filteredProtocols?.map((p): React.ReactNode => {
+                        const version = getVersionForProtocol(p)
+                        if (!version) return null
+
+                        return (
+                          <GameCard
+                            key={p.id}
+                            protocol={p}
+                            doomVersion={version}
+                            onSettingsClick={handleSettingsClick}
+                          />
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-app-muted text-sm">No matching protocols</p>
+                  )}
+                </section>
+
+                {/* Catalogue section */}
+                {catalogueHits.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-semibold text-app-primary mb-4">
+                      Mod Files in Catalogue ({catalogueHits.length} match{catalogueHits.length !== 1 ? 'es' : ''})
+                    </h2>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-4">
+                      {catalogueHits.map((file) => (
+                        <div
+                          key={file.id}
+                          className="bg-app-card border border-app rounded-lg p-4 flex items-center justify-between"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-app-primary truncate">
+                              {file.name || file.fileName || 'Unnamed'}
+                            </p>
+                            <p className="text-xs text-app-muted mt-0.5">
+                              {file.fileType && (
+                                <span className="px-1.5 py-0.5 bg-app-primary rounded text-xs mr-2">
+                                  {file.fileType}
+                                </span>
+                              )}
+                              {file.version && `v${file.version}`}
+                            </p>
+                          </div>
+                          <span className="text-xs text-app-muted shrink-0 ml-4">
+                            {file.hashValue?.slice(0, 8) || '—'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {filteredProtocols.length === 0 && catalogueHits.length === 0 && (
+                  <div className="text-center py-10">
+                    <h3 className="text-2xl mb-2">
+                      <span className="animate-pulse text-accent-highlight font-bold">NO MATCHES</span>
+                    </h3>
+                    <p className="text-app-muted">
+                      No protocols or mod files found for &quot;{searchQuery}&quot;
+                    </p>
+                  </div>
+                )}
               </div>
             ) : filteredProtocols?.length === 0 ? (
               <div className="text-center py-10">

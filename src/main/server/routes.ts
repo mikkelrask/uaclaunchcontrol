@@ -2,10 +2,8 @@ import type { Express } from 'express'
 import { createServer, type Server } from 'http'
 import { gameService } from './services/gameService'
 import * as storage from './storage'
-import * as playerService from './services/playerService'
 import * as express from 'express'
 import path from 'path'
-import os from 'os'
 import fs from 'fs-extra'
 import { debug } from '../../shared/debug'
 
@@ -65,7 +63,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return fs.createReadStream(resolved).pipe(res)
     } catch (error: unknown) {
       console.error('Error serving media:', error)
-      return res.status(500).json({ error: 'Failed to serve media' })
+      const message =
+        error instanceof Error
+          ? error instanceof Error
+            ? error.message
+            : 'Failed to serve media'
+          : 'Failed to serve media'
+      return res.status(500).json({ error: message })
     }
   })
 
@@ -163,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to download image' })
+        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
     }
   })
 
@@ -203,9 +207,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (search && typeof search === 'string') {
-        protocols = protocols.filter((p) =>
-          (p.title || p.name || '').toLowerCase().includes(search.toLowerCase())
-        )
+        const q = search.toLowerCase()
+        protocols = protocols.filter((p) => {
+          // Match protocol title/name
+          if ((p.title || p.name || '').toLowerCase().includes(q)) return true
+          // Match protocol description
+          if ((p.description || '').toLowerCase().includes(q)) return true
+          // Match mod file names attached to the protocol
+          if (p.files?.some((f) => (f.name || f.fileName || '').toLowerCase().includes(q))) return true
+          return false
+        })
       }
 
       return res.json(protocols)
@@ -301,23 +312,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
-  // Record playtime for a protocol session
-  app.post('/api/protocols/:id/playtime', async (req, res) => {
-    const id = req.params.id
-    const { sessionSeconds } = req.body
-    if (typeof sessionSeconds !== 'number' || sessionSeconds <= 0) {
-      return res.status(400).json({ message: 'Invalid sessionSeconds' })
-    }
-    try {
-      await storage.addPlaytime(id, sessionSeconds)
-      return res.json({ success: true })
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to record playtime'
-      })
-    }
-  })
-
   // === Mod Files API === // New Section
   app.get('/api/mod-files/catalog', async (_req, res) => {
     try {
@@ -367,7 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to add file to catalog' })
+        .json({ message: error instanceof Error ? error.message : 'Failed to serve media' })
     }
   })
 
@@ -540,6 +534,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  // Search the mod file catalogue by name
+  app.get('/api/mod-files/catalog/search', async (req, res) => {
+    const { q } = req.query
+    if (!q || typeof q !== 'string') {
+      return res.json([])
+    }
+    try {
+      const catalog = await storage.getModFileCatalog()
+      const query = q.toLowerCase()
+      const results = catalog.filter((f) =>
+        (f.name || f.fileName || '').toLowerCase().includes(query)
+      )
+      return res.json(results)
+    } catch (error) {
+      console.error('Error searching mod file catalog:', error)
+      return res.status(500).json({ error: 'Failed to search mod file catalog' })
+    }
+  })
+
   // Update a Doom version (e.g., for ignoring/hiding)
   app.put('/api/versions/:id', async (req, res) => {
     try {
@@ -552,7 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error(`[API] Error updating version ${req.params.id}:`, error)
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to update version'
+        error: error instanceof Error ? error.message : 'Failed to serve media'
       })
     }
   })
@@ -612,238 +625,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
-  // === Player Data API ===
-  app.get('/api/player-data', async (_req, res) => {
+  // === Migration API ===
+  app.get('/api/migration/check', async (_req, res) => {
     try {
-      const data = await playerService.getPlayerData()
-      return res.json(data)
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to get player data'
-      })
-    }
-  })
-
-  app.put('/api/player-data', async (req, res) => {
-    try {
-      const partial = req.body
-      if (!partial || typeof partial !== 'object') {
-        return res.status(400).json({ message: 'Invalid player data' })
-      }
-      const updated = await playerService.savePlayerData(partial)
-      return res.json(updated)
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to save player data'
-      })
-    }
-  })
-
-  app.put('/api/player-data/stats', async (req, res) => {
-    try {
-      const delta = req.body
-      if (!delta || typeof delta !== 'object') {
-        return res.status(400).json({ message: 'Invalid stats delta' })
-      }
-      const updatedStats = await playerService.updatePlayerStats(delta)
-      return res.json(updatedStats)
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to update player stats'
-      })
-    }
-  })
-
-  app.post('/api/player-data/achievements/unlock', async (req, res) => {
-    try {
-      const { id, state } = req.body
-      if (!id || !state) {
-        return res.status(400).json({ message: 'Missing achievement id or state' })
-      }
-      const result = await playerService.unlockAchievement(id, state)
-      return res.json(result)
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to unlock achievement'
-      })
-    }
-  })
-
-  // === First Run API ===
-  app.get('/api/first-run', async (_req, res) => {
-    try {
-      const isFirstRun = storage.getIsFirstRun()
-      return res.json({ isFirstRun })
+      const info = await storage.checkLegacyConfig()
+      return res.json(info)
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to check first run' })
+        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
     }
   })
 
-  app.post('/api/first-run/dismiss', async (_req, res) => {
+  app.post('/api/migration/execute', async (req, res) => {
     try {
-      storage.dismissFirstRun()
-      return res.json({ success: true })
+      const { sourcePath } = req.body
+      if (!sourcePath) return res.status(400).json({ error: 'Missing sourcePath' })
+      const success = await storage.executeMigration(sourcePath)
+      return res.json({ success })
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to dismiss first run' })
-    }
-  })
-
-  app.post('/api/first-run/reenable', async (_req, res) => {
-    try {
-      storage.reenableFirstRun()
-      return res.json({ isFirstRun: true })
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to re-enable first run' })
-    }
-  })
-
-  // === Source Port Scanner ===
-  app.get('/api/settings/scan-ports', async (_req, res) => {
-    try {
-      const scanResults: {
-        path: string
-        name: string
-        family: string
-      }[] = []
-      const seen = new Set<string>()
-
-      const knownFamilies: { name: string; family: string }[] = [
-        { name: 'gzdoom', family: 'gzdoom' },
-        { name: 'uzdoom', family: 'uzdoom' },
-        { name: 'zandronum', family: 'zandronum' },
-        { name: 'lzdoom', family: 'lzdoom' },
-        { name: 'zdoom', family: 'zdoom' },
-        { name: 'helion', family: 'helion' }
-      ]
-
-      // Collect directories to scan
-      const dirs = new Set<string>()
-
-      // PATH entries
-      const pathSep = process.platform === 'win32' ? ';' : ':'
-      const pathEnv = process.env.PATH || ''
-      for (const d of pathEnv.split(pathSep)) {
-        const trimmed = d.trim()
-        if (trimmed) dirs.add(trimmed)
-      }
-
-      // Common directories by platform
-      if (process.platform === 'win32') {
-        dirs.add('C:\\Program Files')
-        dirs.add('C:\\Program Files (x86)')
-        const localAppData = process.env.LOCALAPPDATA
-        if (localAppData) dirs.add(localAppData)
-      } else if (process.platform === 'darwin') {
-        dirs.add('/Applications')
-        dirs.add(path.join(os.homedir(), 'Applications'))
-      } else {
-        dirs.add('/usr/local/bin')
-        dirs.add('/usr/games')
-        dirs.add(path.join(os.homedir(), '.local', 'bin'))
-        dirs.add('/opt')
-      }
-
-      const isExe = (fullPath: string): boolean => {
-        try {
-          if (process.platform === 'win32') {
-            return fullPath.toLowerCase().endsWith('.exe')
-          }
-          const stat = fs.statSync(fullPath)
-          return stat.isFile() && !!(stat.mode & (fs.constants.S_IXUSR | fs.constants.S_IXGRP | fs.constants.S_IXOTH))
-        } catch {
-          return false
-        }
-      }
-
-      for (const dir of dirs) {
-        let entries: string[]
-        try {
-          entries = await fs.readdir(dir)
-        } catch {
-          continue
-        }
-
-        for (const entry of entries) {
-          const lower = entry.toLowerCase()
-
-          // macOS: check .app bundles
-          if (process.platform === 'darwin' && lower.endsWith('.app')) {
-            const baseName = lower.replace('.app', '')
-            const match = knownFamilies.find((k) => baseName.includes(k.name))
-            if (match) {
-              const exePath = path.join(dir, entry, 'Contents', 'MacOS', baseName)
-              if (fs.existsSync(exePath)) {
-                const key = exePath.toLowerCase()
-                if (!seen.has(key)) {
-                  seen.add(key)
-                  scanResults.push({
-                    path: exePath,
-                    name: entry.replace('.app', ''),
-                    family: match.family
-                  })
-                }
-              }
-            }
-            continue
-          }
-
-          // Regular executables
-          const match = knownFamilies.find((k) => lower.includes(k.name))
-          if (match) {
-            const fullPath = path.join(dir, entry)
-            if (isExe(fullPath)) {
-              const key = fullPath.toLowerCase()
-              if (!seen.has(key)) {
-                seen.add(key)
-                scanResults.push({
-                  path: fullPath,
-                  name: entry.replace(/\.(exe|AppImage)$/i, ''),
-                  family: match.family
-                })
-              }
-            }
-          }
-        }
-      }
-
-      return res.json(scanResults)
-    } catch (error) {
-      console.error('Failed to scan for source ports:', error)
-      return res.status(500).json({ message: 'Failed to scan for source ports' })
-    }
-  })
-
-  // === Source Port Downloader ===
-  app.get('/api/ports/releases', async (_req, res) => {
-    try {
-      const { getPortReleases } = await import('./services/portService')
-      const releases = await getPortReleases()
-      return res.json(releases)
-    } catch (error) {
-      console.error('[ports] Failed to fetch releases:', error)
-      return res.status(500).json({ message: 'Failed to fetch releases' })
-    }
-  })
-
-  app.post('/api/ports/download', async (req, res) => {
-    try {
-      const { downloadUrl, assetName, family, version } = req.body
-      if (!downloadUrl || !assetName || !family) {
-        return res.status(400).json({ message: 'downloadUrl, assetName, and family are required' })
-      }
-
-      const { downloadPortRelease } = await import('./services/portService')
-      const result = await downloadPortRelease(downloadUrl, assetName, family, version || '')
-      return res.json(result)
-    } catch (error) {
-      console.error('[ports] Download failed:', error)
-      return res.status(500).json({ message: error instanceof Error ? error.message : 'Download failed' })
+        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
     }
   })
 
