@@ -12,6 +12,7 @@ import GameSettingsModal from '@/components/GameSettingsModal'
 import { gameService } from '@/lib/gameService'
 import { IProtocol, IDoomVersion, IModFile, IAppSettings } from '@shared/schema'
 import { api } from '@/api'
+import type { IRegistryMod } from '@/api'
 
 type ViewMode = 'grid' | 'list' | 'detail'
 
@@ -76,6 +77,12 @@ export const GamesPage: React.FC = () => {
   const { data: catalogueHits = [] } = useQuery<IModFile[]>({
     queryKey: ['/api/mod-files/catalog/search', searchQuery],
     queryFn: () => gameService.searchModFileCatalog(searchQuery),
+    enabled: searchQuery.length > 0
+  })
+
+  const { data: registryHits = [] } = useQuery<IRegistryMod[]>({
+    queryKey: ['/api/search/registry', searchQuery],
+    queryFn: () => gameService.searchRegistry(searchQuery),
     enabled: searchQuery.length > 0
   })
 
@@ -224,6 +231,50 @@ export const GamesPage: React.FC = () => {
                     <p className="text-app-muted text-sm">No matching protocols</p>
                   )}
                 </section>
+
+                {/* UAC Registry section */}
+                {registryHits.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-semibold text-app-primary mb-4">
+                      UAC Registry ({registryHits.length} match{registryHits.length !== 1 ? 'es' : ''})
+                    </h2>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-4">
+                      {registryHits.map((mod, i) => (
+                        <div
+                          key={i}
+                          className="bg-app-card border border-app rounded-lg p-4"
+                        >
+                          <p className="text-sm font-medium text-app-primary truncate">
+                            {mod.family_name}
+                          </p>
+                          <p className="text-xs text-app-muted mt-1">
+                            {mod.version && `v${mod.version}`}
+                            {mod.category && (
+                              <span className="ml-2 px-1.5 py-0.5 bg-app-primary rounded">
+                                {mod.category.replace(/_/g, ' ')}
+                              </span>
+                            )}
+                          </p>
+                          {mod.urls?.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {mod.urls.slice(0, 3).map((u, j) => (
+                                <a
+                                  key={j}
+                                  href={u.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-accent-highlight hover:underline"
+                                >
+                                  {u.domain || 'Download'}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
                 {/* Catalogue section */}
                 {catalogueHits.length > 0 && (

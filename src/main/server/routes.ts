@@ -6,6 +6,7 @@ import * as express from 'express'
 import path from 'path'
 import fs from 'fs-extra'
 import { debug } from '../../shared/debug'
+import { REGISTRY_API_URL } from '../../shared/registry-config'
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json())
@@ -550,6 +551,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error searching mod file catalog:', error)
       return res.status(500).json({ error: 'Failed to search mod file catalog' })
+    }
+  })
+
+  // Search the UAC Registry by query string
+  app.get('/api/search/registry', async (req, res) => {
+    const { q } = req.query
+    if (!q || typeof q !== 'string' || q.trim().length === 0) {
+      return res.json([])
+    }
+    try {
+      const registryUrl = REGISTRY_API_URL
+      const response = await fetch(`${registryUrl}/mod/search?q=${encodeURIComponent(q)}`, {
+        signal: AbortSignal.timeout(5000)
+      })
+      if (!response.ok) {
+        console.warn(`Registry search returned ${response.status}`)
+        return res.json([])
+      }
+      const data = await response.json()
+      return res.json(data)
+    } catch (error) {
+      console.error('Error searching UAC Registry:', error)
+      return res.json([]) // Graceful: registry unavailable -> just no results
     }
   })
 

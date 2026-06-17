@@ -5,6 +5,7 @@ import type {
   InsertProtocol,
   IAppSettings
 } from '@shared/schema'
+import type { IRegistryMod } from '@/api'
 
 interface OpenDialogOptions {
   title?: string
@@ -124,6 +125,12 @@ export const gameService = {
     const url = `${API_BASE}/api/mod-files/catalog/search?q=${encodeURIComponent(query)}`
     const response = await fetch(url)
     return handleApiResponse<IModFile[]>(response)
+  },
+
+  async searchRegistry(query: string): Promise<IRegistryMod[]> {
+    const url = `${API_BASE}/api/search/registry?q=${encodeURIComponent(query)}`
+    const response = await fetch(url)
+    return handleApiResponse<IRegistryMod[]>(response)
   },
 
   async getProtocol(id: string): Promise<{ protocol: IProtocol; files: IModFile[] }> {
