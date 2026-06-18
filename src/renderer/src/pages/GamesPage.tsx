@@ -20,11 +20,14 @@ import GameSettingsModal from '@/components/GameSettingsModal'
 import { gameService } from '@/lib/gameService'
 import { IProtocol, IDoomVersion, IModFile, IAppSettings } from '@shared/schema'
 import { api } from '@/api'
+import { useToast } from '@/hooks/use-toast'
 import type { IRegistryMod } from '@/api'
 
 type ViewMode = 'grid' | 'list' | 'detail'
 
 export const GamesPage: React.FC = () => {
+  const { toast } = useToast()
+
   // State
   const [activeVersion, setActiveVersion] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search)
@@ -110,7 +113,10 @@ export const GamesPage: React.FC = () => {
   }
 
   const handleManageGames = (): void => {
-    alert('Blue keycard required')
+    toast({
+      title: 'SYSTEM: access_denied',
+      description: 'Blue keycard required. Report to your commanding officer.'
+    })
   }
 
   const handleSettingsClick = (id: string): void => {

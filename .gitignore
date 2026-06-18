@@ -38,3 +38,8 @@ release/
 *.dmg
 *.exe
 AGENTS.md
+**out/
+.opencode/
+**pi**
+docs/
+.gitignore

@@ -1,8 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useLocation, Link } from 'wouter'
 import { useQuery } from '@tanstack/react-query'
-import { Settings, Menu } from 'lucide-react'
+import { Settings, Menu, Keyboard, FileText, Info } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose
+} from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
 import SettingsDialog from './SettingsDialog'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 import AchievementsPopover from './AchievementsPopover'
@@ -21,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
   const [searchQuery, setSearchQuery] = useState('')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   const isTypingOnInput = (): boolean => {
@@ -196,7 +205,10 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
         >
           <Settings className="h-5 w-5" />
         </button>
-        <button className="w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover">
+        <button
+          className="w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover cursor-pointer"
+          onClick={() => setIsDrawerOpen(true)}
+        >
           <Menu className="h-5 w-5" />
         </button>
       </div>
@@ -206,6 +218,79 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
 
       {/* Keyboard Shortcuts Dialog */}
       <KeyboardShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
+
+      {/* Hamburger Drawer */}
+      <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        <SheetContent side="left" className="bg-app-secondary border-app text-app-primary w-80">
+          <SheetHeader className="mb-6">
+            <SheetTitle className="text-app-primary tracking-widest text-sm lowercase">
+              command_center
+            </SheetTitle>
+          </SheetHeader>
+
+          <nav className="flex flex-col gap-2">
+            <SheetClose asChild>
+              <Button
+                variant="ghost"
+                className="justify-start gap-3 text-app-primary hover:bg-app-hover h-12 px-4"
+                onClick={() => {
+                  setIsDrawerOpen(false)
+                  setTimeout(() => setIsShortcutsOpen(true), 150)
+                }}
+              >
+                <Keyboard className="h-5 w-5 text-app-muted" />
+                <span>Keyboard Shortcuts</span>
+              </Button>
+            </SheetClose>
+
+            <SheetClose asChild>
+              <Button
+                variant="ghost"
+                className="justify-start gap-3 text-app-primary hover:bg-app-hover h-12 px-4"
+                onClick={() => {
+                  setIsDrawerOpen(false)
+                  setTimeout(() => window.dispatchEvent(new Event('show-update-modal')), 150)
+                }}
+              >
+                <FileText className="h-5 w-5 text-app-muted" />
+                <span>Release Notes</span>
+              </Button>
+            </SheetClose>
+
+            <hr className="border-app my-2" />
+
+            <div className="px-4 py-3">
+              <div className="flex items-center gap-3 mb-3">
+                <Info className="h-5 w-5 text-app-muted" />
+                <span className="text-sm font-semibold text-app-primary">About</span>
+              </div>
+              <div className="space-y-2 text-xs text-app-muted ml-8">
+                <p>UAC Launch Control</p>
+                <p className="font-mono">v0.666.0</p>
+                <p>Source port manager and mod launcher for Doom-engine games.</p>
+                <div className="pt-2 flex flex-col gap-1">
+                  <a
+                    href="https://github.com/mikkelrask/uaclaunchcontrol"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-highlight hover:underline"
+                  >
+                    GitHub Repository
+                  </a>
+                  <a
+                    href="https://uac-soft.online"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-highlight hover:underline"
+                  >
+                    uac-soft.online
+                  </a>
+                </div>
+              </div>
+            </div>
+          </nav>
+        </SheetContent>
+      </Sheet>
     </header>
   )
 }

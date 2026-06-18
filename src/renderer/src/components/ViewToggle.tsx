@@ -136,7 +136,7 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
           className="text-sm text-muted flex items-center hover:text-app-primary"
           onClick={onManageGames}
         >
-          Manage Games
+          Manage Protocols
         </button>
       </div>
     </div>
