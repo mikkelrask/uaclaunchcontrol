@@ -102,6 +102,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                       .replace(/^\* (.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
                       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                       .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                      .replace(/_(.+?)_/g, '<em>$1</em>')
                       .replace(/`([^`]+)`/g, '<code class="bg-black/30 px-1 rounded">$1</code>')
                       .replace(/\n/g, '<br/>')
                   }}
