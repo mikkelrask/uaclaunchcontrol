@@ -407,7 +407,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(fileId)) {
         return res.status(400).json({ message: 'Invalid file ID' })
       }
-      await storage.deleteModFileFromCatalog(fileId)
+      const deleteFile = req.query.deleteFile === 'true'
+      await storage.deleteModFileFromCatalog(fileId, deleteFile)
       return res.json({ success: true })
     } catch (error: unknown) {
       return res.status(500).json({

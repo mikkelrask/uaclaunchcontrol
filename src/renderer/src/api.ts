@@ -212,8 +212,9 @@ export const api = {
     return response.json()
   },
 
-  deleteFromCatalog: async (id: number): Promise<{ success: boolean }> => {
-    const response = await fetch(`${API_BASE}/api/mod-files/catalog/${id}`, {
+  deleteFromCatalog: async (id: number, deleteFile?: boolean): Promise<{ success: boolean }> => {
+    const params = deleteFile ? '?deleteFile=true' : ''
+    const response = await fetch(`${API_BASE}/api/mod-files/catalog/${id}${params}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     })

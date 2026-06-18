@@ -7,9 +7,18 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
 import { DataTable } from '@/components/ui/data-table'
 import { getCatalogColumns } from '@/components/catalog-columns'
 import { IModFile, IAppSettings } from '@shared/schema'
+import { Button } from '@/components/ui/button'
 import { Upload } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api, IRegistryMod } from '@/api'
@@ -47,6 +56,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   const [isZipModalOpen, setIsZipModalOpen] = useState(false)
   const [zipScanResult, setZipScanResult] = useState<ZipScanResult | null>(null)
   const [zipFilePath, setZipFilePath] = useState<string>('')
+
+  const [deleteTarget, setDeleteTarget] = useState<IModFile | null>(null)
+  const [deleteFromDisk, setDeleteFromDisk] = useState(false)
 
   const [addForm, setAddForm] = useState<AddFormState>({
     name: '',
@@ -690,17 +702,21 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   }
 
   const handleDeleteFromCatalog = async (file: IModFile): Promise<void> => {
-    if (
-      !confirm(`Are you sure you want to remove "${file.name || file.fileName}" from the catalog?`)
-    ) {
-      return
-    }
+    setDeleteTarget(file)
+    setDeleteFromDisk(false)
+  }
+
+  const confirmDelete = async (): Promise<void> => {
+    const file = deleteTarget
+    if (!file) return
+    setDeleteTarget(null)
     try {
-      await api.deleteFromCatalog(file.id)
+      await api.deleteFromCatalog(file.id, deleteFromDisk)
       handleRemoveFile(file.id)
+      const extra = deleteFromDisk ? ' and its file from disk' : ''
       toast({
         title: 'SYSTEM: remove_success',
-        description: `Removed "${file.name || file.fileName}" from your mod file catalog.`
+        description: `Removed "${file.name || file.fileName}" from your mod file catalog${extra}.`
       })
     } catch {
       handleRemoveFile(file.id)
@@ -1030,6 +1046,41 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         onBrowseConfigFile={handleEditBrowseConfigFile}
         onClearConfigFile={handleEditClearConfigFile}
       />
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove from catalog</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove{' '}
+              <strong>{deleteTarget ? deleteTarget.name || deleteTarget.fileName : ''}</strong>
+              {' '}from your mod file catalog?
+            </DialogDescription>
+          </DialogHeader>
+          <label className="flex items-center gap-2 text-sm cursor-pointer py-2">
+            <Checkbox
+              checked={deleteFromDisk}
+              onCheckedChange={(checked) => setDeleteFromDisk(checked === true)}
+            />
+            <span>Also delete the file from disk</span>
+          </label>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ZipImportModal
         open={isZipModalOpen}

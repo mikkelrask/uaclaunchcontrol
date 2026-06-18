@@ -61,7 +61,6 @@
     "express": "^5.2.1",
     "fs-extra": "^11.3.3",
     "lucide-react": "^0.563.0",
-    "multer": "^2.0.2",
     "nanoid": "^5.1.6",
     "react-hook-form": "^7.71.1",
     "safer-buffer": "^2.1.2",
@@ -78,7 +77,6 @@
     "@types/adm-zip": "^0.5.8",
     "@types/express": "^5.0.6",
     "@types/fs-extra": "^11.0.4",
-    "@types/multer": "^2.0.0",
     "@types/node": "^22.19.7",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
@@ -91,7 +89,6 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
-    "hono": ">=4.12.21",
     "husky": "^9.1.7",
     "postcss": "^8.5.9",
     "prettier": "^3.7.4",
@@ -103,5 +100,8 @@
     "typescript": "^5.9.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.9"
+  },
+  "overrides": {
+    "hono": "4.12.26"
   }
 }

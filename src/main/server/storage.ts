@@ -1223,12 +1223,24 @@ export async function deleteProtocol(id: string | number): Promise<boolean | und
   }
 }
 
-export async function deleteModFileFromCatalog(fileId: number): Promise<boolean> {
+export async function deleteModFileFromCatalog(fileId: number, deleteFile?: boolean): Promise<boolean> {
   try {
     const catalog = await getModFileCatalog()
     const index = catalog.findIndex((f) => f.id === fileId)
     if (index === -1) {
       throw new Error(`File with ID ${fileId} not found in catalog`)
+    }
+
+    const file = catalog[index]
+
+    if (deleteFile && file.filePath) {
+      const resolved = resolvePath(file.filePath)
+      try {
+        await fs.remove(resolved)
+        console.log(`[storage] Deleted file from disk: ${resolved}`)
+      } catch (err) {
+        console.warn(`[storage] Failed to delete file from disk: ${resolved}`, err)
+      }
     }
 
     catalog.splice(index, 1)

@@ -10,7 +10,6 @@
   "dependencies": {
     "express": "^4.21.2",
     "fs-extra": "^11.3.0",
-    "multer": "^1.4.5-lts.2",
     "nanoid": "^5.1.5",
     "zod": "^3.24.2",
     "child_process": "latest",
