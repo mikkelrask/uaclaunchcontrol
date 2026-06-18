@@ -488,19 +488,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               </p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              api.reenableFirstRun().catch(() => {})
-              onClose()
-              // Dispatch custom event so FirstRunTour picks it up
-              window.dispatchEvent(new CustomEvent('uac:replay-tour'))
-            }}
-            className="text-xs border-app hover:bg-app-hover text-app-muted"
-          >
-            Guided Tour
-          </Button>
         </div>
 
         <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">

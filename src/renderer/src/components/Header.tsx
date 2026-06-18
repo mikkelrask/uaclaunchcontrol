@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useLocation, Link } from 'wouter'
 import { useQuery } from '@tanstack/react-query'
-import { Settings, Menu, Keyboard, FileText, Info } from 'lucide-react'
+import { Settings, Menu, Keyboard, FileText, Info, GraduationCap } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
   Sheet,
@@ -254,6 +254,21 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
               >
                 <FileText className="h-5 w-5 text-app-muted" />
                 <span>Release Notes</span>
+              </Button>
+            </SheetClose>
+
+            <SheetClose asChild>
+              <Button
+                variant="ghost"
+                className="justify-start gap-3 text-app-primary hover:bg-app-hover h-12 px-4"
+                onClick={() => {
+                  setIsDrawerOpen(false)
+                  api.reenableFirstRun().catch(() => {})
+                  setTimeout(() => window.dispatchEvent(new CustomEvent('uac:replay-tour')), 150)
+                }}
+              >
+                <GraduationCap className="h-5 w-5 text-app-muted" />
+                <span>Guided Tour</span>
               </Button>
             </SheetClose>
 
