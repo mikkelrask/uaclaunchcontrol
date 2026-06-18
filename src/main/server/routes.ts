@@ -7,6 +7,7 @@ import path from 'path'
 import fs from 'fs-extra'
 import { debug } from '../../shared/debug'
 import { REGISTRY_API_URL } from '../../shared/registry-config'
+import { getPortReleases, downloadPortRelease } from './services/portService'
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json())
@@ -642,6 +643,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  // === Port Download API ===
+  app.get('/api/ports/releases', async (_req, res) => {
+    try {
+      const releases = await getPortReleases()
+      return res.json(releases)
+    } catch (error) {
+      console.error('Failed to fetch port releases:', error)
+      return res.status(500).json({ error: 'Failed to fetch port releases' })
+    }
+  })
+
+  app.post('/api/ports/download', async (req, res) => {
+    try {
+      const { downloadUrl, assetName, family, version } = req.body
+      if (!downloadUrl || !assetName || !family || !version) {
+        return res.status(400).json({ error: 'Missing required fields: downloadUrl, assetName, family, version' })
+      }
+      const result = await downloadPortRelease(downloadUrl, assetName, family, version)
+      return res.json(result)
+    } catch (error) {
+      console.error('Failed to download port release:', error)
+      return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to download port' })
+    }
+  })
+
   // === Dialog API (for file/directory selection) ===
   app.post('/api/dialog/open', async (req, res) => {
     try {
@@ -666,31 +692,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Failed to show open dialog:', error)
       return res.status(500).json({ canceled: true, filePaths: [] })
-    }
-  })
-
-  // === Migration API ===
-  app.get('/api/migration/check', async (_req, res) => {
-    try {
-      const info = await storage.checkLegacyConfig()
-      return res.json(info)
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
-    }
-  })
-
-  app.post('/api/migration/execute', async (req, res) => {
-    try {
-      const { sourcePath } = req.body
-      if (!sourcePath) return res.status(400).json({ error: 'Missing sourcePath' })
-      const success = await storage.executeMigration(sourcePath)
-      return res.json({ success })
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
     }
   })
 
