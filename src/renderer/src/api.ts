@@ -10,6 +10,7 @@ import {
 
 export interface IRegistryMod {
   family_name: string
+  display_name?: string
   version: string
   category: string | null
   is_sidecar: number

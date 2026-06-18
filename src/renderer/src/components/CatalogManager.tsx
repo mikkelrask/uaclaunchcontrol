@@ -307,9 +307,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         configTemplate: null
       })
 
-      // Fetch fresh authoritative list and notify parent
+      // Fetch fresh authoritative list, notify parent, and bust search cache
       const freshCatalog = await gameService.getModFileCatalog()
       queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
+      queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
       onChange(freshCatalog)
     } catch (error) {
       toast({
@@ -373,7 +374,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
     const updatedForm: Partial<typeof addForm> = {
       filePath,
-      name: registryData?.family_name || name,
+      name: registryData?.display_name && registryData.display_name !== registryData.family_name
+        ? `${registryData.family_name} — ${registryData.display_name}`
+        : (registryData?.family_name || name),
       fileType,
       version: registryData?.version || '',
       url: '',
@@ -1036,6 +1039,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         onImportComplete={async () => {
           const freshCatalog = await gameService.getModFileCatalog()
           queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
+          queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
           onChange(freshCatalog)
           setZipScanResult(null)
           setZipFilePath('')
