@@ -68,7 +68,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
             size="sm"
             className="text-xs text-accent-highlight hover:bg-accent-highlight/10 gap-1"
             onClick={() =>
-              window.open('https://github.com/mikkelrask/uaclaunchcontrol/wiki', '_blank')
+              window.open('https://uac-soft.online/getting-started/', '_blank')
             }
           >
             Wiki
