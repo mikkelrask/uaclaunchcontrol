@@ -130,13 +130,29 @@ export const gameService = {
   async downloadIdgamesFile(
     downloadUrl: string,
     title: string
-  ): Promise<{ files: IModFile[] }> {
+  ): Promise<{ downloadPath: string; fileName: string; name: string; hash: string }> {
     const response = await fetch(`${API_BASE}/api/search/idgames/download`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ downloadUrl, title })
     })
     if (!response.ok) throw new Error('Failed to download file')
+    return response.json()
+  },
+
+  async importIdgamesSingleFile(data: {
+    tempPath: string
+    fileName?: string
+    name?: string
+    hashValue?: string
+    fileType?: string
+  }): Promise<{ file: IModFile }> {
+    const response = await fetch(`${API_BASE}/api/search/idgames/import-single`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) throw new Error('Failed to import file')
     return response.json()
   },
 

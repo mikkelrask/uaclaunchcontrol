@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'wouter'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Download, Loader2 } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -9,6 +9,18 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ZipImportModal } from '@/components/ZipImportModal'
+import type { ZipScanResult } from '@/types/zipImport'
 // import { useLocation } from 'wouter';
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
@@ -22,6 +34,7 @@ import { IProtocol, IDoomVersion, IModFile, IAppSettings } from '@shared/schema'
 import { api } from '@/api'
 import { useToast } from '@/hooks/use-toast'
 import type { IRegistryMod, IIdgamesMod } from '@/api'
+import { REGISTRY_API_URL } from '@shared/registry-config'
 
 type ViewMode = 'grid' | 'list' | 'detail'
 
@@ -74,6 +87,18 @@ export const GamesPage: React.FC = () => {
   const [selectedProtocolId, setSelectedProtocolId] = useState<string | null>(null)
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
 
+  // idgames download state
+  const [isZipModalOpen, setIsZipModalOpen] = useState(false)
+  const [zipScanResult, setZipScanResult] = useState<ZipScanResult | null>(null)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [importFile, setImportFile] = useState<{
+    downloadPath: string
+    fileName: string
+    name: string
+    hash: string
+  } | null>(null)
+  const [importing, setImporting] = useState(false)
+
   // Fetch data
   const { data: versions = [] } = useQuery<IDoomVersion[]>({
     queryKey: ['/api/versions'],
@@ -113,6 +138,83 @@ export const GamesPage: React.FC = () => {
   const handleSearch = (query: string): void => {
     setSearchQuery(query)
     // Don't clear activeVersion - search within current base game filter
+  }
+
+  const handleIdgamesDownload = async (
+    url: string,
+    mod: IIdgamesMod
+  ): Promise<void> => {
+    const link = mod.urls.find((u) => u.url === url)
+    if (!link) return
+
+    if (link.type === 'info') {
+      window.open(url, '_blank')
+      return
+    }
+
+    try {
+      const result = await gameService.downloadIdgamesFile(url, mod.title)
+      const ext = result.fileName.split('.').pop()?.toLowerCase()
+
+      if (ext === 'zip') {
+        const scan = (await api.unzipScan(result.downloadPath)) as ZipScanResult
+        setZipScanResult(scan)
+        setIsZipModalOpen(true)
+      } else {
+        setImportFile(result)
+        setIsImportModalOpen(true)
+        // Try registry lookup for auto-fill
+        if (result.hash) {
+          try {
+            const settings = await api.getSettings()
+            if (settings.registryLookupEnabled) {
+              const registryData = await api.lookupMod(result.hash, REGISTRY_API_URL)
+              if (registryData && registryData.family_name) {
+                setImportFile((prev) =>
+                  prev ? { ...prev, name: registryData.family_name } : prev
+                )
+              }
+            }
+          } catch {
+            // registry offline, keep idgames name
+          }
+        }
+      }
+    } catch {
+      toast({
+        title: 'Download failed',
+        description: 'Could not download from idgames',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleImportSingleFile = async (): Promise<void> => {
+    if (!importFile) return
+    setImporting(true)
+    try {
+      await gameService.importIdgamesSingleFile({
+        tempPath: importFile.downloadPath,
+        fileName: importFile.fileName,
+        name: importFile.name,
+        hashValue: importFile.hash
+      })
+      toast({
+        title: 'Imported',
+        description: `${importFile.fileName} added to mods folder`
+      })
+      setIsImportModalOpen(false)
+      setImportFile(null)
+      queryClient.invalidateQueries()
+    } catch {
+      toast({
+        title: 'Import failed',
+        description: 'Could not import the file',
+        variant: 'destructive'
+      })
+    } finally {
+      setImporting(false)
+    }
   }
 
   const handleViewModeChange = (mode: ViewMode): void => {
@@ -358,21 +460,7 @@ export const GamesPage: React.FC = () => {
                                 {mod.urls[0].domain || 'Download'}
                               </a>
                             ) : (
-                              <Select onValueChange={async (url) => {
-                                const link = mod.urls.find((u) => u.url === url)
-                                if (!link) return
-                                if (link.type === 'info') {
-                                  window.open(url, '_blank')
-                                } else {
-                                  try {
-                                    await gameService.downloadIdgamesFile(url, mod.title)
-                                    toast({ title: 'Downloaded', description: `${mod.title} imported to mods folder` })
-                                    queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
-                                  } catch {
-                                    toast({ title: 'Download failed', description: 'Could not download from idgames', variant: 'destructive' })
-                                  }
-                                }
-                              }}>
+                              <Select onValueChange={(url) => handleIdgamesDownload(url, mod)}>
                                 <SelectTrigger className="h-7 bg-app-secondary border-app text-xs gap-1">
                                   <ExternalLink className="w-3 h-3 text-accent-highlight shrink-0" />
                                   <SelectValue placeholder="Downloads" />
@@ -520,6 +608,103 @@ export const GamesPage: React.FC = () => {
           onClose={handleCloseSettingsModal}
           doomVersions={versions.filter((v) => !v.ignored)}
         />
+
+        {/* idgames Zip import modal */}
+        <ZipImportModal
+          open={isZipModalOpen}
+          onOpenChange={setIsZipModalOpen}
+          scanResult={zipScanResult}
+          onImportComplete={() => {
+            setIsZipModalOpen(false)
+            setZipScanResult(null)
+            queryClient.invalidateQueries()
+          }}
+        />
+
+        {/* Single file import modal */}
+        <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+          <DialogContent className="bg-app-primary shadow-2xl border-app max-w-md">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-accent-highlight/10 rounded-md">
+                <Download className="w-5 h-5 text-accent-highlight" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
+                  import_mod_file
+                </DialogTitle>
+                <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
+                  idgames Archive
+                </DialogDescription>
+              </div>
+            </div>
+
+            {importFile && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>File Name</Label>
+                  <Input
+                    value={importFile.fileName}
+                    readOnly
+                    className="bg-app-secondary border-app text-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={importFile.name}
+                    onChange={(e) =>
+                      setImportFile((prev) =>
+                        prev ? { ...prev, name: e.target.value } : prev
+                      )
+                    }
+                    placeholder="Pretty name for the mod"
+                    className="bg-app-secondary border-app"
+                  />
+                </div>
+                {importFile.hash && (
+                  <div className="space-y-2">
+                    <Label>MD5 Hash</Label>
+                    <Input
+                      value={importFile.hash}
+                      readOnly
+                      className="bg-app-secondary border-app text-xs font-mono"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <DialogFooter className="pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsImportModalOpen(false)
+                  setImportFile(null)
+                }}
+                className="bg-app-secondary"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleImportSingleFile}
+                disabled={importing}
+                className="bg-accent-highlight"
+              >
+                {importing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Importing…
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-1" />
+                    Import to Mods
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

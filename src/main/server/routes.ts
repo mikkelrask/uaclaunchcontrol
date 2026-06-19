@@ -675,7 +675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
-  // Download a file from idgames mirror and import it into the mods directory
+  // Download a file from idgames mirror to a temp location (no import — caller decides)
   app.post('/api/search/idgames/download', async (req, res) => {
     const { downloadUrl, title } = req.body
     if (!downloadUrl || typeof downloadUrl !== 'string') {
@@ -689,7 +689,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await fs.ensureDir(tempDir)
       const tempPath = path.join(tempDir, fileName)
 
-      // Download file
       const response = await fetch(downloadUrl, {
         headers: { 'User-Agent': 'UACLaunchControl/1.0' }
       })
@@ -699,47 +698,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const buffer = Buffer.from(await response.arrayBuffer())
       await fs.writeFile(tempPath, buffer)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let imported: any[]
+      // Compute hash so the frontend can do registry lookup before importing
+      const hashValue = await storage.computeFileHash(tempPath).catch(() => '')
 
-      if (ext === '.zip') {
-        // Use the existing unzip → import pipeline
-        const scan = await storage.unzipAndScan(tempPath)
-        if (scan.supported.length > 0) {
-          imported = await storage.importUnzippedFiles(
-            scan.tempDir,
-            scan.supported.map((f) => ({
-              tempPath: f.tempPath,
-              name: f.name || f.fileName,
-              version: '',
-              sidecarOnly: false,
-              loadOrder: {}
-            }))
-          )
-        } else {
-          imported = []
-        }
-      } else {
-        // Single file: move to mods folder and catalog it
-        const moved = await storage.moveToModFolder(tempPath)
-        const name = title || path.basename(fileName, ext)
-        const catalogEntry = await storage.addModFileToCatalog({
-          fileName,
-          filePath: moved.relativePath,
-          hashValue: moved.hashValue,
-          name,
-          fileType: ext.replace(/^./, '')
-        })
-        imported = [catalogEntry]
-      }
-
-      // Clean up temp
-      await fs.remove(tempDir).catch(() => {})
-
-      return res.json({ files: imported })
+      return res.json({
+        downloadPath: tempPath,
+        fileName,
+        name: title || path.basename(fileName, ext),
+        hash: hashValue || ''
+      })
     } catch (error) {
       console.error('Error downloading from idgames:', error)
       return res.status(500).json({ message: 'Failed to download file' })
+    }
+  })
+
+  // Import a single file downloaded from idgames into the mods directory
+  app.post('/api/search/idgames/import-single', async (req, res) => {
+    const { tempPath, fileName, name, hashValue, fileType } = req.body
+    if (!tempPath || typeof tempPath !== 'string') {
+      return res.status(400).json({ message: 'Missing tempPath' })
+    }
+    try {
+      const moved = await storage.moveToModFolder(tempPath)
+      const catalogEntry = await storage.addModFileToCatalog({
+        fileName: fileName || path.basename(tempPath),
+        filePath: moved.relativePath,
+        hashValue: hashValue || moved.hashValue,
+        name: name || '',
+        fileType: fileType || ''
+      })
+      // Clean up the temp file
+      await fs.remove(tempPath).catch(() => {})
+      return res.json({ file: catalogEntry })
+    } catch (error) {
+      console.error('Error importing idgames file:', error)
+      return res.status(500).json({ message: 'Failed to import file' })
     }
   })
 
