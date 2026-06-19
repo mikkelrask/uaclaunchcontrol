@@ -8,6 +8,19 @@ import {
   IPlayerStats
 } from '@shared/schema'
 
+export interface IIdgamesMod {
+  id: number
+  title: string
+  dir: string
+  filename: string
+  size: number
+  author: string
+  description: string
+  rating: number
+  votes: number
+  urls: { url: string; domain: string; type: 'download' | 'info' }[]
+}
+
 export interface IRegistryMod {
   family_name: string
   display_name?: string

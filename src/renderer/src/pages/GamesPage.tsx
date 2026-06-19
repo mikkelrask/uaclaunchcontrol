@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'wouter'
 import { ExternalLink } from 'lucide-react'
 import {
@@ -21,12 +21,13 @@ import { gameService } from '@/lib/gameService'
 import { IProtocol, IDoomVersion, IModFile, IAppSettings } from '@shared/schema'
 import { api } from '@/api'
 import { useToast } from '@/hooks/use-toast'
-import type { IRegistryMod } from '@/api'
+import type { IRegistryMod, IIdgamesMod } from '@/api'
 
 type ViewMode = 'grid' | 'list' | 'detail'
 
 export const GamesPage: React.FC = () => {
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   // State
   const [activeVersion, setActiveVersion] = useState<string | null>(() => {
@@ -94,6 +95,12 @@ export const GamesPage: React.FC = () => {
   const { data: registryHits = [] } = useQuery<IRegistryMod[]>({
     queryKey: ['/api/search/registry', searchQuery],
     queryFn: () => gameService.searchRegistry(searchQuery),
+    enabled: searchQuery.length > 0
+  })
+
+  const { data: idgamesHits = [] } = useQuery<IIdgamesMod[]>({
+    queryKey: ['/api/search/idgames', searchQuery],
+    queryFn: () => gameService.searchIdgames(searchQuery),
     enabled: searchQuery.length > 0
   })
 
@@ -300,6 +307,86 @@ export const GamesPage: React.FC = () => {
                               )}
                             </div>
                           )}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* idgames Archive section */}
+                {idgamesHits.length > 0 && (
+                  <section>
+                    <h2 className="text-lg font-semibold text-app-primary mb-4">
+                      idgames Archive ({idgamesHits.length} match{idgamesHits.length !== 1 ? 'es' : ''})
+                    </h2>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-4">
+                      {idgamesHits.map((mod) => (
+                        <div
+                          key={mod.id}
+                          className="bg-app-card border border-app rounded-lg p-4"
+                        >
+                          <p className="text-sm font-medium text-app-primary truncate">
+                            {mod.title}
+                          </p>
+                          <p className="text-xs text-app-muted mt-1">
+                            {mod.author && <span>by {mod.author}</span>}
+                            {mod.size > 0 && (
+                              <span className="ml-2 text-app-muted">
+                                {(mod.size / 1024).toFixed(0)} KB
+                              </span>
+                            )}
+                            {mod.rating > 0 && (
+                              <span className="ml-2 px-1.5 py-0.5 bg-app-primary rounded text-xs">
+                                {'\u2605'} {mod.rating.toFixed(1)} ({mod.votes})
+                              </span>
+                            )}
+                          </p>
+                          {mod.description && (
+                            <p className="text-xs text-app-muted mt-2 line-clamp-2">
+                              {mod.description}
+                            </p>
+                          )}
+                          <div className="mt-2">
+                            {mod.urls.length === 1 ? (
+                              <a
+                                href={mod.urls[0].url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs text-accent-highlight hover:underline"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                {mod.urls[0].domain || 'Download'}
+                              </a>
+                            ) : (
+                              <Select onValueChange={async (url) => {
+                                const link = mod.urls.find((u) => u.url === url)
+                                if (!link) return
+                                if (link.type === 'info') {
+                                  window.open(url, '_blank')
+                                } else {
+                                  try {
+                                    await gameService.downloadIdgamesFile(url, mod.title)
+                                    toast({ title: 'Downloaded', description: `${mod.title} imported to mods folder` })
+                                    queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
+                                  } catch {
+                                    toast({ title: 'Download failed', description: 'Could not download from idgames', variant: 'destructive' })
+                                  }
+                                }
+                              }}>
+                                <SelectTrigger className="h-7 bg-app-secondary border-app text-xs gap-1">
+                                  <ExternalLink className="w-3 h-3 text-accent-highlight shrink-0" />
+                                  <SelectValue placeholder="Downloads" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-app-secondary border-app text-app-primary">
+                                  {mod.urls.map((u, j) => (
+                                    <SelectItem key={j} value={u.url} className="text-xs">
+                                      {u.domain || 'Download'}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

@@ -5,7 +5,7 @@ import type {
   InsertProtocol,
   IAppSettings
 } from '@shared/schema'
-import type { IRegistryMod } from '@/api'
+import type { IRegistryMod, IIdgamesMod } from '@/api'
 
 interface OpenDialogOptions {
   title?: string
@@ -125,6 +125,25 @@ export const gameService = {
     const url = `${API_BASE}/api/mod-files/catalog/search?q=${encodeURIComponent(query)}`
     const response = await fetch(url)
     return handleApiResponse<IModFile[]>(response)
+  },
+
+  async downloadIdgamesFile(
+    downloadUrl: string,
+    title: string
+  ): Promise<{ files: IModFile[] }> {
+    const response = await fetch(`${API_BASE}/api/search/idgames/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ downloadUrl, title })
+    })
+    if (!response.ok) throw new Error('Failed to download file')
+    return response.json()
+  },
+
+  async searchIdgames(query: string): Promise<IIdgamesMod[]> {
+    const url = `${API_BASE}/api/search/idgames?q=${encodeURIComponent(query)}`
+    const response = await fetch(url)
+    return handleApiResponse<IIdgamesMod[]>(response)
   },
 
   async searchRegistry(query: string): Promise<IRegistryMod[]> {

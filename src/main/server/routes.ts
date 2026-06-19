@@ -10,6 +10,7 @@ import {
   unlockAchievement
 } from './services/playerService'
 import path from 'path'
+import os from 'os'
 import fs from 'fs-extra'
 import { debug } from '../../shared/debug'
 import { REGISTRY_API_URL } from '../../shared/registry-config'
@@ -602,6 +603,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error searching UAC Registry:', error)
       return res.json([]) // Graceful: registry unavailable -> just no results
+    }
+  })
+
+  // Search idgames Archive by name
+  app.get('/api/search/idgames', async (req, res) => {
+    const { q } = req.query
+    if (!q || typeof q !== 'string' || q.trim().length === 0) {
+      return res.json([])
+    }
+    try {
+      const response = await fetch(
+        `https://www.doomworld.com/idgames/api/api.php?action=search&query=${encodeURIComponent(q)}&type=name`,
+        { signal: AbortSignal.timeout(10000) }
+      )
+      if (!response.ok) {
+        console.warn('idgames API returned', response.status)
+        return res.json([])
+      }
+      const xml = await response.text()
+
+      // ponytail: regex-parsing the flat XML instead of a dep
+      const tag = (name: string, src: string) => {
+        const m = src.match(new RegExp(`<${name}>([^<]*)<\\/${name}>`))
+        return m ? m[1].trim() : ''
+      }
+      const cdata = (name: string, src: string) => {
+        const m = src.match(new RegExp(`<${name}>\\s*<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>\\s*<\\/${name}>`))
+        return m ? m[1].trim() : ''
+      }
+
+      const results: Array<{
+        id: number; title: string; dir: string; filename: string
+        size: number; author: string; description: string
+        rating: number; votes: number; urls: { url: string; domain: string }[]
+      }> = []
+
+      const fileRe = /<file>([\s\S]*?)<\/file>/g
+      let match
+      while ((match = fileRe.exec(xml)) !== null) {
+        const block = match[1]
+        const dir = tag('dir', block)
+        const filename = tag('filename', block)
+        const mirrorPath = `${dir}${filename}`
+        // ponytail: static mirror list from Doomworld's per-file pages; same bases work for all files
+        results.push({
+          id: parseInt(tag('id', block)) || 0,
+          title: tag('title', block),
+          dir,
+          filename,
+          size: parseInt(tag('size', block)) || 0,
+          author: tag('author', block),
+          description: cdata('description', block) || tag('description', block),
+          rating: parseFloat(tag('rating', block)) || 0,
+          votes: parseInt(tag('votes', block)) || 0,
+          urls: [
+            { url: `https://ftp.fu-berlin.de/pc/games/idgames/${mirrorPath}`, domain: 'Germany', type: 'download' },
+            { url: `https://www.gamers.org/pub/idgames/${mirrorPath}`, domain: 'USA', type: 'download' },
+            { url: `https://ftpmirror1.infania.net/pub/idgames/${mirrorPath}`, domain: 'Sweden', type: 'download' },
+            { url: `https://mirror.braindrainlan.nu/pub/idgames/${mirrorPath}`, domain: 'Sweden', type: 'download' },
+            { url: `https://files.xvertigox.com/idgames/${mirrorPath}`, domain: 'New Zealand', type: 'download' },
+            { url: tag('url', block), domain: 'Info', type: 'info' }
+          ].filter((u) => u.url)
+        })
+      }
+
+      return res.json(results)
+    } catch (error) {
+      console.error('Error searching idgames Archive:', error)
+      return res.json([])
+    }
+  })
+
+  // Download a file from idgames mirror and import it into the mods directory
+  app.post('/api/search/idgames/download', async (req, res) => {
+    const { downloadUrl, title } = req.body
+    if (!downloadUrl || typeof downloadUrl !== 'string') {
+      return res.status(400).json({ message: 'Missing downloadUrl' })
+    }
+    try {
+      const parsedUrl = new URL(downloadUrl)
+      const fileName = path.basename(parsedUrl.pathname)
+      const ext = path.extname(fileName).toLowerCase()
+      const tempDir = path.join(os.tmpdir(), 'uac-idgames')
+      await fs.ensureDir(tempDir)
+      const tempPath = path.join(tempDir, fileName)
+
+      // Download file
+      const response = await fetch(downloadUrl, {
+        headers: { 'User-Agent': 'UACLaunchControl/1.0' }
+      })
+      if (!response.ok) {
+        throw new Error(`Download failed: HTTP ${response.status}`)
+      }
+      const buffer = Buffer.from(await response.arrayBuffer())
+      await fs.writeFile(tempPath, buffer)
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let imported: any[]
+
+      if (ext === '.zip') {
+        // Use the existing unzip → import pipeline
+        const scan = await storage.unzipAndScan(tempPath)
+        if (scan.supported.length > 0) {
+          imported = await storage.importUnzippedFiles(
+            scan.tempDir,
+            scan.supported.map((f) => ({
+              tempPath: f.tempPath,
+              name: f.name || f.fileName,
+              version: '',
+              sidecarOnly: false,
+              loadOrder: {}
+            }))
+          )
+        } else {
+          imported = []
+        }
+      } else {
+        // Single file: move to mods folder and catalog it
+        const moved = await storage.moveToModFolder(tempPath)
+        const name = title || path.basename(fileName, ext)
+        const catalogEntry = await storage.addModFileToCatalog({
+          fileName,
+          filePath: moved.relativePath,
+          hashValue: moved.hashValue,
+          name,
+          fileType: ext.replace(/^./, '')
+        })
+        imported = [catalogEntry]
+      }
+
+      // Clean up temp
+      await fs.remove(tempDir).catch(() => {})
+
+      return res.json({ files: imported })
+    } catch (error) {
+      console.error('Error downloading from idgames:', error)
+      return res.status(500).json({ message: 'Failed to download file' })
     }
   })
 
