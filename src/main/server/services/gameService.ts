@@ -113,6 +113,10 @@ export class GameService {
             let fullPath: string
             if (isAbsolute) {
               fullPath = path.resolve(storage.resolvePath(file.filePath))
+            } else if (file.filePath.startsWith('files/')) {
+              // filePath is already relative to modsDir (e.g. 'files/foo-{hash}.pk3')
+              const modsDir = storage.resolvePath(settings.modsDirectory || MODS_DIR)
+              fullPath = path.join(modsDir, file.filePath)
             } else {
               const modsDir = storage.resolvePath(settings.modsDirectory || MODS_DIR)
               fullPath = path.join(modsDir, 'files', file.filePath)

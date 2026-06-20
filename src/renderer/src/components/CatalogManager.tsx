@@ -115,11 +115,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     onChange(files.filter((f) => f.id !== id))
   }
 
-  const handleMoveFileToModFolder = async (sourcePath: string): Promise<string> => {
-    const result = await api.moveToModFolder(sourcePath)
-    return result.fullPath
-  }
-
   const processRequiredMods = async (
     requiredMods: RequiredModEntry[],
     mainHash?: string
@@ -135,8 +130,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       }
 
       if (req.isNew && req.filePath) {
-        const newFilePath = await handleMoveFileToModFolder(req.filePath)
-        const hash = await api.computeHash(newFilePath)
+        const moveResult = await api.moveToModFolder(req.filePath)
+        const hash = moveResult.hashValue
         if (!hash) continue // Skip if hash computation failed
 
         const fileName = req.filePath.split(/[\\/]/).pop() || req.filePath
@@ -145,7 +140,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
         await api.addToCatalog({
           name: req.name,
-          filePath: newFilePath,
+          filePath: moveResult.relativePath,
           fileType: reqFileType,
           fileName: fileName,
           hashValue: hash,
@@ -175,9 +170,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
 
     try {
-      // Move file first to get hash-based filename
-      const newFilePathMoved = await handleMoveFileToModFolder(addForm.filePath)
-      const hashValue = await api.computeHash(newFilePathMoved)
+      // Move file to mods folder — returns relative path and hash
+      const moveResult = await api.moveToModFolder(addForm.filePath)
+      const hashValue = moveResult.hashValue
 
       // Check for duplicates based on hashValue (content-based)
       const exists = files.some((f) => f.hashValue === hashValue)
@@ -206,7 +201,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       await api.addToCatalog({
         name: prettyName,
-        filePath: newFilePathMoved,
+        filePath: moveResult.relativePath,
         fileType,
         fileName,
         version: addForm.version,
