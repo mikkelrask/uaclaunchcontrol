@@ -152,8 +152,18 @@ export const GamesPage: React.FC = () => {
       return
     }
 
+    toast({
+      title: 'Downloading…',
+      description: `${mod.title} — downloading from ${link.domain}`
+    })
+
     try {
       const result = await gameService.downloadIdgamesFile(url, mod.title)
+      toast({
+        title: 'Download complete',
+        description: `${result.fileName} — processing…`
+      })
+
       const ext = result.fileName.split('.').pop()?.toLowerCase()
 
       if (ext === 'zip') {
