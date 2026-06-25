@@ -798,6 +798,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  // === First Run / Tour API ===
+  app.get('/api/first-run', async (_req, res) => {
+    try {
+      const isFirstRun = storage.getIsFirstRun()
+      return res.json({ isFirstRun })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: error instanceof Error ? error.message : 'Failed to check first run' })
+    }
+  })
+
+  app.post('/api/first-run/dismiss', async (_req, res) => {
+    try {
+      storage.dismissFirstRun()
+      return res.json({ success: true })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: error instanceof Error ? error.message : 'Failed to dismiss first run' })
+    }
+  })
+
+  app.post('/api/first-run/reenable', async (_req, res) => {
+    try {
+      storage.reenableFirstRun()
+      return res.json({ isFirstRun: true })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: error instanceof Error ? error.message : 'Failed to re-enable first run' })
+    }
+  })
+
+  // === Source Port Scanner ===
+  app.get('/api/settings/scan-ports', async (_req, res) => {
+    try {
+      const scanResults: {
+        path: string
+        name: string
+        family: string
+      }[] = []
+      const seen = new Set<string>()
+
+      const knownFamilies: { name: string; family: string }[] = [
+        { name: 'gzdoom', family: 'gzdoom' },
+        { name: 'uzdoom', family: 'uzdoom' },
+        { name: 'zandronum', family: 'zandronum' },
+        { name: 'lzdoom', family: 'lzdoom' },
+        { name: 'zdoom', family: 'zdoom' },
+        { name: 'helion', family: 'helion' }
+      ]
+
+      // Collect directories to scan
+      const dirs = new Set<string>()
+
+      // PATH entries
+      const pathSep = process.platform === 'win32' ? ';' : ':'
+      const pathEnv = process.env.PATH || ''
+      for (const d of pathEnv.split(pathSep)) {
+        const trimmed = d.trim()
+        if (trimmed) dirs.add(trimmed)
+      }
+
+      // Common directories by platform
+      if (process.platform === 'win32') {
+        dirs.add('C:\\Program Files')
+        dirs.add('C:\\Program Files (x86)')
+        const localAppData = process.env.LOCALAPPDATA
+        if (localAppData) dirs.add(localAppData)
+      } else if (process.platform === 'darwin') {
+        dirs.add('/Applications')
+        dirs.add(path.join(os.homedir(), 'Applications'))
+      } else {
+        dirs.add('/usr/local/bin')
+        dirs.add('/usr/games')
+        dirs.add(path.join(os.homedir(), '.local', 'bin'))
+        dirs.add('/opt')
+      }
+
+      const isExe = (fullPath: string): boolean => {
+        try {
+          if (process.platform === 'win32') {
+            return fullPath.toLowerCase().endsWith('.exe')
+          }
+          const stat = fs.statSync(fullPath)
+          return stat.isFile() && !!(stat.mode & (fs.constants.S_IXUSR | fs.constants.S_IXGRP | fs.constants.S_IXOTH))
+        } catch {
+          return false
+        }
+      }
+
+      for (const dir of dirs) {
+        let entries: string[]
+        try {
+          entries = await fs.readdir(dir)
+        } catch {
+          continue
+        }
+
+        for (const entry of entries) {
+          const lower = entry.toLowerCase()
+
+          // macOS: check .app bundles
+          if (process.platform === 'darwin' && lower.endsWith('.app')) {
+            const baseName = lower.replace('.app', '')
+            const match = knownFamilies.find((k) => baseName.includes(k.name))
+            if (match) {
+              const exePath = path.join(dir, entry, 'Contents', 'MacOS', baseName)
+              if (fs.existsSync(exePath)) {
+                const key = exePath.toLowerCase()
+                if (!seen.has(key)) {
+                  seen.add(key)
+                  scanResults.push({
+                    path: exePath,
+                    name: entry.replace('.app', ''),
+                    family: match.family
+                  })
+                }
+              }
+            }
+            continue
+          }
+
+          // Regular executables
+          const match = knownFamilies.find((k) => lower.includes(k.name))
+          if (match) {
+            const fullPath = path.join(dir, entry)
+            if (isExe(fullPath)) {
+              const key = fullPath.toLowerCase()
+              if (!seen.has(key)) {
+                seen.add(key)
+                scanResults.push({
+                  path: fullPath,
+                  name: entry.replace(/\.(exe|AppImage)$/i, ''),
+                  family: match.family
+                })
+              }
+            }
+          }
+        }
+      }
+
+      return res.json(scanResults)
+    } catch (error: unknown) {
+      console.error('Failed to scan for source ports:', error)
+      return res
+        .status(500)
+        .json({ error: error instanceof Error ? error.message : 'Failed to scan for source ports' })
+    }
+  })
+
   // === Port Download API ===
   app.get('/api/ports/releases', async (_req, res) => {
     try {
