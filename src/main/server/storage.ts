@@ -1,4 +1,4 @@
-import { execSync } from 'child_process'
+import { createExtractorFromFile } from 'node-unrar-js'
 import fs from 'fs-extra'
 import path from 'path'
 import os from 'os'
@@ -1488,13 +1488,14 @@ export async function unrarAndScan(rarFilePath: string): Promise<IUnzipScanResul
   const tempExtractDir = await createExtractDir()
 
   try {
-    execSync(`7z x -y -o"${tempExtractDir}" "${resolvedRarPath}"`, { stdio: 'pipe' })
+    const extractor = await createExtractorFromFile({
+      filepath: resolvedRarPath,
+      targetPath: tempExtractDir
+    })
+    extractor.extract({})
     return await scanExtractedArchive(tempExtractDir)
   } catch (error) {
     await fs.remove(tempExtractDir).catch(() => {})
-    if ((error as { code?: string }).code === 'ENOENT') {
-      throw new Error('7z is not installed. Install p7zip (e.g. apt install p7zip / brew install p7zip) to extract .rar files.')
-    }
     throw new Error(`Failed to extract RAR archive: ${(error as Error).message || error}`)
   }
 }
