@@ -1,3 +1,4 @@
+import { execSync } from 'child_process'
 import fs from 'fs-extra'
 import path from 'path'
 import os from 'os'
@@ -1369,104 +1370,132 @@ export interface IUnzipScanResult {
   }
 }
 
+/** Shared: scan an already-extracted temp directory for supported mod files. */
+async function scanExtractedArchive(tempExtractDir: string): Promise<IUnzipScanResult> {
+  const allFilePaths = await scanDirRecursive(tempExtractDir)
+
+  // Look for any .bat or .cmd files
+  const batFilePaths = allFilePaths.filter((fp) => {
+    const ext = path.extname(fp).toLowerCase()
+    return ext === '.bat' || ext === '.cmd'
+  })
+
+  let batFileResult: IUnzipScanResult['batFiles'] | undefined
+  let batReferencedFiles: string[] = []
+
+  if (batFilePaths.length > 0) {
+    const batPath = batFilePaths[0]
+    const batContent = await fs.readFile(batPath, 'utf-8')
+    const parsed = parseBatContent(batContent)
+
+    batFileResult = {
+      fileName: path.basename(batPath),
+      relativePath: path.relative(tempExtractDir, batPath),
+      sourcePortFamily: parsed.sourcePortFamily,
+      iwad: parsed.iwad,
+      modFiles: parsed.modFiles,
+      extraParams: parsed.extraParams
+    }
+
+    const batDir = path.dirname(batPath)
+    batReferencedFiles = parsed.modFiles.map((file) => {
+      const normalizedFile = file.replace(/\\/g, '/')
+      return path.resolve(batDir, normalizedFile)
+    })
+  }
+
+  const supportedFiles: IUnzipScanResult['supported'] = []
+  const skippedFiles: IUnzipScanResult['skipped'] = []
+
+  for (const filePath of allFilePaths) {
+    const fileName = path.basename(filePath)
+    const relativePath = path.relative(tempExtractDir, filePath)
+
+    const ext = path.extname(filePath).toLowerCase()
+    if (ext === '.bat' || ext === '.cmd') {
+      continue
+    }
+
+    if (isSupportedFileType(fileName)) {
+      const hashValue = await computeFileHash(filePath)
+      const fileType = getFileType(fileName)
+      const prettyName = fileName.replace(/\.[^.]+$/, '')
+
+      const isReferencedByBat = batReferencedFiles.some((refPath) => {
+        return path.resolve(filePath) === path.resolve(refPath)
+      })
+
+      supportedFiles.push({
+        tempPath: filePath,
+        fileName,
+        relativePath,
+        fileType,
+        hashValue,
+        name: prettyName,
+        isReferencedByBat
+      })
+    } else {
+      skippedFiles.push({
+        fileName,
+        relativePath,
+        reason: `Unsupported file extension (${ext || 'no extension'})`
+      })
+    }
+  }
+
+  return {
+    tempDir: tempExtractDir,
+    supported: supportedFiles,
+    skipped: skippedFiles,
+    batFiles: batFileResult
+  }
+}
+
+/** Create a unique temp directory for archive extraction. */
+async function createExtractDir(): Promise<string> {
+  const uniqueId = `extract-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  const tempExtractDir = path.join(os.tmpdir(), 'uac', 'temp_extract', uniqueId)
+  await fs.ensureDir(tempExtractDir)
+  return tempExtractDir
+}
+
+/** Scan and extract a .zip archive, returning metadata about its contents. */
 export async function unzipAndScan(zipFilePath: string): Promise<IUnzipScanResult> {
   const resolvedZipPath = resolvePath(zipFilePath)
   if (!fs.existsSync(resolvedZipPath)) {
     throw new Error(`Zip file not found: ${resolvedZipPath}`)
   }
 
-  const uniqueId = `extract-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-  const tempExtractDir = path.join(os.tmpdir(), 'uac', 'temp_extract', uniqueId)
-  await fs.ensureDir(tempExtractDir)
+  const tempExtractDir = await createExtractDir()
 
   try {
     const zip = new AdmZip(resolvedZipPath)
     zip.extractAllTo(tempExtractDir, true)
-
-    const allFilePaths = await scanDirRecursive(tempExtractDir)
-
-    // Look for any .bat or .cmd files
-    const batFilePaths = allFilePaths.filter((fp) => {
-      const ext = path.extname(fp).toLowerCase()
-      return ext === '.bat' || ext === '.cmd'
-    })
-
-    let batFileResult: IUnzipScanResult['batFiles'] | undefined
-    let batReferencedFiles: string[] = []
-
-    if (batFilePaths.length > 0) {
-      const batPath = batFilePaths[0]
-      const batContent = await fs.readFile(batPath, 'utf-8')
-      const parsed = parseBatContent(batContent)
-
-      batFileResult = {
-        fileName: path.basename(batPath),
-        relativePath: path.relative(tempExtractDir, batPath),
-        sourcePortFamily: parsed.sourcePortFamily,
-        iwad: parsed.iwad,
-        modFiles: parsed.modFiles,
-        extraParams: parsed.extraParams
-      }
-
-      const batDir = path.dirname(batPath)
-      batReferencedFiles = parsed.modFiles.map((file) => {
-        const normalizedFile = file.replace(/\\/g, '/')
-        return path.resolve(batDir, normalizedFile)
-      })
-    }
-
-    const supportedFiles: IUnzipScanResult['supported'] = []
-    const skippedFiles: IUnzipScanResult['skipped'] = []
-
-    for (const filePath of allFilePaths) {
-      const fileName = path.basename(filePath)
-      const relativePath = path.relative(tempExtractDir, filePath)
-
-      const ext = path.extname(filePath).toLowerCase()
-      if (ext === '.bat' || ext === '.cmd') {
-        continue
-      }
-
-      if (isSupportedFileType(fileName)) {
-        const hashValue = await computeFileHash(filePath)
-        const fileType = getFileType(fileName)
-        const prettyName = fileName.replace(/\.[^.]+$/, '')
-
-        const isReferencedByBat = batReferencedFiles.some((refPath) => {
-          return path.resolve(filePath) === path.resolve(refPath)
-        })
-
-        supportedFiles.push({
-          tempPath: filePath,
-          fileName,
-          relativePath,
-          fileType,
-          hashValue,
-          name: prettyName,
-          isReferencedByBat
-        })
-      } else {
-        skippedFiles.push({
-          fileName,
-          relativePath,
-          reason: `Unsupported file extension (${ext || 'no extension'})`
-        })
-      }
-    }
-
-    return {
-      tempDir: tempExtractDir,
-      supported: supportedFiles,
-      skipped: skippedFiles,
-      batFiles: batFileResult
-    }
+    return await scanExtractedArchive(tempExtractDir)
   } catch (error) {
-    try {
-      await fs.remove(tempExtractDir)
-    } catch {
-      // ignore cleanup errors
-    }
+    await fs.remove(tempExtractDir).catch(() => {})
     throw error
+  }
+}
+
+/** Scan and extract a .rar archive, returning metadata about its contents. */
+export async function unrarAndScan(rarFilePath: string): Promise<IUnzipScanResult> {
+  const resolvedRarPath = resolvePath(rarFilePath)
+  if (!fs.existsSync(resolvedRarPath)) {
+    throw new Error(`RAR file not found: ${resolvedRarPath}`)
+  }
+
+  const tempExtractDir = await createExtractDir()
+
+  try {
+    execSync(`7z x -y -o"${tempExtractDir}" "${resolvedRarPath}"`, { stdio: 'pipe' })
+    return await scanExtractedArchive(tempExtractDir)
+  } catch (error) {
+    await fs.remove(tempExtractDir).catch(() => {})
+    if ((error as { code?: string }).code === 'ENOENT') {
+      throw new Error('7z is not installed. Install p7zip (e.g. apt install p7zip / brew install p7zip) to extract .rar files.')
+    }
+    throw new Error(`Failed to extract RAR archive: ${(error as Error).message || error}`)
   }
 }
 

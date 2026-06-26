@@ -470,6 +470,18 @@ export const api = {
     return response.json()
   },
 
+  unrarScan: async (rarFilePath: string): Promise<unknown> => {
+    const response = await fetch(`${API_BASE}/api/mod-files/unrar-scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rarFilePath })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to extract and scan RAR archive')
+    }
+    return response.json()
+  },
+
   unzipImport: async (tempDir: string, filesToImport: unknown[]): Promise<unknown[]> => {
     const response = await fetch(`${API_BASE}/api/mod-files/unzip-import`, {
       method: 'POST',

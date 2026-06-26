@@ -474,6 +474,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  app.post('/api/mod-files/unrar-scan', async (req, res) => {
+    try {
+      const { rarFilePath } = req.body
+      if (!rarFilePath) {
+        return res.status(400).json({ message: 'Missing rarFilePath' })
+      }
+      const result = await storage.unrarAndScan(rarFilePath)
+      return res.json(result)
+    } catch (error: unknown) {
+      console.error('Error in POST /api/mod-files/unrar-scan:', error)
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to extract and scan RAR archive'
+      })
+    }
+  })
+
   // === Config File API ===
 
   /** Copy a config template to a protocol-specific copy. */

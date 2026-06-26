@@ -469,6 +469,27 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           return
         }
 
+        if (selectedPath.toLowerCase().endsWith('.rar')) {
+          try {
+            toast({
+              title: 'Extracting archive...',
+              description: 'Analyzing rar contents.'
+            })
+            const scan = (await api.unrarScan(selectedPath)) as ZipScanResult
+            setZipScanResult(scan)
+            setZipFilePath(selectedPath)
+            setIsZipModalOpen(true)
+          } catch (error) {
+            console.error(error)
+            toast({
+              title: 'Failed to process RAR',
+              description: error instanceof Error ? error.message : 'Failed to scan rar file',
+              variant: 'destructive'
+            })
+          }
+          return
+        }
+
         if (selectedPath.toLowerCase().endsWith('.bat')) {
           try {
             const content = await api.readFile(selectedPath)
@@ -530,11 +551,11 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     if (!droppedPath) return
 
     const ext = droppedPath.split('.').pop()?.toUpperCase()
-    const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'ZIP', 'BAT']
+    const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'ZIP', 'RAR', 'BAT']
     if (!ext || !validExtensions.includes(ext)) {
       toast({
         title: 'FATAL: type_unknow',
-        description: 'Please only use supported files: wad, pk3, pk7, ipk3, deh, bex, zip, bat',
+        description: 'Please only use supported files: wad, pk3, pk7, ipk3, deh, bex, zip, rar, bat',
         variant: 'destructive'
       })
       return
@@ -552,6 +573,24 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         toast({
           title: 'Failed to process ZIP',
           description: error instanceof Error ? error.message : 'Failed to scan zip file',
+          variant: 'destructive'
+        })
+      }
+      return
+    }
+
+    if (ext === 'RAR') {
+      try {
+        toast({ title: 'Extracting archive...', description: 'Analyzing rar contents.' })
+        const scan = (await api.unrarScan(droppedPath)) as ZipScanResult
+        setZipScanResult(scan)
+        setZipFilePath(droppedPath)
+        setIsZipModalOpen(true)
+      } catch (error) {
+        console.error(error)
+        toast({
+          title: 'Failed to process RAR',
+          description: error instanceof Error ? error.message : 'Failed to scan rar file',
           variant: 'destructive'
         })
       }

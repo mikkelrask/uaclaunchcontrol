@@ -170,6 +170,10 @@ export const GamesPage: React.FC = () => {
         const scan = (await api.unzipScan(result.downloadPath)) as ZipScanResult
         setZipScanResult(scan)
         setIsZipModalOpen(true)
+      } else if (ext === 'rar') {
+        const scan = (await api.unrarScan(result.downloadPath)) as ZipScanResult
+        setZipScanResult(scan)
+        setIsZipModalOpen(true)
       } else {
         setImportFile(result)
         setIsImportModalOpen(true)
