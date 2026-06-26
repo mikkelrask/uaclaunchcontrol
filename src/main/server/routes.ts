@@ -330,6 +330,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     try {
       await storage.addPlaytime(id, sessionSeconds)
+      // Also update the total playtime in player stats
+      updatePlayerStats({ totalPlaytimeSeconds: sessionSeconds }).catch(() => {})
       return res.json({ success: true })
     } catch (error) {
       console.error('Error recording playtime:', error)
