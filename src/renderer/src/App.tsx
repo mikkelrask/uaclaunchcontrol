@@ -117,8 +117,9 @@ const App: React.FC = () => {
         // Record playtime (fire-and-forget)
         if (data.sessionSeconds > 0) {
           api.addPlaytime(data.protocolId, data.sessionSeconds)
-          // Refresh protocol data so playtime/lastLaunchedAt update in UI
+          // Refresh protocol and player data so playtime updates in UI
           queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
+          queryClient.invalidateQueries({ queryKey: ['/api/player-data'] })
 
           // Dispatch PROTOCOL_EXITED achievement event
           dispatchAchievementEvent({
