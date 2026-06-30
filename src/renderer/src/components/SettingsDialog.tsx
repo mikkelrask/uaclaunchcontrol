@@ -121,7 +121,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         }
       })
       .catch(() => {
-        toast({ title: 'Error', description: 'Failed to load settings', variant: 'destructive' })
+        toast({ title: 'FATAL: cfg_load_err', description: 'Failed to load settings', variant: 'destructive' })
       })
 
     // Fetch doom versions
@@ -133,7 +133,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       } catch {
         console.error('[settings] Failed to load doom versions')
         toast({
-          title: 'Error',
+          title: 'FATAL: version_load_err',
           description: 'Failed to load doom versions',
           variant: 'destructive'
         })
@@ -185,7 +185,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         try {
           await api.moveFile(selectedIconPath, destPath)
           handleVersionChange(index, 'icon', destPath)
-          toast({ title: 'Icon moved', description: `Icon moved to ${destPath}` })
+          toast({ title: 'SYSTEM: icon_relocated', description: `Icon moved to ${destPath}` })
         } catch {
           // If move fails, just use the selected path
           handleVersionChange(index, 'icon', selectedIconPath)

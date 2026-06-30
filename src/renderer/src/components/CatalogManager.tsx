@@ -190,7 +190,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       )
       if (selfRefCheck) {
         toast({
-          title: 'Invalid required mod',
+          title: 'SYSTEM: circular_ref',
           description: 'A mod cannot require itself',
           variant: 'destructive'
         })
@@ -582,7 +582,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
     if (ext === 'RAR') {
       try {
-        toast({ title: 'Extracting archive...', description: 'Analyzing rar contents.' })
+        toast({ title: 'SYSTEM: decompressing', description: 'Analyzing rar contents.' })
         const scan = (await api.unrarScan(droppedPath)) as ZipScanResult
         setZipScanResult(scan)
         setZipFilePath(droppedPath)
@@ -590,7 +590,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       } catch (error) {
         console.error(error)
         toast({
-          title: 'Failed to process RAR',
+          title: 'FATAL: decompress_failed',
           description: error instanceof Error ? error.message : 'Failed to scan rar file',
           variant: 'destructive'
         })
@@ -838,7 +838,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       )
       if (selfRefCheck) {
         toast({
-          title: 'Invalid required mod',
+          title: 'SYSTEM: circular_ref',
           description: 'A mod cannot require itself',
           variant: 'destructive'
         })

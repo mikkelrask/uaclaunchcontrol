@@ -153,14 +153,14 @@ export const GamesPage: React.FC = () => {
     }
 
     toast({
-      title: 'Downloading…',
+      title: 'SYSTEM: transfer_started',
       description: `${mod.title} — downloading from ${link.domain}`
     })
 
     try {
       const result = await gameService.downloadIdgamesFile(url, mod.title)
       toast({
-        title: 'Download complete',
+        title: 'SYSTEM: transfer_complete',
         description: `${result.fileName} — processing…`
       })
 
@@ -196,7 +196,7 @@ export const GamesPage: React.FC = () => {
       }
     } catch {
       toast({
-        title: 'Download failed',
+        title: 'FATAL: transfer_failed',
         description: 'Could not download from idgames',
         variant: 'destructive'
       })
@@ -214,7 +214,7 @@ export const GamesPage: React.FC = () => {
         hashValue: importFile.hash
       })
       toast({
-        title: 'Imported',
+        title: 'SYSTEM: import_success',
         description: `${importFile.fileName} added to mods folder`
       })
       setIsImportModalOpen(false)
@@ -222,7 +222,7 @@ export const GamesPage: React.FC = () => {
       queryClient.invalidateQueries()
     } catch {
       toast({
-        title: 'Import failed',
+        title: 'FATAL: import_failed',
         description: 'Could not import the file',
         variant: 'destructive'
       })

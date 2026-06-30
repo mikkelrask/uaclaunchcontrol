@@ -143,7 +143,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     },
     onError: (error) => {
       toast({
-        title: 'Error',
+        title: 'FATAL: delete_failed',
         description: `Failed to delete protocol: ${error}`,
         variant: 'destructive'
       })
@@ -270,7 +270,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     URL.revokeObjectURL(url)
 
     toast({
-      title: 'Exported',
+      title: 'SYSTEM: export_done',
       description: `Modpack downloaded${Object.keys(configs).length > 0 ? ' with configs' : ''}`
     })
   }
@@ -297,12 +297,12 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
                     const { fileName } = await api.uploadScreenshot(result.filePaths[0])
                     setProtocol((prev) => ({ ...prev, screenshotPath: fileName }))
                     toast({
-                      title: 'Screenshot updated',
+                      title: 'SYSTEM: screenshot_saved',
                       description: 'New screenshot saved. Click Save to apply.'
                     })
                   } catch (error) {
                     toast({
-                      title: 'Error',
+                      title: 'FATAL: upload_failed',
                       description: `Failed to upload screenshot: ${error}`,
                       variant: 'destructive'
                     })

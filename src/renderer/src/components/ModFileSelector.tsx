@@ -271,7 +271,7 @@ export function ModFileSelector({
       const err = error as Error
       console.error('Failed to open file dialog:', error)
       toast({
-        title: 'Error',
+        title: 'FATAL: dialog_err',
         description: err.message || 'Failed to open file dialog',
         variant: 'destructive'
       })

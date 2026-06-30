@@ -146,7 +146,7 @@ const App: React.FC = () => {
         if (!data.clean) {
           const codeStr = data.exitCode === null ? 'a signal' : `exit code ${data.exitCode}`
           toast({
-            title: 'Game Crashed',
+            title: 'FATAL: process_died',
             description: `The game process terminated with ${codeStr} after ${data.sessionSeconds}s of playtime. Check your mods and configuration for compatibility issues.`,
             variant: 'destructive'
           })

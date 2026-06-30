@@ -69,7 +69,7 @@ export function useWadImport(
         })
       } catch (error) {
         toast({
-          title: 'FATA: err_139',
+          title: 'FATAL: err_139',
           description: `Failed to prepare WAD import: ${error}`,
           variant: 'destructive'
         })

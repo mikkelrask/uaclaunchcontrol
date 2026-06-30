@@ -176,7 +176,7 @@ export const InstallPage: React.FC = () => {
     },
     onError: (error) => {
       toast({
-        title: 'Error',
+        title: 'FATAL: install_failed',
         description: `Failed to install mod: ${error}`,
         variant: 'destructive'
       })
