@@ -17,7 +17,17 @@ import AchievementsPopover from './AchievementsPopover'
 import { api } from '@/api'
 import { getRankTitle } from '@/lib/advancement'
 import type { IPlayerData } from '@shared/schema'
-import doomGuy from '@/assets/guy,doom.webp'
+import marine from '@/assets/marine.webp'
+import sergeant from '@/assets/sergeant.webp'
+import doomSlayer from '@/assets/DoomSlayer.webp'
+
+const RANK_IMAGES: Record<string, string> = {
+  marine,
+  sergeant,
+  slayer: doomSlayer
+}
+
+const rankImage = (rank?: string): string => RANK_IMAGES[rank ?? ''] ?? marine
 
 interface HeaderProps {
   onSearch: (query: string, includeAllMods?: boolean) => void // Add a flag to include all mods
@@ -193,7 +203,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
         <AchievementsPopover>
           <button className="flex items-center bg-app-hover rounded-md p-1 hover:bg-app-hover/80 transition-colors cursor-pointer">
             <div className="w-8 h-8 rounded bg-accent-highlight flex items-center justify-center text-white">
-              <img src={doomGuy} alt="Guy, Doom - Space Marine" className="w-8 h-8 rounded" />
+              <img src={rankImage(playerData?.rank ?? settings?.rank)} alt="Guy, Doom - Space Marine" className="w-8 h-8 rounded" />
             </div>
             <div className="flex-col text-left">
               <div className="text-xs ml-2 mr-1">Guy, Doom</div>

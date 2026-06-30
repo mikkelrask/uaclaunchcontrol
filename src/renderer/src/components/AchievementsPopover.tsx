@@ -10,7 +10,17 @@ import { Anvil } from 'lucide-react'
 import AchievementCard from './AchievementCard'
 import { ACHIEVEMENT_REGISTRY, getAchievementsByCategory } from '@/lib/achievements'
 import { getRankTitle } from '@/lib/advancement'
-import doomGuy from '@/assets/guy,doom.webp'
+import marine from '@/assets/marine.webp'
+import sergeant from '@/assets/sergeant.webp'
+import doomSlayer from '@/assets/DoomSlayer.webp'
+
+const RANK_IMAGES: Record<string, string> = {
+  marine,
+  sergeant,
+  slayer: doomSlayer
+}
+
+const rankImage = (rank?: string): string => RANK_IMAGES[rank ?? ''] ?? marine
 
 interface AchievementsPopoverProps {
   /** The child element that triggers the popover (e.g. profile badge) */
@@ -89,7 +99,7 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
         {/* ── Profile Preview ── */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-app/50 bg-app-secondary/30">
           <div className="w-10 h-10 rounded bg-accent-highlight flex items-center justify-center text-white shrink-0 overflow-hidden">
-            <img src={doomGuy} alt="Operator" className="w-10 h-10 rounded" />
+            <img src={rankImage(playerData?.rank)} alt="Operator" className="w-10 h-10 rounded" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold text-app-primary">Guy, Doom</div>
