@@ -114,6 +114,7 @@ export function ZipImportModal({
     version: string,
     url: string,
     sidecarOnly: boolean,
+    category?: string,
     loadOrder?: Record<string, number>
   ): void => {
     const cached = registryCache.current.get(hash)
@@ -140,6 +141,7 @@ export function ZipImportModal({
               suggested_name: name,
               url,
               version: version || undefined,
+              category: category || undefined,
               is_sidecar: sidecarOnly ? 1 : 0,
               load_order: loadOrder ? JSON.stringify(loadOrder) : undefined
             },
@@ -286,7 +288,7 @@ export function ZipImportModal({
         // Submit to pending registry if appropriate
         const finalHash = created.hashValue || zipHash
         if (finalHash && zipUrl) {
-          submitToRegistry(finalHash, zipNameValue, zipVersion, zipUrl, false)
+          submitToRegistry(finalHash, zipNameValue, zipVersion, zipUrl, false, zipCategory || undefined)
         }
 
         toast({
@@ -327,6 +329,7 @@ export function ZipImportModal({
               meta.version,
               meta.url,
               meta.sidecarOnly,
+              meta.category || undefined,
               zipLoadOrder
             )
           }

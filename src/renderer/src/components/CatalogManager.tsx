@@ -245,6 +245,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                     suggested_name: prettyName,
                     url: addForm.url,
                     version: addForm.version || undefined,
+                    category: addForm.category || undefined,
                     is_sidecar: addForm.sidecarOnly ? 1 : 0,
                     load_order: processedLoadOrder ? JSON.stringify(processedLoadOrder) : undefined
                   },
@@ -886,6 +887,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                       suggested_name: editForm.name.trim(),
                       url: editForm.url,
                       version: editForm.version || undefined,
+                      category: editForm.category || undefined,
                       is_sidecar: editForm.sidecarOnly ? 1 : 0,
                       load_order: processedLoadOrder
                         ? JSON.stringify(processedLoadOrder)
