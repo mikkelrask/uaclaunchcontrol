@@ -116,6 +116,11 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
     queryFn: api.getSettings
   })
 
+  const { data: appVersion } = useQuery({
+    queryKey: ['/api/version'],
+    queryFn: api.getVersion
+  })
+
   const { data: playerData } = useQuery<IPlayerData>({
     queryKey: ['/api/player-data'],
     queryFn: api.getPlayerData,
@@ -281,7 +286,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
               </div>
               <div className="space-y-2 text-xs text-app-muted ml-8">
                 <p>UAC Launch Control</p>
-                <p className="font-mono">v0.666.0</p>
+                <p className="font-mono">v{appVersion}</p>
                 <p>Source port manager and mod launcher for Doom-engine games.</p>
                 <div className="pt-2 flex flex-col gap-1">
                   <a
