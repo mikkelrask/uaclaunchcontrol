@@ -109,6 +109,26 @@ export function buildLaunchCommand(options: {
 }
 
 /** Format accumulated playtime as "Total: X.X hrs" (Steam-style guilt trip). */
+/** Format an ISO date string into a human-readable relative time. */
+export function formatDate(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+/** Format accumulated playtime as "Total: X.X hrs" (Steam-style guilt trip). */
 export function formatPlaytime(seconds?: number): string | null {
   if (!seconds || seconds <= 0) return null
   const hours = seconds / 3600

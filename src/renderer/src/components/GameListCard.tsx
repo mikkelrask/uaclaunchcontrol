@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
-import { formatPlaytime } from '@/lib/utils'
+import { formatPlaytime, formatDate } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
 import { Play, Settings, Clock, Hourglass, ExternalLink, FileCode } from 'lucide-react'
 
@@ -13,24 +13,6 @@ interface GameListCardProps {
   protocol: IProtocol
   doomVersion: IDoomVersion
   onSettingsClick: (id: string) => void
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso)
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
-  if (diffDays < 7) return `${diffDays} days ago`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
-
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
 }
 
 export const GameListCard: React.FC<GameListCardProps> = ({

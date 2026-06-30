@@ -350,56 +350,55 @@ export function stopWadWatcher(): void {
   }
 }
 
-export function startWadWatcher(): void {
+export async function startWadWatcher(): Promise<void> {
   debug('startWadWatcher called')
   if (wadWatcher) {
     debug('Watcher already exists, skipping')
     return
   }
 
-  getSettings()
-    .then((settings) => {
-      const rawDir = settings.wadFilesDirectory || path.join(CONFIG_DIR, 'wads')
-      const wadDir = resolvePath(rawDir)
-      debug(`Watcher starting for directory: ${wadDir} (from raw: ${rawDir})`)
+  try {
+    const settings = await getSettings()
+    const rawDir = settings.wadFilesDirectory || path.join(CONFIG_DIR, 'wads')
+    const wadDir = resolvePath(rawDir)
+    debug(`Watcher starting for directory: ${wadDir} (from raw: ${rawDir})`)
 
-      try {
-        fs.ensureDirSync(wadDir)
-      } catch (error: unknown) {
-        console.error(`[DEBUG] DEBUG: Failed to ensure directory ${wadDir}:`, error)
-        return
-      }
+    try {
+      fs.ensureDirSync(wadDir)
+    } catch (error: unknown) {
+      console.error(`Failed to ensure directory ${wadDir}:`, error)
+      return
+    }
 
-      wadWatcher = chokidar.watch(wadDir, {
-        persistent: true,
-        ignoreInitial: true,
-        usePolling: true,
-        interval: 100
-      })
+    wadWatcher = chokidar.watch(wadDir, {
+      persistent: true,
+      ignoreInitial: true,
+      usePolling: true,
+      interval: 100
+    })
 
-      wadWatcher.on('all', (event, filePath) => {
-        if (filePath.toLowerCase().endsWith('.wad')) {
-          // Debounce: coalesce rapid events (common with polling) into one sync
-          if (wadSyncTimer) {
-            clearTimeout(wadSyncTimer)
-          }
-          wadSyncTimer = setTimeout(() => {
-            wadSyncTimer = null
-            debug(`WAD change detected (${event}): ${filePath}. Syncing...`)
-            syncDoomVersions({ notifyDelta: true })
-          }, 500)
+    wadWatcher.on('all', (event, filePath) => {
+      if (filePath.toLowerCase().endsWith('.wad')) {
+        // Debounce: coalesce rapid events (common with polling) into one sync
+        if (wadSyncTimer) {
+          clearTimeout(wadSyncTimer)
         }
-      })
-
-      wadWatcher.on('error', (error) => {
-        console.error(`[DEBUG] Chokidar watcher error:`, error)
-      })
-
-      debug(`Started WAD watcher on ${wadDir}`)
+        wadSyncTimer = setTimeout(() => {
+          wadSyncTimer = null
+          debug(`WAD change detected (${event}): ${filePath}. Syncing...`)
+          syncDoomVersions({ notifyDelta: true })
+        }, 500)
+      }
     })
-    .catch((err) => {
-      console.error('[DEBUG] Error starting WAD watcher:', err)
+
+    wadWatcher.on('error', (error) => {
+      console.error(`[DEBUG] Chokidar watcher error:`, error)
     })
+
+    debug(`Started WAD watcher on ${wadDir}`)
+  } catch (err) {
+    console.error('[DEBUG] Error starting WAD watcher:', err)
+  }
 }
 
 // Sync Doom versions by scanning the WAD directory
