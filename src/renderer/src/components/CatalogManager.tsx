@@ -440,7 +440,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         filters: [
           {
             name: 'Mod stuff',
-            extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip', 'bat']
+            extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip', 'rar', 'bat']
           }
         ]
       })

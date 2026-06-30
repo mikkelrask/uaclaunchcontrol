@@ -1492,7 +1492,9 @@ export async function unrarAndScan(rarFilePath: string): Promise<IUnzipScanResul
       filepath: resolvedRarPath,
       targetPath: tempExtractDir
     })
-    extractor.extract({})
+    // Must consume the returned generator — extraction is lazy
+    const extracted = extractor.extract({})
+    ;[...extracted.files] // trigger extraction by iterating
     return await scanExtractedArchive(tempExtractDir)
   } catch (error) {
     await fs.remove(tempExtractDir).catch(() => {})
