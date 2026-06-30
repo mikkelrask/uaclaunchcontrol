@@ -355,6 +355,7 @@ export function ZipImportModal({
   const skippedCount = scanResult?.skipped?.length ?? 0
   const batName = scanResult?.batFiles?.fileName
   const zipBaseName = (zipFilePath || '').split(/[\\/]/).pop() || ''
+  const isRar = zipBaseName.toLowerCase().endsWith('.rar')
 
   // Guard against render with null scanResult (can happen during close transition)
   if (!scanResult) return null
@@ -370,7 +371,7 @@ export function ZipImportModal({
             </div>
             <div>
               <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                import zip archive
+                {isRar ? 'import rar archive' : 'import zip archive'}
               </DialogTitle>
               <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
                 {importAsZip
@@ -385,8 +386,8 @@ export function ZipImportModal({
 
         {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* ── Import-as-zip checkbox ── */}
-          {zipFilePath && (
+          {/* ── Import-as-zip checkbox (hidden for .rar — source ports don't support .rar) ── */}
+          {zipFilePath && !isRar && (
             <label className="flex items-center gap-2 p-2 rounded border border-app bg-app-secondary/50 cursor-pointer hover:bg-app-secondary transition-colors">
               <input
                 type="checkbox"
