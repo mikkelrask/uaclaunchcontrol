@@ -240,6 +240,22 @@ export const api = {
   },
 
   // Protocol operations
+  testLaunch: async (
+    protocol: Partial<IProtocol>,
+    files: Partial<IModFile>[]
+  ): Promise<{ success: boolean }> => {
+    const response = await fetch(`${API_BASE}/api/protocols/test-launch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ protocol, files })
+    })
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: 'Test launch failed' }))
+      throw new Error(err.message || 'Test launch failed')
+    }
+    return response.json()
+  },
+
   createProtocol: async (protocol: Omit<IProtocol, 'id'>): Promise<IProtocol> => {
     const response = await fetch(`${API_BASE}/api/protocols`, {
       method: 'POST',

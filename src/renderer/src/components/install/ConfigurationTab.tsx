@@ -329,7 +329,40 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
           showPreview={settings?.showLaunchPreview}
         />
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="border-accent-highlight/40 text-accent-highlight hover:bg-accent-highlight/10"
+            disabled={!form.watch('doomVersionId')}
+            onClick={async () => {
+              const vals = form.getValues()
+              try {
+                await api.testLaunch(
+                  {
+                    name: vals.title,
+                    doomVersionId: vals.doomVersionId,
+                    sourcePortId: vals.sourcePortId,
+                    saveDirectory: vals.saveDirectory,
+                    launchParameters: vals.launchParameters
+                  },
+                  files
+                )
+                toast({
+                  title: 'SYSTEM: test_launch',
+                  description: 'Game launched. Close it to return here.'
+                })
+              } catch (err) {
+                toast({
+                  title: 'FATAL: test_failed',
+                  description: String(err),
+                  variant: 'destructive'
+                })
+              }
+            }}
+          >
+            Test
+          </Button>
           <Button
             type="submit"
             className="bg-accent-highlight hover:opacity-90"

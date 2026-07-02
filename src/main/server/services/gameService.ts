@@ -2,7 +2,7 @@ import path from 'path'
 
 import * as storage from '../storage'
 import { fileService } from './fileService'
-import { IProtocol, IModFile, IDoomVersion } from '../../../shared/schema'
+import { IProtocol, IModFile, IDoomVersion, IAppSettings } from '../../../shared/schema'
 import { MODS_DIR } from '../storage'
 import { debug } from '../../../shared/debug'
 
@@ -57,6 +57,133 @@ export class GameService {
     }
   }
 
+  /**
+   * Resolve executable and args for a protocol without launching.
+   */
+  private async resolveLaunchArgs(
+    protocol: Partial<IProtocol>,
+    files: IModFile[],
+    settings: IAppSettings
+  ): Promise<{ executable: string; args: string[] }> {
+    // Resolve source port executable
+    let executable: string | undefined
+    if (protocol.sourcePortId) {
+      const port = settings.sourcePorts.find((p) => p.id === protocol.sourcePortId)
+      if (port) executable = port.executablePath
+    }
+    if (!executable && settings.defaultSourcePortId) {
+      const port = settings.sourcePorts.find((p) => p.id === settings.defaultSourcePortId)
+      if (port) executable = port.executablePath
+    }
+    if (!executable) {
+      const firstPort = settings.sourcePorts.find((p) => !p.ignored)
+      if (firstPort) executable = firstPort.executablePath
+    }
+    if (!executable) {
+      throw new Error(
+        'No source ports configured. Add at least one source port in Settings > Paths.'
+      )
+    }
+    executable = storage.resolvePath(executable)
+
+    // Load Doom version for args
+    const doomVersionId = String(protocol.doomVersionId)
+    const doomVersion: Partial<IDoomVersion> | null = doomVersionId
+      ? (await storage.getDoomVersion(doomVersionId)) || null
+      : null
+    let baseArgs: string[] = []
+    if (doomVersion && typeof doomVersion.args === 'string') {
+      baseArgs = doomVersion.args.split(' ')
+    }
+
+    // Add mod files in order
+    const fileArgs: string[] = []
+    if (files.length > 0) {
+      fileArgs.push('-file')
+      files.forEach((file) => {
+        if (file.filePath) {
+          const isAbsolute =
+            path.isAbsolute(file.filePath) ||
+            file.filePath.startsWith('~') ||
+            file.filePath.startsWith('/') ||
+            file.filePath.includes(':')
+
+          debug(`Processing file: ${file.filePath}, isAbsolute: ${isAbsolute}`)
+
+          let fullPath: string
+          if (isAbsolute) {
+            fullPath = path.resolve(storage.resolvePath(file.filePath))
+          } else if (file.filePath.startsWith('files/')) {
+            const modsDir = storage.resolvePath(settings.modsDirectory || MODS_DIR)
+            fullPath = path.join(modsDir, file.filePath)
+          } else {
+            const modsDir = storage.resolvePath(settings.modsDirectory || MODS_DIR)
+            fullPath = path.join(modsDir, 'files', file.filePath)
+            debug(`Resolved relative file: ${file.filePath} -> ${fullPath} (modsDir: ${modsDir})`)
+          }
+          fileArgs.push(fullPath)
+        } else {
+          console.warn(`File ${file.id} for protocol ${protocol.id} is missing filePath.`)
+        }
+      })
+    }
+
+    // Add save directory
+    const saveDir = protocol.saveDirectory || settings.savegamesPath
+    let resolvedSaveDir = ''
+    if (saveDir) {
+      const isAbsolute =
+        path.isAbsolute(saveDir) ||
+        saveDir.startsWith('~') ||
+        saveDir.startsWith('/') ||
+        saveDir.includes(':')
+
+      if (isAbsolute) {
+        resolvedSaveDir = storage.resolvePath(saveDir)
+      } else {
+        resolvedSaveDir = path.join(storage.resolvePath(settings.savegamesPath || ''), saveDir)
+      }
+    }
+    const saveArgs: string[] = resolvedSaveDir ? ['-savedir', resolvedSaveDir] : []
+
+    // Add per-protocol config file (-config)
+    let configArgs: string[] = []
+    if (protocol.protocolConfig?.configFile) {
+      const cfgPath = path.join(storage.CFGS_DIR, protocol.protocolConfig.configFile)
+      configArgs = ['-config', cfgPath]
+    }
+
+    // Add custom launch parameters
+    let customArgs: string[] = []
+    if (protocol.launchParameters) {
+      customArgs = protocol.launchParameters.split(' ')
+    }
+
+    // Combine all args: baseArgs, fileArgs, configArgs, saveArgs, customArgs
+    const args = [...baseArgs, ...fileArgs, ...configArgs, ...saveArgs, ...customArgs]
+
+    // Add IWAD argument if available from doomVersion
+    let iwad: string | undefined = undefined
+    if (
+      doomVersion &&
+      typeof doomVersion.defaultIwad === 'string' &&
+      doomVersion.defaultIwad.trim()
+    ) {
+      iwad = doomVersion.defaultIwad
+    } else if (doomVersion && typeof doomVersion.args === 'string') {
+      const match = doomVersion.args.match(/-iwad\s+(\S+)/i)
+      if (match) {
+        iwad = match[1]
+      }
+    }
+    // Only add -iwad if not already present in baseArgs
+    if (iwad && !baseArgs.some((arg) => arg === '-iwad')) {
+      args.unshift('-iwad', storage.resolvePath(iwad))
+    }
+
+    return { executable, args }
+  }
+
   async launchProtocol(id: string): Promise<{ success: boolean; message?: string }> {
     try {
       const protocolWithFiles = await storage.getProtocol(id)
@@ -64,138 +191,17 @@ export class GameService {
       if (!protocol) throw new Error('Protocol not found')
 
       const settings = await storage.getSettings()
+      const { executable, args } = await this.resolveLaunchArgs(protocol, files, settings)
 
-      // Resolve source port executable
-      let executable: string | undefined
-      if (protocol.sourcePortId) {
-        const port = settings.sourcePorts.find((p) => p.id === protocol.sourcePortId)
-        if (port) executable = port.executablePath
-      }
-      if (!executable && settings.defaultSourcePortId) {
-        const port = settings.sourcePorts.find((p) => p.id === settings.defaultSourcePortId)
-        if (port) executable = port.executablePath
-      }
-      if (!executable) {
-        const firstPort = settings.sourcePorts.find((p) => !p.ignored)
-        if (firstPort) executable = firstPort.executablePath
-      }
-      if (!executable) {
-        throw new Error(
-          'No source ports configured. Add at least one source port in Settings > Paths.'
-        )
-      }
-      executable = storage.resolvePath(executable)
-
-      // Load Doom version for args
-      const doomVersionId = String(protocol.doomVersionId)
-      const doomVersion: Partial<IDoomVersion> | null = doomVersionId
-        ? (await storage.getDoomVersion(doomVersionId)) || null
-        : null
-      let baseArgs: string[] = []
-      if (doomVersion && typeof doomVersion.args === 'string') {
-        baseArgs = doomVersion.args.split(' ')
-      }
-
-      // Add mod files in order
-      const fileArgs: string[] = []
-      if (files.length > 0) {
-        fileArgs.push('-file')
-        files.forEach((file) => {
-          if (file.filePath) {
-            const isAbsolute =
-              path.isAbsolute(file.filePath) ||
-              file.filePath.startsWith('~') ||
-              file.filePath.startsWith('/') ||
-              file.filePath.includes(':')
-
-            debug(`Processing file: ${file.filePath}, isAbsolute: ${isAbsolute}`)
-
-            let fullPath: string
-            if (isAbsolute) {
-              fullPath = path.resolve(storage.resolvePath(file.filePath))
-            } else if (file.filePath.startsWith('files/')) {
-              // filePath is already relative to modsDir (e.g. 'files/foo-{hash}.pk3')
-              const modsDir = storage.resolvePath(settings.modsDirectory || MODS_DIR)
-              fullPath = path.join(modsDir, file.filePath)
-            } else {
-              const modsDir = storage.resolvePath(settings.modsDirectory || MODS_DIR)
-              fullPath = path.join(modsDir, 'files', file.filePath)
-              debug(`Resolved relative file: ${file.filePath} -> ${fullPath} (modsDir: ${modsDir})`)
-            }
-            fileArgs.push(fullPath)
-          } else {
-            console.warn(`File ${file.id} for protocol ${protocol.id} is missing filePath.`)
-          }
-        })
-      }
-
-      // Add save directory
-      const saveDir = protocol.saveDirectory || settings.savegamesPath
-      let resolvedSaveDir = ''
-      if (saveDir) {
-        const isAbsolute =
-          path.isAbsolute(saveDir) ||
-          saveDir.startsWith('~') ||
-          saveDir.startsWith('/') ||
-          saveDir.includes(':')
-
-        if (isAbsolute) {
-          resolvedSaveDir = storage.resolvePath(saveDir)
-        } else {
-          resolvedSaveDir = path.join(storage.resolvePath(settings.savegamesPath || ''), saveDir)
-        }
-      }
-      const saveArgs: string[] = resolvedSaveDir ? ['-savedir', resolvedSaveDir] : []
-
-      // Add per-protocol config file (-config)
-      let configArgs: string[] = []
-      if (protocol.protocolConfig?.configFile) {
-        const cfgPath = path.join(storage.CFGS_DIR, protocol.protocolConfig.configFile)
-        configArgs = ['-config', cfgPath]
-      }
-
-      // Add custom launch parameters
-      let customArgs: string[] = []
-      if (protocol.launchParameters) {
-        customArgs = protocol.launchParameters.split(' ')
-      }
-
-      // Combine all args: baseArgs, fileArgs, configArgs, saveArgs, customArgs
-      const args = [...baseArgs, ...fileArgs, ...configArgs, ...saveArgs, ...customArgs]
-      // Add IWAD argument if available from doomVersion
-      let iwad: string | undefined = undefined
-      if (
-        doomVersion &&
-        typeof doomVersion.defaultIwad === 'string' &&
-        doomVersion.defaultIwad.trim()
-      ) {
-        iwad = doomVersion.defaultIwad
-      } else if (doomVersion && typeof doomVersion.args === 'string') {
-        const match = doomVersion.args.match(/-iwad\s+(\S+)/i)
-        if (match) {
-          iwad = match[1]
-        }
-      }
-      // Only add -iwad if not already present in baseArgs
-      if (iwad && !baseArgs.some((arg) => arg === '-iwad')) {
-        args.unshift('-iwad', storage.resolvePath(iwad))
-      }
-
-      // Quote arguments that contain spaces for clearer logging and potential shell compatibility
-      const quotedArgs = args.map((arg) => {
-        if (arg.includes(' ') && !arg.startsWith('"') && !arg.startsWith("'")) {
-          return `"${arg}"`
-        }
-        return arg
-      })
-
+      // Log command for debugging
+      const quotedArgs = args.map((arg) =>
+        arg.includes(' ') && !arg.startsWith('"') ? `"${arg}"` : arg
+      )
       const quotedExecutable =
         executable.includes(' ') && !executable.startsWith('"') ? `"${executable}"` : executable
-
-      // Log the full command for debugging
       console.log('Launching command:', quotedExecutable, quotedArgs.join(' '))
 
-      // Launch the game using fileService
+      // Launch the game
       const success = await fileService.launchGame(executable, args, protocol.id)
 
       // Record last launched timestamp
@@ -207,6 +213,33 @@ export class GameService {
       return { success }
     } catch (error: unknown) {
       console.error(`Error launching protocol ${id}:`, error)
+      return { success: false, message: error instanceof Error ? error.message : String(error) }
+    }
+  }
+
+  /**
+   * Launch a protocol directly from form data without saving.
+   */
+  async testLaunch(
+    protocol: Partial<IProtocol>,
+    files: IModFile[]
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      const settings = await storage.getSettings()
+      const { executable, args } = await this.resolveLaunchArgs(protocol, files, settings)
+
+      // Log command for debugging
+      const quotedArgs = args.map((arg) =>
+        arg.includes(' ') && !arg.startsWith('"') ? `"${arg}"` : arg
+      )
+      const quotedExecutable =
+        executable.includes(' ') && !executable.startsWith('"') ? `"${executable}"` : executable
+      console.log('Test launch command:', quotedExecutable, quotedArgs.join(' '))
+
+      const success = await fileService.launchGame(executable, args, 'test')
+      return { success }
+    } catch (error: unknown) {
+      console.error('Error in test launch:', error)
       return { success: false, message: error instanceof Error ? error.message : String(error) }
     }
   }

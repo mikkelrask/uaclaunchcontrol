@@ -303,6 +303,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   })
 
   // Launch a protocol
+  // Test-launch a protocol from form data without saving
+  app.post('/api/protocols/test-launch', async (req, res) => {
+    const { protocol, files } = req.body
+    if (!protocol) {
+      return res.status(400).json({ message: 'Missing protocol data' })
+    }
+    try {
+      const result = await gameService.testLaunch(protocol, files || [])
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to test-launch')
+      }
+      return res.json({ success: true })
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to test-launch'
+      })
+    }
+  })
+
   app.post('/api/protocols/:id/launch', async (req, res) => {
     const id = req.params.id
     if (!id) {
