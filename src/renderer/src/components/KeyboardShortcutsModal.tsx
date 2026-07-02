@@ -7,6 +7,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Kbd } from '@/components/ui/kbd'
 import { Keyboard, ExternalLink } from 'lucide-react'
 
 interface KeyboardShortcutsModalProps {
@@ -54,9 +55,9 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
               className="flex items-center justify-between p-3 bg-app-secondary rounded-lg border border-app"
             >
               <span className="text-sm text-app-primary">{shortcut.description}</span>
-              <kbd className="px-2 py-1 text-xs font-mono bg-app-primary border border-app rounded-md text-accent-highlight font-bold">
+              <Kbd className="bg-app-primary border-app text-accent-highlight font-bold text-xs px-2 py-1">
                 {shortcut.key}
-              </kbd>
+              </Kbd>
             </div>
           ))}
         </div>
