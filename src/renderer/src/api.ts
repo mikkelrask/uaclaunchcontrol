@@ -423,7 +423,7 @@ export const api = {
 
   updatePlayerStats: async (delta: Partial<IPlayerStats>): Promise<IPlayerStats> => {
     const response = await fetch(`${API_BASE}/api/player-data/stats`, {
-      method: 'PUT',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(delta)
     })
