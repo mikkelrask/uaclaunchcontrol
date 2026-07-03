@@ -58,6 +58,11 @@ function eventToStatsDelta(event: AchievementEvent): Partial<IPlayerStats> {
         // Pass as string — updatePlayerStats handles appending
         distinctSourcePortFamilies: (event.family ?? 'other') as unknown as string[]
       }
+    case 'MAP_REACHED':
+    case 'CHEAT_ACTIVATED':
+      // No stat to accumulate — these are pure event-qualifier achievements,
+      // checked against the event payload itself in checkEventQualifiers().
+      return {}
   }
 }
 

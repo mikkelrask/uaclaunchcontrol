@@ -12,11 +12,15 @@ import NotFound from '@/pages/not-found'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
-import { IAppSettings, IInstallType } from '@shared/schema'
+import type { AchievementEvent } from '@/lib/achievements'
+import { IAppSettings, IInstallType, IProtocol } from '@shared/schema'
 import { useAutoUpdater } from '@/hooks/useAutoUpdater'
 import UpdateModal from '@/components/UpdateModal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { FirstRunTour } from '@/components/FirstRunTour'
+import { CrashLogDialog, type CrashLogData } from '@/components/CrashLogDialog'
+import { ToastAction } from '@/components/ui/toast'
+import { inferCrashHint } from '@/lib/crashHints'
 
 const AppRouter: React.FC = () => {
   return (
@@ -35,6 +39,18 @@ const App: React.FC = () => {
   const { updateInfo } = useAutoUpdater()
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
   const [installType, setInstallType] = useState<IInstallType | null>(null)
+  const [crashLog, setCrashLog] = useState<CrashLogData | null>(null)
+
+  // Best-effort protocol title lookup from whatever's already cached —
+  // avoids an extra fetch just to label the crash log dialog.
+  const findProtocolTitle = (protocolId: string): string | undefined => {
+    const matches = queryClient.getQueriesData<IProtocol[]>({ queryKey: ['/api/protocols'] })
+    for (const [, data] of matches) {
+      const found = data?.find((p) => p.id === protocolId)
+      if (found) return found.title || found.name
+    }
+    return undefined
+  }
 
   // Fetch install type on mount
   useEffect(() => {
@@ -145,14 +161,64 @@ const App: React.FC = () => {
         // Show crash toast for non-clean exits
         if (!data.clean) {
           const codeStr = data.exitCode === null ? 'a signal' : `exit code ${data.exitCode}`
+          const hint = inferCrashHint(data.logTail)
+          const protocolId = data.protocolId
           toast({
             title: 'FATAL: process_died',
-            description: `The game process terminated with ${codeStr} after ${data.sessionSeconds}s of playtime. Check your mods and configuration for compatibility issues.`,
-            variant: 'destructive'
+            description: hint
+              ? `${hint} (${codeStr} after ${data.sessionSeconds}s)`
+              : `The game process terminated with ${codeStr} after ${data.sessionSeconds}s of playtime.`,
+            variant: 'destructive',
+            action: (
+              <ToastAction
+                altText="View Log"
+                onClick={() =>
+                  setCrashLog({
+                    protocolId,
+                    protocolName: findProtocolTitle(protocolId),
+                    exitCode: data.exitCode,
+                    sessionSeconds: data.sessionSeconds,
+                    logTail: data.logTail,
+                    logFilePath: data.logFilePath
+                  })
+                }
+              >
+                View Log
+              </ToastAction>
+            )
           })
         }
       })
     }
+  }, [toast])
+
+  // Listen for gameplay events detected in the live console stream
+  // (reaching a map, activating a cheat) and feed them into the achievement
+  // system — pure flavor, no reward attached.
+  useEffect(() => {
+    if (!window.api?.onGameEventDetected) return
+    window.api.onGameEventDetected((data) => {
+      if (!data.protocolId) return
+
+      const event: AchievementEvent =
+        data.type === 'MAP_REACHED'
+          ? { type: 'MAP_REACHED', protocolId: data.protocolId, mapName: data.mapName }
+          : { type: 'CHEAT_ACTIVATED', protocolId: data.protocolId, cheat: data.cheat }
+
+      dispatchAchievementEvent(event)
+        .then((result) => {
+          for (const t of buildUnlockToasts(result)) {
+            toast({
+              title: t.title,
+              description: t.description,
+              duration: t.duration as 6000 | 8000
+            })
+          }
+        })
+        .catch((err) => {
+          console.error('Achievement dispatch failed:', err)
+        })
+    })
   }, [toast])
 
   return (
@@ -168,6 +234,7 @@ const App: React.FC = () => {
         <AppRouter />
       </ErrorBoundary>
       <FirstRunTour />
+      <CrashLogDialog data={crashLog} onClose={() => setCrashLog(null)} />
     </TooltipProvider>
   )
 }

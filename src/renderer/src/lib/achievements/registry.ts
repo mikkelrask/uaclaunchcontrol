@@ -207,6 +207,29 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
     type: 'event-qualifier',
     conditions: [{ stat: 'maxModFilesInSingleProtocol', min: 31 }],
     hidden: true
+  },
+  {
+    id: 'icon-of-sin',
+    title: 'The Beast Has Fallen',
+    description: 'Reach MAP30 — Icon of Sin. Rip and tear, until it is done.',
+    category: 'secret',
+    icon: 'Skull',
+    type: 'event-qualifier',
+    conditions: [{ stat: 'totalProtocolsLaunched', min: 1 }],
+    eventQualifier: (event) =>
+      event.type === 'MAP_REACHED' && (event as { mapName?: string }).mapName === 'MAP30',
+    hidden: true
+  },
+  {
+    id: 'idkfa',
+    title: 'IDKFA',
+    description: 'Activate a cheat code. No judgement, marine — we have all been there.',
+    category: 'secret',
+    icon: 'Sparkles',
+    type: 'event-qualifier',
+    conditions: [{ stat: 'totalProtocolsLaunched', min: 1 }],
+    eventQualifier: (event) => event.type === 'CHEAT_ACTIVATED',
+    hidden: true
   }
 ]
 

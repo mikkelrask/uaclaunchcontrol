@@ -310,6 +310,8 @@ app.whenReady().then(async () => {
     return result
   })
 
+  ipcMain.handle('open-log-file', (_event, filePath: string) => shell.openPath(filePath))
+
   ipcMain.handle('download-update', () => {
     autoUpdater.downloadUpdate().catch((err) => {
       console.error('Error downloading update:', err)

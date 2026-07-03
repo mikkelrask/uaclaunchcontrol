@@ -10,7 +10,17 @@ interface ICustomAPI {
       exitCode: number | null
       sessionSeconds: number
       clean: boolean
+      logTail: string[]
+      logFilePath?: string
     }) => void
+  ) => void
+  onGameEventDetected: (
+    callback: (
+      data: { protocolId?: string } & (
+        | { type: 'MAP_REACHED'; mapName: string }
+        | { type: 'CHEAT_ACTIVATED'; cheat: string }
+      )
+    ) => void
   ) => void
   onUpdateStatus: (callback: (data: IUpdateInfo) => void) => void
   getAppVersion: () => Promise<string>
@@ -20,6 +30,7 @@ interface ICustomAPI {
   triggerFakeUpdate: () => Promise<void>
   getInstallType: () => Promise<{ isAppImage: boolean; isSystemInstalled: boolean }>
   getPathForFile: (file: File) => string
+  openLogFile: (filePath: string) => Promise<void>
 }
 
 declare global {

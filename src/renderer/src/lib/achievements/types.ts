@@ -35,6 +35,8 @@ export type AchievementEvent =
   | { type: 'WAD_IMPORTED'; count: number }
   | { type: 'CATALOG_FILE_MANAGED'; count: number }
   | { type: 'SOURCE_PORT_ADDED'; count: number; family?: string }
+  | { type: 'MAP_REACHED'; protocolId: string; mapName: string }
+  | { type: 'CHEAT_ACTIVATED'; protocolId: string; cheat: string }
 
 // ── Definitions ─────────────────────────────────────────
 

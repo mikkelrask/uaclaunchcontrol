@@ -9,8 +9,18 @@ const api = {
       exitCode: number | null
       sessionSeconds: number
       clean: boolean
+      logTail: string[]
+      logFilePath?: string
     }) => void
   ) => ipcRenderer.on('game-exited', (_event, data) => callback(data)),
+  onGameEventDetected: (
+    callback: (
+      data: { protocolId?: string } & (
+        | { type: 'MAP_REACHED'; mapName: string }
+        | { type: 'CHEAT_ACTIVATED'; cheat: string }
+      )
+    ) => void
+  ) => ipcRenderer.on('game-event-detected', (_event, data) => callback(data)),
   onUpdateStatus: (callback: (data: unknown) => void) =>
     ipcRenderer.on('update-status', (_event, data) => callback(data)),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
@@ -19,7 +29,8 @@ const api = {
   installUpdate: () => ipcRenderer.invoke('install-update'),
   triggerFakeUpdate: () => ipcRenderer.invoke('trigger-fake-update'),
   getInstallType: () => ipcRenderer.invoke('get-install-type'),
-  getPathForFile: (file: File) => webUtils.getPathForFile(file)
+  getPathForFile: (file: File) => webUtils.getPathForFile(file),
+  openLogFile: (filePath: string) => ipcRenderer.invoke('open-log-file', filePath)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

@@ -28,7 +28,13 @@ const DOOM_VERSIONS_FILE = path.join(CONFIG_DIR, 'doomVersions.json') // Directl
 const MOD_FILE_CATALOG = path.join(CONFIG_DIR, 'modFileCatalogue.json')
 export const IMAGES_DIR = path.join(CONFIG_DIR, 'data/images')
 export const CFGS_DIR = path.join(CONFIG_DIR, 'data', 'cfgs')
+export const LOGS_DIR = path.join(CONFIG_DIR, 'logs')
 const FIRST_RUN_SENTINEL = path.join(CONFIG_DIR, '.first-run-complete')
+
+/** Path to the console log file for a protocol's most recent launch — overwritten each launch. */
+export function logFilePathFor(protocolId: string): string {
+  return path.join(LOGS_DIR, `${protocolId}.log`)
+}
 
 const DEFAULT_DATABASE_LINKS: IDatabaseLink[] = [
   { name: 'MODDB', url: 'https://www.moddb.com/games/doom-ii' },
@@ -178,6 +184,7 @@ export function initStorage(): boolean {
     fs.ensureDirSync(DATA_DIR) // Ensure data directory exists
     fs.ensureDirSync(MODS_DIR) // Ensure mods directory exists
     fs.ensureDirSync(CFGS_DIR) // Ensure config files directory exists
+    fs.ensureDirSync(LOGS_DIR) // Ensure launch log directory exists
 
     // Create settings file with defaults if it doesn't exist
     if (!fs.existsSync(SETTINGS_FILE)) {

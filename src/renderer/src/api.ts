@@ -372,9 +372,26 @@ export const api = {
       exitCode: number | null
       sessionSeconds: number
       clean: boolean
+      logTail: string[]
+      logFilePath?: string
     }) => void
   ): void => {
     window.api.onGameExited(callback)
+  },
+
+  onGameEventDetected: (
+    callback: (
+      data: { protocolId?: string } & (
+        | { type: 'MAP_REACHED'; mapName: string }
+        | { type: 'CHEAT_ACTIVATED'; cheat: string }
+      )
+    ) => void
+  ): void => {
+    window.api.onGameEventDetected(callback)
+  },
+
+  openLogFile: async (filePath: string): Promise<void> => {
+    await window.api.openLogFile(filePath)
   },
 
   addPlaytime: async (protocolId: string, sessionSeconds: number): Promise<void> => {

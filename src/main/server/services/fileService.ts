@@ -1,8 +1,12 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { spawn } from 'child_process'
-import { Stats } from 'fs'
+import { Stats, createWriteStream, type WriteStream } from 'fs'
 import { BrowserWindow } from 'electron'
+import { logFilePathFor } from '../storage'
+import { matchGameplayEvent } from './gameplayWatchers'
+
+const LOG_RING_BUFFER_SIZE = 60
 
 // Service to handle file system operations
 export class FileService {
@@ -74,19 +78,29 @@ export class FileService {
   // Launch a game with parameters — returns once process is confirmed running.
   // If protocolId is provided, the process is monitored after the initial check
   // window and a 'game-crashed' IPC event is sent to all BrowserWindows if the
-  // game later exits with a non-zero code.
+  // game later exits with a non-zero code. Console output is piped (not
+  // ignored) so a crash can be explained, and scanned live for gameplay
+  // events (reaching a map, activating a cheat) for achievement flavor.
   async launchGame(executable: string, args: string[], protocolId?: string): Promise<boolean> {
     try {
       const executablePath = this.resolveExecutablePath(executable)
 
       const startTime = Date.now()
+      const logTail: string[] = []
+      const logFilePath = protocolId ? logFilePathFor(protocolId) : undefined
+      let logStream: WriteStream | null = null
+      try {
+        if (logFilePath) logStream = createWriteStream(logFilePath, { flags: 'w' })
+      } catch (err) {
+        console.error('[fileService] Failed to open launch log file:', err)
+      }
 
       return await new Promise<boolean>((resolve) => {
         let settled = false
 
         const proc = spawn(executablePath, args, {
           detached: true,
-          stdio: 'ignore'
+          stdio: ['ignore', 'pipe', 'pipe']
         })
 
         const finish = (result: boolean): void => {
@@ -96,6 +110,41 @@ export class FileService {
           resolve(result)
         }
 
+        // A source port's stdout isn't a TTY once piped, so most engines
+        // switch to block-buffered output — 'data' events land on arbitrary
+        // byte boundaries, not line boundaries. A line (e.g. a map banner)
+        // can straddle two chunks, so incomplete trailing text from one
+        // chunk must be carried over and prepended to the next.
+        let pendingLine = ''
+
+        const processLines = (lines: string[]): void => {
+          logTail.push(...lines)
+          if (logTail.length > LOG_RING_BUFFER_SIZE) {
+            logTail.splice(0, logTail.length - LOG_RING_BUFFER_SIZE)
+          }
+
+          for (const line of lines) {
+            const match = matchGameplayEvent(line)
+            if (match) {
+              const wins = BrowserWindow.getAllWindows()
+              for (const win of wins) {
+                win.webContents.send('game-event-detected', { protocolId, ...match })
+              }
+            }
+          }
+        }
+
+        const onOutput = (chunk: Buffer): void => {
+          logStream?.write(chunk)
+
+          const text = pendingLine + chunk.toString('utf8')
+          const parts = text.split('\n')
+          pendingLine = parts.pop() ?? ''
+          processLines(parts.filter(Boolean))
+        }
+        proc.stdout?.on('data', onOutput)
+        proc.stderr?.on('data', onOutput)
+
         const sendGameExited = (exitCode: number | null): void => {
           const sessionSeconds = Math.round((Date.now() - startTime) / 1000)
           const wins = BrowserWindow.getAllWindows()
@@ -104,7 +153,9 @@ export class FileService {
               protocolId,
               exitCode,
               sessionSeconds,
-              clean: exitCode === 0
+              clean: exitCode === 0,
+              logTail: [...logTail],
+              logFilePath
             })
           }
         }
@@ -132,6 +183,19 @@ export class FileService {
             console.error(`Game process exited with code ${code} immediately after launch`)
             finish(false)
           }
+
+          // Flush a final line that never got a trailing newline (e.g. the
+          // process died mid-write)
+          if (pendingLine) {
+            processLines([pendingLine])
+            pendingLine = ''
+          }
+
+          // Stop listening before the streams could otherwise keep the
+          // main process's event loop alive after we've stopped caring
+          proc.stdout?.destroy()
+          proc.stderr?.destroy()
+          logStream?.end()
 
           // Fire-and-forget: notify frontend about every exit
           // (regardless of timing or exit code) so it can record playtime
