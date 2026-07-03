@@ -26,7 +26,8 @@ const STAT_LABELS: Record<string, string> = {
   totalCatalogFilesManaged: 'Files Cataloged',
   protocolsLaunchedThisSession: 'This Session',
   distinctProtocolsLaunched: 'Unique Protocols',
-  maxModFilesInSingleProtocol: 'Max Files/Protocol'
+  maxModFilesInSingleProtocol: 'Max Files/Protocol',
+  reachedIconOfSin: `Romero's head on a stick`
 }
 
 /**
@@ -144,6 +145,7 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({ definition, st
               const currentVal = getStatValue(stats, condition.stat)
               const met = currentVal >= condition.min
               const pct = Math.min(100, Math.round((currentVal / condition.min) * 100))
+              const obscure = condition.secret && !met
               return (
                 <div key={i} className="flex items-center gap-2">
                   {met ? (
@@ -152,12 +154,13 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({ definition, st
                     <div className="w-3.5 h-3.5 shrink-0" />
                   )}
                   <span className="text-[10px] text-app-muted font-mono min-w-[90px] shrink-0">
-                    {STAT_LABELS[condition.stat] ?? condition.stat}
+                    {obscure ? '????' : (STAT_LABELS[condition.stat] ?? condition.stat)}
                   </span>
-                  <Progress value={pct} className="h-1.5 bg-app-primary flex-1" />
+                  <Progress value={obscure ? 0 : pct} className="h-1.5 bg-app-primary flex-1" />
                   <span className="text-[10px] text-app-muted font-mono shrink-0 w-20 text-right tabular-nums">
-                    {formatStatValue(condition.stat, currentVal)} /{' '}
-                    {formatThreshold(condition.stat, condition.min)}
+                    {obscure
+                      ? '?? / ??'
+                      : `${formatStatValue(condition.stat, currentVal)} / ${formatThreshold(condition.stat, condition.min)}`}
                   </span>
                 </div>
               )

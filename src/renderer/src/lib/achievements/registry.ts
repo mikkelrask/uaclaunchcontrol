@@ -44,7 +44,8 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
     conditions: [
       { stat: 'totalProtocolsCreated', min: 25 },
       { stat: 'totalPlaytimeSeconds', min: 360000 }, // 100 hours
-      { stat: 'totalModFilesAdded', min: 100 }
+      { stat: 'totalModFilesAdded', min: 100 },
+      { stat: 'reachedIconOfSin', min: 1, secret: true }
     ],
     grantsRank: 'slayer'
   },
@@ -210,8 +211,8 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
   },
   {
     id: 'icon-of-sin',
-    title: 'The Beast Has Fallen',
-    description: 'Reach MAP30 — Icon of Sin. Rip and tear, until it is done.',
+    title: `Romero's Head on a Stick`,
+    description: `Reach MAP30 - Icon of Sin. Fantastic work soldier.`,
     category: 'secret',
     icon: 'Skull',
     type: 'event-qualifier',

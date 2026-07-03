@@ -18,6 +18,12 @@ export type AchievementCategory =
 export type IAchievementCondition = {
   stat: keyof IPlayerStats
   min: number
+  /**
+   * When true, this condition's label and progress are shown as "????" in
+   * a compound achievement's breakdown until the condition itself is met —
+   * a surprise sub-goal, revealed only once satisfied.
+   */
+  secret?: boolean
 }
 
 // ── Events ──────────────────────────────────────────────

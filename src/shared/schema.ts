@@ -196,4 +196,6 @@ export interface IPlayerStats {
   maxModFilesInSingleProtocol: number
   totalSourcePortsAdded: number
   distinctSourcePortFamilies: string[]
+  /** Flag (0 or 1+) set once MAP30 — Icon of Sin — has been reached in any protocol. */
+  reachedIconOfSin: number
 }
