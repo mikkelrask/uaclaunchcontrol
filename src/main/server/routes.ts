@@ -581,7 +581,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hash = await storage.computeFileHash(filePath)
       if (!hash) throw new Error('Failed to compute hash')
 
-      const destPath = path.join(storage.CFGS_DIR, `${hash}.cfg`)
+      // Preserve the source file's actual extension (.cfg, .ini, .conf, ...)
+      // rather than forcing .cfg — source ports read these as plain INI-style
+      // text regardless of extension, so this is purely about keeping the
+      // stored copy honest about what it actually is.
+      const ext = path.extname(filePath) || '.cfg'
+      const configFile = `${hash}${ext}`
+      const destPath = path.join(storage.CFGS_DIR, configFile)
       await fs.ensureDir(storage.CFGS_DIR)
 
       const resolved = storage.resolvePath(filePath)
@@ -589,7 +595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       debug(`Uploaded config file: ${filePath} -> ${destPath} (hash: ${hash})`)
 
-      return res.json({ hash, configFile: `${hash}.cfg` })
+      return res.json({ hash, configFile })
     } catch (error: unknown) {
       return res.status(500).json({
         message: error instanceof Error ? error.message : 'Failed to upload config file'

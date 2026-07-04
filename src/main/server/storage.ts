@@ -862,8 +862,19 @@ export async function computeFileHash(filePath: string): Promise<string> {
 }
 
 /**
+ * Locate a stored config file by its key (hash or protocolId), regardless of
+ * extension — uploads preserve their original extension (.cfg, .ini, .conf,
+ * etc.) rather than being forced to .cfg, so lookups need to discover it.
+ */
+function findConfigFile(key: string): string | null {
+  if (!fs.existsSync(CFGS_DIR)) return null
+  const match = fs.readdirSync(CFGS_DIR).find((f) => f.startsWith(`${key}.`))
+  return match ? path.join(CFGS_DIR, match) : null
+}
+
+/**
  * Copy a config template file to a protocol-specific isolated copy.
- * 
+ *
  * When a protocol is created with mod files that have a configTemplate,
  * this function copies the template into a per-protocol file so each
  * protocol has its own config that users can modify in-game without
@@ -875,18 +886,19 @@ export async function copyConfigForProtocol(
 ): Promise<ModProtocolConfig> {
   try {
     initStorage()
-    const src = path.join(CFGS_DIR, `${templateHash}.cfg`)
-    const dest = path.join(CFGS_DIR, `${protocolId}.cfg`)
-
-    if (!fs.existsSync(src)) {
-      throw new Error(`Config template not found: ${src}`)
+    const src = findConfigFile(templateHash)
+    if (!src) {
+      throw new Error(`Config template not found for hash: ${templateHash}`)
     }
+    const ext = path.extname(src)
+    const configFile = `${protocolId}${ext}`
+    const dest = path.join(CFGS_DIR, configFile)
 
     await fs.copy(src, dest, { overwrite: true })
     debug(`Copied config template ${templateHash} to protocol ${protocolId}`)
 
     return {
-      configFile: `${protocolId}.cfg`,
+      configFile,
       templateHash
     }
   } catch (error: unknown) {
@@ -904,9 +916,9 @@ export async function copyConfigForProtocol(
 export async function readConfigFileContent(key: string): Promise<string> {
   try {
     initStorage()
-    const filePath = path.join(CFGS_DIR, `${key}.cfg`)
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`Config file not found: ${filePath}`)
+    const filePath = findConfigFile(key)
+    if (!filePath) {
+      throw new Error(`Config file not found for key: ${key}`)
     }
     const content = await fs.readFile(filePath, 'utf-8')
     return content
@@ -920,11 +932,13 @@ export async function readConfigFileContent(key: string): Promise<string> {
 
 /**
  * Write a config file to the cfgs directory (by hash or protocolId).
+ * Writes back to whatever extension the file already has; falls back to
+ * .cfg only if no file exists yet for this key.
  */
 export async function writeConfigFileContent(key: string, content: string): Promise<string> {
   try {
     initStorage()
-    const filePath = path.join(CFGS_DIR, `${key}.cfg`)
+    const filePath = findConfigFile(key) ?? path.join(CFGS_DIR, `${key}.cfg`)
     await fs.ensureDir(CFGS_DIR)
     await fs.writeFile(filePath, content, 'utf-8')
     debug(`Wrote config file: ${filePath}`)
