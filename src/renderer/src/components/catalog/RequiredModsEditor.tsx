@@ -4,8 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Combobox } from '@/components/ui/combobox'
 import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { ChevronUp, ChevronDown, FolderOpen, Trash2 } from 'lucide-react'
 import type { IModFile } from '@shared/schema'
+import { SIDECAR_EXPLANATION } from '@/lib/catalog/types'
 import type { RequiredModEntry } from '@/lib/catalog/types'
 
 export interface RequiredModsEditorProps {
@@ -50,51 +53,67 @@ export const RequiredModsEditor: React.FC<RequiredModsEditorProps> = ({
 }) => {
   return (
     <div className="space-y-2">
-      <Label>Load Order</Label>
+      <div className="flex items-center gap-1.5">
+        <Label>Load Order</Label>
+        <InfoTooltip text="Files load top to bottom - later files override earlier ones for conflicting resources. Use the arrows to reorder." />
+      </div>
       <div className="space-y-2">
         {loadOrder.length > 1 &&
           loadOrder.map((req, idx) => (
-            <div key={idx} className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onMoveUp(idx)}
-                disabled={idx === 0}
-                className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
-              >
-                <ChevronUp className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onMoveDown(idx)}
-                disabled={idx >= loadOrder.length - 1}
-                className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-              <span className="text-xs mr-2 w-6 text-center">{idx + 1}.</span>
-              <Input
-                value={req.name}
-                onChange={(e) => onNameChange(idx, e.target.value)}
-                disabled={req.isMain}
-                className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
-              />
-              <Checkbox
-                checked={req.sidecarOnly}
-                onCheckedChange={() => onToggleSidecar(idx)}
-                disabled={req.isMain}
-                title="Sidecar only"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onRemove(idx)}
-                disabled={req.isMain}
-                className={`text-red-500 hover:text-red-700 ${req.isMain ? 'opacity-30' : ''}`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+            <div key={idx} className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onMoveUp(idx)}
+                  disabled={idx === 0}
+                  className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onMoveDown(idx)}
+                  disabled={idx >= loadOrder.length - 1}
+                  className="text-app-primary hover:text-app-primary disabled:opacity-30 p-1"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+                <span className="text-xs mr-2 w-6 text-center">{idx + 1}.</span>
+                <Input
+                  value={req.name}
+                  onChange={(e) => onNameChange(idx, e.target.value)}
+                  disabled={req.isMain}
+                  className={`bg-app-secondary border-app flex-1 ${req.isMain ? 'opacity-70 italic' : ''}`}
+                />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Checkbox
+                      checked={req.sidecarOnly}
+                      onCheckedChange={() => onToggleSidecar(idx)}
+                      disabled={req.isMain}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-xs">
+                    {SIDECAR_EXPLANATION}
+                  </TooltipContent>
+                </Tooltip>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onRemove(idx)}
+                  disabled={req.isMain}
+                  className={`text-red-500 hover:text-red-700 ${req.isMain ? 'opacity-30' : ''}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              {req.isMain && (
+                <p className="text-[10px] text-app-muted pl-14">
+                  This is the mod itself - its requirements go below.
+                </p>
+              )}
             </div>
           ))}
         <div className="flex gap-2">

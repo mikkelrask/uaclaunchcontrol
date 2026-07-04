@@ -58,6 +58,15 @@ function eventToStatsDelta(event: AchievementEvent): Partial<IPlayerStats> {
         // Pass as string — updatePlayerStats handles appending
         distinctSourcePortFamilies: (event.family ?? 'other') as unknown as string[]
       }
+    case 'MAP_REACHED':
+      // reachedIconOfSin doubles as a secret sub-goal inside the compound
+      // 'the-slayer' achievement, in addition to icon-of-sin's own
+      // event-qualifier check above.
+      return event.mapName === 'MAP30' ? { reachedIconOfSin: 1 } : {}
+    case 'CHEAT_ACTIVATED':
+      // No stat to accumulate — a pure event-qualifier achievement, checked
+      // against the event payload itself in checkEventQualifiers().
+      return {}
   }
 }
 

@@ -18,10 +18,12 @@ import {
 } from '@/components/ui/select'
 import { Pencil, Check, FolderOpen, X } from 'lucide-react'
 import type { IModFile } from '@shared/schema'
+import { SIDECAR_EXPLANATION } from '@/lib/catalog/types'
 import type { EditFormState } from '@/lib/catalog/types'
 import { CATEGORIES } from '@shared/categories'
 import type { RequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
 import { RequiredModsEditor } from '@/components/catalog/RequiredModsEditor'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 interface EditFileDialogProps {
   open: boolean
@@ -178,8 +180,9 @@ export function EditFileDialog({
               }
             />
             <Label htmlFor="edit-sidecar" className="text-sm font-normal">
-              Sidecar only
+              Sidecar mod
             </Label>
+            <InfoTooltip text={SIDECAR_EXPLANATION} />
           </div>
 
           {selectedFile?.hashValue && (

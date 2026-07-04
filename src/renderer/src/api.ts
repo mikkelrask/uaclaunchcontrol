@@ -372,9 +372,26 @@ export const api = {
       exitCode: number | null
       sessionSeconds: number
       clean: boolean
+      logTail: string[]
+      logFilePath?: string
     }) => void
   ): void => {
     window.api.onGameExited(callback)
+  },
+
+  onGameEventDetected: (
+    callback: (
+      data: { protocolId?: string } & (
+        | { type: 'MAP_REACHED'; mapName: string }
+        | { type: 'CHEAT_ACTIVATED'; cheat: string }
+      )
+    ) => void
+  ): void => {
+    window.api.onGameEventDetected(callback)
+  },
+
+  openLogFile: async (filePath: string): Promise<void> => {
+    await window.api.openLogFile(filePath)
   },
 
   addPlaytime: async (protocolId: string, sessionSeconds: number): Promise<void> => {
@@ -423,7 +440,7 @@ export const api = {
 
   updatePlayerStats: async (delta: Partial<IPlayerStats>): Promise<IPlayerStats> => {
     const response = await fetch(`${API_BASE}/api/player-data/stats`, {
-      method: 'PUT',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(delta)
     })
@@ -521,6 +538,22 @@ export const api = {
     })
     if (!response.ok) {
       throw new Error('Failed to upload config file')
+    }
+    return response.json()
+  },
+
+  /** Create a blank, isolated config for a protocol with no originating template. */
+  createBlankConfig: async (
+    protocolId: string,
+    ext?: string
+  ): Promise<{ configFile: string; templateHash?: string }> => {
+    const response = await fetch(`${API_BASE}/api/configs/blank`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ protocolId, ext })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to create blank config')
     }
     return response.json()
   },

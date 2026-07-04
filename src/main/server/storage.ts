@@ -28,7 +28,13 @@ const DOOM_VERSIONS_FILE = path.join(CONFIG_DIR, 'doomVersions.json') // Directl
 const MOD_FILE_CATALOG = path.join(CONFIG_DIR, 'modFileCatalogue.json')
 export const IMAGES_DIR = path.join(CONFIG_DIR, 'data/images')
 export const CFGS_DIR = path.join(CONFIG_DIR, 'data', 'cfgs')
+export const LOGS_DIR = path.join(CONFIG_DIR, 'logs')
 const FIRST_RUN_SENTINEL = path.join(CONFIG_DIR, '.first-run-complete')
+
+/** Path to the console log file for a protocol's most recent launch — overwritten each launch. */
+export function logFilePathFor(protocolId: string): string {
+  return path.join(LOGS_DIR, `${protocolId}.log`)
+}
 
 const DEFAULT_DATABASE_LINKS: IDatabaseLink[] = [
   { name: 'MODDB', url: 'https://www.moddb.com/games/doom-ii' },
@@ -178,6 +184,7 @@ export function initStorage(): boolean {
     fs.ensureDirSync(DATA_DIR) // Ensure data directory exists
     fs.ensureDirSync(MODS_DIR) // Ensure mods directory exists
     fs.ensureDirSync(CFGS_DIR) // Ensure config files directory exists
+    fs.ensureDirSync(LOGS_DIR) // Ensure launch log directory exists
 
     // Create settings file with defaults if it doesn't exist
     if (!fs.existsSync(SETTINGS_FILE)) {
@@ -855,8 +862,45 @@ export async function computeFileHash(filePath: string): Promise<string> {
 }
 
 /**
+ * Locate a stored config file by its key (hash or protocolId), regardless of
+ * extension — uploads preserve their original extension (.cfg, .ini, .conf,
+ * etc.) rather than being forced to .cfg, so lookups need to discover it.
+ */
+function findConfigFile(key: string): string | null {
+  if (!fs.existsSync(CFGS_DIR)) return null
+  const match = fs.readdirSync(CFGS_DIR).find((f) => f.startsWith(`${key}.`))
+  return match ? path.join(CFGS_DIR, match) : null
+}
+
+/**
+ * Create a blank, isolated config for a protocol with no originating
+ * template — lets a protocol get its own settings even when none of its
+ * mod files provided a config template (or the user wants to override one).
+ */
+export async function createBlankProtocolConfig(
+  protocolId: string,
+  ext: string = '.cfg'
+): Promise<ModProtocolConfig> {
+  try {
+    initStorage()
+    await fs.ensureDir(CFGS_DIR)
+    const normalizedExt = ext.startsWith('.') ? ext : `.${ext}`
+    const configFile = `${protocolId}${normalizedExt}`
+    const dest = path.join(CFGS_DIR, configFile)
+    await fs.writeFile(dest, '', 'utf-8')
+    debug(`Created blank protocol config: ${dest}`)
+    return { configFile }
+  } catch (error: unknown) {
+    console.error('Error creating blank protocol config:', error)
+    throw new Error(
+      `Failed to create blank protocol config: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
+}
+
+/**
  * Copy a config template file to a protocol-specific isolated copy.
- * 
+ *
  * When a protocol is created with mod files that have a configTemplate,
  * this function copies the template into a per-protocol file so each
  * protocol has its own config that users can modify in-game without
@@ -868,18 +912,19 @@ export async function copyConfigForProtocol(
 ): Promise<ModProtocolConfig> {
   try {
     initStorage()
-    const src = path.join(CFGS_DIR, `${templateHash}.cfg`)
-    const dest = path.join(CFGS_DIR, `${protocolId}.cfg`)
-
-    if (!fs.existsSync(src)) {
-      throw new Error(`Config template not found: ${src}`)
+    const src = findConfigFile(templateHash)
+    if (!src) {
+      throw new Error(`Config template not found for hash: ${templateHash}`)
     }
+    const ext = path.extname(src)
+    const configFile = `${protocolId}${ext}`
+    const dest = path.join(CFGS_DIR, configFile)
 
     await fs.copy(src, dest, { overwrite: true })
     debug(`Copied config template ${templateHash} to protocol ${protocolId}`)
 
     return {
-      configFile: `${protocolId}.cfg`,
+      configFile,
       templateHash
     }
   } catch (error: unknown) {
@@ -897,9 +942,9 @@ export async function copyConfigForProtocol(
 export async function readConfigFileContent(key: string): Promise<string> {
   try {
     initStorage()
-    const filePath = path.join(CFGS_DIR, `${key}.cfg`)
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`Config file not found: ${filePath}`)
+    const filePath = findConfigFile(key)
+    if (!filePath) {
+      throw new Error(`Config file not found for key: ${key}`)
     }
     const content = await fs.readFile(filePath, 'utf-8')
     return content
@@ -913,11 +958,13 @@ export async function readConfigFileContent(key: string): Promise<string> {
 
 /**
  * Write a config file to the cfgs directory (by hash or protocolId).
+ * Writes back to whatever extension the file already has; falls back to
+ * .cfg only if no file exists yet for this key.
  */
 export async function writeConfigFileContent(key: string, content: string): Promise<string> {
   try {
     initStorage()
-    const filePath = path.join(CFGS_DIR, `${key}.cfg`)
+    const filePath = findConfigFile(key) ?? path.join(CFGS_DIR, `${key}.cfg`)
     await fs.ensureDir(CFGS_DIR)
     await fs.writeFile(filePath, content, 'utf-8')
     debug(`Wrote config file: ${filePath}`)

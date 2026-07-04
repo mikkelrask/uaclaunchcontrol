@@ -26,7 +26,8 @@ import { Separator } from '@/components/ui/separator'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { LaunchSequenceList } from '@/components/install/LaunchSequenceList'
 import { LaunchCommandPreview } from '@/components/install/LaunchCommandPreview'
-import { FolderOpen } from 'lucide-react'
+import { ProtocolConfigControl } from '@/components/ProtocolConfigControl'
+import { FolderOpen, FlaskConical, Plus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 import type { z } from 'zod'
 import type { formSchema } from '@/lib/install/schema'
@@ -52,6 +53,9 @@ export interface ConfigurationTabProps {
   toast: ToastLike
   onSubmit: (data: z.infer<typeof formSchema>) => Promise<void>
   handleFilesChange: (newFiles: IModFile[]) => void
+  configStatus: { hasConfig: boolean; statusText: string }
+  onCreateFreshConfig: () => void
+  isCreatingConfig: boolean
 }
 
 /**
@@ -76,7 +80,10 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
   createMutation,
   toast,
   onSubmit,
-  handleFilesChange
+  handleFilesChange,
+  configStatus,
+  onCreateFreshConfig,
+  isCreatingConfig
 }) => {
   return (
     <Form {...form}>
@@ -160,9 +167,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                           })
                           if (!result.canceled && result.filePaths.length > 0) {
                             try {
-                              const { fileName } = await api.uploadScreenshot(
-                                result.filePaths[0]
-                              )
+                              const { fileName } = await api.uploadScreenshot(result.filePaths[0])
                               field.onChange(fileName)
                               toast({
                                 title: 'SYSTEM: image_ul',
@@ -308,6 +313,12 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
           </div>
         </div>
         <Separator />
+        <ProtocolConfigControl
+          hasConfig={configStatus.hasConfig}
+          statusText={configStatus.statusText}
+          onCreateFresh={onCreateFreshConfig}
+          isCreating={isCreatingConfig}
+        />
         <div>
           <div className="mb-4">
             <ModFileSelector value={files} onChange={handleFilesChange} />
@@ -361,6 +372,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
               }
             }}
           >
+            <FlaskConical className="w-4 h-4 mr-2" />
             Test
           </Button>
           <Button
@@ -368,7 +380,8 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
             className="bg-accent-highlight hover:opacity-90"
             disabled={!form.watch('title') || !form.watch('doomVersionId')}
           >
-            {createMutation.isPending ? 'Applying...' : 'Create protocol'}
+            <Plus className="w-4 h-4 mr-2" />
+            {createMutation.isPending ? 'Applying...' : 'Create Protocol'}
           </Button>
         </div>
       </form>

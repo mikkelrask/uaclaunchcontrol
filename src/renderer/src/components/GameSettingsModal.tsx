@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter
@@ -31,8 +32,8 @@ import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import ModFileList from './ModFileList'
-import LaunchOptions from './LaunchOptions'
-import { FolderOpen, Download, Gamepad2 } from 'lucide-react'
+import { ProtocolConfigControl } from './ProtocolConfigControl'
+import { FolderOpen, Download, Gamepad2, Trash2, Save, Play } from 'lucide-react'
 import { slugify, buildLaunchCommand } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
 
@@ -52,6 +53,8 @@ interface GameSettingsContentProps {
   sourcePorts: ISourcePort[]
   defaultSourcePortId?: string
   showLaunchPreview?: boolean
+  /** Lets the outer Dialog's outside-click/Escape handling defer to this component's dirty check. */
+  registerAttemptClose: (fn: (event: Event) => void) => void
 }
 
 const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
@@ -61,12 +64,32 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
   onClose,
   doomVersions,
   sourcePorts,
-  showLaunchPreview = true
+  showLaunchPreview = true,
+  registerAttemptClose
 }) => {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const [protocol, setProtocol] = useState<IProtocol>(initialProtocol)
   const [files, setFiles] = useState<InsertModFile[]>(initialFiles)
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
+
+  // Unsaved-changes detection — covers every field edit and mod file change
+  const isDirty = useMemo(
+    () =>
+      JSON.stringify(protocol) !== JSON.stringify(initialProtocol) ||
+      JSON.stringify(files) !== JSON.stringify(initialFiles),
+    [protocol, files, initialProtocol, initialFiles]
+  )
+
+  // Guard outside-click/Escape dismissal when there are unsaved changes
+  useEffect(() => {
+    registerAttemptClose((event: Event) => {
+      if (isDirty) {
+        event.preventDefault()
+        setShowDiscardConfirm(true)
+      }
+    })
+  }, [isDirty, registerAttemptClose])
 
   const { data: settings } = useQuery<IAppSettings>({
     queryKey: ['/api/settings'],
@@ -150,9 +173,11 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     }
   })
 
-  // Launch protocol mutation
+  // Launch mutation — test-launches the current in-memory state (including
+  // any unsaved edits), same as InstallPage's Test button. Lets you try
+  // changes before committing to Save Changes.
   const launchMutation = useMutation({
-    mutationFn: (id: string) => gameService.launchProtocol(id),
+    mutationFn: () => api.testLaunch(protocol, files),
     onSuccess: () => {
       toast({
         title: 'SYSTEM: launch_protocol',
@@ -194,7 +219,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
   }
 
   const handleLaunch = (): void => {
-    launchMutation.mutate(protocolId)
+    launchMutation.mutate()
   }
 
   const handleInputChange = (
@@ -207,6 +232,42 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
   const handleSelectChange = (name: string, value: string): void => {
     setProtocol((prev) => ({ ...prev, [name]: value }))
   }
+
+  const [isCreatingConfig, setIsCreatingConfig] = useState(false)
+
+  // Creates the file immediately (same as the screenshot upload above), but
+  // only takes effect on the protocol once Save Changes is hit — consistent
+  // with how every other edit in this modal works.
+  const handleCreateFreshConfig = async (): Promise<void> => {
+    setIsCreatingConfig(true)
+    try {
+      const result = await api.createBlankConfig(protocolId)
+      setProtocol((prev) => ({ ...prev, protocolConfig: result }))
+      toast({
+        title: 'SYSTEM: config_created',
+        description: 'Fresh isolated config created. Click Save Changes to apply.'
+      })
+    } catch (error) {
+      toast({
+        title: 'FATAL: config_create_failed',
+        description: `Failed to create config: ${error}`,
+        variant: 'destructive'
+      })
+    } finally {
+      setIsCreatingConfig(false)
+    }
+  }
+
+  const configStatus = protocol.protocolConfig
+    ? {
+        hasConfig: true,
+        statusText: `Isolated config linked (${protocol.protocolConfig.configFile}).`
+      }
+    : {
+        hasConfig: false,
+        statusText:
+          "No isolated config yet — this protocol shares the source port's global settings."
+      }
 
   const handleExport = async (): Promise<void> => {
     const doomVersion = doomVersions?.find((v) => v.id === protocol.doomVersionId)
@@ -235,7 +296,9 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
         const content = await api.readConfigContent(protocol.protocolConfig.templateHash)
         configs[protocol.protocolConfig.templateHash] = { content }
       } catch {
-        console.warn(`Failed to read protocol config ${protocol.protocolConfig.templateHash} for export`)
+        console.warn(
+          `Failed to read protocol config ${protocol.protocolConfig.templateHash} for export`
+        )
       }
     }
 
@@ -441,10 +504,30 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
           </div>
         </div>
 
-        <LaunchOptions
-          launchParameters={protocol.launchParameters || ''}
-          onChange={(params) => setProtocol((prev) => ({ ...prev, launchParameters: params }))}
+        <ProtocolConfigControl
+          hasConfig={configStatus.hasConfig}
+          statusText={configStatus.statusText}
+          onCreateFresh={handleCreateFreshConfig}
+          isCreating={isCreatingConfig}
         />
+
+        <div>
+          <Label
+            htmlFor="launchParameters"
+            className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
+          >
+            Launch Parameters
+          </Label>
+          <Textarea
+            id="launchParameters"
+            name="launchParameters"
+            value={protocol.launchParameters || ''}
+            onChange={handleInputChange}
+            placeholder="-skill 4 -warp 01"
+            className="bg-app-primary border-app font-mono text-sm"
+            rows={2}
+          />
+        </div>
       </div>
 
       {showLaunchPreview && launchCommand && (
@@ -474,6 +557,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
             disabled={deleteMutation.isPending}
           >
+            <Trash2 className="w-4 h-4 mr-2" />
             Delete Instance
           </Button>
         </div>
@@ -485,6 +569,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             className="mr-2 bg-app-primary hover:bg-app-hover text-app-primary border-app"
             disabled={updateMutation.isPending}
           >
+            <Save className="w-4 h-4 mr-2" />
             Save Changes
           </Button>
           <Button
@@ -492,10 +577,47 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             className="bg-accent-highlight hover:opacity-90 text-white"
             disabled={launchMutation.isPending}
           >
-            PLAY
+            <Play className="w-4 h-4 mr-1.5 fill-current" />
+            {launchMutation.isPending ? 'LAUNCHING...' : 'LAUNCH'}
           </Button>
         </div>
       </DialogFooter>
+
+      <Dialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Discard changes?</DialogTitle>
+            <DialogDescription>
+              This protocol has unsaved changes. Do you want to discard them?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowDiscardConfirm(false)}>
+              Keep Editing
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setShowDiscardConfirm(false)
+                onClose()
+              }}
+            >
+              Discard
+            </Button>
+            <Button
+              onClick={() => {
+                setShowDiscardConfirm(false)
+                handleSave()
+              }}
+              className="bg-accent-highlight hover:opacity-90 text-white"
+              disabled={updateMutation.isPending}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save & Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -559,11 +681,19 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
     return { hydratedProtocol: proto, hydratedFiles: protoFiles }
   }, [data, catalogFiles])
 
+  // Lets GameSettingsContent's dirty-check intercept outside-click/Escape
+  // dismissal before the outer Dialog actually closes.
+  const attemptCloseRef = useRef<(event: Event) => void>(() => {})
+
   if (!isOpen) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-app-primary shadow-2xl border-app max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent
+        className="bg-app-primary shadow-2xl border-app max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden"
+        onPointerDownOutside={(event) => attemptCloseRef.current(event)}
+        onEscapeKeyDown={(event) => attemptCloseRef.current(event)}
+      >
         <div className="flex items-center justify-between p-4 border-b border-app bg-app-secondary">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-accent-highlight/10 rounded-md">
@@ -592,6 +722,9 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
             sourcePorts={sourcePorts}
             defaultSourcePortId={defaultSourcePortId}
             showLaunchPreview={showLaunchPreview}
+            registerAttemptClose={(fn) => {
+              attemptCloseRef.current = fn
+            }}
           />
         )}
       </DialogContent>

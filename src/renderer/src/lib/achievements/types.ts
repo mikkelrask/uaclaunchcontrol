@@ -18,6 +18,12 @@ export type AchievementCategory =
 export type IAchievementCondition = {
   stat: keyof IPlayerStats
   min: number
+  /**
+   * When true, this condition's label and progress are shown as "????" in
+   * a compound achievement's breakdown until the condition itself is met —
+   * a surprise sub-goal, revealed only once satisfied.
+   */
+  secret?: boolean
 }
 
 // ── Events ──────────────────────────────────────────────
@@ -35,6 +41,8 @@ export type AchievementEvent =
   | { type: 'WAD_IMPORTED'; count: number }
   | { type: 'CATALOG_FILE_MANAGED'; count: number }
   | { type: 'SOURCE_PORT_ADDED'; count: number; family?: string }
+  | { type: 'MAP_REACHED'; protocolId: string; mapName: string }
+  | { type: 'CHEAT_ACTIVATED'; protocolId: string; cheat: string }
 
 // ── Definitions ─────────────────────────────────────────
 

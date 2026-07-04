@@ -44,7 +44,8 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
     conditions: [
       { stat: 'totalProtocolsCreated', min: 25 },
       { stat: 'totalPlaytimeSeconds', min: 360000 }, // 100 hours
-      { stat: 'totalModFilesAdded', min: 100 }
+      { stat: 'totalModFilesAdded', min: 100 },
+      { stat: 'reachedIconOfSin', min: 1, secret: true }
     ],
     grantsRank: 'slayer'
   },
@@ -206,6 +207,29 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
     icon: 'AlertTriangle',
     type: 'event-qualifier',
     conditions: [{ stat: 'maxModFilesInSingleProtocol', min: 31 }],
+    hidden: true
+  },
+  {
+    id: 'icon-of-sin',
+    title: `Romero's Head on a Stick`,
+    description: `Reach MAP30 - Icon of Sin. Fantastic work soldier.`,
+    category: 'secret',
+    icon: 'Skull',
+    type: 'event-qualifier',
+    conditions: [{ stat: 'totalProtocolsLaunched', min: 1 }],
+    eventQualifier: (event) =>
+      event.type === 'MAP_REACHED' && (event as { mapName?: string }).mapName === 'MAP30',
+    hidden: true
+  },
+  {
+    id: 'idkfa',
+    title: 'IDKFA',
+    description: 'Activate a cheat code. No judgement, marine — we have all been there.',
+    category: 'secret',
+    icon: 'Sparkles',
+    type: 'event-qualifier',
+    conditions: [{ stat: 'totalProtocolsLaunched', min: 1 }],
+    eventQualifier: (event) => event.type === 'CHEAT_ACTIVATED',
     hidden: true
   }
 ]
