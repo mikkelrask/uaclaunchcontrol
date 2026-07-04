@@ -34,6 +34,14 @@ export const InstallPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('install')
   // const [currentFilePath, setCurrentFilePath] = useState<string>('');
 
+  // Generated up front (not at submit time) so a fresh protocol config can be
+  // created against a real, stable ID while the form is still being filled
+  // out. InstallPage fully unmounts on navigation back to '/', so a fresh
+  // value is naturally generated again next time this page is visited.
+  const [pendingProtocolId] = useState(() => Date.now().toString())
+  const [freshConfig, setFreshConfig] = useState<{ configFile: string } | null>(null)
+  const [isCreatingConfig, setIsCreatingConfig] = useState(false)
+
   // Fetch doom versions
   const { data: versions = [] } = useQuery<IDoomVersion[]>({
     queryKey: ['/api/versions'],
@@ -193,7 +201,51 @@ export const InstallPage: React.FC = () => {
   }
 
   const wadImport = useWadImport(settings as IAppSettings, toast)
-  const jsonDrop = useJsonDrop({ form, versions, settings: settings as IAppSettings, toast, setFiles })
+  const jsonDrop = useJsonDrop({
+    form,
+    versions,
+    settings: settings as IAppSettings,
+    toast,
+    setFiles
+  })
+
+  // Mod file carrying a config template, if one of the chosen files has one —
+  // used to preview what submitting will auto-seed, unless the user overrides
+  // it with their own fresh config below.
+  const templateFile = files.find((f) => f.configTemplate)
+
+  const configStatus = freshConfig
+    ? { hasConfig: true, statusText: `Custom config linked (${freshConfig.configFile}).` }
+    : templateFile?.configTemplate
+      ? {
+          hasConfig: true,
+          statusText: `Will be seeded from "${templateFile.name || templateFile.fileName}" when created.`
+        }
+      : {
+          hasConfig: false,
+          statusText:
+            "No isolated config yet — this protocol will share the source port's global settings."
+        }
+
+  const handleCreateFreshConfig = async (): Promise<void> => {
+    setIsCreatingConfig(true)
+    try {
+      const result = await api.createBlankConfig(pendingProtocolId)
+      setFreshConfig(result)
+      toast({
+        title: 'SYSTEM: config_created',
+        description: 'Fresh isolated config created for this protocol.'
+      })
+    } catch (error) {
+      toast({
+        title: 'FATAL: config_create_failed',
+        description: `Failed to create config: ${error}`,
+        variant: 'destructive'
+      })
+    } finally {
+      setIsCreatingConfig(false)
+    }
+  }
 
   // const removeFile = (index: number) => {
   //   const newFiles = [...files]
@@ -228,8 +280,9 @@ export const InstallPage: React.FC = () => {
       relativeSaveDir = finalSaveDir.replace(settings.savegamesPath, '').replace(/^[\\/]/, '')
     }
 
-    // Use a single timestamp for both mod and image naming consistency
-    const uniqueId = Date.now().toString()
+    // Generated up front (not here) so a fresh config can be created against
+    // a stable ID while the form is still being filled out — see pendingProtocolId.
+    const uniqueId = pendingProtocolId
 
     // Download screenshot if it's a URL
     let localScreenshotPath = data.screenshotPath
@@ -280,9 +333,12 @@ export const InstallPage: React.FC = () => {
       console.warn('[DEBUG] Failed to update some catalog entries:', err)
     }
 
-    // Check if any file has a config template to seed a protocol-specific config
-    const templateFile = files.find((f) => f.configTemplate)
-    if (templateFile?.configTemplate) {
+    // A user-created fresh config always wins over auto-seeding from a mod's
+    // template — it's an explicit override. Otherwise, seed from a mod's
+    // config template if one of the chosen files has one.
+    if (freshConfig) {
+      protocol.protocolConfig = { configFile: freshConfig.configFile }
+    } else if (templateFile?.configTemplate) {
       try {
         const protocolConfig = await api.copyConfigForProtocol(
           templateFile.configTemplate.md5Hash,
@@ -380,6 +436,9 @@ export const InstallPage: React.FC = () => {
                     toast={toast}
                     onSubmit={onSubmit}
                     handleFilesChange={handleFilesChange}
+                    configStatus={configStatus}
+                    onCreateFreshConfig={handleCreateFreshConfig}
+                    isCreatingConfig={isCreatingConfig}
                   />
                 </TabsContent>
 

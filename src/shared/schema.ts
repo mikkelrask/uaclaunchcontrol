@@ -111,13 +111,14 @@ export interface ModConfigTemplate {
 
 /**
  * A per-protocol isolated config copy. Created at protocol
- * creation time by copying from a catalog ModConfigTemplate.
+ * creation time by copying from a catalog ModConfigTemplate,
+ * or created blank/fresh with no originating template.
  */
 export interface ModProtocolConfig {
   /** Filename in ~/.config/uac/data/cfgs/<protocol-id>.cfg */
   configFile: string
-  /** MD5 of the template it was seeded from (for staleness detection) */
-  templateHash: string
+  /** MD5 of the template it was seeded from, if any (for staleness detection) */
+  templateHash?: string
 }
 
 export interface IAppSettings {

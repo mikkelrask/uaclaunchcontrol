@@ -511,6 +511,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === Config File API ===
 
+  /** Create a blank, isolated config for a protocol with no originating template. */
+  app.post('/api/configs/blank', async (req, res) => {
+    try {
+      const { protocolId, ext } = req.body
+      if (!protocolId) {
+        return res.status(400).json({ message: 'Missing protocolId' })
+      }
+      const result = await storage.createBlankProtocolConfig(protocolId, ext)
+      return res.json(result)
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to create blank config'
+      })
+    }
+  })
+
   /** Copy a config template to a protocol-specific copy. */
   app.post('/api/configs/copy-for-protocol', async (req, res) => {
     try {

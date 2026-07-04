@@ -22,6 +22,31 @@ const DOOM_VERSIONS_FILE = path.join(CONFIG_DIR, 'doomVersions.json')
 // Once the file is loaded once, subsequent calls won't reset session stats.
 let hasLoadedOnce = false
 
+// Serializes all playerData.json reads/writes. Without this, concurrent
+// achievement dispatches (e.g. several gameplay events firing in quick
+// succession) can interleave a read with another call's in-flight write,
+// catch a truncated file, fall back to blank defaults, and then persist
+// that blank state — silently wiping real progress. Everything below goes
+// through this single queue so reads/writes for this file are never
+// concurrent within the process.
+let playerDataChain: Promise<unknown> = Promise.resolve()
+
+function withPlayerDataLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = playerDataChain.then(fn, fn)
+  playerDataChain = run.then(
+    () => undefined,
+    () => undefined
+  )
+  return run
+}
+
+/** Atomic write: write to a temp file then rename, so a reader never sees a partial file. */
+async function writePlayerDataFile(data: IPlayerData): Promise<void> {
+  const tmpPath = `${PLAYER_DATA_FILE}.tmp-${process.pid}-${Date.now()}`
+  await fs.writeJson(tmpPath, data, { spaces: 2 })
+  await fs.rename(tmpPath, PLAYER_DATA_FILE)
+}
+
 // ── Defaults ────────────────────────────────────────────
 const DEFAULT_PLAYER_DATA: IPlayerData = {
   rank: 'cadet',
@@ -138,14 +163,11 @@ async function computeInitialStatsFromDisk(): Promise<IPlayerStats> {
 // ── Public API ──────────────────────────────────────────
 
 /**
- * Read player data from disk. Creates default + seeds from existing
- * data on first call, including migration of legacy `settings.rank`.
- *
- * On the first ever load (including fresh app start), resets
- * `protocolsLaunchedThisSession` to 0 so the session counter
- * starts fresh for the new session.
+ * Raw, unlocked read+normalize. Only ever call this from within
+ * withPlayerDataLock (directly, or via getPlayerData) — calling it
+ * unguarded would reopen the exact race this file exists to prevent.
  */
-export async function getPlayerData(): Promise<IPlayerData> {
+async function readPlayerDataRaw(): Promise<IPlayerData> {
   const exists = fs.existsSync(PLAYER_DATA_FILE)
 
   if (!exists) {
@@ -180,7 +202,7 @@ export async function getPlayerData(): Promise<IPlayerData> {
     debug('[playerService] Seeded initial stats:', data.stats)
 
     // 4. Persist
-    await fs.writeJSON(PLAYER_DATA_FILE, data, { spaces: 2 })
+    await writePlayerDataFile(data)
     return data
   }
 
@@ -198,7 +220,7 @@ export async function getPlayerData(): Promise<IPlayerData> {
     // Reset session stats on first load after app start
     if (!hasLoadedOnce && merged.stats.protocolsLaunchedThisSession !== 0) {
       merged.stats.protocolsLaunchedThisSession = 0
-      await fs.writeJSON(PLAYER_DATA_FILE, merged, { spaces: 2 })
+      await writePlayerDataFile(merged)
       debug('[playerService] Reset protocolsLaunchedThisSession for new session')
     }
 
@@ -207,7 +229,7 @@ export async function getPlayerData(): Promise<IPlayerData> {
     // condition would otherwise never see it satisfied without replaying MAP30.
     if (merged.achievements['icon-of-sin']?.unlocked && !merged.stats.reachedIconOfSin) {
       merged.stats.reachedIconOfSin = 1
-      await fs.writeJSON(PLAYER_DATA_FILE, merged, { spaces: 2 })
+      await writePlayerDataFile(merged)
       debug('[playerService] Backfilled reachedIconOfSin from existing icon-of-sin unlock')
     }
 
@@ -221,21 +243,35 @@ export async function getPlayerData(): Promise<IPlayerData> {
 }
 
 /**
+ * Read player data from disk. Creates default + seeds from existing
+ * data on first call, including migration of legacy `settings.rank`.
+ *
+ * On the first ever load (including fresh app start), resets
+ * `protocolsLaunchedThisSession` to 0 so the session counter
+ * starts fresh for the new session.
+ */
+export async function getPlayerData(): Promise<IPlayerData> {
+  return withPlayerDataLock(() => readPlayerDataRaw())
+}
+
+/**
  * Merge partial data into playerData and persist.
  */
 export async function savePlayerData(partial: Partial<IPlayerData>): Promise<IPlayerData> {
-  const current = await getPlayerData()
-  const merged: IPlayerData = {
-    ...current,
-    ...partial,
-    // Deep merge nested objects
-    stats: partial.stats ? { ...current.stats, ...partial.stats } : current.stats,
-    achievements: partial.achievements
-      ? { ...current.achievements, ...partial.achievements }
-      : current.achievements
-  }
-  await fs.writeJSON(PLAYER_DATA_FILE, merged, { spaces: 2 })
-  return merged
+  return withPlayerDataLock(async () => {
+    const current = await readPlayerDataRaw()
+    const merged: IPlayerData = {
+      ...current,
+      ...partial,
+      // Deep merge nested objects
+      stats: partial.stats ? { ...current.stats, ...partial.stats } : current.stats,
+      achievements: partial.achievements
+        ? { ...current.achievements, ...partial.achievements }
+        : current.achievements
+    }
+    await writePlayerDataFile(merged)
+    return merged
+  })
 }
 
 /**
@@ -245,50 +281,52 @@ export async function savePlayerData(partial: Partial<IPlayerData>): Promise<IPl
  * `maxModFilesInSingleProtocol` (max comparison).
  */
 export async function updatePlayerStats(delta: Partial<IPlayerStats>): Promise<IPlayerStats> {
-  const current = await getPlayerData()
-  const newStats: IPlayerStats = { ...current.stats }
+  return withPlayerDataLock(async () => {
+    const current = await readPlayerDataRaw()
+    const newStats: IPlayerStats = { ...current.stats }
 
-  for (const [key, value] of Object.entries(delta)) {
-    switch (key) {
-      case 'distinctProtocolsLaunched': {
-        // Append protocol ID if not already present
-        const id = value as unknown as string
-        if (id && !newStats.distinctProtocolsLaunched.includes(id)) {
-          newStats.distinctProtocolsLaunched = [...newStats.distinctProtocolsLaunched, id]
+    for (const [key, value] of Object.entries(delta)) {
+      switch (key) {
+        case 'distinctProtocolsLaunched': {
+          // Append protocol ID if not already present
+          const id = value as unknown as string
+          if (id && !newStats.distinctProtocolsLaunched.includes(id)) {
+            newStats.distinctProtocolsLaunched = [...newStats.distinctProtocolsLaunched, id]
+          }
+          break
         }
-        break
-      }
-      case 'distinctSourcePortFamilies': {
-        // Append source port family if not already present
-        const family = value as unknown as string
-        if (family && !newStats.distinctSourcePortFamilies.includes(family)) {
-          newStats.distinctSourcePortFamilies = [...newStats.distinctSourcePortFamilies, family]
+        case 'distinctSourcePortFamilies': {
+          // Append source port family if not already present
+          const family = value as unknown as string
+          if (family && !newStats.distinctSourcePortFamilies.includes(family)) {
+            newStats.distinctSourcePortFamilies = [...newStats.distinctSourcePortFamilies, family]
+          }
+          break
         }
-        break
-      }
-      case 'maxModFilesInSingleProtocol': {
-        // Take the max of current and new value
-        const candidate = value as number
-        if (candidate > newStats.maxModFilesInSingleProtocol) {
-          newStats.maxModFilesInSingleProtocol = candidate
+        case 'maxModFilesInSingleProtocol': {
+          // Take the max of current and new value
+          const candidate = value as number
+          if (candidate > newStats.maxModFilesInSingleProtocol) {
+            newStats.maxModFilesInSingleProtocol = candidate
+          }
+          break
         }
-        break
-      }
-      default: {
-        // Numeric increment
-        const curVal = (newStats as unknown as Record<string, unknown>)[key]
-        const deltaVal = value as number
-        if (typeof curVal === 'number' && typeof deltaVal === 'number') {
-          const typedStats = newStats as unknown as Record<string, unknown>
-          typedStats[key] = curVal + deltaVal
+        default: {
+          // Numeric increment
+          const curVal = (newStats as unknown as Record<string, unknown>)[key]
+          const deltaVal = value as number
+          if (typeof curVal === 'number' && typeof deltaVal === 'number') {
+            const typedStats = newStats as unknown as Record<string, unknown>
+            typedStats[key] = curVal + deltaVal
+          }
+          break
         }
-        break
       }
     }
-  }
 
-  await fs.writeJSON(PLAYER_DATA_FILE, { ...current, stats: newStats }, { spaces: 2 })
-  return newStats
+    await writePlayerDataFile({ ...current, stats: newStats })
+    return newStats
+  })
 }
 
 /**
@@ -298,14 +336,15 @@ export async function unlockAchievement(
   id: string,
   state: IAchievementState
 ): Promise<IAchievementState> {
-  const current = await getPlayerData()
-  const updated: IAchievementState = {
-    ...state,
-    unlocked: true,
-    unlockedAt: new Date().toISOString()
-  }
-  current.achievements[id] = updated
-  await fs.writeJSON(PLAYER_DATA_FILE, current, { spaces: 2 })
-  return updated
+  return withPlayerDataLock(async () => {
+    const current = await readPlayerDataRaw()
+    const updated: IAchievementState = {
+      ...state,
+      unlocked: true,
+      unlockedAt: new Date().toISOString()
+    }
+    current.achievements[id] = updated
+    await writePlayerDataFile(current)
+    return updated
+  })
 }
-

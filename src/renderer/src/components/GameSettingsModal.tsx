@@ -32,6 +32,7 @@ import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import ModFileList from './ModFileList'
+import { ProtocolConfigControl } from './ProtocolConfigControl'
 import { FolderOpen, Download, Gamepad2, Trash2, Save, Play } from 'lucide-react'
 import { slugify, buildLaunchCommand } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
@@ -232,6 +233,42 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     setProtocol((prev) => ({ ...prev, [name]: value }))
   }
 
+  const [isCreatingConfig, setIsCreatingConfig] = useState(false)
+
+  // Creates the file immediately (same as the screenshot upload above), but
+  // only takes effect on the protocol once Save Changes is hit — consistent
+  // with how every other edit in this modal works.
+  const handleCreateFreshConfig = async (): Promise<void> => {
+    setIsCreatingConfig(true)
+    try {
+      const result = await api.createBlankConfig(protocolId)
+      setProtocol((prev) => ({ ...prev, protocolConfig: result }))
+      toast({
+        title: 'SYSTEM: config_created',
+        description: 'Fresh isolated config created. Click Save Changes to apply.'
+      })
+    } catch (error) {
+      toast({
+        title: 'FATAL: config_create_failed',
+        description: `Failed to create config: ${error}`,
+        variant: 'destructive'
+      })
+    } finally {
+      setIsCreatingConfig(false)
+    }
+  }
+
+  const configStatus = protocol.protocolConfig
+    ? {
+        hasConfig: true,
+        statusText: `Isolated config linked (${protocol.protocolConfig.configFile}).`
+      }
+    : {
+        hasConfig: false,
+        statusText:
+          "No isolated config yet — this protocol shares the source port's global settings."
+      }
+
   const handleExport = async (): Promise<void> => {
     const doomVersion = doomVersions?.find((v) => v.id === protocol.doomVersionId)
     const portName = protocol.sourcePortId
@@ -259,7 +296,9 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
         const content = await api.readConfigContent(protocol.protocolConfig.templateHash)
         configs[protocol.protocolConfig.templateHash] = { content }
       } catch {
-        console.warn(`Failed to read protocol config ${protocol.protocolConfig.templateHash} for export`)
+        console.warn(
+          `Failed to read protocol config ${protocol.protocolConfig.templateHash} for export`
+        )
       }
     }
 
@@ -464,6 +503,13 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             <ModFileList files={files} onChange={setFiles} />
           </div>
         </div>
+
+        <ProtocolConfigControl
+          hasConfig={configStatus.hasConfig}
+          statusText={configStatus.statusText}
+          onCreateFresh={handleCreateFreshConfig}
+          isCreating={isCreatingConfig}
+        />
 
         <div>
           <Label

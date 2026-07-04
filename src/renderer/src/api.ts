@@ -542,6 +542,22 @@ export const api = {
     return response.json()
   },
 
+  /** Create a blank, isolated config for a protocol with no originating template. */
+  createBlankConfig: async (
+    protocolId: string,
+    ext?: string
+  ): Promise<{ configFile: string; templateHash?: string }> => {
+    const response = await fetch(`${API_BASE}/api/configs/blank`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ protocolId, ext })
+    })
+    if (!response.ok) {
+      throw new Error('Failed to create blank config')
+    }
+    return response.json()
+  },
+
   /** Copy a config template to a protocol-specific copy. */
   copyConfigForProtocol: async (
     templateHash: string,

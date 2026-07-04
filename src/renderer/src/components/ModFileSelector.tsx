@@ -282,7 +282,7 @@ export function ModFileSelector({
     <div>
       <div className="flex items-center mb-4 mt-4">
         <div className="flex flex-col w-full">
-          <h2 className="text-lg font-semibold">Mod Files</h2>
+          <h3 className="text-lg mb-2">Mod Files</h3>
           <p className="text-sm text-app-secondary mb-4">
             Add the mod files in the order they should be loaded.
           </p>
@@ -290,9 +290,9 @@ export function ModFileSelector({
         <div className="flex justify-end w-full">
           <Button
             size="sm"
-            variant={'default'}
+            variant="outline"
             onClick={handleAddFile}
-            className="bg-accent-highlight text-app-primary opacity-90 hover:opacity-100 hover:bg-accent-highlight"
+            className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
             type="button"
           >
             <PlusIcon className="h-4 w-4 mr-1" />

@@ -873,6 +873,32 @@ function findConfigFile(key: string): string | null {
 }
 
 /**
+ * Create a blank, isolated config for a protocol with no originating
+ * template — lets a protocol get its own settings even when none of its
+ * mod files provided a config template (or the user wants to override one).
+ */
+export async function createBlankProtocolConfig(
+  protocolId: string,
+  ext: string = '.cfg'
+): Promise<ModProtocolConfig> {
+  try {
+    initStorage()
+    await fs.ensureDir(CFGS_DIR)
+    const normalizedExt = ext.startsWith('.') ? ext : `.${ext}`
+    const configFile = `${protocolId}${normalizedExt}`
+    const dest = path.join(CFGS_DIR, configFile)
+    await fs.writeFile(dest, '', 'utf-8')
+    debug(`Created blank protocol config: ${dest}`)
+    return { configFile }
+  } catch (error: unknown) {
+    console.error('Error creating blank protocol config:', error)
+    throw new Error(
+      `Failed to create blank protocol config: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
+}
+
+/**
  * Copy a config template file to a protocol-specific isolated copy.
  *
  * When a protocol is created with mod files that have a configTemplate,
