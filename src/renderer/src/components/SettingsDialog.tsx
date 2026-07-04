@@ -13,7 +13,9 @@ import {
   Download,
   LayoutGrid,
   List,
-  BookOpen
+  BookOpen,
+  ScanSearch,
+  Plus
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
@@ -32,6 +34,7 @@ import {
 } from '@/components/ui/select'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Switch } from '@/components/ui/switch'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import uacLogo from '@/assets/UAC Logo.svg'
 
 interface SettingsDialogProps {
@@ -569,7 +572,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   <div className="min-w-0">
                     <Label className="text-sm font-medium text-app-primary">Database Link</Label>
                     <p className="text-[10px] text-app-muted leading-tight mt-0.5">
-                      Navigation shortcut to your preferred source of mods.
+                      Changes the shortcut link shown in the header next to LAUNCH/INSTALL.
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
@@ -778,6 +781,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         disabled={scanning}
                         className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
                       >
+                        <ScanSearch className="w-3 h-3 mr-1" />
                         {scanning ? 'Scanning…' : 'Scan Path'}
                       </Button>
                       <Button
@@ -795,7 +799,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         onClick={handleAddPort}
                         className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
                       >
-                        + Add Port
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add Port
                       </Button>
                     </div>
                   </div>
@@ -843,21 +848,29 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           </div>
 
                           {/* Ignored toggle */}
-                          <button
-                            onClick={() => handleSavePort({ ...port, ignored: !port.ignored })}
-                            className={`shrink-0 p-1.5 rounded transition-colors ${
-                              port.ignored
-                                ? 'text-red-400 hover:text-red-300'
-                                : 'text-app-muted hover:text-app-primary'
-                            }`}
-                            title={port.ignored ? 'Show port' : 'Hide port'}
-                          >
-                            {port.ignored ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => handleSavePort({ ...port, ignored: !port.ignored })}
+                                className={`shrink-0 p-1.5 rounded transition-colors ${
+                                  port.ignored
+                                    ? 'text-red-400 hover:text-red-300'
+                                    : 'text-app-muted hover:text-app-primary'
+                                }`}
+                              >
+                                {port.ignored ? (
+                                  <EyeOff className="w-4 h-4" />
+                                ) : (
+                                  <Eye className="w-4 h-4" />
+                                )}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs text-xs">
+                              {port.ignored
+                                ? 'Hidden from protocol/launch selection lists. Click to show it again.'
+                                : 'Hide this port from selection lists without deleting it.'}
+                            </TooltipContent>
+                          </Tooltip>
 
                           {/* Edit */}
                           <button
@@ -1304,7 +1317,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             onClick={handleSave}
             className="text-xs font-bold uppercase bg-accent-highlight text-white hover:bg-accent-highlight/90 h-9 px-4 shadow-lg shadow-accent-highlight/20"
           >
-            {'> Apply <'}
+            Apply Changes
           </Button>
         </div>
       </DialogContent>

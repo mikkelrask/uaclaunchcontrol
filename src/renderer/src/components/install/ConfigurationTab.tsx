@@ -26,7 +26,7 @@ import { Separator } from '@/components/ui/separator'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { LaunchSequenceList } from '@/components/install/LaunchSequenceList'
 import { LaunchCommandPreview } from '@/components/install/LaunchCommandPreview'
-import { FolderOpen } from 'lucide-react'
+import { FolderOpen, FlaskConical, Plus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 import type { z } from 'zod'
 import type { formSchema } from '@/lib/install/schema'
@@ -361,6 +361,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
               }
             }}
           >
+            <FlaskConical className="w-4 h-4 mr-2" />
             Test
           </Button>
           <Button
@@ -368,7 +369,8 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
             className="bg-accent-highlight hover:opacity-90"
             disabled={!form.watch('title') || !form.watch('doomVersionId')}
           >
-            {createMutation.isPending ? 'Applying...' : 'Create protocol'}
+            <Plus className="w-4 h-4 mr-2" />
+            {createMutation.isPending ? 'Applying...' : 'Create Protocol'}
           </Button>
         </div>
       </form>

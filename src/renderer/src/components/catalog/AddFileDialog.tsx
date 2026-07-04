@@ -18,10 +18,12 @@ import {
 } from '@/components/ui/select'
 import { Plus, FolderOpen, X } from 'lucide-react'
 import type { IModFile } from '@shared/schema'
+import { SIDECAR_EXPLANATION } from '@/lib/catalog/types'
 import type { AddFormState } from '@/lib/catalog/types'
 import { CATEGORIES } from '@shared/categories'
 import type { RequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
 import { RequiredModsEditor } from '@/components/catalog/RequiredModsEditor'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 interface AddFileDialogProps {
   open: boolean
@@ -205,8 +207,9 @@ export function AddFileDialog({
               }
             />
             <Label htmlFor="add-sidecar" className="text-sm font-normal">
-              Sidecar mod (Check if this mod doesn&apos;t work without other mod files)
+              Sidecar mod
             </Label>
+            <InfoTooltip text={SIDECAR_EXPLANATION} />
           </div>
         </div>
 

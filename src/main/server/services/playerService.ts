@@ -37,7 +37,8 @@ const DEFAULT_PLAYER_DATA: IPlayerData = {
     distinctProtocolsLaunched: [],
     maxModFilesInSingleProtocol: 0,
     totalSourcePortsAdded: 0,
-    distinctSourcePortFamilies: []
+    distinctSourcePortFamilies: [],
+    reachedIconOfSin: 0
   }
 }
 
@@ -200,6 +201,16 @@ export async function getPlayerData(): Promise<IPlayerData> {
       await fs.writeJSON(PLAYER_DATA_FILE, merged, { spaces: 2 })
       debug('[playerService] Reset protocolsLaunchedThisSession for new session')
     }
+
+    // Backfill: 'icon-of-sin' may have been unlocked via its event-qualifier
+    // before reachedIconOfSin existed as a stat — the compound 'the-slayer'
+    // condition would otherwise never see it satisfied without replaying MAP30.
+    if (merged.achievements['icon-of-sin']?.unlocked && !merged.stats.reachedIconOfSin) {
+      merged.stats.reachedIconOfSin = 1
+      await fs.writeJSON(PLAYER_DATA_FILE, merged, { spaces: 2 })
+      debug('[playerService] Backfilled reachedIconOfSin from existing icon-of-sin unlock')
+    }
+
     hasLoadedOnce = true
 
     return merged

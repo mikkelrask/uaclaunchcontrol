@@ -34,7 +34,9 @@ import { useFileDrop } from '@/lib/catalog/useFileDrop'
 import { useRequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
 import { AddFileDialog } from '@/components/catalog/AddFileDialog'
 import { EditFileDialog } from '@/components/catalog/EditFileDialog'
+import { SIDECAR_EXPLANATION } from '@/lib/catalog/types'
 import type { RequiredModEntry, AddFormState, EditFormState } from '@/lib/catalog/types'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 interface CatalogManagerProps {
   files: IModFile[]
@@ -1045,6 +1047,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                       onCheckedChange={(checked) => setShowSidecarOnly(checked === true)}
                     />
                     Sidecars
+                    <InfoTooltip text={SIDECAR_EXPLANATION} />
                   </label>
                 )}
               </>

@@ -32,7 +32,7 @@ import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import ModFileList from './ModFileList'
 import LaunchOptions from './LaunchOptions'
-import { FolderOpen, Download, Gamepad2 } from 'lucide-react'
+import { FolderOpen, Download, Gamepad2, Trash2, Save, Play } from 'lucide-react'
 import { slugify, buildLaunchCommand } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
 
@@ -474,6 +474,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
             disabled={deleteMutation.isPending}
           >
+            <Trash2 className="w-4 h-4 mr-2" />
             Delete Instance
           </Button>
         </div>
@@ -485,6 +486,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             className="mr-2 bg-app-primary hover:bg-app-hover text-app-primary border-app"
             disabled={updateMutation.isPending}
           >
+            <Save className="w-4 h-4 mr-2" />
             Save Changes
           </Button>
           <Button
@@ -492,7 +494,8 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             className="bg-accent-highlight hover:opacity-90 text-white"
             disabled={launchMutation.isPending}
           >
-            PLAY
+            <Play className="w-4 h-4 mr-1.5 fill-current" />
+            {launchMutation.isPending ? 'LAUNCHING...' : 'LAUNCH'}
           </Button>
         </div>
       </DialogFooter>
