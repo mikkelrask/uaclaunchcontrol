@@ -33,6 +33,7 @@ import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import ModFileList from './ModFileList'
 import { ProtocolConfigControl } from './ProtocolConfigControl'
+import { CopyButton } from '@/components/ui/copy-button'
 import { FolderOpen, Download, Gamepad2, Trash2, Save, Play } from 'lucide-react'
 import { slugify, buildLaunchCommand } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
@@ -518,26 +519,28 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
           >
             Launch Parameters
           </Label>
-          <Textarea
+          <Input
             id="launchParameters"
             name="launchParameters"
             value={protocol.launchParameters || ''}
             onChange={handleInputChange}
             placeholder="-skill 4 -warp 01"
             className="bg-app-primary border-app font-mono text-sm"
-            rows={2}
           />
         </div>
       </div>
 
       {showLaunchPreview && launchCommand && (
-        <div className="px-4 py-2 bg-app-primary border-t border-app shrink-0">
+        <div className="px-4 py-2 bg-app-primary border-t border-app shrink-0 group">
           <div className="text-[10px] uppercase tracking-widest text-app-muted font-mono font-bold mb-0.5 opacity-60">
             Launch Preview
           </div>
-          <code className="text-xs text-app-muted font-mono break-all opacity-70">
-            {launchCommand}
-          </code>
+          <div className="flex items-start gap-2">
+            <code className="text-xs text-app-muted font-mono break-all opacity-70 flex-1 min-w-0">
+              {launchCommand}
+            </code>
+            <CopyButton text={launchCommand} className="mt-0.5" />
+          </div>
         </div>
       )}
       <DialogFooter className="flex justify-between items-center bg-app-secondary border-t border-app p-4 shrink-0">

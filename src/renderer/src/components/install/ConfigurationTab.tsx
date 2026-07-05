@@ -318,6 +318,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
           statusText={configStatus.statusText}
           onCreateFresh={onCreateFreshConfig}
           isCreating={isCreatingConfig}
+          variant="section"
         />
         <div>
           <div className="mb-4">
