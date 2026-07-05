@@ -10,6 +10,13 @@ interface ProtocolConfigControlProps {
   statusText: string
   onCreateFresh: () => void
   isCreating?: boolean
+  /**
+   * 'field' (default) matches a single form-field label, for placement next
+   * to other small labels (e.g. GameSettingsModal, beside Launch Parameters).
+   * 'section' matches a section heading like "Mod Files"/"Base Configuration",
+   * for placement next to those (e.g. InstallPage).
+   */
+  variant?: 'field' | 'section'
 }
 
 /**
@@ -21,15 +28,25 @@ export function ProtocolConfigControl({
   hasConfig,
   statusText,
   onCreateFresh,
-  isCreating = false
+  isCreating = false,
+  variant = 'field'
 }: ProtocolConfigControlProps): React.ReactElement {
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">
-        <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-          Protocol Config
-        </Label>
-        <p className="text-xs text-app-muted mt-0.5 leading-relaxed">{statusText}</p>
+        {variant === 'section' ? (
+          <>
+            <h3 className="text-lg mb-2">Protocol Config</h3>
+            <p className="text-sm text-app-secondary mb-4">{statusText}</p>
+          </>
+        ) : (
+          <>
+            <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+              Protocol Config
+            </Label>
+            <p className="text-xs text-app-muted mt-0.5 leading-relaxed">{statusText}</p>
+          </>
+        )}
       </div>
       <Button
         type="button"
