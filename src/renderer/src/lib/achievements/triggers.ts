@@ -72,6 +72,16 @@ function eventToStatsDelta(event: AchievementEvent): Partial<IPlayerStats> {
 
 // ── Main Dispatch ───────────────────────────────────────
 
+// Each dispatch spans several separate HTTP calls (update stats, refetch,
+// check, unlock) that are only individually atomic on the server. Gameplay
+// events (map transitions, cheat codes) can fire in a rapid burst, and
+// without this queue, overlapping dispatches could interleave — one call's
+// stale in-memory `updatedStats`/`playerData` snapshot getting used to decide
+// unlocks after another call has already moved the state forward. Chaining
+// every dispatch onto this promise serializes them the same way
+// `withPlayerDataLock` serializes writes on the server.
+let dispatchChain: Promise<unknown> = Promise.resolve()
+
 /**
  * Central dispatch for all achievement events.
  *
@@ -83,6 +93,18 @@ function eventToStatsDelta(event: AchievementEvent): Partial<IPlayerStats> {
  * 6. Returns results for toast display
  */
 export async function dispatchAchievementEvent(event: AchievementEvent): Promise<DispatchResult> {
+  const run = dispatchChain.then(
+    () => dispatchAchievementEventUnqueued(event),
+    () => dispatchAchievementEventUnqueued(event)
+  )
+  dispatchChain = run.then(
+    () => undefined,
+    () => undefined
+  )
+  return run
+}
+
+async function dispatchAchievementEventUnqueued(event: AchievementEvent): Promise<DispatchResult> {
   // 1. Compute stat delta and send to backend
   const statsDelta = eventToStatsDelta(event)
   const updatedStats = await api.updatePlayerStats(statsDelta)

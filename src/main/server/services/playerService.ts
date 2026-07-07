@@ -40,8 +40,18 @@ function withPlayerDataLock<T>(fn: () => Promise<T>): Promise<T> {
   return run
 }
 
-/** Atomic write: write to a temp file then rename, so a reader never sees a partial file. */
-async function writePlayerDataFile(data: IPlayerData): Promise<void> {
+/**
+ * Atomic write: write to a temp file then rename, so a reader never sees a
+ * partial file. `reason` identifies the call site in debug logs — if stats
+ * ever get silently zeroed again, `DEBUG=true` will show exactly which write
+ * did it and what it was persisting at the time.
+ */
+async function writePlayerDataFile(data: IPlayerData, reason: string): Promise<void> {
+  debug(
+    `[playerService] write (${reason}): protocolsCreated=${data.stats.totalProtocolsCreated} ` +
+      `protocolsLaunched=${data.stats.totalProtocolsLaunched} playtime=${data.stats.totalPlaytimeSeconds} ` +
+      `achievements=${Object.keys(data.achievements).length}`
+  )
   const tmpPath = `${PLAYER_DATA_FILE}.tmp-${process.pid}-${Date.now()}`
   await fs.writeJson(tmpPath, data, { spaces: 2 })
   await fs.rename(tmpPath, PLAYER_DATA_FILE)
@@ -202,7 +212,7 @@ async function readPlayerDataRaw(): Promise<IPlayerData> {
     debug('[playerService] Seeded initial stats:', data.stats)
 
     // 4. Persist
-    await writePlayerDataFile(data)
+    await writePlayerDataFile(data, 'bootstrap-init')
     return data
   }
 
@@ -217,10 +227,27 @@ async function readPlayerDataRaw(): Promise<IPlayerData> {
       achievements: data.achievements ?? {}
     }
 
+    // Guard against silently persisting a blank stats object: if real
+    // achievement progress exists on disk but stats came back empty/missing,
+    // something clobbered just the stats half of the file — recompute from
+    // disk instead of quietly accepting zeroes as truth.
+    const hasRealAchievements = Object.keys(merged.achievements).length > 0
+    const statsLooksWiped = !data.stats || Object.keys(data.stats).length === 0
+    if (hasRealAchievements && statsLooksWiped) {
+      console.error(
+        '[playerService] stats missing/empty despite existing achievement progress — recomputing from disk instead of persisting zeroes'
+      )
+      merged.stats = await computeInitialStatsFromDisk()
+      if (merged.achievements['icon-of-sin']?.unlocked) {
+        merged.stats.reachedIconOfSin = 1
+      }
+      await writePlayerDataFile(merged, 'corruption-recompute')
+    }
+
     // Reset session stats on first load after app start
     if (!hasLoadedOnce && merged.stats.protocolsLaunchedThisSession !== 0) {
       merged.stats.protocolsLaunchedThisSession = 0
-      await writePlayerDataFile(merged)
+      await writePlayerDataFile(merged, 'session-reset')
       debug('[playerService] Reset protocolsLaunchedThisSession for new session')
     }
 
@@ -229,7 +256,7 @@ async function readPlayerDataRaw(): Promise<IPlayerData> {
     // condition would otherwise never see it satisfied without replaying MAP30.
     if (merged.achievements['icon-of-sin']?.unlocked && !merged.stats.reachedIconOfSin) {
       merged.stats.reachedIconOfSin = 1
-      await writePlayerDataFile(merged)
+      await writePlayerDataFile(merged, 'backfill-icon-of-sin')
       debug('[playerService] Backfilled reachedIconOfSin from existing icon-of-sin unlock')
     }
 
@@ -269,7 +296,7 @@ export async function savePlayerData(partial: Partial<IPlayerData>): Promise<IPl
         ? { ...current.achievements, ...partial.achievements }
         : current.achievements
     }
-    await writePlayerDataFile(merged)
+    await writePlayerDataFile(merged, 'savePlayerData')
     return merged
   })
 }
@@ -324,7 +351,10 @@ export async function updatePlayerStats(delta: Partial<IPlayerStats>): Promise<I
       }
     }
 
-    await writePlayerDataFile({ ...current, stats: newStats })
+    await writePlayerDataFile(
+      { ...current, stats: newStats },
+      `updatePlayerStats(${Object.keys(delta).join(',') || 'empty'})`
+    )
     return newStats
   })
 }
@@ -344,7 +374,7 @@ export async function unlockAchievement(
       unlockedAt: new Date().toISOString()
     }
     current.achievements[id] = updated
-    await writePlayerDataFile(current)
+    await writePlayerDataFile(current, `unlockAchievement(${id})`)
     return updated
   })
 }
