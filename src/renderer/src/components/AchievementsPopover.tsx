@@ -81,7 +81,7 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
               <h4 className="text-lg font-bold tracking-tight text-app-primary lowercase">
                 Operator Profile
               </h4>
-              <p className="text-[10px] font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
+              <p className="text-[0.625rem] font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
                 UAC Launch Control // Personnel File
               </p>
             </div>
@@ -90,7 +90,7 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
           {/* Rank badge */}
           <Badge
             variant="outline"
-            className="border-accent-highlight/50 text-accent-highlight text-[10px] tracking-widest uppercase font-bold px-2 py-1"
+            className="border-accent-highlight/50 text-accent-highlight text-[0.625rem] tracking-widest uppercase font-bold px-2 py-1"
           >
             {getRankTitle(playerData?.rank)}
           </Badge>
@@ -112,7 +112,7 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
         {/* ── Recently Unlocked ── */}
         {recentUnlocks.length > 0 && (
           <div className="px-4 pt-3 pb-1 border-b border-app/30">
-            <h5 className="text-[10px] font-bold text-app-muted uppercase tracking-widest mb-1">
+            <h5 className="text-[0.625rem] font-bold text-app-muted uppercase tracking-widest mb-1">
               Recently Unlocked
             </h5>
             <div className="flex flex-wrap gap-2">
@@ -122,7 +122,7 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
                 return (
                   <Badge
                     key={id}
-                    className="bg-accent-highlight/15 text-accent-highlight border border-accent-highlight/30 text-[10px]"
+                    className="bg-accent-highlight/15 text-accent-highlight border border-accent-highlight/30 text-[0.625rem]"
                   >
                     {def.title}
                   </Badge>
@@ -140,7 +140,7 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
                 <TabsTrigger
                   key={cat}
                   value={cat}
-                  className="flex-1 text-[10px] uppercase tracking-wider data-[state=active]:bg-accent-highlight data-[state=active]:text-white"
+                  className="flex-1 text-[0.625rem] uppercase tracking-wider data-[state=active]:bg-accent-highlight data-[state=active]:text-white"
                 >
                   {cat}
                 </TabsTrigger>
@@ -218,10 +218,10 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
 
         {/* ── Footer Stats ── */}
         <div className="flex items-center justify-between px-4 py-2 border-t border-app bg-app-secondary/50">
-          <span className="text-[10px] font-mono text-app-muted uppercase tracking-wider">
+          <span className="text-[0.625rem] font-mono text-app-muted uppercase tracking-wider">
             Total Protocol Count: {playerData?.stats?.totalProtocolsCreated ?? 0}
           </span>
-          <span className="text-[10px] font-mono text-app-muted uppercase tracking-wider">
+          <span className="text-[0.625rem] font-mono text-app-muted uppercase tracking-wider">
             Total Playtime:{' '}
             {(playerData?.stats?.totalPlaytimeSeconds ?? 0) >= 3600
               ? `${Math.floor((playerData?.stats?.totalPlaytimeSeconds ?? 0) / 3600)}h`

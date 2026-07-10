@@ -238,11 +238,11 @@ function ReleaseRow({
             {release.version}
           </span>
           {release.prerelease && (
-            <span className="text-[10px] font-mono uppercase px-1 py-0.5 rounded bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">
+            <span className="text-[0.625rem] font-mono uppercase px-1 py-0.5 rounded bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">
               preview
             </span>
           )}
-          <span className="text-[10px] font-mono uppercase px-1 py-0.5 rounded bg-app-primary border border-app/50 text-app-muted">
+          <span className="text-[0.625rem] font-mono uppercase px-1 py-0.5 rounded bg-app-primary border border-app/50 text-app-muted">
             {formatLabel}
           </span>
         </div>

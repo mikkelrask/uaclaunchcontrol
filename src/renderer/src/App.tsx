@@ -95,6 +95,14 @@ const App: React.FC = () => {
     }
   }, [settings?.theme, settings?.customThemeCss])
 
+  // Apply UI scale globally — sets root font-size as a percentage of the
+  // browser default (16px), so it scales rem-based text/spacing without
+  // touching fixed-px values (borders, etc.). Independent of Electron's
+  // webContents zoom.
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${settings?.uiScale ?? 100}%`
+  }, [settings?.uiScale])
+
   useEffect(() => {
     // Listen for version updates from the main process
     if (window.api?.onVersionsUpdated) {

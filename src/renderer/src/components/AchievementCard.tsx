@@ -124,13 +124,13 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({ definition, st
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-medium truncate text-app-primary">{definition.title}</span>
           {state.unlocked ? (
-            <Badge className="shrink-0 bg-accent-highlight text-white text-[10px] border-0">
+            <Badge className="shrink-0 bg-accent-highlight text-white text-[0.625rem] border-0">
               Unlocked
             </Badge>
           ) : (
             <Badge
               variant="outline"
-              className="shrink-0 text-[10px] text-app-muted border-app-muted/30"
+              className="shrink-0 text-[0.625rem] text-app-muted border-app-muted/30"
             >
               Locked
             </Badge>
@@ -153,11 +153,11 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({ definition, st
                   ) : (
                     <div className="w-3.5 h-3.5 shrink-0" />
                   )}
-                  <span className="text-[10px] text-app-muted font-mono min-w-[90px] shrink-0">
+                  <span className="text-[0.625rem] text-app-muted font-mono min-w-[90px] shrink-0">
                     {obscure ? '????' : (STAT_LABELS[condition.stat] ?? condition.stat)}
                   </span>
                   <Progress value={obscure ? 0 : pct} className="h-1.5 bg-app-primary flex-1" />
-                  <span className="text-[10px] text-app-muted font-mono shrink-0 w-20 text-right tabular-nums">
+                  <span className="text-[0.625rem] text-app-muted font-mono shrink-0 w-20 text-right tabular-nums">
                     {obscure
                       ? '?? / ??'
                       : `${formatStatValue(condition.stat, currentVal)} / ${formatThreshold(condition.stat, condition.min)}`}
@@ -172,7 +172,7 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({ definition, st
         {showProgress && definition.type !== 'compound' && (
           <div className="flex items-center gap-2 mt-2">
             <Progress value={progressPct} className="h-1.5 bg-app-primary" />
-            <span className="text-[10px] text-app-muted font-mono shrink-0 tabular-nums">
+            <span className="text-[0.625rem] text-app-muted font-mono shrink-0 tabular-nums">
               {state.unlocked
                 ? `${formatDisplayProgress(definition, state.target)} / ${formatDisplayProgress(definition, state.target)}`
                 : `${formatDisplayProgress(definition, state.progress)} / ${formatDisplayProgress(definition, state.target)}`}

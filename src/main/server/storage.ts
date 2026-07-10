@@ -55,7 +55,8 @@ const DEFAULT_SETTINGS: IAppSettings = {
   wadFilesDirectory: '~/.config/uac/wads',
   autoUpdateEnabled: true,
   registryLookupEnabled: false,
-  showLaunchPreview: true
+  showLaunchPreview: true,
+  uiScale: 100
 }
 
 // Default Doom Versions
