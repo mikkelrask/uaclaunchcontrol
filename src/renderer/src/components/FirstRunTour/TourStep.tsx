@@ -268,7 +268,7 @@ export const TourStep: React.FC<TourStepProps> = ({
                 )}
               />
             ))}
-            <span className="ml-auto text-[10px] uppercase tracking-wider text-white/40">
+            <span className="ml-auto text-[0.625rem] uppercase tracking-wider text-white/40">
               {stepIndex + 1} / {totalSteps}
             </span>
           </div>

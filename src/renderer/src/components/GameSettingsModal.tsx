@@ -532,7 +532,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
 
       {showLaunchPreview && launchCommand && (
         <div className="px-4 py-2 bg-app-primary border-t border-app shrink-0 group">
-          <div className="text-[10px] uppercase tracking-widest text-app-muted font-mono font-bold mb-0.5 opacity-60">
+          <div className="text-[0.625rem] uppercase tracking-widest text-app-muted font-mono font-bold mb-0.5 opacity-60">
             Launch Preview
           </div>
           <div className="flex items-start gap-2">
