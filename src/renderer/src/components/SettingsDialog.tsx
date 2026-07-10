@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Switch } from '@/components/ui/switch'
+import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import uacLogo from '@/assets/UAC Logo.svg'
 
@@ -65,7 +66,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     registryLookupEnabled: false,
     showLaunchPreview: true,
     customThemeCss: '',
-    defaultView: 'grid'
+    defaultView: 'grid',
+    uiScale: 100
   })
 
   // Doom versions state
@@ -76,10 +78,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const [selectedWadIndex, setSelectedWadIndex] = useState(0)
   const [appVersion, setAppVersion] = useState<string>('')
 
-  // Snapshot of the saved theme for revert-on-close
-  const savedRef = useRef<{ theme: string; customThemeCss?: string }>({
+  // Snapshot of the saved theme/scale for revert-on-close
+  const savedRef = useRef<{ theme: string; customThemeCss?: string; uiScale: number }>({
     theme: 'dark',
-    customThemeCss: ''
+    customThemeCss: '',
+    uiScale: 100
   })
 
   // Track the original wadFilesDirectory for change detection
@@ -107,7 +110,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       .getSettings()
       .then((data) => {
         if (data) {
-          savedRef.current = { theme: data.theme, customThemeCss: data.customThemeCss }
+          savedRef.current = {
+            theme: data.theme,
+            customThemeCss: data.customThemeCss,
+            uiScale: data.uiScale ?? 100
+          }
           initialWadDirRef.current = data.wadFilesDirectory || ''
           setSettings((prev) => ({ ...prev, ...data }))
           fetchedRef.current = true
@@ -221,11 +228,18 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   }, [isOpen, settings.theme, settings.customThemeCss])
 
-  // Restore saved theme when closing without saving
+  // Live-preview UI scale changes immediately on the DOM
+  useEffect(() => {
+    if (!isOpen || !fetchedRef.current) return
+    document.documentElement.style.fontSize = `${settings.uiScale ?? 100}%`
+  }, [isOpen, settings.uiScale])
+
+  // Restore saved theme/scale when closing without saving
   const handleClose = useCallback((): void => {
     fetchedRef.current = false
     document.documentElement.classList.remove('dark', 'light', 'terminal', 'custom')
     document.documentElement.classList.add(savedRef.current.theme)
+    document.documentElement.style.fontSize = `${savedRef.current.uiScale}%`
 
     const existingStyle = document.getElementById('custom-theme-style')
     if (savedRef.current.theme === 'custom' && savedRef.current.customThemeCss) {
@@ -262,7 +276,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         registryUuid: settings.registryUuid,
         showLaunchPreview: settings.showLaunchPreview,
         customThemeCss: settings.customThemeCss,
-        defaultView: settings.defaultView
+        defaultView: settings.defaultView,
+        uiScale: settings.uiScale
       }
       // Dispatch SOURCE_PORT_ADDED achievements for each newly added port
       const oldPortCount = initialPortCountRef.current
@@ -315,7 +330,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       await queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
 
       // Update savedRef so close-restore is a no-op (theme is already persisted)
-      savedRef.current = { theme: settings.theme, customThemeCss: settings.customThemeCss }
+      savedRef.current = {
+        theme: settings.theme,
+        customThemeCss: settings.customThemeCss,
+        uiScale: settings.uiScale ?? 100
+      }
 
       toast({
         title: 'SYSTEM: core_settings',
@@ -533,7 +552,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 <div className="flex items-start justify-between gap-6">
                   <div className="min-w-0">
                     <Label className="text-sm font-medium text-app-primary">App Theme</Label>
-                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
                       Visual colour profile for the terminal.
                     </p>
                   </div>
@@ -571,7 +590,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 <div className="flex items-start justify-between gap-6">
                   <div className="min-w-0">
                     <Label className="text-sm font-medium text-app-primary">Database Link</Label>
-                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
                       Changes the shortcut link shown in the header next to LAUNCH/INSTALL.
                     </p>
                   </div>
@@ -601,7 +620,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       </SelectContent>
                     </Select>
                     <p
-                      className="text-[10px] text-app-muted truncate max-w-48 text-right"
+                      className="text-[0.625rem] text-app-muted truncate max-w-48 text-right"
                       title={settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
                     >
                       {settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
@@ -612,7 +631,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 <div className="flex items-center justify-between gap-6">
                   <div className="min-w-0">
                     <Label className="text-sm font-medium text-app-primary">Default View</Label>
-                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
                       Starting view mode when opening the games page.
                     </p>
                   </div>
@@ -640,8 +659,30 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
                 <div className="flex items-center justify-between gap-6">
                   <div className="min-w-0">
+                    <Label className="text-sm font-medium text-app-primary">UI Scale</Label>
+                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
+                      Text and spacing size, independent of window zoom (Ctrl +/-).
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 w-[260px] shrink-0">
+                    <Slider
+                      value={[settings.uiScale ?? 100]}
+                      onValueChange={([value]) => setSettings((s) => ({ ...s, uiScale: value }))}
+                      min={80}
+                      max={150}
+                      step={5}
+                      className="flex-1"
+                    />
+                    <span className="text-xs font-mono text-app-muted w-10 text-right shrink-0">
+                      {settings.uiScale ?? 100}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-6">
+                  <div className="min-w-0">
                     <Label className="text-sm font-medium text-app-primary">Launch Preview</Label>
-                    <p className="text-[10px] text-app-muted leading-tight mt-0.5">
+                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
                       Show the generated launch command in settings and install page.
                     </p>
                   </div>
@@ -670,7 +711,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         <Label className="text-xs text-app-primary font-medium">
                           Check for updates on Startup
                         </Label>
-                        <p className="text-[10px] text-app-muted leading-tight">
+                        <p className="text-[0.625rem] text-app-muted leading-tight">
                           Automatically notify about application updates. <br />
                           Updating is always optional - new updates will never be downloaded/applied
                           without interaction.
@@ -688,7 +729,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         <Label className="text-xs text-app-primary font-medium">
                           Registry Lookup
                         </Label>
-                        <p className="text-[10px] text-app-muted leading-tight">
+                        <p className="text-[0.625rem] text-app-muted leading-tight">
                           Look up mod files in the online registry when adding to catalog.
                           <br />
                           Requires an active connection to the UAC Registry.
@@ -832,7 +873,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           />
 
                           {/* Family badge */}
-                          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-app-secondary border border-app/50 text-app-muted shrink-0">
+                          <span className="text-[0.625rem] font-mono uppercase px-1.5 py-0.5 rounded bg-app-secondary border border-app/50 text-app-muted shrink-0">
                             {port.family}
                           </span>
 
@@ -963,7 +1004,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                               }
                               className="w-3.5 h-3.5 accent-accent-highlight shrink-0"
                             />
-                            <span className="font-mono uppercase text-[10px] text-app-muted w-14 shrink-0">
+                            <span className="font-mono uppercase text-[0.625rem] text-app-muted w-14 shrink-0">
                               {r.family}
                             </span>
                             <span className="flex-1 truncate text-app-primary">{r.name}</span>
@@ -971,7 +1012,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                               {r.path}
                             </span>
                             {alreadyAdded && (
-                              <span className="text-green-500 shrink-0 text-[10px]">
+                              <span className="text-green-500 shrink-0 text-[0.625rem]">
                                 already added
                               </span>
                             )}

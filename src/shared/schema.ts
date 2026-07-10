@@ -138,6 +138,8 @@ export interface IAppSettings {
   showLaunchPreview?: boolean
   customThemeCss?: string
   defaultView?: 'grid' | 'list' | 'detail'
+  /** UI text/spacing scale as a percentage of the browser default (100 = 16px root font-size). Independent of Electron's window zoom. */
+  uiScale?: number
   /** @deprecated Migrated to playerData.json — use IPlayerData.rank instead */
   rank?: string
 }
