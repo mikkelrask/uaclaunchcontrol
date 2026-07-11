@@ -30,7 +30,8 @@ const api = {
   triggerFakeUpdate: () => ipcRenderer.invoke('trigger-fake-update'),
   getInstallType: () => ipcRenderer.invoke('get-install-type'),
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
-  openLogFile: (filePath: string) => ipcRenderer.invoke('open-log-file', filePath)
+  openLogFile: (filePath: string) => ipcRenderer.invoke('open-log-file', filePath),
+  setZoomFactor: (factor: number) => ipcRenderer.invoke('set-zoom-factor', factor)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
