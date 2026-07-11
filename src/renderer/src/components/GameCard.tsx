@@ -99,7 +99,7 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
 
         <div
           className="absolute inset-x-0 bottom-0 px-4 py-4 flex justify-between items-end
-                      transform transition-transform duration-300 group-hover:translate-y-[-130px] z-10"
+                      transform transition-transform duration-300 group-hover:translate-y-[-8rem] z-10"
         >
           <h3 className="text-white lg:text-lg font-bold ">{protocol.title}</h3>
 

@@ -31,6 +31,7 @@ interface ICustomAPI {
   getInstallType: () => Promise<{ isAppImage: boolean; isSystemInstalled: boolean }>
   getPathForFile: (file: File) => string
   openLogFile: (filePath: string) => Promise<void>
+  setZoomFactor: (factor: number) => Promise<void>
 }
 
 declare global {

@@ -228,18 +228,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
   }, [isOpen, settings.theme, settings.customThemeCss])
 
-  // Live-preview UI scale changes immediately on the DOM
-  useEffect(() => {
-    if (!isOpen || !fetchedRef.current) return
-    document.documentElement.style.fontSize = `${settings.uiScale ?? 100}%`
-  }, [isOpen, settings.uiScale])
+  // Live-preview UI scale is applied on slider release via onValueCommit,
+  // not on every drag tick — Electron zoom moves the viewport which shifts
+  // the slider under the cursor, causing a feedback loop if applied live.
 
   // Restore saved theme/scale when closing without saving
   const handleClose = useCallback((): void => {
     fetchedRef.current = false
     document.documentElement.classList.remove('dark', 'light', 'terminal', 'custom')
     document.documentElement.classList.add(savedRef.current.theme)
-    document.documentElement.style.fontSize = `${savedRef.current.uiScale}%`
+    api.setZoomFactor(savedRef.current.uiScale / 100)
 
     const existingStyle = document.getElementById('custom-theme-style')
     if (savedRef.current.theme === 'custom' && savedRef.current.customThemeCss) {
@@ -668,6 +666,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     <Slider
                       value={[settings.uiScale ?? 100]}
                       onValueChange={([value]) => setSettings((s) => ({ ...s, uiScale: value }))}
+                      onValueCommit={([value]) => api.setZoomFactor(value / 100)}
                       min={80}
                       max={150}
                       step={5}

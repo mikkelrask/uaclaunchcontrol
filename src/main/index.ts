@@ -322,6 +322,12 @@ app.whenReady().then(async () => {
     autoUpdater.quitAndInstall()
   })
 
+  ipcMain.handle('set-zoom-factor', (_event, factor: number) => {
+    BrowserWindow.getAllWindows().forEach((win) => {
+      win.webContents.setZoomFactor(factor)
+    })
+  })
+
   ipcMain.handle('trigger-fake-update', () => {
     const installType = getInstallType()
     debug(`[FakeUpdate] Install type: ${JSON.stringify(installType)}`)

@@ -421,6 +421,10 @@ export const api = {
     void window.api.triggerFakeUpdate()
   },
 
+  setZoomFactor: (factor: number): void => {
+    void window.api.setZoomFactor(factor)
+  },
+
   // Player data / achievements
   getPlayerData: async (): Promise<IPlayerData> => {
     const response = await fetch(`${API_BASE}/api/player-data`)
