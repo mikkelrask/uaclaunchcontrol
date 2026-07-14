@@ -852,8 +852,13 @@ export async function computeFileHash(filePath: string): Promise<string> {
       resolvedPath = path.join(modsDir, filePath)
     }
 
-    const fileBuffer = await fs.promises.readFile(resolvedPath)
-    const hash = crypto.createHash('md5').update(fileBuffer).digest('hex')
+    const hash = await new Promise<string>((resolve, reject) => {
+      const md5 = crypto.createHash('md5')
+      const stream = fs.createReadStream(resolvedPath)
+      stream.on('data', (chunk) => md5.update(chunk))
+      stream.on('error', reject)
+      stream.on('end', () => resolve(md5.digest('hex')))
+    })
     debug(`Computed MD5 hash for ${resolvedPath}: ${hash}`)
     return hash
   } catch (error) {
