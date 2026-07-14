@@ -182,7 +182,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const exists = files.some((f) => f.hashValue === hashValue)
       if (exists) {
         toast({
-          title: 'File already exists',
+          title: 'SYSTEM: dupe_hash',
           description: 'This file is already in your catalog',
           variant: 'destructive'
         })
@@ -326,7 +326,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       onChange(freshCatalog)
     } catch (error) {
       toast({
-        title: 'Error',
+        title: 'FATAL: add_failed',
         description: `Failed to add file: ${error}`,
         variant: 'destructive'
       })
@@ -343,7 +343,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
 
     const hashingToast = toast({
-      title: 'Computing checksum...',
+      title: 'SYSTEM: hashing',
       description: `Hashing ${fileName} — this can take a while for large files.`
     })
 
@@ -465,7 +465,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         if (selectedPath.toLowerCase().endsWith('.zip')) {
           try {
             toast({
-              title: 'Extracting archive...',
+              title: 'SYSTEM: decompressing',
               description: 'Analyzing zip contents.'
             })
             const scan = (await api.unzipScan(selectedPath)) as ZipScanResult
@@ -475,7 +475,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           } catch (error) {
             console.error(error)
             toast({
-              title: 'Failed to process ZIP',
+              title: 'FATAL: zip_scan_failed',
               description: error instanceof Error ? error.message : 'Failed to scan zip file',
               variant: 'destructive'
             })
@@ -486,7 +486,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         if (selectedPath.toLowerCase().endsWith('.rar')) {
           try {
             toast({
-              title: 'Extracting archive...',
+              title: 'SYSTEM: decompressing',
               description: 'Analyzing rar contents.'
             })
             const scan = (await api.unrarScan(selectedPath)) as ZipScanResult
@@ -496,7 +496,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           } catch (error) {
             console.error(error)
             toast({
-              title: 'Failed to process RAR',
+              title: 'FATAL: rar_scan_failed',
               description: error instanceof Error ? error.message : 'Failed to scan rar file',
               variant: 'destructive'
             })
@@ -512,7 +512,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
             if (resolvedFiles.length === 0) {
               toast({
-                title: 'Error',
+                title: 'FATAL: bat_no_files',
                 description: 'No -file entries found in .bat file',
                 variant: 'destructive'
               })
@@ -541,7 +541,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           } catch (error) {
             console.error('Failed to parse .bat:', error)
             toast({
-              title: 'Error',
+              title: 'FATAL: bat_parse_failed',
               description: 'Failed to parse .bat file',
               variant: 'destructive'
             })
@@ -577,7 +577,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
     if (ext === 'ZIP') {
       try {
-        toast({ title: 'Extracting archive...', description: 'Analyzing zip contents.' })
+        toast({ title: 'SYSTEM: decompressing', description: 'Analyzing zip contents.' })
         const scan = (await api.unzipScan(droppedPath)) as ZipScanResult
         setZipScanResult(scan)
         setZipFilePath(droppedPath)
@@ -585,7 +585,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       } catch (error) {
         console.error(error)
         toast({
-          title: 'Failed to process ZIP',
+          title: 'FATAL: zip_scan_failed',
           description: error instanceof Error ? error.message : 'Failed to scan zip file',
           variant: 'destructive'
         })
@@ -619,7 +619,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
         if (resolvedFiles.length === 0) {
           toast({
-            title: 'Error',
+            title: 'FATAL: bat_no_files',
             description: 'No -file entries found in .bat file',
             variant: 'destructive'
           })
@@ -644,7 +644,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       } catch (error) {
         console.error('Failed to parse .bat:', error)
         toast({
-          title: 'Error',
+          title: 'FATAL: bat_parse_failed',
           description: 'Failed to parse .bat file',
           variant: 'destructive'
         })
@@ -692,8 +692,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     } catch (error) {
       console.error('Failed to browse config file:', error)
       toast({
-        title: 'Error',
-        description: 'Failed to link config file',
+        title: 'FATAL: config_link_failed',
+        description: `Failed to link config file: ${error}`,
         variant: 'destructive'
       })
     }
@@ -737,8 +737,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     } catch (error) {
       console.error('Failed to browse config file:', error)
       toast({
-        title: 'Error',
-        description: 'Failed to link config file',
+        title: 'FATAL: config_link_failed',
+        description: `Failed to link config file: ${error}`,
         variant: 'destructive'
       })
     }
@@ -829,7 +829,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   const handleSaveEdit = async (): Promise<void> => {
     if (!selectedFile || !editForm.name.trim()) {
       toast({
-        title: 'Error',
+        title: 'WARNING: name_required',
         description: 'Name cannot be empty',
         variant: 'destructive'
       })
@@ -934,7 +934,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       setSelectedFile(null)
     } catch (error) {
       toast({
-        title: 'Error',
+        title: 'FATAL: update_failed',
         description: `Failed to update: ${error}`,
         variant: 'destructive'
       })

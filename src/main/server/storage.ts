@@ -700,10 +700,7 @@ export async function moveToModFolder(
     const modsDir = resolvePath(settings.modsDirectory || path.join(CONFIG_DIR, 'mods'))
     const resolvedSource = resolvePath(sourcePath)
     const originalFileName = path.basename(resolvedSource)
-    const hashValue = await computeFileHash(resolvedSource)
-    if (!hashValue) {
-      throw new Error('Failed to compute MD5 hash for file')
-    }
+    const hashValue = await computeFileHashOrThrow(resolvedSource)
     const ext = path.extname(originalFileName)
     const baseName = path.basename(originalFileName, ext)
     const newFileName = `${baseName}-${hashValue}${ext}`
@@ -737,10 +734,7 @@ export async function importWadFile(
       throw new Error('Only .wad files can be imported')
     }
 
-    const hashValue = await computeFileHash(resolvedSource)
-    if (!hashValue) {
-      throw new Error('Failed to compute MD5 hash for WAD file')
-    }
+    const hashValue = await computeFileHashOrThrow(resolvedSource)
 
     await fs.ensureDir(wadDir)
 
@@ -841,30 +835,52 @@ export async function downloadImage(url: string, protocolId: string): Promise<st
   }
 }
 
+async function resolveFileHashPath(filePath: string): Promise<string> {
+  let resolvedPath = resolvePath(filePath)
+
+  // If path is relative (not absolute and not starting with ~), resolve against mods directory
+  if (!path.isAbsolute(filePath) && !filePath.startsWith('~')) {
+    const settings = await getSettings()
+    const modsDir = resolvePath(settings.modsDirectory || path.join(CONFIG_DIR, 'mods'))
+    resolvedPath = path.join(modsDir, filePath)
+  }
+
+  return resolvedPath
+}
+
+function hashFileStream(resolvedPath: string): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const md5 = crypto.createHash('md5')
+    const stream = fs.createReadStream(resolvedPath)
+    stream.on('data', (chunk) => md5.update(chunk))
+    stream.on('error', reject)
+    stream.on('end', () => resolve(md5.digest('hex')))
+  })
+}
+
+// Best-effort hash used by bulk scans (WAD sync, archive scans) where one
+// unreadable file shouldn't abort the whole scan — swallows errors and
+// returns '' rather than throwing.
 export async function computeFileHash(filePath: string): Promise<string> {
   try {
-    let resolvedPath = resolvePath(filePath)
-
-    // If path is relative (not absolute and not starting with ~), resolve against mods directory
-    if (!path.isAbsolute(filePath) && !filePath.startsWith('~')) {
-      const settings = await getSettings()
-      const modsDir = resolvePath(settings.modsDirectory || path.join(CONFIG_DIR, 'mods'))
-      resolvedPath = path.join(modsDir, filePath)
-    }
-
-    const hash = await new Promise<string>((resolve, reject) => {
-      const md5 = crypto.createHash('md5')
-      const stream = fs.createReadStream(resolvedPath)
-      stream.on('data', (chunk) => md5.update(chunk))
-      stream.on('error', reject)
-      stream.on('end', () => resolve(md5.digest('hex')))
-    })
+    const resolvedPath = await resolveFileHashPath(filePath)
+    const hash = await hashFileStream(resolvedPath)
     debug(`Computed MD5 hash for ${resolvedPath}: ${hash}`)
     return hash
   } catch (error) {
     console.error(`Error computing hash for ${filePath}:`, error)
     return ''
   }
+}
+
+// Strict variant for single-file add/import flows, where the caller needs
+// the real OS error (ENOSPC, EPERM, ENAMETOOLONG, ...) surfaced to the user
+// instead of a generic "failed to hash" message.
+export async function computeFileHashOrThrow(filePath: string): Promise<string> {
+  const resolvedPath = await resolveFileHashPath(filePath)
+  const hash = await hashFileStream(resolvedPath)
+  debug(`Computed MD5 hash for ${resolvedPath}: ${hash}`)
+  return hash
 }
 
 /**

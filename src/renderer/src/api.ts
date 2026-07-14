@@ -161,7 +161,8 @@ export const api = {
         body: JSON.stringify({ filePath })
       })
       if (!response.ok) {
-        throw new Error('Failed to compute hash')
+        const err = await response.json().catch(() => ({ message: 'Failed to compute hash' }))
+        throw new Error(err.message || 'Failed to compute hash')
       }
       return response.json()
     } catch (error) {
@@ -329,7 +330,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sourcePath })
     })
-    if (!response.ok) throw new Error('Failed to move file to mod folder')
+    if (!response.ok) {
+      const err = await response
+        .json()
+        .catch(() => ({ message: 'Failed to move file to mod folder' }))
+      throw new Error(err.message || 'Failed to move file to mod folder')
+    }
     return response.json()
   },
   importWadFile: async (
@@ -340,7 +346,10 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sourcePath })
     })
-    if (!response.ok) throw new Error('Failed to import WAD file')
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: 'Failed to import WAD file' }))
+      throw new Error(err.message || 'Failed to import WAD file')
+    }
     return response.json()
   },
   downloadImage: async (url: string, protocolId: string): Promise<{ fileName: string }> => {

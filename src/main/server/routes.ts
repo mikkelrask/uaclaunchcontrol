@@ -415,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { filePath } = req.body
       if (!filePath) return res.status(400).json({ message: 'Missing filePath' })
-      const hash = await storage.computeFileHash(filePath)
+      const hash = await storage.computeFileHashOrThrow(filePath)
       return res.json(hash)
     } catch (error: unknown) {
       return res

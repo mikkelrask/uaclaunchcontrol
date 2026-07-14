@@ -58,7 +58,9 @@ export function ModFileSelector({
       toast({
         title: 'FATAL: copy.fail',
         description:
-          'Could not copy file to mods directory - check settings and mod, and try again.',
+          error instanceof Error
+            ? error.message
+            : 'Could not copy file to mods directory - check settings and mod, and try again.',
         variant: 'destructive'
       })
       return { fullPath: sourcePath, relativePath: '', hashValue: '' }
