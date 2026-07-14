@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Plus, FolderOpen, X } from 'lucide-react'
+import { Plus, FolderOpen, X, Loader2 } from 'lucide-react'
 import type { IModFile } from '@shared/schema'
 import { SIDECAR_EXPLANATION } from '@/lib/catalog/types'
 import type { AddFormState } from '@/lib/catalog/types'
@@ -33,6 +33,7 @@ interface AddFileDialogProps {
   selectableFiles: IModFile[]
   requiredModsActions: RequiredModsActions
   onAddFile: () => Promise<void>
+  isSubmitting?: boolean
   onBrowseFile: () => Promise<void>
   onCancel: () => void
   onBrowseConfigFile: () => Promise<void>
@@ -47,6 +48,7 @@ export function AddFileDialog({
   selectableFiles,
   requiredModsActions,
   onAddFile,
+  isSubmitting = false,
   onBrowseFile,
   onCancel,
   onBrowseConfigFile,
@@ -217,17 +219,27 @@ export function AddFileDialog({
           <Button
             variant="outline"
             onClick={onCancel}
+            disabled={isSubmitting}
             className="bg-app-secondary"
           >
             Cancel
           </Button>
           <Button
             onClick={onAddFile}
-            disabled={!form.filePath.trim()}
+            disabled={!form.filePath.trim() || isSubmitting}
             className="bg-accent-highlight"
           >
-            <Plus className="h-4 w-4 mr-1" />
-            Add to Catalog
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Copying & hashing…
+              </>
+            ) : (
+              <>
+                <Plus className="h-4 w-4 mr-1" />
+                Add to Catalog
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

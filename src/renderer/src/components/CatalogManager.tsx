@@ -52,6 +52,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   })
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isAddingFile, setIsAddingFile] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<IModFile | null>(null)
 
@@ -165,12 +166,13 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   }
 
   const handleAddFile = async (): Promise<void> => {
-    if (!addForm.filePath.trim()) return
+    if (!addForm.filePath.trim() || isAddingFile) return
 
     const fileName = addForm.filePath.split(/[\\/]/).pop() || addForm.filePath
     const prettyName = addForm.name.trim() || fileName.replace(/\.[^.]+$/, '')
     const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
 
+    setIsAddingFile(true)
     try {
       // Move file to mods folder — returns relative path and hash
       const moveResult = await api.moveToModFolder(addForm.filePath)
@@ -328,6 +330,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         description: `Failed to add file: ${error}`,
         variant: 'destructive'
       })
+    } finally {
+      setIsAddingFile(false)
     }
   }
 
@@ -338,12 +342,19 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     const name = fileName.replace(/\.[^.]+$/, '')
     const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
 
+    const hashingToast = toast({
+      title: 'Computing checksum...',
+      description: `Hashing ${fileName} — this can take a while for large files.`
+    })
+
     let hash = ''
     try {
       hash = await api.computeHash(filePath)
       console.log('[Registry] Computed hash:', hash)
     } catch {
       console.error('Failed to compute hash')
+    } finally {
+      hashingToast.dismiss()
     }
 
     let settings: IAppSettings | null = null
@@ -1058,16 +1069,18 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       <AddFileDialog
         open={isAddModalOpen}
-        onOpenChange={(open) => !open && setIsAddModalOpen(false)}
+        onOpenChange={(open) => !open && !isAddingFile && setIsAddModalOpen(false)}
         form={addForm}
         setForm={setAddForm}
         selectableFiles={selectableFilesForAdd}
         requiredModsActions={addRequiredMods}
         onAddFile={handleAddFile}
+        isSubmitting={isAddingFile}
         onBrowseFile={handleBrowseFile}
         onBrowseConfigFile={handleBrowseConfigFile}
         onClearConfigFile={handleClearConfigFile}
         onCancel={() => {
+          if (isAddingFile) return
           resetLookupState()
           setIsAddModalOpen(false)
         }}
