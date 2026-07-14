@@ -557,23 +557,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
-  /** Write a config file content (for import reconstruction). */
-  app.post('/api/configs/:key', async (req, res) => {
-    try {
-      const { key } = req.params
-      const { content } = req.body
-      if (!key || !content) {
-        return res.status(400).json({ message: 'Missing key or content' })
-      }
-      await storage.writeConfigFileContent(key, content)
-      return res.json({ success: true })
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to write config file'
-      })
-    }
-  })
-
   /** Hash a file (reused for configs too) */
   app.post('/api/configs/hash', async (req, res) => {
     try {
@@ -615,6 +598,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res.status(500).json({
         message: error instanceof Error ? error.message : 'Failed to upload config file'
+      })
+    }
+  })
+
+  /** Write a config file content (for import reconstruction). Must stay after the
+   *  literal /api/configs/hash and /api/configs/upload routes above — Express
+   *  matches this :key wildcard against any single path segment, so registering
+   *  it first would shadow those literal routes. */
+  app.post('/api/configs/:key', async (req, res) => {
+    try {
+      const { key } = req.params
+      const { content } = req.body
+      if (!key || !content) {
+        return res.status(400).json({ message: 'Missing key or content' })
+      }
+      await storage.writeConfigFileContent(key, content)
+      return res.json({ success: true })
+    } catch (error: unknown) {
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to write config file'
       })
     }
   })
