@@ -113,7 +113,7 @@ export class GameService {
           let fullPath: string
           if (isAbsolute) {
             fullPath = path.resolve(storage.resolvePath(file.filePath))
-          } else if (file.filePath.startsWith('files/')) {
+          } else if (file.filePath.startsWith('files/') || file.filePath.startsWith('files\\')) {
             const modsDir = storage.resolvePath(settings.modsDirectory || MODS_DIR)
             fullPath = path.join(modsDir, file.filePath)
           } else {

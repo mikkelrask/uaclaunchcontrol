@@ -1019,8 +1019,8 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
       let hashValue: string
       let originalFileName: string
 
-      // Check if file is already in mods folder (relative path starting with 'files/')
-      if (file.filePath.startsWith('files/')) {
+      // Check if file is already in mods folder (relative path starting with 'files/' or 'files\')
+      if (file.filePath.startsWith('files/') || file.filePath.startsWith('files\\')) {
         // File already moved, use as-is
         relativePath = file.filePath
         hashValue = file.hashValue || (await computeFileHash(relativePath))
