@@ -9,7 +9,6 @@ import Header from '@/components/Header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
-import { gameService } from '@/lib/gameService'
 import { IProtocol, IModFile, IAppSettings, IDoomVersion } from '@shared/schema'
 import { buildLaunchCommand } from '@/lib/utils'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
@@ -51,13 +50,13 @@ export const InstallPage: React.FC = () => {
   // Fetch settings with proper typing
   const { data: settings = { savegamesPath: '' } as IAppSettings } = useQuery<IAppSettings>({
     queryKey: ['/api/settings'],
-    queryFn: gameService.getSettings
+    queryFn: api.getSettings
   })
 
   // Fetch catalog files for Add Files tab
   const { data: catalogData } = useQuery<IModFile[]>({
     queryKey: ['/api/mod-files/catalog'],
-    queryFn: () => gameService.getModFileCatalog()
+    queryFn: () => api.getModFileCatalog()
   })
 
   useEffect(() => {
@@ -147,7 +146,7 @@ export const InstallPage: React.FC = () => {
     mutationFn: (data: {
       protocol: Omit<IProtocol, 'id'>
       files: Omit<IModFile, 'id' | 'modId'>[]
-    }) => gameService.createProtocol(data.protocol, data.files),
+    }) => api.createProtocol(data.protocol, data.files),
     onSuccess: async () => {
       toast({
         title: 'SYSTEM: params_accepted',

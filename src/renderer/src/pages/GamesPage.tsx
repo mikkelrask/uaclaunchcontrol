@@ -29,7 +29,6 @@ import GameCard from '@/components/GameCard'
 import GameDetailCard from '@/components/GameDetailCard'
 import GameListCard from '@/components/GameListCard'
 import GameSettingsModal from '@/components/GameSettingsModal'
-import { gameService } from '@/lib/gameService'
 import { IProtocol, IDoomVersion, IModFile, IAppSettings } from '@shared/schema'
 import { api } from '@/api'
 import { useToast } from '@/hooks/use-toast'
@@ -50,7 +49,7 @@ export const GamesPage: React.FC = () => {
   // Read default view from settings
   const { data: settingsData } = useQuery<IAppSettings>({
     queryKey: ['/api/settings'],
-    queryFn: gameService.getSettings
+    queryFn: api.getSettings
   })
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -107,25 +106,25 @@ export const GamesPage: React.FC = () => {
 
   const { data: protocols = [], isLoading: isModsLoading } = useQuery<IProtocol[]>({
     queryKey: ['/api/protocols', activeVersion, searchQuery],
-    queryFn: () => gameService.getProtocols(activeVersion || undefined, searchQuery || undefined),
+    queryFn: () => api.getProtocols(activeVersion || undefined, searchQuery || undefined),
     enabled: true
   })
 
   const { data: catalogueHits = [] } = useQuery<IModFile[]>({
     queryKey: ['/api/mod-files/catalog/search', searchQuery],
-    queryFn: () => gameService.searchModFileCatalog(searchQuery),
+    queryFn: () => api.searchModFileCatalog(searchQuery),
     enabled: searchQuery.length > 0
   })
 
   const { data: registryHits = [] } = useQuery<IRegistryMod[]>({
     queryKey: ['/api/search/registry', searchQuery],
-    queryFn: () => gameService.searchRegistry(searchQuery),
+    queryFn: () => api.searchRegistry(searchQuery),
     enabled: searchQuery.length > 0
   })
 
   const { data: idgamesHits = [] } = useQuery<IIdgamesMod[]>({
     queryKey: ['/api/search/idgames', searchQuery],
-    queryFn: () => gameService.searchIdgames(searchQuery),
+    queryFn: () => api.searchIdgames(searchQuery),
     enabled: searchQuery.length > 0
   })
 
@@ -155,7 +154,7 @@ export const GamesPage: React.FC = () => {
     })
 
     try {
-      const result = await gameService.downloadIdgamesFile(url, mod.title)
+      const result = await api.downloadIdgamesFile(url, mod.title)
       toast({
         title: 'SYSTEM: transfer_complete',
         description: `${result.fileName} — processing…`
@@ -202,7 +201,7 @@ export const GamesPage: React.FC = () => {
     if (!importFile) return
     setImporting(true)
     try {
-      await gameService.importIdgamesSingleFile({
+      await api.importIdgamesSingleFile({
         tempPath: importFile.downloadPath,
         fileName: importFile.fileName,
         name: importFile.name,

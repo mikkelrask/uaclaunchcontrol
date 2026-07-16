@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { IModFile, InsertModFile } from '@shared/schema'
 import { Trash, ChevronUp, ChevronDown, Plus, ExternalLink } from 'lucide-react'
 import { Combobox } from '@/components/ui/combobox'
-import { gameService } from '@/lib/gameService'
+import { api } from '@/api'
 
 interface ModFileListProps {
   files: IModFile[] | InsertModFile[]
@@ -14,7 +14,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
   const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
 
   useEffect(() => {
-    gameService.getModFileCatalog().then(setCatalogFiles).catch(console.error)
+    api.getModFileCatalog().then(setCatalogFiles).catch(console.error)
   }, [])
 
   const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)

@@ -28,7 +28,6 @@ import {
   IAppSettings
 } from '@shared/schema'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { gameService } from '@/lib/gameService'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import ModFileList from './ModFileList'
@@ -94,7 +93,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
 
   const { data: settings } = useQuery<IAppSettings>({
     queryKey: ['/api/settings'],
-    queryFn: gameService.getSettings
+    queryFn: api.getSettings
   })
 
   // Compute launch command preview
@@ -132,7 +131,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
       id: string
       protocol: Partial<IProtocol>
       files: Omit<IModFile, 'id' | 'modId'>[]
-    }) => gameService.updateProtocol(id, protocol, files),
+    }) => api.updateProtocol(id, protocol, files),
     onSuccess: (updatedProtocol, variables) => {
       toast({
         title: 'SYSTEM: protocol_saved',
@@ -156,7 +155,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
 
   // Delete protocol mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => gameService.deleteProtocol(id),
+    mutationFn: (id: string) => api.deleteProtocol(id),
     onSuccess: () => {
       toast({
         title: 'SYSTEM: delete_protocol',
@@ -634,14 +633,14 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   // Fetch protocol details
   const { data, isLoading } = useQuery({
     queryKey: [`/api/protocols/${protocolId}`],
-    queryFn: () => (protocolId ? gameService.getProtocol(protocolId) : Promise.resolve(null)),
+    queryFn: () => (protocolId ? api.getProtocol(protocolId) : Promise.resolve(null)),
     enabled: !!protocolId && isOpen
   })
 
   // Fetch settings for source ports list
   const { data: settings } = useQuery<IAppSettings>({
     queryKey: ['/api/settings'],
-    queryFn: () => gameService.getSettings(),
+    queryFn: () => api.getSettings(),
     enabled: isOpen
   })
 
@@ -652,7 +651,7 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   // Fetch catalog for hydrating files with hashValue
   const { data: catalogFiles } = useQuery({
     queryKey: ['/api/mod-files/catalog'],
-    queryFn: () => gameService.getModFileCatalog(),
+    queryFn: () => api.getModFileCatalog(),
     enabled: isOpen
   })
 

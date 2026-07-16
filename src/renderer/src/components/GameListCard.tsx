@@ -3,7 +3,7 @@ import { IProtocol, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Button } from '@/components/ui/button'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { gameService } from '@/lib/gameService'
+import { api } from '@/api'
 import { useToast } from '@/hooks/use-toast'
 import { formatPlaytime, formatDate } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
@@ -24,7 +24,7 @@ export const GameListCard: React.FC<GameListCardProps> = ({
   const queryClient = useQueryClient()
 
   const launchMutation = useMutation({
-    mutationFn: gameService.launchProtocol,
+    mutationFn: api.launchProtocol,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
       toast({
