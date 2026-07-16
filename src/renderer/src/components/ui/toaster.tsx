@@ -1,6 +1,7 @@
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { useToast } from '@/hooks/use-toast'
+import { markRead } from '@/lib/notifications'
 import {
   Toast,
   ToastClose,
@@ -23,7 +24,7 @@ export const Toaster = (): React.ReactElement => {
               {description && <ToastDescription>{description}</ToastDescription>}
             </div>
             {action}
-            <ToastClose />
+            <ToastClose onClick={() => markRead(id)} />
           </Toast>
         )
       })}
