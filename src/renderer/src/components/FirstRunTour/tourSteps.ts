@@ -212,7 +212,7 @@ export const TOUR_STEPS: TourStepDef[] = [
     doneLabel: 'Mod file catalogued ✓',
     isComplete: async (): Promise<boolean> => {
       try {
-        const files = await api.getAvailableModFiles()
+        const files = await api.getModFileCatalog()
         return files.length > 0
       } catch {
         return false

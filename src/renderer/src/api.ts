@@ -1,6 +1,7 @@
 import {
   IModFile,
   IProtocol,
+  InsertProtocol,
   IAppSettings,
   IDoomVersion,
   IUpdateInfo,
@@ -63,10 +64,71 @@ export interface PortDownloadResult {
   version: string
 }
 
+export interface OpenDialogOptions {
+  title?: string
+  defaultPath?: string
+  filters?: { name: string; extensions: string[] }[]
+  properties?: (
+    | 'openFile'
+    | 'openDirectory'
+    | 'multiSelections'
+    | 'showHiddenFiles'
+    | 'createDirectory'
+  )[]
+}
+
+export interface SaveDialogOptions {
+  title?: string
+  defaultPath?: string
+  filters?: { name: string; extensions: string[] }[]
+  buttonLabel?: string
+}
+
+export interface OpenDialogReturn {
+  canceled: boolean
+  filePaths: string[]
+}
+
+export interface SaveDialogReturn {
+  canceled: boolean
+  filePath?: string
+}
+
+/**
+ * Shared response handler for every fetch-based call below. Parses either
+ * `{ message }` (this app's standard error shape) or a legacy `{ error }`
+ * shape defensively, and throws with that real server-provided text instead
+ * of a hardcoded generic string — critical for diagnosing platform-specific
+ * failures (e.g. Windows) where the user has no DevTools console access.
+ */
+async function handleApiResponse<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get('content-type')
+  if (!response.ok) {
+    let errorMessage = `API error: ${response.status}`
+    try {
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json()
+        errorMessage = errorData.message || errorData.error || errorMessage
+      } else {
+        const text = await response.text()
+        console.error('API non-json error:', text)
+      }
+    } catch (error: unknown) {
+      console.error('Failed to parse error response', error)
+    }
+    throw new Error(errorMessage)
+  }
+
+  if (contentType && contentType.includes('application/json')) {
+    return response.json()
+  }
+  return {} as T
+}
+
 export const api = {
   // Settings operations
   getSettings: (): Promise<IAppSettings> => {
-    return fetch(`${API_BASE}/api/settings`).then((res) => res.json())
+    return fetch(`${API_BASE}/api/settings`).then((res) => handleApiResponse<IAppSettings>(res))
   },
 
   updateSettings: (settings: Partial<IAppSettings>): Promise<IAppSettings> => {
@@ -74,13 +136,12 @@ export const api = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings)
-    }).then((res) => res.json())
+    }).then((res) => handleApiResponse<IAppSettings>(res))
   },
 
   getPortReleases: async (): Promise<PortRelease[]> => {
     const response = await fetch(`${API_BASE}/api/ports/releases`)
-    if (!response.ok) throw new Error('Failed to fetch port releases')
-    return response.json()
+    return handleApiResponse<PortRelease[]>(response)
   },
 
   downloadPortRelease: async (
@@ -94,81 +155,53 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ downloadUrl, assetName, family, version })
     })
-    if (!response.ok) {
-      const err = await response.text()
-      throw new Error(err || 'Failed to download port')
-    }
-    return response.json()
+    return handleApiResponse<PortDownloadResult>(response)
   },
 
   scanPorts: async (): Promise<ScannedPort[]> => {
     const response = await fetch(`${API_BASE}/api/settings/scan-ports`)
-    if (!response.ok) {
-      throw new Error('Failed to scan for source ports')
-    }
-    return response.json()
+    return handleApiResponse<ScannedPort[]>(response)
   },
 
-  // File catalog operations
-  getAvailableModFiles: async (): Promise<IModFile[]> => {
+  // Mod file catalog operations
+  getModFileCatalog: async (): Promise<IModFile[]> => {
     const response = await fetch(`${API_BASE}/api/mod-files/catalog`)
-    if (!response.ok) {
-      throw new Error('Failed to get mod file catalog')
-    }
-    return response.json()
+    return handleApiResponse<IModFile[]>(response)
   },
 
   getModFilesByType: async (fileType: string): Promise<IModFile[]> => {
+    // No dedicated by-type route exists on the backend — fetch the full
+    // catalog and filter client-side (this mirrors the pre-consolidation
+    // api.ts behavior; gameService.ts's version pointed at a by-type route
+    // that was never actually implemented server-side).
     const response = await fetch(`${API_BASE}/api/mod-files/catalog`)
-    if (!response.ok) {
-      throw new Error('Failed to get mod files')
-    }
+    const allFiles = await handleApiResponse<IModFile[]>(response)
+    return allFiles.filter((file) => file.fileType === fileType)
+  },
 
-    const allFiles = await response.json()
-    return allFiles.filter((file: IModFile) => file.fileType === fileType)
+  searchModFileCatalog: async (query: string): Promise<IModFile[]> => {
+    const response = await fetch(
+      `${API_BASE}/api/mod-files/catalog/search?q=${encodeURIComponent(query)}`
+    )
+    return handleApiResponse<IModFile[]>(response)
   },
 
   addToCatalog: async (file: Omit<IModFile, 'id'>): Promise<IModFile> => {
-    console.log('[DEBUG] API addToCatalog called with:', file)
-    try {
-      const response = await fetch(`${API_BASE}/api/mod-files/catalog`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(file)
-      })
-
-      console.log('[DEBUG] API addToCatalog response status:', response.status)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('[DEBUG] API addToCatalog error:', errorText)
-        throw new Error('Failed to add file to catalog')
-      }
-
-      const data = await response.json()
-      console.log('[DEBUG] API addToCatalog response data:', data)
-      return data
-    } catch (error) {
-      console.error('[DEBUG] API addToCatalog exception:', error)
-      throw error
-    }
+    const response = await fetch(`${API_BASE}/api/mod-files/catalog`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(file)
+    })
+    return handleApiResponse<IModFile>(response)
   },
+
   computeHash: async (filePath: string): Promise<string> => {
-    try {
-      const response = await fetch(`${API_BASE}/api/mod-files/hash`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filePath })
-      })
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ message: 'Failed to compute hash' }))
-        throw new Error(err.message || 'Failed to compute hash')
-      }
-      return response.json()
-    } catch (error) {
-      console.error('[DEBUG] API computeHash exception:', error)
-      throw error
-    }
+    const response = await fetch(`${API_BASE}/api/mod-files/hash`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath })
+    })
+    return handleApiResponse<string>(response)
   },
 
   lookupMod: async (hash: string, registryUrl: string): Promise<IRegistryMod | null> => {
@@ -179,10 +212,11 @@ export const api = {
       }
       return null
     } catch {
-      console.error('[api] computeHash failed for file')
+      console.error('[api] lookupMod failed for hash', hash)
       return null
     }
   },
+
   submitToPending: async (
     data: {
       hash: string
@@ -211,19 +245,14 @@ export const api = {
       // Network error - silently ignore
     }
   },
+
   updateInCatalog: async (id: number, updates: Partial<IModFile>): Promise<IModFile> => {
-    console.log(`[DEBUG] API updateInCatalog called for ID ${id} with:`, updates)
     const response = await fetch(`${API_BASE}/api/mod-files/catalog/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
     })
-
-    if (!response.ok) {
-      throw new Error('Failed to update file in catalog')
-    }
-
-    return response.json()
+    return handleApiResponse<IModFile>(response)
   },
 
   deleteFromCatalog: async (id: number, deleteFile?: boolean): Promise<{ success: boolean }> => {
@@ -232,15 +261,24 @@ export const api = {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     })
-
-    if (!response.ok) {
-      throw new Error('Failed to delete file from catalog')
-    }
-
-    return response.json()
+    return handleApiResponse<{ success: boolean }>(response)
   },
 
   // Protocol operations
+  getProtocols: async (versionSlug?: string, searchQuery?: string): Promise<IProtocol[]> => {
+    const params = new URLSearchParams()
+    if (versionSlug) params.append('version', versionSlug)
+    if (searchQuery) params.append('search', searchQuery)
+
+    const response = await fetch(`${API_BASE}/api/protocols?${params.toString()}`)
+    return handleApiResponse<IProtocol[]>(response)
+  },
+
+  getProtocol: async (id: string): Promise<{ protocol: IProtocol; files: IModFile[] }> => {
+    const response = await fetch(`${API_BASE}/api/protocols/${id}`)
+    return handleApiResponse<{ protocol: IProtocol; files: IModFile[] }>(response)
+  },
+
   testLaunch: async (
     protocol: Partial<IProtocol>,
     files: Partial<IModFile>[]
@@ -250,28 +288,87 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ protocol, files })
     })
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: 'Test launch failed' }))
-      throw new Error(err.message || 'Test launch failed')
-    }
-    return response.json()
+    return handleApiResponse<{ success: boolean }>(response)
   },
 
-  createProtocol: async (protocol: Omit<IProtocol, 'id'>): Promise<IProtocol> => {
+  createProtocol: async (
+    protocol: InsertProtocol,
+    files: Omit<IModFile, 'id' | 'modId'>[] = []
+  ): Promise<IProtocol> => {
     const response = await fetch(`${API_BASE}/api/protocols`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(protocol)
+      body: JSON.stringify({ protocol, files })
     })
-    if (!response.ok) {
-      throw new Error('Failed to create protocol')
-    }
-    return response.json()
+    return handleApiResponse<IProtocol>(response)
   },
 
-  // Dialog operations for file selection
-  showOpenDialog: async (options: object): Promise<{ canceled: boolean; filePaths: string[] }> => {
-    console.log('Showing open dialog with options:', options)
+  updateProtocol: async (
+    id: string,
+    protocol: Partial<IProtocol>,
+    files?: Omit<IModFile, 'id' | 'modId'>[]
+  ): Promise<IProtocol> => {
+    const response = await fetch(`${API_BASE}/api/protocols/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ protocol, files })
+    })
+    return handleApiResponse<IProtocol>(response)
+  },
+
+  deleteProtocol: async (id: string): Promise<void> => {
+    const response = await fetch(`${API_BASE}/api/protocols/${id}`, { method: 'DELETE' })
+    await handleApiResponse<void>(response)
+  },
+
+  launchProtocol: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_BASE}/api/protocols/${id}/launch`, { method: 'POST' })
+    return handleApiResponse<{ success: boolean; message: string }>(response)
+  },
+
+  // idgames / registry search
+  searchIdgames: async (query: string): Promise<IIdgamesMod[]> => {
+    const response = await fetch(`${API_BASE}/api/search/idgames?q=${encodeURIComponent(query)}`)
+    return handleApiResponse<IIdgamesMod[]>(response)
+  },
+
+  downloadIdgamesFile: async (
+    downloadUrl: string,
+    title: string
+  ): Promise<{ downloadPath: string; fileName: string; name: string; hash: string }> => {
+    const response = await fetch(`${API_BASE}/api/search/idgames/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ downloadUrl, title })
+    })
+    return handleApiResponse(response)
+  },
+
+  importIdgamesSingleFile: async (data: {
+    tempPath: string
+    fileName?: string
+    name?: string
+    hashValue?: string
+    fileType?: string
+  }): Promise<{ file: IModFile }> => {
+    const response = await fetch(`${API_BASE}/api/search/idgames/import-single`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    return handleApiResponse(response)
+  },
+
+  searchRegistry: async (query: string): Promise<IRegistryMod[]> => {
+    const response = await fetch(`${API_BASE}/api/search/registry?q=${encodeURIComponent(query)}`)
+    return handleApiResponse<IRegistryMod[]>(response)
+  },
+
+  // Dialog operations for file selection. Deliberately does NOT throw on
+  // failure — a dialog that can't open should read to the user as "nothing
+  // selected," not as an app error, so callers can treat every response the
+  // same way without wrapping each call in try/catch.
+  showOpenDialog: async (options: OpenDialogOptions): Promise<OpenDialogReturn> => {
     const response = await fetch(`${API_BASE}/api/dialog/open`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -280,48 +377,79 @@ export const api = {
 
     if (!response.ok) {
       console.error('Failed to open dialog:', response.statusText)
-      // Return a default response in development mode
       return { canceled: true, filePaths: [] }
     }
 
     return response.json()
   },
 
-  getDoomVersions: async () => {
-    const response = await fetch(`${API_BASE}/api/versions`)
-    if (!response.ok) throw new Error('Failed to fetch Doom versions')
+  showSaveDialog: async (options: SaveDialogOptions): Promise<SaveDialogReturn> => {
+    const response = await fetch(`${API_BASE}/api/dialog/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(options)
+    })
+
+    if (!response.ok) {
+      console.error('Failed to open save dialog:', response.statusText)
+      return { canceled: true }
+    }
+
     return response.json()
   },
 
-  updateDoomVersions: async (versions: unknown[]) => {
+  getDoomVersions: async (): Promise<IDoomVersion[]> => {
+    const response = await fetch(`${API_BASE}/api/versions`)
+    return handleApiResponse<IDoomVersion[]>(response)
+  },
+
+  getDoomVersion: async (id: string): Promise<IDoomVersion> => {
+    const response = await fetch(`${API_BASE}/api/versions/${id}`)
+    return handleApiResponse<IDoomVersion>(response)
+  },
+
+  getDoomVersionBySlug: async (slug: string): Promise<IDoomVersion> => {
+    const response = await fetch(`${API_BASE}/api/versions/bySlug/${slug}`)
+    return handleApiResponse<IDoomVersion>(response)
+  },
+
+  updateDoomVersions: async (versions: unknown[]): Promise<IDoomVersion[]> => {
     const response = await fetch(`${API_BASE}/api/versions`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(versions)
     })
-    if (!response.ok) throw new Error('Failed to update Doom versions')
-    return response.json()
+    return handleApiResponse<IDoomVersion[]>(response)
   },
 
-  updateDoomVersion: async (id: string, updates: Partial<IDoomVersion>) => {
+  updateDoomVersion: async (id: string, updates: Partial<IDoomVersion>): Promise<IDoomVersion> => {
     const response = await fetch(`${API_BASE}/api/versions/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
     })
-    if (!response.ok) throw new Error('Failed to update Doom version')
-    return response.json()
+    return handleApiResponse<IDoomVersion>(response)
   },
 
-  moveFile: async (filePath: string, newPath: string) => {
+  deleteDoomVersion: async (id: string): Promise<void> => {
+    const response = await fetch(`${API_BASE}/api/versions/${id}`, { method: 'DELETE' })
+    if (!response.ok) {
+      throw new Error(`Failed to delete version: ${response.status}`)
+    }
+  },
+
+  moveFile: async (
+    filePath: string,
+    newPath: string
+  ): Promise<{ success: boolean; message: string }> => {
     const response = await fetch(`${API_BASE}/api/move-file`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filePath, newPath })
     })
-    if (!response.ok) throw new Error('Failed to move file')
-    return response.json()
+    return handleApiResponse(response)
   },
+
   moveToModFolder: async (
     sourcePath: string
   ): Promise<{ fullPath: string; relativePath: string; hashValue: string }> => {
@@ -330,14 +458,9 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sourcePath })
     })
-    if (!response.ok) {
-      const err = await response
-        .json()
-        .catch(() => ({ message: 'Failed to move file to mod folder' }))
-      throw new Error(err.message || 'Failed to move file to mod folder')
-    }
-    return response.json()
+    return handleApiResponse(response)
   },
+
   importWadFile: async (
     sourcePath: string
   ): Promise<{ fileName: string; fullPath: string; hashValue: string; alreadyExists: boolean }> => {
@@ -346,20 +469,16 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sourcePath })
     })
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: 'Failed to import WAD file' }))
-      throw new Error(err.message || 'Failed to import WAD file')
-    }
-    return response.json()
+    return handleApiResponse(response)
   },
+
   downloadImage: async (url: string, protocolId: string): Promise<{ fileName: string }> => {
     const response = await fetch(`${API_BASE}/api/protocol/download-image`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url, protocolId })
     })
-    if (!response.ok) throw new Error('Failed to download image')
-    return response.json()
+    return handleApiResponse(response)
   },
 
   uploadScreenshot: async (filePath: string): Promise<{ fileName: string }> => {
@@ -368,9 +487,9 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filePath })
     })
-    if (!response.ok) throw new Error('Failed to upload screenshot')
-    return response.json()
+    return handleApiResponse(response)
   },
+
   getVersion: async (): Promise<string> => {
     return await window.api.getAppVersion()
   },
@@ -410,6 +529,7 @@ export const api = {
       body: JSON.stringify({ sessionSeconds })
     })
   },
+
   onUpdateStatus: (callback: (data: IUpdateInfo) => void): void => {
     window.api.onUpdateStatus(callback)
   },
@@ -437,8 +557,7 @@ export const api = {
   // Player data / achievements
   getPlayerData: async (): Promise<IPlayerData> => {
     const response = await fetch(`${API_BASE}/api/player-data`)
-    if (!response.ok) throw new Error('Failed to get player data')
-    return response.json()
+    return handleApiResponse<IPlayerData>(response)
   },
 
   updatePlayerData: async (data: Partial<IPlayerData>): Promise<IPlayerData> => {
@@ -447,8 +566,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     })
-    if (!response.ok) throw new Error('Failed to update player data')
-    return response.json()
+    return handleApiResponse<IPlayerData>(response)
   },
 
   updatePlayerStats: async (delta: Partial<IPlayerStats>): Promise<IPlayerStats> => {
@@ -457,8 +575,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(delta)
     })
-    if (!response.ok) throw new Error('Failed to update player stats')
-    return response.json()
+    return handleApiResponse<IPlayerStats>(response)
   },
 
   unlockAchievement: async (
@@ -475,8 +592,7 @@ export const api = {
   // First-run tour
   getFirstRun: async (): Promise<{ isFirstRun: boolean }> => {
     const response = await fetch(`${API_BASE}/api/first-run`)
-    if (!response.ok) throw new Error('Failed to check first run')
-    return response.json()
+    return handleApiResponse<{ isFirstRun: boolean }>(response)
   },
 
   dismissFirstRun: async (): Promise<void> => {
@@ -497,10 +613,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filePath })
     })
-    if (!response.ok) {
-      throw new Error('Failed to read file')
-    }
-    const data = await response.json()
+    const data = await handleApiResponse<{ content: string }>(response)
     return data.content
   },
 
@@ -510,10 +623,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ zipFilePath })
     })
-    if (!response.ok) {
-      throw new Error('Failed to unzip and scan archive')
-    }
-    return response.json()
+    return handleApiResponse(response)
   },
 
   unrarScan: async (rarFilePath: string): Promise<unknown> => {
@@ -522,10 +632,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rarFilePath })
     })
-    if (!response.ok) {
-      throw new Error('Failed to extract and scan RAR archive')
-    }
-    return response.json()
+    return handleApiResponse(response)
   },
 
   unzipImport: async (tempDir: string, filesToImport: unknown[]): Promise<unknown[]> => {
@@ -534,10 +641,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tempDir, filesToImport })
     })
-    if (!response.ok) {
-      throw new Error('Failed to import files from archive')
-    }
-    return response.json()
+    return handleApiResponse(response)
   },
 
   // ── Config File API ──────────────────────────────────
@@ -549,10 +653,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filePath })
     })
-    if (!response.ok) {
-      throw new Error('Failed to upload config file')
-    }
-    return response.json()
+    return handleApiResponse(response)
   },
 
   /** Create a blank, isolated config for a protocol with no originating template. */
@@ -565,10 +666,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ protocolId, ext })
     })
-    if (!response.ok) {
-      throw new Error('Failed to create blank config')
-    }
-    return response.json()
+    return handleApiResponse(response)
   },
 
   /** Copy a config template to a protocol-specific copy. */
@@ -581,19 +679,13 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ templateHash, protocolId })
     })
-    if (!response.ok) {
-      throw new Error('Failed to copy config for protocol')
-    }
-    return response.json()
+    return handleApiResponse(response)
   },
 
   /** Read a config file content by hash (for export). */
   readConfigContent: async (key: string): Promise<string> => {
     const response = await fetch(`${API_BASE}/api/configs/${key}`)
-    if (!response.ok) {
-      throw new Error('Failed to read config file')
-    }
-    const data = await response.json()
+    const data = await handleApiResponse<{ content: string }>(response)
     return data.content
   },
 
@@ -604,8 +696,6 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key, content })
     })
-    if (!response.ok) {
-      throw new Error('Failed to write config file')
-    }
+    await handleApiResponse<void>(response)
   }
 }

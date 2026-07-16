@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Combobox } from '@/components/ui/combobox'
 import { FolderOpenIcon, PlusIcon, TrashIcon, ExternalLink } from 'lucide-react'
-import { gameService } from '@/lib/gameService'
 import type { IModFile } from '@shared/schema'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
@@ -29,7 +28,7 @@ export function ModFileSelector({
   const { toast } = useToast()
   const { data: catalogFiles = [], refetch: loadCatalogFiles } = useQuery({
     queryKey: ['/api/mod-files/catalog'],
-    queryFn: () => gameService.getModFileCatalog()
+    queryFn: () => api.getModFileCatalog()
   })
 
   const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)

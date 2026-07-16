@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import type { z } from 'zod'
 import type { IModFile, IAppSettings, IDoomVersion, ISourcePort } from '@shared/schema'
-import { gameService } from '@/lib/gameService'
 import { api } from '@/api'
 import { parseBatContent, resolveRelativePaths, deriveFileType } from '@/lib/install/parsers'
 import type { formSchema } from '@/lib/install/schema'
@@ -141,7 +140,7 @@ async function importFromBatFile(
   // Resolve paths and build file list
   const batPath = window.api.getPathForFile(droppedFile) || droppedFile.name
   const resolvedFiles = resolveRelativePaths(batPath, parsed.modFiles)
-  const catalogData = await gameService.getModFileCatalog()
+  const catalogData = await api.getModFileCatalog()
 
   const finalFiles = await Promise.all(
     resolvedFiles.map((fp) => buildFileFromPath(fp, catalogData))
@@ -216,7 +215,7 @@ async function importFromJsonFile(
   if (matchedVersion) form.setValue('doomVersionId', matchedVersion.id.toString())
 
   // Match import files against catalog
-  const catalogData = await gameService.getModFileCatalog()
+  const catalogData = await api.getModFileCatalog()
   const matchedFiles: IModFile[] = []
   const missingFiles: IModFile[] = []
 

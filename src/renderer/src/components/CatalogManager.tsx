@@ -23,7 +23,6 @@ import { Upload } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api, IRegistryMod } from '@/api'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
-import { gameService } from '@/lib/gameService'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { CATEGORIES } from '@shared/categories'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -48,7 +47,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   const queryClient = useQueryClient()
   const { data: catalogFiles = [] } = useQuery({
     queryKey: ['/api/mod-files/catalog'],
-    queryFn: () => gameService.getModFileCatalog()
+    queryFn: () => api.getModFileCatalog()
   })
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -323,7 +322,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       })
 
       // Fetch fresh authoritative list, notify parent, and bust search cache
-      const freshCatalog = await gameService.getModFileCatalog()
+      const freshCatalog = await api.getModFileCatalog()
       queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
       queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
       onChange(freshCatalog)
@@ -935,7 +934,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       setIsEditModalOpen(false)
 
       // Fetch fresh authoritative list and notify parent
-      const freshCatalog = await gameService.getModFileCatalog()
+      const freshCatalog = await api.getModFileCatalog()
       onChange(freshCatalog)
       setSelectedFile(null)
     } catch (error) {
@@ -1140,7 +1139,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         scanResult={zipScanResult}
         zipFilePath={zipFilePath || undefined}
         onImportComplete={async () => {
-          const freshCatalog = await gameService.getModFileCatalog()
+          const freshCatalog = await api.getModFileCatalog()
           queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
           queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
           onChange(freshCatalog)
