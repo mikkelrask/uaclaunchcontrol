@@ -50,13 +50,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const filePath = req.query.path as string
       if (!filePath) {
-        return res.status(400).json({ error: 'Path is required' })
+        return res.status(400).json({ message: 'Path is required' })
       }
       const resolved = storage.resolvePath(filePath)
 
       if (!fs.existsSync(resolved)) {
         console.warn(`[DEBUG] Media not found on disk: ${resolved}`)
-        return res.status(404).json({ error: 'File not found' })
+        return res.status(404).json({ message: 'File not found' })
       }
 
       const ext = path.extname(resolved).toLowerCase()
@@ -78,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ? error.message
             : 'Failed to serve media'
           : 'Failed to serve media'
-      return res.status(500).json({ error: message })
+      return res.status(500).json({ message })
     }
   })
 
@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/protocol/download-image', async (req, res) => {
     const { url, protocolId } = req.body
     if (!url || !protocolId) {
-      return res.status(400).json({ error: 'Missing url or protocolId' })
+      return res.status(400).json({ message: 'Missing url or protocolId' })
     }
     try {
       const fileName = await storage.downloadImage(url, protocolId)
@@ -176,7 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to serve media' })
+        .json({ message: error instanceof Error ? error.message : 'Failed to serve media' })
     }
   })
 
@@ -184,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/screenshots/upload', async (req, res) => {
     const { filePath } = req.body
     if (!filePath) {
-      return res.status(400).json({ error: 'Missing filePath' })
+      return res.status(400).json({ message: 'Missing filePath' })
     }
     try {
       const fileName = await storage.copyImageToImages(filePath)
@@ -192,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to upload screenshot' })
+        .json({ message: error instanceof Error ? error.message : 'Failed to upload screenshot' })
     }
   })
 
@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(protocols)
     } catch (error) {
       console.error('Error fetching protocols:', error)
-      return res.status(500).json({ error: 'Failed to fetch protocols' })
+      return res.status(500).json({ message: 'Failed to fetch protocols' })
     }
   })
 
@@ -637,7 +637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(results)
     } catch (error) {
       console.error('Error searching mod file catalog:', error)
-      return res.status(500).json({ error: 'Failed to search mod file catalog' })
+      return res.status(500).json({ message: 'Failed to search mod file catalog' })
     }
   })
 
@@ -827,7 +827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error(`[API] Error updating version ${req.params.id}:`, error)
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to serve media'
+        message: error instanceof Error ? error.message : 'Failed to serve media'
       })
     }
   })
@@ -868,7 +868,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to check first run' })
+        .json({ message: error instanceof Error ? error.message : 'Failed to check first run' })
     }
   })
 
@@ -879,7 +879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to dismiss first run' })
+        .json({ message: error instanceof Error ? error.message : 'Failed to dismiss first run' })
     }
   })
 
@@ -890,7 +890,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: unknown) {
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to re-enable first run' })
+        .json({ message: error instanceof Error ? error.message : 'Failed to re-enable first run' })
     }
   })
 
@@ -1008,7 +1008,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Failed to scan for source ports:', error)
       return res
         .status(500)
-        .json({ error: error instanceof Error ? error.message : 'Failed to scan for source ports' })
+        .json({ message: error instanceof Error ? error.message : 'Failed to scan for source ports' })
     }
   })
 
@@ -1019,7 +1019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(releases)
     } catch (error) {
       console.error('Failed to fetch port releases:', error)
-      return res.status(500).json({ error: 'Failed to fetch port releases' })
+      return res.status(500).json({ message: 'Failed to fetch port releases' })
     }
   })
 
@@ -1027,13 +1027,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { downloadUrl, assetName, family, version } = req.body
       if (!downloadUrl || !assetName || !family || !version) {
-        return res.status(400).json({ error: 'Missing required fields: downloadUrl, assetName, family, version' })
+        return res
+          .status(400)
+          .json({ message: 'Missing required fields: downloadUrl, assetName, family, version' })
       }
       const result = await downloadPortRelease(downloadUrl, assetName, family, version)
       return res.json(result)
     } catch (error) {
       console.error('Failed to download port release:', error)
-      return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to download port' })
+      return res
+        .status(500)
+        .json({ message: error instanceof Error ? error.message : 'Failed to download port' })
     }
   })
 
