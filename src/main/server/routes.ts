@@ -223,7 +223,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Match protocol description
           if ((p.description || '').toLowerCase().includes(q)) return true
           // Match mod file names attached to the protocol
-          if (p.files?.some((f) => (f.name || f.fileName || '').toLowerCase().includes(q))) return true
+          if (p.files?.some((f) => (f.name || f.fileName || '').toLowerCase().includes(q)))
+            return true
           return false
         })
       }
@@ -667,7 +668,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             version: row.version,
             category: row.category,
             is_sidecar: row.is_sidecar || 0,
-            load_order: row.load_order ? (typeof row.load_order === 'string' ? JSON.parse(row.load_order) : row.load_order) : {},
+            load_order: row.load_order
+              ? typeof row.load_order === 'string'
+                ? JSON.parse(row.load_order)
+                : row.load_order
+              : {},
             submitted_at: row.submitted_at,
             approved_at: row.approved_at,
             urls: []
@@ -702,19 +707,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const xml = await response.text()
 
       // ponytail: regex-parsing the flat XML instead of a dep
-      const tag = (name: string, src: string) => {
+      const tag = (name: string, src: string): string => {
         const m = src.match(new RegExp(`<${name}>([^<]*)<\\/${name}>`))
         return m ? m[1].trim() : ''
       }
-      const cdata = (name: string, src: string) => {
-        const m = src.match(new RegExp(`<${name}>\\s*<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>\\s*<\\/${name}>`))
+      const cdata = (name: string, src: string): string => {
+        const m = src.match(
+          new RegExp(`<${name}>\\s*<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>\\s*<\\/${name}>`)
+        )
         return m ? m[1].trim() : ''
       }
 
       const results: Array<{
-        id: number; title: string; dir: string; filename: string
-        size: number; author: string; description: string
-        rating: number; votes: number; urls: { url: string; domain: string }[]
+        id: number
+        title: string
+        dir: string
+        filename: string
+        size: number
+        author: string
+        description: string
+        rating: number
+        votes: number
+        urls: { url: string; domain: string }[]
       }> = []
 
       const fileRe = /<file>([\s\S]*?)<\/file>/g
@@ -736,11 +750,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           rating: parseFloat(tag('rating', block)) || 0,
           votes: parseInt(tag('votes', block)) || 0,
           urls: [
-            { url: `https://ftp.fu-berlin.de/pc/games/idgames/${mirrorPath}`, domain: 'Germany', type: 'download' },
-            { url: `https://www.gamers.org/pub/idgames/${mirrorPath}`, domain: 'USA', type: 'download' },
-            { url: `https://ftpmirror1.infania.net/pub/idgames/${mirrorPath}`, domain: 'Sweden', type: 'download' },
-            { url: `https://mirror.braindrainlan.nu/pub/idgames/${mirrorPath}`, domain: 'Sweden', type: 'download' },
-            { url: `https://files.xvertigox.com/idgames/${mirrorPath}`, domain: 'New Zealand', type: 'download' },
+            {
+              url: `https://ftp.fu-berlin.de/pc/games/idgames/${mirrorPath}`,
+              domain: 'Germany',
+              type: 'download'
+            },
+            {
+              url: `https://www.gamers.org/pub/idgames/${mirrorPath}`,
+              domain: 'USA',
+              type: 'download'
+            },
+            {
+              url: `https://ftpmirror1.infania.net/pub/idgames/${mirrorPath}`,
+              domain: 'Sweden',
+              type: 'download'
+            },
+            {
+              url: `https://mirror.braindrainlan.nu/pub/idgames/${mirrorPath}`,
+              domain: 'Sweden',
+              type: 'download'
+            },
+            {
+              url: `https://files.xvertigox.com/idgames/${mirrorPath}`,
+              domain: 'New Zealand',
+              type: 'download'
+            },
             { url: tag('url', block), domain: 'Info', type: 'info' }
           ].filter((u) => u.url)
         })
@@ -946,7 +980,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return fullPath.toLowerCase().endsWith('.exe')
           }
           const stat = fs.statSync(fullPath)
-          return stat.isFile() && !!(stat.mode & (fs.constants.S_IXUSR | fs.constants.S_IXGRP | fs.constants.S_IXOTH))
+          return (
+            stat.isFile() &&
+            !!(stat.mode & (fs.constants.S_IXUSR | fs.constants.S_IXGRP | fs.constants.S_IXOTH))
+          )
         } catch {
           return false
         }
@@ -1006,9 +1043,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(scanResults)
     } catch (error: unknown) {
       console.error('Failed to scan for source ports:', error)
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to scan for source ports' })
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to scan for source ports'
+      })
     }
   })
 

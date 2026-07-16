@@ -94,11 +94,7 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
           onClick={() => setShowSortDropdown(!showSortDropdown)}
           title="Sort protocols"
         >
-          {sortDesc ? (
-            <ArrowDown className="h-3.5 w-3.5" />
-          ) : (
-            <ArrowUp className="h-3.5 w-3.5" />
-          )}
+          {sortDesc ? <ArrowDown className="h-3.5 w-3.5" /> : <ArrowUp className="h-3.5 w-3.5" />}
           <span>{SORT_LABELS[sortField]}</span>
         </button>
 
@@ -117,13 +113,12 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
                   onClick={() => cycleSort(field)}
                 >
                   <span className="flex-1 text-left">{SORT_LABELS[field]}</span>
-                  {active && (
-                    sortDesc ? (
+                  {active &&
+                    (sortDesc ? (
                       <ArrowDown className="h-3 w-3 shrink-0" />
                     ) : (
                       <ArrowUp className="h-3 w-3 shrink-0" />
-                    )
-                  )}
+                    ))}
                 </button>
               )
             })}

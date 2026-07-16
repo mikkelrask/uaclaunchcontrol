@@ -140,10 +140,7 @@ export const GamesPage: React.FC = () => {
     // Don't clear activeVersion - search within current base game filter
   }
 
-  const handleIdgamesDownload = async (
-    url: string,
-    mod: IIdgamesMod
-  ): Promise<void> => {
+  const handleIdgamesDownload = async (url: string, mod: IIdgamesMod): Promise<void> => {
     const link = mod.urls.find((u) => u.url === url)
     if (!link) return
 
@@ -184,9 +181,7 @@ export const GamesPage: React.FC = () => {
             if (settings.registryLookupEnabled) {
               const registryData = await api.lookupMod(result.hash, REGISTRY_API_URL)
               if (registryData && registryData.family_name) {
-                setImportFile((prev) =>
-                  prev ? { ...prev, name: registryData.family_name } : prev
-                )
+                setImportFile((prev) => (prev ? { ...prev, name: registryData.family_name } : prev))
               }
             }
           } catch {
@@ -289,9 +284,7 @@ export const GamesPage: React.FC = () => {
       case 'alphabetical':
         return sortDesc ? -alphaCmp : alphaCmp
       case 'created': {
-        const createdCmp = (a.createdAt || a.id || '').localeCompare(
-          b.createdAt || b.id || ''
-        )
+        const createdCmp = (a.createdAt || a.id || '').localeCompare(b.createdAt || b.id || '')
         if (createdCmp !== 0) return sortDesc ? -createdCmp : createdCmp
         // Same creation time — alphabetical tiebreaker
         return alphaCmp
@@ -346,7 +339,8 @@ export const GamesPage: React.FC = () => {
                 {/* Protocols section */}
                 <section>
                   <h2 className="text-lg font-semibold text-app-primary mb-4">
-                    Protocols ({filteredProtocols.length} match{filteredProtocols.length !== 1 ? 'es' : ''})
+                    Protocols ({filteredProtocols.length} match
+                    {filteredProtocols.length !== 1 ? 'es' : ''})
                   </h2>
                   {filteredProtocols.length > 0 ? (
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">
@@ -373,14 +367,12 @@ export const GamesPage: React.FC = () => {
                 {registryHits.length > 0 && (
                   <section>
                     <h2 className="text-lg font-semibold text-app-primary mb-4">
-                      UAC Registry ({registryHits.length} match{registryHits.length !== 1 ? 'es' : ''})
+                      UAC Registry ({registryHits.length} match
+                      {registryHits.length !== 1 ? 'es' : ''})
                     </h2>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-4">
                       {registryHits.map((mod, i) => (
-                        <div
-                          key={i}
-                          className="bg-app-card border border-app rounded-lg p-4"
-                        >
+                        <div key={i} className="bg-app-card border border-app rounded-lg p-4">
                           <p className="text-sm font-medium text-app-primary truncate">
                             {mod.display_name && mod.display_name !== mod.family_name
                               ? `${mod.family_name} — ${mod.display_name}`
@@ -433,14 +425,12 @@ export const GamesPage: React.FC = () => {
                 {idgamesHits.length > 0 && (
                   <section>
                     <h2 className="text-lg font-semibold text-app-primary mb-4">
-                      idgames Archive ({idgamesHits.length} match{idgamesHits.length !== 1 ? 'es' : ''})
+                      idgames Archive ({idgamesHits.length} match
+                      {idgamesHits.length !== 1 ? 'es' : ''})
                     </h2>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-4">
                       {idgamesHits.map((mod) => (
-                        <div
-                          key={mod.id}
-                          className="bg-app-card border border-app rounded-lg p-4"
-                        >
+                        <div key={mod.id} className="bg-app-card border border-app rounded-lg p-4">
                           <p className="text-sm font-medium text-app-primary truncate">
                             {mod.title}
                           </p>
@@ -499,7 +489,8 @@ export const GamesPage: React.FC = () => {
                 {catalogueHits.length > 0 && (
                   <section>
                     <h2 className="text-lg font-semibold text-app-primary mb-4">
-                      Mod Files in Catalogue ({catalogueHits.length} match{catalogueHits.length !== 1 ? 'es' : ''})
+                      Mod Files in Catalogue ({catalogueHits.length} match
+                      {catalogueHits.length !== 1 ? 'es' : ''})
                     </h2>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-4">
                       {catalogueHits.map((file) => (
@@ -532,7 +523,9 @@ export const GamesPage: React.FC = () => {
                 {filteredProtocols.length === 0 && catalogueHits.length === 0 && (
                   <div className="text-center py-10">
                     <h3 className="text-2xl mb-2">
-                      <span className="animate-pulse text-accent-highlight font-bold">NO MATCHES</span>
+                      <span className="animate-pulse text-accent-highlight font-bold">
+                        NO MATCHES
+                      </span>
                     </h3>
                     <p className="text-app-muted">
                       No protocols or mod files found for &quot;{searchQuery}&quot;
@@ -667,9 +660,7 @@ export const GamesPage: React.FC = () => {
                   <Input
                     value={importFile.name}
                     onChange={(e) =>
-                      setImportFile((prev) =>
-                        prev ? { ...prev, name: e.target.value } : prev
-                      )
+                      setImportFile((prev) => (prev ? { ...prev, name: e.target.value } : prev))
                     }
                     placeholder="Pretty name for the mod"
                     className="bg-app-secondary border-app"

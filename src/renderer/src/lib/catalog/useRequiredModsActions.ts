@@ -126,9 +126,7 @@ export function useRequiredModsActions(
 
   const handleNameChange = useCallback(
     (index: number, name: string): void => {
-      setLoadOrder((prev) =>
-        prev.map((r, i) => (i === index ? { ...r, name } : r))
-      )
+      setLoadOrder((prev) => prev.map((r, i) => (i === index ? { ...r, name } : r)))
     },
     [setLoadOrder]
   )

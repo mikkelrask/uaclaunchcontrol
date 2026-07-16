@@ -151,8 +151,8 @@ export function AddFileDialog({
           <div className="space-y-2">
             <Label>Config Template (optional)</Label>
             <p className="text-xs text-app-muted">
-              When this mod is added to a protocol, the config will be copied
-              so each protocol has its own isolated copy.
+              When this mod is added to a protocol, the config will be copied so each protocol has
+              its own isolated copy.
             </p>
             <div className="flex gap-2">
               <Input

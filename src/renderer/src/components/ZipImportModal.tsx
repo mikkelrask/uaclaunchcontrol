@@ -172,7 +172,13 @@ export function ZipImportModal({
 
       // Registry lookup for each file that has a hash
       const doLookups = async (): Promise<void> => {
-        const updates: { index: number; name: string; version: string; url: string; category: string }[] = []
+        const updates: {
+          index: number
+          name: string
+          version: string
+          url: string
+          category: string
+        }[] = []
         for (let i = 0; i < scanResult.supported.length; i++) {
           const f = scanResult.supported[i]
           if (!f.hashValue) continue
@@ -191,7 +197,13 @@ export function ZipImportModal({
           setFileMeta((prev) => {
             const copy = [...prev]
             for (const u of updates) {
-              copy[u.index] = { ...copy[u.index], name: u.name, version: u.version, url: u.url, category: u.category }
+              copy[u.index] = {
+                ...copy[u.index],
+                name: u.name,
+                version: u.version,
+                url: u.url,
+                category: u.category
+              }
             }
             return copy
           })
@@ -288,7 +300,14 @@ export function ZipImportModal({
         // Submit to pending registry if appropriate
         const finalHash = created.hashValue || zipHash
         if (finalHash && zipUrl) {
-          submitToRegistry(finalHash, zipNameValue, zipVersion, zipUrl, false, zipCategory || undefined)
+          submitToRegistry(
+            finalHash,
+            zipNameValue,
+            zipVersion,
+            zipUrl,
+            false,
+            zipCategory || undefined
+          )
         }
 
         toast({
@@ -462,7 +481,9 @@ export function ZipImportModal({
               {fileMeta.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs text-app-muted italic">
-                    Reorder with the arrow buttons. The order determines each file&apos;s position in the shared load order (shown in the # column). When a player adds any of these files to a protocol, all of them auto-load in this order.
+                    Reorder with the arrow buttons. The order determines each file&apos;s position
+                    in the shared load order (shown in the # column). When a player adds any of
+                    these files to a protocol, all of them auto-load in this order.
                   </p>
                   <div className="grid grid-cols-[auto_auto_auto_1fr_1fr_auto_auto_auto] gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono px-1">
                     <span></span>
@@ -476,9 +497,7 @@ export function ZipImportModal({
                   </div>
                   {scanResult.supported.map((f, idx) => {
                     const meta = fileMeta[idx]
-                    const loadIdx = fileMeta
-                      .filter((m) => m.enabled)
-                      .indexOf(meta!)
+                    const loadIdx = fileMeta.filter((m) => m.enabled).indexOf(meta!)
 
                     return (
                       <div

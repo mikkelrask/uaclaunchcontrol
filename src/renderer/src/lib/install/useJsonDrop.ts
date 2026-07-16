@@ -81,10 +81,7 @@ function matchDoomVersion(
  * Build a temporary IModFile for a file path, computing its hash and
  * checking against the existing catalog.
  */
-async function buildFileFromPath(
-  filePath: string,
-  catalogData: IModFile[]
-): Promise<IModFile> {
+async function buildFileFromPath(filePath: string, catalogData: IModFile[]): Promise<IModFile> {
   const fileName = filePath.split(/[\\/]/).pop() || filePath
   const ext = fileName.split('.').pop() || ''
   const fileType = deriveFileType(ext)
@@ -227,9 +224,10 @@ async function importFromJsonFile(
     const catalogMatch = catalogData.find((c) => c.hashValue === impFile.hashValue)
 
     // Attach configTemplate if configHash is present and config content was written
-    const configTemplate = (impFile.configHash && importConfigs?.[impFile.configHash])
-      ? { configFile: `${impFile.configHash}.cfg`, md5Hash: impFile.configHash }
-      : undefined
+    const configTemplate =
+      impFile.configHash && importConfigs?.[impFile.configHash]
+        ? { configFile: `${impFile.configHash}.cfg`, md5Hash: impFile.configHash }
+        : undefined
 
     if (catalogMatch) {
       matchedFiles.push({

@@ -80,7 +80,14 @@ export interface IDatabaseLink {
   url: string
 }
 
-export type SourcePortFamily = 'uzdoom' | 'gzdoom' | 'zdoom' | 'zandronum' | 'lzdoom' | 'helion' | 'other'
+export type SourcePortFamily =
+  | 'uzdoom'
+  | 'gzdoom'
+  | 'zdoom'
+  | 'zandronum'
+  | 'lzdoom'
+  | 'helion'
+  | 'other'
 
 export interface ISourcePort {
   id: string

@@ -1292,7 +1292,10 @@ export async function deleteProtocol(id: string | number): Promise<boolean | und
   }
 }
 
-export async function deleteModFileFromCatalog(fileId: number, deleteFile?: boolean): Promise<boolean> {
+export async function deleteModFileFromCatalog(
+  fileId: number,
+  deleteFile?: boolean
+): Promise<boolean> {
   try {
     const catalog = await getModFileCatalog()
     const index = catalog.findIndex((f) => f.id === fileId)
@@ -1564,7 +1567,7 @@ export async function unrarAndScan(rarFilePath: string): Promise<IUnzipScanResul
     })
     // Must consume the returned generator — extraction is lazy
     const extracted = extractor.extract({})
-    ;[...extracted.files] // trigger extraction by iterating
+    void [...extracted.files] // ponytail: must consume lazy generator
     return await scanExtractedArchive(tempExtractDir)
   } catch (error) {
     await fs.remove(tempExtractDir).catch(() => {})

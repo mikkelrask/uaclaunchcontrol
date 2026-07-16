@@ -107,10 +107,7 @@ describe('pickUzdoomAsset', () => {
     setPlatform('linux')
     vi.resetModules()
     const { pickUzdoomAsset } = await import('./portService')
-    const assets = makeAssets([
-      'Linux-UZDoom-Legacy-0.9.0.AppImage',
-      'Linux-UZDoom-0.1.0.AppImage'
-    ])
+    const assets = makeAssets(['Linux-UZDoom-Legacy-0.9.0.AppImage', 'Linux-UZDoom-0.1.0.AppImage'])
     expect(pickUzdoomAsset(assets)?.name).toBe('Linux-UZDoom-0.1.0.AppImage')
   })
 

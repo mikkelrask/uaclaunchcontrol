@@ -1,7 +1,15 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { IModFile } from '@shared/schema'
 import { Button } from '@/components/ui/button'
-import { ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, Pencil, Trash2, FileCog } from 'lucide-react'
+import {
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  ExternalLink,
+  Pencil,
+  Trash2,
+  FileCog
+} from 'lucide-react'
 
 export interface CatalogColumnCallbacks {
   catalogFiles: IModFile[]

@@ -129,7 +129,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         }
       })
       .catch(() => {
-        toast({ title: 'FATAL: cfg_load_err', description: 'Failed to load settings', variant: 'destructive' })
+        toast({
+          title: 'FATAL: cfg_load_err',
+          description: 'Failed to load settings',
+          variant: 'destructive'
+        })
       })
 
     // Fetch doom versions
@@ -385,10 +389,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       })
       setScanResults(results)
       setScanSelections(
-        results.map((r) =>
-          !settings.sourcePorts.some(
-            (p) => p.executablePath.toLowerCase() === r.path.toLowerCase()
-          )
+        results.map(
+          (r) =>
+            !settings.sourcePorts.some(
+              (p) => p.executablePath.toLowerCase() === r.path.toLowerCase()
+            )
         )
       )
     } catch (e) {
@@ -405,9 +410,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       for (let i = 0; i < scanResults.length; i++) {
         if (!scanSelections[i]) continue
         const r = scanResults[i]
-        const exists = newPorts.some(
-          (p) => p.executablePath.toLowerCase() === r.path.toLowerCase()
-        )
+        const exists = newPorts.some((p) => p.executablePath.toLowerCase() === r.path.toLowerCase())
         if (!exists) {
           newPorts.push({
             id: crypto.randomUUID(),
@@ -955,9 +958,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       ]
                     }))
                   }}
-                  existingPorts={settings.sourcePorts.map(
-                    (p) => `${p.family}:${p.name}`
-                  )}
+                  existingPorts={settings.sourcePorts.map((p) => `${p.family}:${p.name}`)}
                 />
 
                 {/* Scan Results */}
@@ -1436,11 +1437,13 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-app-secondary border-app">
-            {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'helion', 'other'] as const).map((f) => (
-              <SelectItem key={f} value={f} className="text-app-primary">
-                {f}
-              </SelectItem>
-            ))}
+            {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'helion', 'other'] as const).map(
+              (f) => (
+                <SelectItem key={f} value={f} className="text-app-primary">
+                  {f}
+                </SelectItem>
+              )
+            )}
           </SelectContent>
         </Select>
       </div>

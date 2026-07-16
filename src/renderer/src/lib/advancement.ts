@@ -27,5 +27,3 @@ export function getRankTitle(rankId?: string): string {
   const rank = ADVANCEMENT_RANKS.find((r) => r.id === rankId)
   return rank?.title ?? 'Cadet'
 }
-
-

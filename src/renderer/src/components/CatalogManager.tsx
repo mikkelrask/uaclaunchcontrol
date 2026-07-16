@@ -74,12 +74,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     category: '',
     configTemplate: null
   })
-  const {
-    isDraggingFile,
-    handleFileDragOver,
-    handleFileDragLeave,
-    processDrop
-  } = useFileDrop()
+  const { isDraggingFile, handleFileDragOver, handleFileDragLeave, processDrop } = useFileDrop()
   const [showSidecarOnly, setShowSidecarOnly] = useState(false)
   const [fileTypeFilter, setFileTypeFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -102,14 +97,22 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
   const addRequiredMods = useRequiredModsActions(
     addForm.loadOrder,
-    (updater) => setAddForm((prev) => ({ ...prev, loadOrder: typeof updater === 'function' ? updater(prev.loadOrder) : updater })),
+    (updater) =>
+      setAddForm((prev) => ({
+        ...prev,
+        loadOrder: typeof updater === 'function' ? updater(prev.loadOrder) : updater
+      })),
     catalogFiles,
     toast
   )
 
   const editRequiredMods = useRequiredModsActions(
     editForm.loadOrder,
-    (updater) => setEditForm((prev) => ({ ...prev, loadOrder: typeof updater === 'function' ? updater(prev.loadOrder) : updater })),
+    (updater) =>
+      setEditForm((prev) => ({
+        ...prev,
+        loadOrder: typeof updater === 'function' ? updater(prev.loadOrder) : updater
+      })),
     catalogFiles,
     toast
   )
@@ -395,9 +398,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
     const updatedForm: Partial<typeof addForm> = {
       filePath,
-      name: registryData?.display_name && registryData.display_name !== registryData.family_name
-        ? `${registryData.family_name} — ${registryData.display_name}`
-        : (registryData?.family_name || name),
+      name:
+        registryData?.display_name && registryData.display_name !== registryData.family_name
+          ? `${registryData.family_name} — ${registryData.display_name}`
+          : registryData?.family_name || name,
       fileType,
       version: registryData?.version || '',
       url: '',
@@ -569,7 +573,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     if (!ext || !validExtensions.includes(ext)) {
       toast({
         title: 'FATAL: type_unknow',
-        description: 'Please only use supported files: wad, pk3, pk7, ipk3, deh, bex, zip, rar, bat',
+        description:
+          'Please only use supported files: wad, pk3, pk7, ipk3, deh, bex, zip, rar, bat',
         variant: 'destructive'
       })
       return
@@ -631,7 +636,11 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
         const additionalReqs = resolvedFiles.slice(1).map((fp, idx) => ({
           hash: '',
-          name: fp.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') || fp,
+          name:
+            fp
+              .split(/[\\/]/)
+              .pop()
+              ?.replace(/\.[^.]+$/, '') || fp,
           filePath: fp,
           isNew: true,
           offset: (updatedForm.loadOrder?.length || 0) + idx + 1,
@@ -858,10 +867,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         return
       }
 
-      const processedLoadOrder = await processRequiredMods(
-        editForm.loadOrder,
-        hashValue
-      )
+      const processedLoadOrder = await processRequiredMods(editForm.loadOrder, hashValue)
 
       const updates: Partial<IModFile> = {
         name: editForm.name.trim(),
@@ -1106,8 +1112,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             <DialogTitle>Remove from catalog</DialogTitle>
             <DialogDescription>
               Are you sure you want to remove{' '}
-              <strong>{deleteTarget ? deleteTarget.name || deleteTarget.fileName : ''}</strong>
-              {' '}from your mod file catalog?
+              <strong>{deleteTarget ? deleteTarget.name || deleteTarget.fileName : ''}</strong> from
+              your mod file catalog?
             </DialogDescription>
           </DialogHeader>
           <label className="flex items-center gap-2 text-sm cursor-pointer py-2">
@@ -1118,16 +1124,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             <span>Also delete the file from disk</span>
           </label>
           <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setDeleteTarget(null)}
-            >
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDelete}
-            >
+            <Button variant="destructive" onClick={confirmDelete}>
               Delete
             </Button>
           </DialogFooter>

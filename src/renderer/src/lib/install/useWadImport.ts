@@ -32,10 +32,7 @@ interface ToastLike {
  * Hook encapsulating all WAD file import logic: file selection, drag-and-drop,
  * hash computation, MD5-rename preview, and the actual import mutation.
  */
-export function useWadImport(
-  settings: IAppSettings,
-  toast: ToastLike
-): WadImportHandlers {
+export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImportHandlers {
   const queryClient = useQueryClient()
   const [selectedWad, setSelectedWad] = useState<WadImportSelection | null>(null)
   const [isWadDragging, setIsWadDragging] = useState(false)

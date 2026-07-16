@@ -67,8 +67,9 @@ export function PortDownloadModal({
   const isInstalled = (release: PortRelease): boolean => {
     const family = detectFamily(release.repo)
     return existingPorts.some(
-      (p) => p.toLowerCase() === `${family}:${release.tag.toLowerCase()}` ||
-             p.toLowerCase() === `${family}:${release.version.toLowerCase()}`
+      (p) =>
+        p.toLowerCase() === `${family}:${release.tag.toLowerCase()}` ||
+        p.toLowerCase() === `${family}:${release.version.toLowerCase()}`
     )
   }
 
@@ -78,7 +79,11 @@ export function PortDownloadModal({
   }
 
   const formatDate = (iso: string): string => {
-    return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+    return new Date(iso).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
   }
 
   // Group releases by repo (the backend returns UZDoom first, then GZDoom, then Helion)
@@ -234,9 +239,7 @@ function ReleaseRow({
     <div className="flex items-center gap-3 p-3 bg-app-secondary/50 rounded-lg border border-app group hover:border-accent-highlight/30 transition-colors">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-app-primary truncate">
-            {release.version}
-          </span>
+          <span className="text-sm font-medium text-app-primary truncate">{release.version}</span>
           {release.prerelease && (
             <span className="text-[0.625rem] font-mono uppercase px-1 py-0.5 rounded bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">
               preview

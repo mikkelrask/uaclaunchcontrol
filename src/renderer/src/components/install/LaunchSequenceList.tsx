@@ -34,8 +34,7 @@ export const LaunchSequenceList: React.FC<LaunchSequenceListProps> = ({
       <ul className="space-y-2" onDragOver={handleDragOver} onDrop={handleDrop}>
         {files.map((file, index): React.ReactNode => {
           const isDragged = draggedIndex === index
-          const showPlaceholderBefore =
-            insertionIndex === index && draggedIndex !== index
+          const showPlaceholderBefore = insertionIndex === index && draggedIndex !== index
 
           return (
             <React.Fragment key={`${file.id}-${index}`}>
@@ -53,9 +52,7 @@ export const LaunchSequenceList: React.FC<LaunchSequenceListProps> = ({
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragEnd={handleDragEnd}
                 className={`flex items-center justify-between bg-app-primary p-2 rounded cursor-grab active:cursor-grabbing transition-all duration-150 border select-none ${
-                  isDragged
-                    ? 'hidden'
-                    : 'border-transparent hover:border-accent-highlight/30 group'
+                  isDragged ? 'hidden' : 'border-transparent hover:border-accent-highlight/30 group'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -63,9 +60,7 @@ export const LaunchSequenceList: React.FC<LaunchSequenceListProps> = ({
                     {index + 1}
                   </div>
                   <div className="flex flex-col">
-                    <span
-                      className={`text-sm font-medium ${!file.filePath ? 'text-red-400' : ''}`}
-                    >
+                    <span className={`text-sm font-medium ${!file.filePath ? 'text-red-400' : ''}`}>
                       {file.name || file.fileName}
                       {!file.filePath && (
                         <span className="ml-2 text-xs bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded">
@@ -73,9 +68,7 @@ export const LaunchSequenceList: React.FC<LaunchSequenceListProps> = ({
                         </span>
                       )}
                     </span>
-                    <span className="text-xs text-app-muted">
-                      ({file.fileType})
-                    </span>
+                    <span className="text-xs text-app-muted">({file.fileType})</span>
                   </div>
                 </div>
               </li>
@@ -84,14 +77,13 @@ export const LaunchSequenceList: React.FC<LaunchSequenceListProps> = ({
         })}
 
         {/* Final placeholder if dragging to end */}
-        {insertionIndex === files.length &&
-          draggedIndex !== files.length - 1 && (
-            <li className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
-              <span className="text-sm text-accent-highlight tracking-widest uppercase opacity-60">
-                new placement
-              </span>
-            </li>
-          )}
+        {insertionIndex === files.length && draggedIndex !== files.length - 1 && (
+          <li className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+            <span className="text-sm text-accent-highlight tracking-widest uppercase opacity-60">
+              new placement
+            </span>
+          </li>
+        )}
       </ul>
     </div>
   )

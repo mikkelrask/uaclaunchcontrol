@@ -68,9 +68,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
             variant="ghost"
             size="sm"
             className="text-xs text-accent-highlight hover:bg-accent-highlight/10 gap-1"
-            onClick={() =>
-              window.open('https://uac-soft.online/getting-started/', '_blank')
-            }
+            onClick={() => window.open('https://uac-soft.online/getting-started/', '_blank')}
           >
             Wiki
             <ExternalLink className="w-3 h-3" />

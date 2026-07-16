@@ -148,9 +148,9 @@ export function pickUzdoomAsset(assets: GitHubAsset[]): GitHubAsset | null {
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || ''
 const GITHUB_HEADERS: Record<string, string> = {
-  'Accept': 'application/vnd.github.v3+json',
+  Accept: 'application/vnd.github.v3+json',
   'User-Agent': 'UACLaunchControl/1.0',
-  ...(GITHUB_TOKEN ? { 'Authorization': `Bearer ${GITHUB_TOKEN}` } : {})
+  ...(GITHUB_TOKEN ? { Authorization: `Bearer ${GITHUB_TOKEN}` } : {})
 }
 
 // Cache releases for the lifetime of the process (no point re-fetching)
@@ -164,9 +164,10 @@ async function fetchRepoReleases(
   const url = `https://api.github.com/repos/${owner}/${repo}/releases?per_page=30`
   const res = await fetch(url, { headers: GITHUB_HEADERS })
   if (!res.ok) {
-    const rateMsg = res.status === 403 || res.status === 429
-      ? ' — rate limited. Set GITHUB_TOKEN env var for 5000 req/hr.'
-      : ''
+    const rateMsg =
+      res.status === 403 || res.status === 429
+        ? ' — rate limited. Set GITHUB_TOKEN env var for 5000 req/hr.'
+        : ''
     console.warn(`[ports] GitHub API returned ${res.status} for ${owner}/${repo}${rateMsg}`)
     return []
   }
@@ -286,11 +287,7 @@ async function downloadFile(url: string, destPath: string): Promise<number> {
 // ── tar.xz / tar.gz extraction ─────────────────────────
 // GZDoom older releases ship portable .tar.xz bundles for Linux.
 
-async function extractTar(
-  tarPath: string,
-  destDir: string,
-  family: string
-): Promise<string> {
+async function extractTar(tarPath: string, destDir: string, family: string): Promise<string> {
   const tempDir = path.join(destDir, '_extract')
   await fs.ensureDir(tempDir)
 
@@ -317,7 +314,9 @@ async function extractTar(
           }
         }
       }
-    } catch { /* empty */ }
+    } catch {
+      /* empty */
+    }
     return null
   }
 
@@ -427,7 +426,9 @@ async function extractDeb(debPath: string, destDir: string, family: string): Pro
               return full
             }
           }
-        } catch { /* empty */ }
+        } catch {
+          /* empty */
+        }
         return null
       }
       const walked = walk(tempDir)

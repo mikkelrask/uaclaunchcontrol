@@ -23,20 +23,17 @@ export function useFileReorder(
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null)
 
-  const handleDragStart = useCallback(
-    (e: React.DragEvent, index: number): void => {
-      e.dataTransfer.effectAllowed = 'move'
-      e.dataTransfer.setData('text/plain', index.toString())
-      e.dataTransfer.setData('application/x-uac-reorder', 'true')
+  const handleDragStart = useCallback((e: React.DragEvent, index: number): void => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', index.toString())
+    e.dataTransfer.setData('application/x-uac-reorder', 'true')
 
-      // Wait a tick before hiding the source element so the browser
-      // captures the original element's style for the drag ghost.
-      setTimeout(() => {
-        setDraggedIndex(index)
-      }, 0)
-    },
-    []
-  )
+    // Wait a tick before hiding the source element so the browser
+    // captures the original element's style for the drag ghost.
+    setTimeout(() => {
+      setDraggedIndex(index)
+    }, 0)
+  }, [])
 
   const handleDragOver = useCallback(
     (e: React.DragEvent<HTMLElement>): void => {

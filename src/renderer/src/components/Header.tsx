@@ -3,13 +3,7 @@ import { useLocation, Link } from 'wouter'
 import { useQuery } from '@tanstack/react-query'
 import { Settings, Menu, Keyboard, FileText, Info, GraduationCap, Bell } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetClose
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import SettingsDialog from './SettingsDialog'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
@@ -207,7 +201,11 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
         <AchievementsPopover>
           <button className="flex items-center bg-app-hover rounded-md p-1 hover:bg-app-hover/80 transition-colors cursor-pointer">
             <div className="w-8 h-8 rounded bg-accent-highlight flex items-center justify-center text-white">
-              <img src={rankImage(playerData?.rank ?? settings?.rank)} alt="Guy, Doom - Space Marine" className="w-8 h-8 rounded" />
+              <img
+                src={rankImage(playerData?.rank ?? settings?.rank)}
+                alt="Guy, Doom - Space Marine"
+                className="w-8 h-8 rounded"
+              />
             </div>
             <div className="flex-col text-left">
               <div className="text-xs ml-2 mr-1">Guy, Doom</div>

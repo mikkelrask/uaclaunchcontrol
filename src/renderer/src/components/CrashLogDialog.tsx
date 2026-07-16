@@ -30,11 +30,7 @@ export const CrashLogDialog: React.FC<CrashLogDialogProps> = ({ data, onClose })
   const { toast } = useToast()
 
   const hint = data ? inferCrashHint(data.logTail) : null
-  const codeStr = data
-    ? data.exitCode === null
-      ? 'a signal'
-      : `exit code ${data.exitCode}`
-    : ''
+  const codeStr = data ? (data.exitCode === null ? 'a signal' : `exit code ${data.exitCode}`) : ''
 
   const handleCopy = async (): Promise<void> => {
     if (!data) return
