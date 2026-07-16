@@ -93,7 +93,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const fetchedRef = useRef(false)
 
   // Snapshot of source port state at dialog open, for achievement tracking
-  const initialPortCountRef = useRef<number>(0)
   const initialPortFamiliesRef = useRef<string[]>([])
 
   // Fetch settings from API when dialog opens
@@ -122,7 +121,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
           const activePorts = (data.sourcePorts || []).filter(
             (p: { ignored?: boolean }) => !p.ignored
           )
-          initialPortCountRef.current = activePorts.length
           initialPortFamiliesRef.current = [
             ...new Set(
               activePorts.map((p: { family?: string }) => p.family).filter((f): f is string => !!f)
@@ -277,33 +275,32 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         defaultView: settings.defaultView,
         uiScale: settings.uiScale
       }
-      // Dispatch SOURCE_PORT_ADDED achievements for each newly added port
-      const oldPortCount = initialPortCountRef.current
+      // Dispatch SOURCE_PORT_ADDED achievements for each newly seen family.
+      // Gated on family novelty alone, not net port count — a port count
+      // that stayed flat (e.g. editing an existing port's family, or
+      // removing one port while adding another) can still introduce a
+      // genuinely new family and must still fire.
       const newPorts = (settings.sourcePorts || []).filter((p) => !p.ignored)
-      const addedCount = newPorts.length - oldPortCount
-      if (addedCount > 0) {
-        // Collect newly seen families
-        const oldFamilies = new Set(initialPortFamiliesRef.current)
-        for (const port of newPorts) {
-          if (port.family && !oldFamilies.has(port.family)) {
-            dispatchAchievementEvent({
-              type: 'SOURCE_PORT_ADDED',
-              count: 1,
-              family: port.family
+      const oldFamilies = new Set(initialPortFamiliesRef.current)
+      for (const port of newPorts) {
+        if (port.family && !oldFamilies.has(port.family)) {
+          dispatchAchievementEvent({
+            type: 'SOURCE_PORT_ADDED',
+            count: 1,
+            family: port.family
+          })
+            .then((srcResult) => {
+              const unlockToasts = buildUnlockToasts(srcResult)
+              for (const t of unlockToasts) {
+                toast({
+                  title: t.title,
+                  description: t.description,
+                  duration: t.duration as 6000 | 8000
+                })
+              }
             })
-              .then((srcResult) => {
-                const unlockToasts = buildUnlockToasts(srcResult)
-                for (const t of unlockToasts) {
-                  toast({
-                    title: t.title,
-                    description: t.description,
-                    duration: t.duration as 6000 | 8000
-                  })
-                }
-              })
-              .catch(() => {})
-            oldFamilies.add(port.family)
-          }
+            .catch(() => {})
+          oldFamilies.add(port.family)
         }
       }
 

@@ -180,10 +180,21 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
     icon: 'FlaskConical',
     type: 'event-qualifier',
     conditions: [{ stat: 'totalSourcePortsAdded', min: 1 }],
-    eventQualifier: (event) => {
-      if (event.type !== 'SOURCE_PORT_ADDED') return false
-      const fam = (event as { family?: string }).family
-      return !!fam && fam !== 'uzdoom' && fam !== 'gzdoom'
+    eventQualifier: (event, stats) => {
+      if (event.type === 'SOURCE_PORT_ADDED') {
+        const fam = (event as { family?: string }).family
+        if (!!fam && fam !== 'uzdoom' && fam !== 'gzdoom') return true
+      }
+      // Fallback for configs where the qualifying port predates this
+      // achievement (or the achievement system itself) — e.g. legacy
+      // installs whose source ports were backfilled straight into
+      // distinctSourcePortFamilies by computeInitialStatsFromDisk()
+      // rather than ever going through a live SOURCE_PORT_ADDED dispatch.
+      // Checked on every subsequent event dispatch, so it catches up on
+      // the next achievement-triggering action.
+      return (stats.distinctSourcePortFamilies || []).some(
+        (fam) => fam !== 'uzdoom' && fam !== 'gzdoom'
+      )
     },
     hidden: false
   },
