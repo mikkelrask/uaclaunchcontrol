@@ -5,7 +5,7 @@ import os from 'os'
 import chokidar from 'chokidar'
 import crypto from 'crypto'
 import { BrowserWindow } from 'electron'
-import AdmZip from 'adm-zip'
+import extractZip from 'extract-zip'
 import {
   IAppSettings,
   IDatabaseLink,
@@ -1537,8 +1537,10 @@ export async function unzipAndScan(zipFilePath: string): Promise<IUnzipScanResul
   const tempExtractDir = await createExtractDir()
 
   try {
-    const zip = new AdmZip(resolvedZipPath)
-    zip.extractAllTo(tempExtractDir, true)
+    // extract-zip streams entries via yauzl instead of reading the whole
+    // archive into a single Buffer, so it isn't bound by Node's ~2GiB
+    // readFileSync limit (unlike adm-zip, which failed on archives >2GiB).
+    await extractZip(resolvedZipPath, { dir: tempExtractDir })
     return await scanExtractedArchive(tempExtractDir)
   } catch (error) {
     await fs.remove(tempExtractDir).catch(() => {})
