@@ -128,6 +128,19 @@ export function formatDate(iso: string): string {
   })
 }
 
+/**
+ * Format an ISO date string with finer-grained recency than formatDate()
+ * (seconds/minutes/hours), falling back to formatDate() past a day.
+ */
+export function formatRelativeTime(iso: string): string {
+  const diffSec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (diffSec < 10) return 'just now'
+  if (diffSec < 60) return `${diffSec}s ago`
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
+  return formatDate(iso)
+}
+
 /** Format accumulated playtime as "Total: X.X hrs" (Steam-style guilt trip). */
 export function formatPlaytime(seconds?: number): string | null {
   if (!seconds || seconds <= 0) return null

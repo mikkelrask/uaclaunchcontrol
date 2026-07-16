@@ -1,6 +1,7 @@
 import * as React from 'react'
 
 import type { ToastActionElement, ToastProps } from '@/components/ui/toast'
+import { recordNotification } from '@/lib/notifications'
 
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 5000 // 5 seconds
@@ -156,6 +157,13 @@ function toast({ ...props }: Toast): {
         if (!open) dismiss()
       }
     }
+  })
+
+  recordNotification({
+    id,
+    title: props.title,
+    description: props.description,
+    variant: props.variant ?? undefined
   })
 
   return {

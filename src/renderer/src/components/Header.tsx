@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useLocation, Link } from 'wouter'
 import { useQuery } from '@tanstack/react-query'
-import { Settings, Menu, Keyboard, FileText, Info, GraduationCap } from 'lucide-react'
+import { Settings, Menu, Keyboard, FileText, Info, GraduationCap, Bell } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
   Sheet,
@@ -14,8 +14,10 @@ import { Button } from '@/components/ui/button'
 import SettingsDialog from './SettingsDialog'
 import KeyboardShortcutsModal from './KeyboardShortcutsModal'
 import AchievementsPopover from './AchievementsPopover'
+import NotificationsPopover from './NotificationsPopover'
 import { api } from '@/api'
 import { getRankTitle } from '@/lib/advancement'
+import { useNotifications } from '@/lib/notifications'
 import type { IPlayerData } from '@shared/schema'
 import marine from '@/assets/marine.webp'
 import sergeant from '@/assets/sergeant.webp'
@@ -137,6 +139,8 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
     staleTime: 30_000
   })
 
+  const { unreadCount } = useNotifications()
+
   const databaseLink = settings?.databaseLinkPresets?.[settings?.selectedPresetIndex ?? 0]
 
   const handleSearch = (e: React.FormEvent): void => {
@@ -213,6 +217,14 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
             </div>
           </button>
         </AchievementsPopover>
+        <NotificationsPopover>
+          <button className="relative w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover">
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-destructive rounded-full border-2 border-app-primary" />
+            )}
+          </button>
+        </NotificationsPopover>
         <button
           data-tour="settings-button"
           className="w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover"
