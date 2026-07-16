@@ -2,11 +2,8 @@ import React from 'react'
 import { IProtocol, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Button } from '@/components/ui/button'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/api'
-import { useToast } from '@/hooks/use-toast'
+import { useLaunchProtocol } from '@/hooks/useLaunchProtocol'
 import { formatPlaytime, formatDate } from '@/lib/utils'
-import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { Play, Settings, Clock, Hourglass } from 'lucide-react'
 import placeholder from '@renderer/assets/placeholder.png'
 
@@ -17,48 +14,7 @@ interface GameCardProps {
 }
 
 export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSettingsClick }) => {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
-
-  const launchMutation = useMutation({
-    mutationFn: api.launchProtocol,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
-      toast({
-        title: 'SYSTEM: launch_protocol',
-        description: `${protocol.title} launched.`
-      })
-      // Dispatch PROTOCOL_LAUNCHED achievement event
-      dispatchAchievementEvent({
-        type: 'PROTOCOL_LAUNCHED',
-        protocolId: protocol.id
-      })
-        .then((result) => {
-          const unlockToasts = buildUnlockToasts(result)
-          for (const t of unlockToasts) {
-            toast({
-              title: t.title,
-              description: t.description,
-              duration: t.duration as 6000 | 8000
-            })
-          }
-        })
-        .catch((err) => {
-          console.error('Achievement dispatch failed:', err)
-        })
-    },
-    onError: (error) => {
-      toast({
-        title: 'FATAL: launch_failed',
-        description: `Could not launch ${protocol.title}: ${error}`,
-        variant: 'destructive'
-      })
-    }
-  })
-
-  const handleLaunch = (): void => {
-    launchMutation.mutate(protocol.id)
-  }
+  const { handleLaunch, isPending } = useLaunchProtocol(protocol)
 
   const handleSettings = (): void => {
     onSettingsClick(protocol.id)
@@ -145,10 +101,10 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
           data-tour="launch-button"
           size="sm"
           onClick={handleLaunch}
-          disabled={launchMutation.isPending}
+          disabled={isPending}
           className="bg-accent-highlight hover:opacity-90 text-white"
         >
-          {launchMutation.isPending ? (
+          {isPending ? (
             'LAUNCHING...'
           ) : (
             <>

@@ -2,9 +2,7 @@ import React from 'react'
 import { IProtocol, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Button } from '@/components/ui/button'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/api'
-import { useToast } from '@/hooks/use-toast'
+import { useLaunchProtocol } from '@/hooks/useLaunchProtocol'
 import { formatPlaytime, formatDate } from '@/lib/utils'
 import placeholder from '@renderer/assets/placeholder.png'
 import { Play, Settings, Clock, Hourglass, ExternalLink, FileCode } from 'lucide-react'
@@ -20,30 +18,7 @@ export const GameListCard: React.FC<GameListCardProps> = ({
   doomVersion,
   onSettingsClick
 }) => {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
-
-  const launchMutation = useMutation({
-    mutationFn: api.launchProtocol,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
-      toast({
-        title: 'SYSTEM: launch_protocol',
-        description: `${protocol.title} launched.`
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: 'FATAL: launch_failed',
-        description: `Could not launch ${protocol.title}: ${error}`,
-        variant: 'destructive'
-      })
-    }
-  })
-
-  const handleLaunch = (): void => {
-    launchMutation.mutate(protocol.id)
-  }
+  const { handleLaunch, isPending } = useLaunchProtocol(protocol)
 
   const handleSettings = (): void => {
     onSettingsClick(protocol.id)
@@ -139,10 +114,10 @@ export const GameListCard: React.FC<GameListCardProps> = ({
           <Button
             size="sm"
             onClick={handleLaunch}
-            disabled={launchMutation.isPending}
+            disabled={isPending}
             className="bg-accent-highlight hover:opacity-90 text-white px-3"
           >
-            {launchMutation.isPending ? (
+            {isPending ? (
               '...'
             ) : (
               <>
