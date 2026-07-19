@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -8,22 +7,12 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { Plus, FolderOpen, X, Loader2 } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { Plus, FolderOpen, Loader2 } from 'lucide-react'
 import type { IModFile } from '@shared/schema'
-import { SIDECAR_EXPLANATION } from '@/lib/catalog/types'
 import type { AddFormState } from '@/lib/catalog/types'
-import { CATEGORIES } from '@shared/categories'
 import type { RequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
-import { RequiredModsEditor } from '@/components/catalog/RequiredModsEditor'
-import { InfoTooltip } from '@/components/ui/info-tooltip'
+import { ModFileFormFields } from '@/components/catalog/ModFileFormFields'
 
 interface AddFileDialogProps {
   open: boolean
@@ -95,124 +84,21 @@ export function AddFileDialog({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="add-name">Name</Label>
-            <Input
-              id="add-name"
-              value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Pretty name for the mod"
-              className="bg-app-secondary border-app"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="add-version">Version</Label>
-            <Input
-              id="add-version"
-              value={form.version}
-              onChange={(e) => setForm((prev) => ({ ...prev, version: e.target.value }))}
-              placeholder="e.g., 1.0, v2.1"
-              className="bg-app-secondary border-app"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="add-url">URL (ModDB, forum)</Label>
-            <Input
-              id="add-url"
-              value={form.url}
-              onChange={(e) => setForm((prev) => ({ ...prev, url: e.target.value }))}
-              placeholder="https://www.moddb.com/mods/..."
-              className="bg-app-secondary border-app"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Category</Label>
-            <Select
-              value={form.category}
-              onValueChange={(val) => setForm((prev) => ({ ...prev, category: val }))}
-            >
-              <SelectTrigger className="bg-app-secondary border-app">
-                <SelectValue placeholder="Uncategorized" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Config Template Section */}
-          <div className="space-y-2">
-            <Label>Config Template (optional)</Label>
-            <p className="text-xs text-app-muted">
-              When this mod is added to a protocol, the config will be copied so each protocol has
-              its own isolated copy.
-            </p>
-            <div className="flex gap-2">
-              <Input
-                value={form.configTemplate?.filePath || ''}
-                readOnly
-                placeholder="No config linked — global defaults apply"
-                className="bg-app-secondary border-app flex-1 text-xs"
-              />
-              {form.configTemplate ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClearConfigFile}
-                  className="bg-app-secondary border-app"
-                  title="Remove config template"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              ) : null}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onBrowseConfigFile}
-                className="bg-app-secondary border-app"
-              >
-                <FolderOpen className="h-4 w-4" />
-              </Button>
-            </div>
-            {form.configTemplate ? (
-              <p className="text-xs text-green-500 font-mono">
-                MD5: {form.configTemplate.md5Hash.slice(0, 16)}...
-              </p>
-            ) : null}
-          </div>
-
-          <RequiredModsEditor
-            loadOrder={form.loadOrder}
+          <ModFileFormFields
+            idPrefix="add"
+            form={form}
+            setForm={setForm}
             selectableFiles={selectableFiles}
-            onAddFromCatalog={requiredModsActions.handleAddFromCatalog}
-            onBrowseFile={requiredModsActions.handleBrowseFile}
-            onRemove={requiredModsActions.handleRemove}
-            onMoveUp={requiredModsActions.handleMoveUp}
-            onMoveDown={requiredModsActions.handleMoveDown}
-            onToggleSidecar={requiredModsActions.handleToggleSidecar}
-            onNameChange={requiredModsActions.handleNameChange}
+            requiredModsActions={requiredModsActions}
+            onBrowseConfigFile={onBrowseConfigFile}
+            onClearConfigFile={onClearConfigFile}
+            configTemplateHelpText="When this mod is added to a protocol, the config will be copied so each protocol has its own isolated copy."
+            configTemplatePlaceholder="No config linked — global defaults apply"
+            namePlaceholder="Pretty name for the mod"
+            versionPlaceholder="e.g., 1.0, v2.1"
+            urlLabel="URL (ModDB, forum)"
+            urlPlaceholder="https://www.moddb.com/mods/..."
           />
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="add-sidecar"
-              checked={form.sidecarOnly}
-              onCheckedChange={(checked) =>
-                setForm((prev) => ({ ...prev, sidecarOnly: checked === true }))
-              }
-            />
-            <Label htmlFor="add-sidecar" className="text-sm font-normal">
-              Sidecar mod
-            </Label>
-            <InfoTooltip text={SIDECAR_EXPLANATION} />
-          </div>
         </div>
 
         <DialogFooter className="bg-app-secondary border-t border-app p-4 shrink-0">

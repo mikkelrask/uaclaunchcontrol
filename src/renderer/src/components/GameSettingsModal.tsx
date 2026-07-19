@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter
@@ -27,15 +26,18 @@ import {
   ISourcePort,
   IAppSettings
 } from '@shared/schema'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useToast } from '@/hooks/use-toast'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api'
 import ModFileList from './ModFileList'
 import { ProtocolConfigControl } from './ProtocolConfigControl'
+import { ProtocolScreenshotPicker } from './ProtocolScreenshotPicker'
+import { DiscardChangesDialog } from './DiscardChangesDialog'
+import { DeleteProtocolDialog } from './DeleteProtocolDialog'
+import { useProtocolActions } from '@/hooks/useProtocolActions'
+import { useExportModpack } from '@/hooks/useExportModpack'
 import { CopyButton } from '@/components/ui/copy-button'
-import { FolderOpen, Download, Gamepad2, Trash2, Save, Play } from 'lucide-react'
+import { Download, Gamepad2, Trash2, Save, Play } from 'lucide-react'
 import { slugify, buildLaunchCommand } from '@/lib/utils'
-import placeholder from '@renderer/assets/placeholder.png'
 
 interface GameSettingsModalProps {
   protocolId: string | null
@@ -67,11 +69,10 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
   showLaunchPreview = true,
   registerAttemptClose
 }) => {
-  const { toast } = useToast()
-  const queryClient = useQueryClient()
   const [protocol, setProtocol] = useState<IProtocol>(initialProtocol)
   const [files, setFiles] = useState<InsertModFile[]>(initialFiles)
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Unsaved-changes detection — covers every field edit and mod file change
   const isDirty = useMemo(
@@ -121,106 +122,24 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
     })
   }, [protocol, files, sourcePorts, doomVersions, settings])
 
-  // Update protocol mutation
-  const updateMutation = useMutation({
-    mutationFn: ({
-      id,
-      protocol,
-      files
-    }: {
-      id: string
-      protocol: Partial<IProtocol>
-      files: Omit<IModFile, 'id' | 'modId'>[]
-    }) => api.updateProtocol(id, protocol, files),
-    onSuccess: (updatedProtocol, variables) => {
-      toast({
-        title: 'SYSTEM: protocol_saved',
-        description: 'Protocol settings successfully saved.'
-      })
-      queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
-      queryClient.setQueryData([`/api/protocols/${variables.id}`], {
-        protocol: updatedProtocol,
-        files: variables.files
-      })
-      onClose()
-    },
-    onError: (error) => {
-      toast({
-        title: 'FATAL: settings.save()',
-        description: `Failed to save changes: ${error}`,
-        variant: 'destructive'
-      })
-    }
+  const {
+    handleSave,
+    handleDelete,
+    handleLaunch,
+    handleCreateFreshConfig,
+    isSaving,
+    isDeleting,
+    isLaunching,
+    isCreatingConfig
+  } = useProtocolActions({
+    protocolId,
+    protocol,
+    files,
+    onClose,
+    onConfigCreated: (result) => setProtocol((prev) => ({ ...prev, protocolConfig: result }))
   })
 
-  // Delete protocol mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.deleteProtocol(id),
-    onSuccess: () => {
-      toast({
-        title: 'SYSTEM: delete_protocol',
-        description: 'Protocol deleted successfully'
-      })
-      queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
-      onClose()
-    },
-    onError: (error) => {
-      toast({
-        title: 'FATAL: delete_failed',
-        description: `Failed to delete protocol: ${error}`,
-        variant: 'destructive'
-      })
-    }
-  })
-
-  // Launch mutation — test-launches the current in-memory state (including
-  // any unsaved edits), same as InstallPage's Test button. Lets you try
-  // changes before committing to Save Changes.
-  const launchMutation = useMutation({
-    mutationFn: () => api.testLaunch(protocol, files),
-    onSuccess: () => {
-      toast({
-        title: 'SYSTEM: launch_protocol',
-        description: `Process "${protocol.title}" is now running`
-      })
-    },
-    onError: (error) => {
-      toast({
-        title: 'FATAL: launch_protocol',
-        description: `Failed to launch protocol: "${error}"`,
-        variant: 'destructive'
-      })
-    }
-  })
-
-  const handleSave = (): void => {
-    const filesWithoutIds = files.map((f) => ({
-      name: f.name,
-      fileName: f.fileName,
-      filePath: f.filePath,
-      fileType: f.fileType,
-      loadOrder: f.loadOrder,
-      isRequired: f.isRequired,
-      hashValue: f.hashValue,
-      url: f.url || ''
-    }))
-
-    updateMutation.mutate({
-      id: protocolId,
-      protocol,
-      files: filesWithoutIds
-    })
-  }
-
-  const handleDelete = (): void => {
-    if (confirm('Are you sure you want to delete this protocol?')) {
-      deleteMutation.mutate(protocolId)
-    }
-  }
-
-  const handleLaunch = (): void => {
-    launchMutation.mutate()
-  }
+  const { handleExport } = useExportModpack(protocol, files, doomVersions, sourcePorts)
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -231,31 +150,6 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
 
   const handleSelectChange = (name: string, value: string): void => {
     setProtocol((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const [isCreatingConfig, setIsCreatingConfig] = useState(false)
-
-  // Creates the file immediately (same as the screenshot upload above), but
-  // only takes effect on the protocol once Save Changes is hit — consistent
-  // with how every other edit in this modal works.
-  const handleCreateFreshConfig = async (): Promise<void> => {
-    setIsCreatingConfig(true)
-    try {
-      const result = await api.createBlankConfig(protocolId)
-      setProtocol((prev) => ({ ...prev, protocolConfig: result }))
-      toast({
-        title: 'SYSTEM: config_created',
-        description: 'Fresh isolated config created. Click Save Changes to apply.'
-      })
-    } catch (error) {
-      toast({
-        title: 'FATAL: config_create_failed',
-        description: `Failed to create config: ${error}`,
-        variant: 'destructive'
-      })
-    } finally {
-      setIsCreatingConfig(false)
-    }
   }
 
   const configStatus = protocol.protocolConfig
@@ -269,131 +163,17 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
           "No isolated config yet — this protocol shares the source port's global settings."
       }
 
-  const handleExport = async (): Promise<void> => {
-    const doomVersion = doomVersions?.find((v) => v.id === protocol.doomVersionId)
-    const portName = protocol.sourcePortId
-      ? sourcePorts.find((p) => p.id === protocol.sourcePortId)?.name || 'gzdoom'
-      : 'gzdoom'
-
-    // Collect config file contents referenced by files and protocol
-    const configs: Record<string, { content: string }> = {}
-
-    // From file configTemplates
-    for (const f of files) {
-      if (f.configTemplate?.md5Hash && !configs[f.configTemplate.md5Hash]) {
-        try {
-          const content = await api.readConfigContent(f.configTemplate.md5Hash)
-          configs[f.configTemplate.md5Hash] = { content }
-        } catch {
-          console.warn(`Failed to read config ${f.configTemplate.md5Hash} for export`)
-        }
-      }
-    }
-
-    // From protocolConfig (the template it was seeded from)
-    if (protocol.protocolConfig?.templateHash && !configs[protocol.protocolConfig.templateHash]) {
-      try {
-        const content = await api.readConfigContent(protocol.protocolConfig.templateHash)
-        configs[protocol.protocolConfig.templateHash] = { content }
-      } catch {
-        console.warn(
-          `Failed to read protocol config ${protocol.protocolConfig.templateHash} for export`
-        )
-      }
-    }
-
-    const exportData = {
-      format: 'uac-modpack',
-      version: '1.1',
-      game: {
-        title: protocol.title || protocol.name,
-        description: protocol.description || '',
-        doomVersionSlug: doomVersion?.slug || '',
-        sourcePort: portName,
-        launchParameters: protocol.launchParameters || '',
-        ...(protocol.protocolConfig ? { protocolConfig: protocol.protocolConfig } : {})
-      },
-      files: files.map((f) => ({
-        name: f.name || f.fileName,
-        hashValue: f.hashValue || '',
-        loadOrder: f.loadOrder ?? 0,
-        url: f.url || '',
-        ...(f.configTemplate ? { configHash: f.configTemplate.md5Hash } : {})
-      })),
-      ...(Object.keys(configs).length > 0 ? { configs } : {})
-    }
-
-    const jsonStr = JSON.stringify(exportData, null, 2)
-    const blob = new Blob([jsonStr], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${slugify(protocol.title || protocol.name || 'modpack')}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-
-    toast({
-      title: 'SYSTEM: export_done',
-      description: `Modpack downloaded${Object.keys(configs).length > 0 ? ' with configs' : ''}`
-    })
-  }
-
   return (
     <div className="flex-1 overflow-y-auto min-h-0">
       <div className="space-y-4 p-4">
         <div className="flex gap-4 mb-4">
-          <div className="w-1/3">
-            <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-              Screenshot
-            </Label>
-            <button
-              type="button"
-              className="w-full rounded overflow-hidden relative group"
-              onClick={async () => {
-                const result = await api.showOpenDialog({
-                  title: 'Select Screenshot',
-                  properties: ['openFile'],
-                  filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }]
-                })
-                if (!result.canceled && result.filePaths.length > 0) {
-                  try {
-                    const { fileName } = await api.uploadScreenshot(result.filePaths[0])
-                    setProtocol((prev) => ({ ...prev, screenshotPath: fileName }))
-                    toast({
-                      title: 'SYSTEM: screenshot_saved',
-                      description: 'New screenshot saved. Click Save to apply.'
-                    })
-                  } catch (error) {
-                    toast({
-                      title: 'FATAL: upload_failed',
-                      description: `Failed to upload screenshot: ${error}`,
-                      variant: 'destructive'
-                    })
-                  }
-                }
-              }}
-            >
-              <img
-                src={
-                  protocol.screenshotPath
-                    ? protocol.screenshotPath.startsWith('http') ||
-                      protocol.screenshotPath.includes('/') ||
-                      protocol.screenshotPath.includes('\\')
-                      ? protocol.screenshotPath
-                      : `http://localhost:7666/images/${protocol.screenshotPath}`
-                    : placeholder
-                }
-                alt={protocol.title}
-                className="w-full aspect-video object-cover"
-              />
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded">
-                <span className="text-white text-sm font-medium flex items-center gap-2">
-                  <FolderOpen className="h-5 w-5" />
-                  Change Screenshot
-                </span>
-              </div>
-            </button>
-          </div>
+          <ProtocolScreenshotPicker
+            title={protocol.title || protocol.name || ''}
+            screenshotPath={protocol.screenshotPath}
+            onScreenshotChange={(fileName) =>
+              setProtocol((prev) => ({ ...prev, screenshotPath: fileName }))
+            }
+          />
           <div className="flex-1 space-y-4">
             <div>
               <Label
@@ -555,9 +335,9 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
           </Button>
           <Button
             variant="outline"
-            onClick={handleDelete}
+            onClick={() => setShowDeleteConfirm(true)}
             className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
-            disabled={deleteMutation.isPending}
+            disabled={isDeleting}
           >
             <Trash2 className="w-4 h-4 mr-2" />
             Delete Instance
@@ -569,7 +349,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             variant="outline"
             onClick={handleSave}
             className="mr-2 bg-app-primary hover:bg-app-hover text-app-primary border-app"
-            disabled={updateMutation.isPending}
+            disabled={isSaving}
           >
             <Save className="w-4 h-4 mr-2" />
             Save Changes
@@ -577,49 +357,37 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
           <Button
             onClick={handleLaunch}
             className="bg-accent-highlight hover:opacity-90 text-white"
-            disabled={launchMutation.isPending}
+            disabled={isLaunching}
           >
             <Play className="w-4 h-4 mr-1.5 fill-current" />
-            {launchMutation.isPending ? 'LAUNCHING...' : 'LAUNCH'}
+            {isLaunching ? 'LAUNCHING...' : 'LAUNCH'}
           </Button>
         </div>
       </DialogFooter>
 
-      <Dialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Discard changes?</DialogTitle>
-            <DialogDescription>
-              This protocol has unsaved changes. Do you want to discard them?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowDiscardConfirm(false)}>
-              Keep Editing
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                setShowDiscardConfirm(false)
-                onClose()
-              }}
-            >
-              Discard
-            </Button>
-            <Button
-              onClick={() => {
-                setShowDiscardConfirm(false)
-                handleSave()
-              }}
-              className="bg-accent-highlight hover:opacity-90 text-white"
-              disabled={updateMutation.isPending}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save & Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DiscardChangesDialog
+        open={showDiscardConfirm}
+        onOpenChange={setShowDiscardConfirm}
+        onDiscard={() => {
+          setShowDiscardConfirm(false)
+          onClose()
+        }}
+        onSaveAndClose={() => {
+          setShowDiscardConfirm(false)
+          handleSave()
+        }}
+        isSaving={isSaving}
+      />
+
+      <DeleteProtocolDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onConfirm={() => {
+          setShowDeleteConfirm(false)
+          handleDelete()
+        }}
+        isDeleting={isDeleting}
+      />
     </div>
   )
 }
