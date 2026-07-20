@@ -294,7 +294,7 @@ export function ModFileSelector({
     <div>
       <div className="flex items-center mb-4 mt-4">
         <div className="flex flex-col w-full">
-          <h3 className="text-lg mb-2">Mod Files</h3>
+          <h3 className="text-lg mb-2">Add Mod Files</h3>
           <p className="text-sm text-app-secondary mb-4">
             Add the mod files in the order they should be loaded. Drag the handle to reorder.
           </p>
