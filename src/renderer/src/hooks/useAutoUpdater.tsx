@@ -31,7 +31,11 @@ export function useAutoUpdater(): {
               >
                 View
               </ToastAction>
-            )
+            ),
+            // No payload: UpdateModal reads live updateInfo state, not the
+            // event detail, so recalling this later just reflects whatever
+            // update status is current when it's clicked.
+            historyAction: { kind: 'view-update' }
           })
           break
         case 'not-available':
@@ -52,7 +56,8 @@ export function useAutoUpdater(): {
               <ToastAction altText="Restart Now" onClick={() => api.installUpdate()}>
                 Restart
               </ToastAction>
-            )
+            ),
+            historyAction: { kind: 'restart-update' }
           })
           break
         case 'error':

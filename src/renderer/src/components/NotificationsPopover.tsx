@@ -2,8 +2,29 @@ import React, { useState } from 'react'
 import { Bell } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useNotifications, markAllRead } from '@/lib/notifications'
+import { useNotifications, markAllRead, type NotificationAction } from '@/lib/notifications'
 import { formatRelativeTime } from '@/lib/utils'
+import { api } from '@/api'
+
+const ACTION_LABELS: Record<NotificationAction['kind'], string> = {
+  'view-crash-log': 'View Log',
+  'view-update': 'View Update',
+  'restart-update': 'Restart Now'
+}
+
+function runNotificationAction(action: NotificationAction): void {
+  switch (action.kind) {
+    case 'view-crash-log':
+      window.dispatchEvent(new CustomEvent('show-crash-log-modal', { detail: action.payload }))
+      break
+    case 'view-update':
+      window.dispatchEvent(new CustomEvent('show-update-modal'))
+      break
+    case 'restart-update':
+      api.installUpdate()
+      break
+  }
+}
 
 interface NotificationsPopoverProps {
   /** The child element that triggers the popover (e.g. the bell button) */
@@ -68,6 +89,17 @@ export const NotificationsPopover: React.FC<NotificationsPopoverProps> = ({ chil
                 </div>
                 {n.description && (
                   <p className="text-xs text-app-muted mt-0.5 leading-relaxed">{n.description}</p>
+                )}
+                {n.action && (
+                  <button
+                    className="text-[10px] font-semibold text-accent-highlight hover:underline mt-1"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      runNotificationAction(n.action!)
+                    }}
+                  >
+                    {ACTION_LABELS[n.action.kind]}
+                  </button>
                 )}
               </div>
             ))}

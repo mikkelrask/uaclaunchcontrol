@@ -1,5 +1,24 @@
 import React from 'react'
 
+// A crash log's console tail, captured in-memory at crash time. Deliberately
+// has no logFilePath: that file is opened with { flags: 'w' } and keyed by
+// protocolId (see fileService.ts), so relaunching the same protocol
+// overwrites it — a historical notification can never safely point at it.
+// The logTail snapshot below is the only part of a crash log that stays
+// accurate forever, so it's the only part we persist.
+export interface CrashLogActionPayload {
+  protocolId?: string
+  protocolName?: string
+  exitCode: number | null
+  sessionSeconds: number
+  logTail: string[]
+}
+
+export type NotificationAction =
+  | { kind: 'view-crash-log'; payload: CrashLogActionPayload }
+  | { kind: 'view-update' }
+  | { kind: 'restart-update' }
+
 export interface INotification {
   id: string
   title: string
@@ -7,6 +26,7 @@ export interface INotification {
   variant: 'default' | 'destructive'
   createdAt: string // ISO timestamp
   read: boolean
+  action?: NotificationAction
 }
 
 const STORAGE_KEY = 'uac:notifications'
@@ -55,6 +75,7 @@ export function recordNotification(input: {
   title?: React.ReactNode
   description?: React.ReactNode
   variant?: 'default' | 'destructive'
+  action?: NotificationAction
 }): void {
   // 96 existing call sites all pass plain strings today (verified) - this
   // guards the rare/future case of something richer being passed in.
@@ -75,7 +96,8 @@ export function recordNotification(input: {
       description,
       variant,
       createdAt: new Date().toISOString(),
-      read: false
+      read: false,
+      ...(input.action ? { action: input.action } : {})
     },
     ...notifications
   ].slice(0, MAX_NOTIFICATIONS)

@@ -835,6 +835,45 @@ export async function downloadImage(url: string, protocolId: string): Promise<st
   }
 }
 
+const IMAGE_MIME_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif'
+}
+
+// Read an image from the images directory as base64, for embedding in a
+// modpack export. path.basename strips any directory components so a
+// crafted fileName can't escape IMAGES_DIR.
+export async function readScreenshotAsBase64(
+  fileName: string
+): Promise<{ fileName: string; mimeType: string; data: string }> {
+  const safeName = path.basename(fileName)
+  const filePath = path.join(IMAGES_DIR, safeName)
+  const buffer = await fs.readFile(filePath)
+  const ext = path.extname(safeName).toLowerCase()
+  return {
+    fileName: safeName,
+    mimeType: IMAGE_MIME_TYPES[ext] || 'application/octet-stream',
+    data: buffer.toString('base64')
+  }
+}
+
+// Write a base64-encoded image (from a modpack import) into the images
+// directory, mirroring copyImageToImages' unique-filename scheme.
+export async function writeScreenshotFromBase64(fileName: string, data: string): Promise<string> {
+  const safeName = path.basename(fileName)
+  const uniqueFileName = `${Date.now()}_${safeName}`
+  const destPath = path.join(IMAGES_DIR, uniqueFileName)
+
+  await fs.ensureDir(IMAGES_DIR)
+  await fs.writeFile(destPath, Buffer.from(data, 'base64'))
+
+  debug(`Screenshot imported to: ${destPath}`)
+  return uniqueFileName
+}
+
 async function resolveFileHashPath(filePath: string): Promise<string> {
   let resolvedPath = resolvePath(filePath)
 

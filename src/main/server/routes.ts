@@ -196,6 +196,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  // Read a screenshot as base64, for embedding in a modpack export
+  app.get('/api/screenshots/:fileName/content', async (req, res) => {
+    try {
+      const result = await storage.readScreenshotAsBase64(req.params.fileName)
+      return res.json(result)
+    } catch (error: unknown) {
+      return res
+        .status(404)
+        .json({ message: error instanceof Error ? error.message : 'Screenshot not found' })
+    }
+  })
+
+  // Write a base64-encoded screenshot from a modpack import
+  app.post('/api/screenshots/import', async (req, res) => {
+    const { fileName, data } = req.body
+    if (!fileName || !data) {
+      return res.status(400).json({ message: 'Missing fileName or data' })
+    }
+    try {
+      const savedFileName = await storage.writeScreenshotFromBase64(fileName, data)
+      return res.json({ fileName: savedFileName })
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ message: error instanceof Error ? error.message : 'Failed to import screenshot' })
+    }
+  })
+
   app.get('/api/versions/:slug', async (req, res) => {
     const version = await storage.getDoomVersionBySlug(req.params.slug)
     if (!version) {

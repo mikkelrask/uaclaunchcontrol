@@ -490,6 +490,26 @@ export const api = {
     return handleApiResponse(response)
   },
 
+  /** Read a screenshot as base64 (for modpack export). */
+  readScreenshotContent: async (
+    fileName: string
+  ): Promise<{ fileName: string; mimeType: string; data: string }> => {
+    const response = await fetch(
+      `${API_BASE}/api/screenshots/${encodeURIComponent(fileName)}/content`
+    )
+    return handleApiResponse(response)
+  },
+
+  /** Write a base64-encoded screenshot to disk (for modpack import reconstruction). */
+  importScreenshot: async (fileName: string, data: string): Promise<{ fileName: string }> => {
+    const response = await fetch(`${API_BASE}/api/screenshots/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName, data })
+    })
+    return handleApiResponse(response)
+  },
+
   getVersion: async (): Promise<string> => {
     return await window.api.getAppVersion()
   },

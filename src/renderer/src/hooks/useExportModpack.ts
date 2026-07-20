@@ -45,6 +45,25 @@ export function useExportModpack(
       }
     }
 
+    // Screenshot: a bare filename lives in the local images directory and
+    // won't exist on whatever machine imports this JSON, so embed its bytes
+    // as base64. A URL is already portable — just carry it through as text,
+    // same as everything else in this export.
+    const isLocalScreenshot =
+      !!protocol.screenshotPath &&
+      !protocol.screenshotPath.startsWith('http') &&
+      !protocol.screenshotPath.includes('/') &&
+      !protocol.screenshotPath.includes('\\')
+
+    let screenshot: { fileName: string; mimeType: string; data: string } | undefined
+    if (isLocalScreenshot) {
+      try {
+        screenshot = await api.readScreenshotContent(protocol.screenshotPath!)
+      } catch {
+        console.warn('Failed to read screenshot for export')
+      }
+    }
+
     const exportData = {
       format: 'uac-modpack',
       version: '1.1',
@@ -54,12 +73,19 @@ export function useExportModpack(
         doomVersionSlug: doomVersion?.slug || '',
         sourcePort: portName,
         launchParameters: protocol.launchParameters || '',
-        ...(protocol.protocolConfig ? { protocolConfig: protocol.protocolConfig } : {})
+        ...(protocol.protocolConfig ? { protocolConfig: protocol.protocolConfig } : {}),
+        ...(protocol.screenshotPath && !isLocalScreenshot
+          ? { screenshotPath: protocol.screenshotPath }
+          : {}),
+        ...(screenshot ? { screenshot } : {})
       },
+      // Load order isn't a per-file field — it's the position of each entry
+      // in this array. IModFile.loadOrder is unrelated (catalog-only,
+      // relative dependency ordering for the "add required files" combobox),
+      // so exporting it here just implied false precision.
       files: files.map((f) => ({
         name: f.name || f.fileName,
         hashValue: f.hashValue || '',
-        loadOrder: f.loadOrder ?? 0,
         url: f.url || '',
         ...(f.configTemplate ? { configHash: f.configTemplate.md5Hash } : {})
       })),
@@ -75,9 +101,13 @@ export function useExportModpack(
     a.click()
     URL.revokeObjectURL(url)
 
+    const extras = [
+      Object.keys(configs).length > 0 ? 'configs' : null,
+      screenshot ? 'screenshot' : null
+    ].filter(Boolean)
     toast({
       title: 'SYSTEM: export_done',
-      description: `Modpack downloaded${Object.keys(configs).length > 0 ? ' with configs' : ''}`
+      description: `Modpack downloaded${extras.length > 0 ? ` with ${extras.join(' + ')}` : ''}`
     })
   }
 

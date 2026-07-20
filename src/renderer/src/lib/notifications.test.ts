@@ -122,6 +122,48 @@ describe('recordNotification filtering', () => {
   })
 })
 
+describe('recordNotification action payload', () => {
+  it('persists an action descriptor through the localStorage round-trip', async () => {
+    vi.stubGlobal('localStorage', createMemoryStorage())
+    vi.resetModules()
+    const { recordNotification } = await import('./notifications')
+
+    recordNotification({
+      id: 'crash-1',
+      title: 'FATAL: process_died',
+      description: 'terminated',
+      variant: 'destructive',
+      action: {
+        kind: 'view-crash-log',
+        payload: {
+          protocolId: 'p1',
+          protocolName: 'DOOM II',
+          exitCode: 1,
+          sessionSeconds: 42,
+          logTail: ['line one', 'line two']
+        }
+      }
+    })
+
+    const stored = readStored() as unknown as Array<{
+      action?: { kind: string; payload?: { logTail: string[] } }
+    }>
+    expect(stored[0].action?.kind).toBe('view-crash-log')
+    expect(stored[0].action?.payload?.logTail).toEqual(['line one', 'line two'])
+  })
+
+  it('omits the action field entirely when none is provided', async () => {
+    vi.stubGlobal('localStorage', createMemoryStorage())
+    vi.resetModules()
+    const { recordNotification } = await import('./notifications')
+
+    recordNotification({ id: 'a', title: 'WARNING: a', description: '' })
+
+    const stored = readStored() as unknown as Array<{ action?: unknown }>
+    expect(stored[0].action).toBeUndefined()
+  })
+})
+
 describe('markRead / markAllRead', () => {
   it('markRead flips only the matching notification to read', async () => {
     vi.stubGlobal('localStorage', createMemoryStorage())

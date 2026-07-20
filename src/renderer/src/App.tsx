@@ -72,6 +72,19 @@ const App: React.FC = () => {
     return () => window.removeEventListener('show-update-modal', handleShowModal)
   }, [])
 
+  // Replay a crash log from notification history — dispatched by
+  // NotificationsPopover with the payload captured at crash time, since
+  // that's the only part of a historical crash notification guaranteed to
+  // still be accurate (see the historyAction comment above).
+  useEffect(() => {
+    const handleShowCrashLog = (event: Event): void => {
+      const { detail } = event as CustomEvent<CrashLogData>
+      setCrashLog(detail)
+    }
+    window.addEventListener('show-crash-log-modal', handleShowCrashLog)
+    return () => window.removeEventListener('show-crash-log-modal', handleShowCrashLog)
+  }, [])
+
   // Apply theme globally whenever settings change
   useEffect(() => {
     if (settings?.theme) {
@@ -168,6 +181,7 @@ const App: React.FC = () => {
           const codeStr = data.exitCode === null ? 'a signal' : `exit code ${data.exitCode}`
           const hint = inferCrashHint(data.logTail)
           const protocolId = data.protocolId
+          const protocolName = findProtocolTitle(protocolId)
           toast({
             title: 'FATAL: process_died',
             description: hint
@@ -180,7 +194,7 @@ const App: React.FC = () => {
                 onClick={() =>
                   setCrashLog({
                     protocolId,
-                    protocolName: findProtocolTitle(protocolId),
+                    protocolName,
                     exitCode: data.exitCode,
                     sessionSeconds: data.sessionSeconds,
                     logTail: data.logTail,
@@ -190,7 +204,21 @@ const App: React.FC = () => {
               >
                 View Log
               </ToastAction>
-            )
+            ),
+            // logFilePath deliberately omitted here — it's opened with
+            // { flags: 'w' } and keyed by protocolId, so relaunching the same
+            // protocol overwrites it. The historical replay below only ever
+            // shows the logTail snapshot captured at crash time.
+            historyAction: {
+              kind: 'view-crash-log',
+              payload: {
+                protocolId,
+                protocolName,
+                exitCode: data.exitCode,
+                sessionSeconds: data.sessionSeconds,
+                logTail: data.logTail
+              }
+            }
           })
         }
       })

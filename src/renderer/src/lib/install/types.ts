@@ -12,6 +12,14 @@ export interface UacModpackImport {
       configFile: string
       templateHash: string
     }
+    /** External screenshot URL — already portable, carried through as-is */
+    screenshotPath?: string
+    /** Locally-uploaded screenshot, embedded as base64 so the export is self-contained */
+    screenshot?: {
+      fileName: string
+      mimeType: string
+      data: string
+    }
   }
   files: {
     name: string

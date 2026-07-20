@@ -162,6 +162,55 @@ async function importFromBatFile(
 
 // ── JSON Modpack Import ─────────────────────────────────
 
+/**
+ * Merge a modpack's imported file list against the local catalog, preserving
+ * the JSON array's order (that order *is* the load order — see
+ * useExportModpack.ts). Matched and missing files must stay interleaved
+ * exactly as exported; sorting them into separate buckets first would
+ * silently reorder anything that mixed the two.
+ */
+export function matchImportFiles(
+  importFiles: UacModpackImport['files'],
+  catalogData: IModFile[],
+  importConfigs: UacModpackImport['configs']
+): { files: IModFile[]; missingCount: number } {
+  const files: IModFile[] = []
+  let missingCount = 0
+
+  for (const impFile of importFiles) {
+    const catalogMatch = catalogData.find((c) => c.hashValue === impFile.hashValue)
+
+    // Attach configTemplate if configHash is present and config content was written
+    const configTemplate =
+      impFile.configHash && importConfigs?.[impFile.configHash]
+        ? { configFile: `${impFile.configHash}.cfg`, md5Hash: impFile.configHash }
+        : undefined
+
+    if (catalogMatch) {
+      files.push({
+        ...catalogMatch,
+        // Preserve existing template or set from import
+        configTemplate: catalogMatch.configTemplate || configTemplate
+      })
+    } else {
+      missingCount++
+      files.push({
+        id: Date.now() + Math.random(),
+        name: impFile.name,
+        fileName: impFile.name,
+        filePath: '',
+        fileType: 'PK3',
+        isRequired: true,
+        hashValue: impFile.hashValue || '',
+        url: impFile.url || '',
+        configTemplate
+      })
+    }
+  }
+
+  return { files, missingCount }
+}
+
 async function importFromJsonFile(
   droppedFile: File,
   form: UseFormReturn<z.infer<typeof formSchema>>,
@@ -207,6 +256,23 @@ async function importFromJsonFile(
   form.setValue('description', game.description || '')
   form.setValue('launchParameters', game.launchParameters || '')
 
+  // Screenshot: an embedded base64 image gets written back to disk under a
+  // fresh filename; a plain URL is already portable and just passes through
+  // (the existing submit flow in InstallPage re-downloads http(s) URLs).
+  if (game.screenshot) {
+    try {
+      const { fileName } = await api.importScreenshot(
+        game.screenshot.fileName,
+        game.screenshot.data
+      )
+      form.setValue('screenshotPath', fileName)
+    } catch (err) {
+      console.warn('Failed to import screenshot:', err)
+    }
+  } else if (game.screenshotPath) {
+    form.setValue('screenshotPath', game.screenshotPath)
+  }
+
   const ports: ISourcePort[] = settings?.sourcePorts || []
   const matchedPort = matchSourcePort(game.sourcePort, ports)
   if (matchedPort) form.setValue('sourcePortId', matchedPort.id)
@@ -216,45 +282,18 @@ async function importFromJsonFile(
 
   // Match import files against catalog
   const catalogData = await api.getModFileCatalog()
-  const matchedFiles: IModFile[] = []
-  const missingFiles: IModFile[] = []
+  const { files: orderedFiles, missingCount } = matchImportFiles(
+    importFiles,
+    catalogData,
+    importConfigs
+  )
 
-  for (const impFile of importFiles) {
-    const catalogMatch = catalogData.find((c) => c.hashValue === impFile.hashValue)
+  setFiles(orderedFiles)
 
-    // Attach configTemplate if configHash is present and config content was written
-    const configTemplate =
-      impFile.configHash && importConfigs?.[impFile.configHash]
-        ? { configFile: `${impFile.configHash}.cfg`, md5Hash: impFile.configHash }
-        : undefined
-
-    if (catalogMatch) {
-      matchedFiles.push({
-        ...catalogMatch,
-        // Preserve existing template or set from import
-        configTemplate: catalogMatch.configTemplate || configTemplate
-      })
-    } else {
-      missingFiles.push({
-        id: Date.now() + Math.random(),
-        name: impFile.name,
-        fileName: impFile.name,
-        filePath: '',
-        fileType: 'PK3',
-        isRequired: true,
-        hashValue: impFile.hashValue || '',
-        url: impFile.url || '',
-        configTemplate
-      })
-    }
-  }
-
-  setFiles([...matchedFiles, ...missingFiles])
-
-  if (missingFiles.length > 0) {
+  if (missingCount > 0) {
     toast({
       title: 'SYSTEM: failed_successfully',
-      description: `${matchedFiles.length} files matched, ${missingFiles.length} missing (shown in red)`
+      description: `${orderedFiles.length - missingCount} files matched, ${missingCount} missing (shown in red)`
     })
   } else {
     toast({
