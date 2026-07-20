@@ -24,14 +24,13 @@ import {
 import { Combobox } from '@/components/ui/combobox'
 import { Separator } from '@/components/ui/separator'
 import { ModFileSelector } from '@/components/ModFileSelector'
-import { LaunchSequenceList } from '@/components/install/LaunchSequenceList'
 import { LaunchCommandPreview } from '@/components/install/LaunchCommandPreview'
 import { ProtocolConfigControl } from '@/components/ProtocolConfigControl'
 import { FolderOpen, FlaskConical, Plus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 import type { z } from 'zod'
 import type { formSchema } from '@/lib/install/schema'
-import type { FileReorderHandlers } from '@/lib/install/useFileReorder'
+import type { FileReorderHandlers } from '@/hooks/useFileReorder'
 
 interface ToastLike {
   (opts: { title: string; description: string; variant?: 'destructive' }): void
@@ -61,21 +60,14 @@ export interface ConfigurationTabProps {
 /**
  * The "Configuration" tab content — the main form for creating a new launch protocol.
  * Includes fields for title, screenshot, description, base WAD, source port, save dir,
- * launch parameters, mod file selection, reorderable sequence list, launch preview, and submit.
+ * launch parameters, drag-reorderable mod file selection, launch preview, and submit.
  */
 export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
   form,
   versions,
   settings,
   files,
-  fileReorder: {
-    draggedIndex,
-    insertionIndex,
-    handleDragStart,
-    handleDragOver,
-    handleDrop,
-    handleDragEnd
-  },
+  fileReorder,
   launchCommand,
   createMutation,
   toast,
@@ -321,19 +313,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
           variant="section"
         />
         <div>
-          <div className="mb-4">
-            <ModFileSelector value={files} onChange={handleFilesChange} />
-          </div>
-
-          <LaunchSequenceList
-            files={files}
-            draggedIndex={draggedIndex}
-            insertionIndex={insertionIndex}
-            handleDragStart={handleDragStart}
-            handleDragOver={handleDragOver}
-            handleDrop={handleDrop}
-            handleDragEnd={handleDragEnd}
-          />
+          <ModFileSelector value={files} onChange={handleFilesChange} fileReorder={fileReorder} />
         </div>
 
         <LaunchCommandPreview

@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react'
-import type { IModFile } from '@shared/schema'
 
 export interface FileReorderHandlers {
   draggedIndex: number | null
@@ -11,15 +10,15 @@ export interface FileReorderHandlers {
 }
 
 /**
- * Hook for native drag-to-reorder of mod files in the install page.
+ * Hook for native drag-to-reorder of a mod file list. Generic over the item
+ * type so it's shared by both the Install page's IModFile[] and the Settings
+ * modal's InsertModFile[] — it never reads a field off an item, only splices
+ * array positions.
  *
  * Distinguishes internal reorder events (text/plain + application/x-uac-reorder)
  * from external file drops so they don't interfere with JSON/WAD import handlers.
  */
-export function useFileReorder(
-  files: IModFile[],
-  setFiles: React.Dispatch<React.SetStateAction<IModFile[]>>
-): FileReorderHandlers {
+export function useFileReorder<T>(files: T[], setFiles: (files: T[]) => void): FileReorderHandlers {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null)
 
