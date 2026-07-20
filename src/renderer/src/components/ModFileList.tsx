@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { Fragment, useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { IModFile, InsertModFile } from '@shared/schema'
-import { Trash, ChevronUp, ChevronDown, Plus, ExternalLink } from 'lucide-react'
+import { Trash, GripVertical, Plus, ExternalLink } from 'lucide-react'
 import { Combobox } from '@/components/ui/combobox'
 import { api } from '@/api'
+import { useFileReorder } from '@/hooks/useFileReorder'
 
 interface ModFileListProps {
   files: IModFile[] | InsertModFile[]
@@ -12,6 +13,14 @@ interface ModFileListProps {
 
 export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => {
   const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
+  const {
+    draggedIndex,
+    insertionIndex,
+    handleDragStart,
+    handleDragOver,
+    handleDrop,
+    handleDragEnd
+  } = useFileReorder(files, onChange)
 
   useEffect(() => {
     api.getModFileCatalog().then(setCatalogFiles).catch(console.error)
@@ -33,74 +42,92 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
     onChange(files.filter((f) => f.hashValue !== fileHash))
   }
 
-  const moveUp = (index: number): void => {
-    if (index <= 0) return
-    const newFiles = [...files]
-    ;[newFiles[index - 1], newFiles[index]] = [newFiles[index], newFiles[index - 1]]
-
-    onChange(newFiles)
-  }
-
-  const moveDown = (index: number): void => {
-    if (index >= files.length - 1) return
-    const newFiles = [...files]
-    ;[newFiles[index], newFiles[index + 1]] = [newFiles[index + 1], newFiles[index]]
-
-    onChange(newFiles)
-  }
-
   return (
-    <div className="bg-app-primary p-3 pb-0 rounded h-56 overflow-y-auto">
+    <div
+      className="bg-app-primary p-3 pb-0 rounded h-56 overflow-y-auto"
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {files.length === 0 ? (
         <div className="text-app-primary text-center py-2">No mod files added</div>
       ) : (
-        files.map((file, index) => (
-          <div key={file.hashValue} className="flex justify-between items-center mb-2 text-sm">
-            <div className="flex items-center space-x-1">
-              <button
-                type="button"
-                onClick={() => moveUp(index)}
-                disabled={index === 0}
-                className="p-1 text-app-primary hover:text-app-primary disabled:opacity-30"
+        files.map((file, index) => {
+          const isDragged = draggedIndex === index
+          const showPlaceholderBefore = insertionIndex === index && draggedIndex !== index
+
+          return (
+            <Fragment key={file.hashValue}>
+              {showPlaceholderBefore && (
+                <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+                  <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
+                    drop here
+                  </span>
+                </div>
+              )}
+
+              <div
+                data-drag-index={index}
+                className={`flex justify-between items-center mb-2 text-sm p-2 rounded bg-app-secondary border transition-all duration-150 select-none ${
+                  isDragged ? 'hidden' : 'border-transparent hover:border-accent-highlight/30 group'
+                }`}
               >
-                <ChevronUp className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => moveDown(index)}
-                disabled={index === files.length - 1}
-                className="p-1 text-app-primary hover:text-app-primary disabled:opacity-30"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </button>
-              <span className="text-xs mr-2">{index + 1}.</span>
-              <span title={file.filePath}>
-                {(file.name || file.fileName)?.slice(0, 30)}
-                {file.version && ` (${file.version})`}
-              </span>
-              {file.url && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className="shrink-0 cursor-grab active:cursor-grabbing text-app-muted opacity-40 group-hover:opacity-100 transition-opacity"
+                    tabIndex={-1}
+                    aria-label="Reorder"
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </button>
+                  <span className="text-xs text-app-muted font-mono w-4 text-center shrink-0">
+                    {index + 1}
+                  </span>
+                  <span title={file.filePath}>
+                    {(file.name || file.fileName)?.slice(0, 30)}
+                    {file.version && ` (${file.version})`}
+                  </span>
+                  {!file.filePath && (
+                    <span className="text-xs bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded">
+                      missing
+                    </span>
+                  )}
+                  {file.url && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.open(file.url, '_blank')
+                      }}
+                      className="p-1 h-6 w-6 shrink-0 text-app-muted hover:text-app-primary opacity-40 group-hover:opacity-100 transition-opacity"
+                      title={file.url}
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    window.open(file.url, '_blank')
-                  }}
-                  className="p-1 h-6 w-6 shrink-0 text-app-muted hover:text-app-primary"
-                  title={file.url}
+                  onClick={() => removeFile(file.hashValue || '')}
+                  className="text-xs bg-app-primary p-1 rounded hover:bg-app-hover opacity-40 group-hover:opacity-100 transition-opacity"
                 >
-                  <ExternalLink className="h-3 w-3" />
+                  <Trash className="h-3 w-3" />
                 </button>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => removeFile(file.hashValue || '')}
-              className="text-xs bg-app-secondary p-1 rounded hover:bg-app-hover"
-            >
-              <Trash className="h-3 w-3" />
-            </button>
-          </div>
-        ))
+              </div>
+            </Fragment>
+          )
+        })
+      )}
+
+      {insertionIndex === files.length && draggedIndex !== files.length - 1 && (
+        <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+          <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
+            new placement
+          </span>
+        </div>
       )}
 
       <div className="flex mt-3 space-x-2">

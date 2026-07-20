@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Select,
@@ -9,21 +10,31 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Combobox } from '@/components/ui/combobox'
-import { FolderOpenIcon, PlusIcon, TrashIcon, ExternalLink } from 'lucide-react'
+import { FolderOpenIcon, PlusIcon, TrashIcon, ExternalLink, GripVertical } from 'lucide-react'
 import type { IModFile } from '@shared/schema'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
+import type { FileReorderHandlers } from '@/hooks/useFileReorder'
 
 let _nextTempId = Date.now()
 
 interface ModFileSelectorProps {
   value: IModFile[]
   onChange: (files: IModFile[]) => void
+  fileReorder: FileReorderHandlers
 }
 
 export function ModFileSelector({
   value = [],
-  onChange
+  onChange,
+  fileReorder: {
+    draggedIndex,
+    insertionIndex,
+    handleDragStart,
+    handleDragOver,
+    handleDrop,
+    handleDragEnd
+  }
 }: ModFileSelectorProps): React.ReactElement {
   const { toast } = useToast()
   const { data: catalogFiles = [], refetch: loadCatalogFiles } = useQuery({
@@ -285,7 +296,7 @@ export function ModFileSelector({
         <div className="flex flex-col w-full">
           <h3 className="text-lg mb-2">Mod Files</h3>
           <p className="text-sm text-app-secondary mb-4">
-            Add the mod files in the order they should be loaded.
+            Add the mod files in the order they should be loaded. Drag the handle to reorder.
           </p>
         </div>
         <div className="flex justify-end w-full">
@@ -303,89 +314,140 @@ export function ModFileSelector({
       </div>
 
       {value.length === 0 ? (
-        <div className="text-center text-gray-400 py-4">
-          No mod files added. Click &quot;Add File&quot; to begin.
+        <div className="text-center text-app-muted py-8 border border-dashed border-app rounded">
+          No mod files added. Click &quot;Add file&quot; to begin.
         </div>
       ) : (
-        <div className="space-y-3">
-          {value.map((file, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-1">
-                <Input
-                  placeholder="Pretty name"
-                  value={file.name || ''}
-                  onChange={(e) => handleUpdateFile(index, 'name', e.target.value)}
-                  className="bg-app-primary border-app"
-                />
-                {file.version && (
-                  <span className="text-xs text-app-muted whitespace-nowrap shrink-0">
-                    ({file.version})
-                  </span>
+        <div className="space-y-3" onDragOver={handleDragOver} onDrop={handleDrop}>
+          {value.map((file, index) => {
+            const isDragged = draggedIndex === index
+            const showPlaceholderBefore = insertionIndex === index && draggedIndex !== index
+
+            return (
+              <Fragment key={file.id}>
+                {showPlaceholderBefore && (
+                  <div className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+                    <span className="text-accent-highlight text-sm tracking-widest uppercase opacity-60">
+                      drop here
+                    </span>
+                  </div>
                 )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => file.url && window.open(file.url, '_blank')}
-                  className={`p-1 h-8 w-8 shrink-0 ${file.url ? 'text-app-muted hover:text-app-primary' : 'text-app-muted/30 cursor-not-allowed'}`}
-                  title={file.url || 'No URL'}
-                  type="button"
+
+                <div
+                  data-drag-index={index}
+                  className={`flex items-center gap-2 bg-app-primary p-2 rounded transition-all duration-150 border select-none ${
+                    isDragged
+                      ? 'hidden'
+                      : 'border-transparent hover:border-accent-highlight/30 group'
+                  }`}
                 >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </div>
+                  <button
+                    type="button"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className="shrink-0 cursor-grab active:cursor-grabbing text-app-muted opacity-40 group-hover:opacity-100 transition-opacity"
+                    tabIndex={-1}
+                    aria-label="Reorder"
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </button>
 
-              <div className="w-24">
-                <Select
-                  value={file.fileType}
-                  onValueChange={(value) => handleUpdateFile(index, 'fileType', value)}
-                >
-                  <SelectTrigger className="bg-app-primary border-app">
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-app-secondary border-app">
-                    <SelectItem value="WAD">WAD</SelectItem>
-                    <SelectItem value="PK3">PK3</SelectItem>
-                    <SelectItem value="ZIP">ZIP</SelectItem>
-                    <SelectItem value="DEH">DEH</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="text-app-muted text-xs font-semibold font-mono w-4 text-center shrink-0">
+                    {index + 1}
+                  </div>
 
-              <Button
-                variant="outline"
-                onClick={() => handleBrowseFile(index)}
-                className="border-app shrink-0"
-                type="button"
-              >
-                <FolderOpenIcon className="h-4 w-4" />
-              </Button>
+                  <div className="flex-1 flex items-center gap-1">
+                    <Input
+                      placeholder="Pretty name"
+                      value={file.name || ''}
+                      onChange={(e) => handleUpdateFile(index, 'name', e.target.value)}
+                      className="bg-app-primary border-app"
+                    />
+                    {file.version && (
+                      <span className="text-xs text-app-muted whitespace-nowrap shrink-0">
+                        ({file.version})
+                      </span>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => file.url && window.open(file.url, '_blank')}
+                      className={`p-1 h-8 w-8 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity ${file.url ? 'text-app-muted hover:text-app-primary' : 'text-app-muted/30 cursor-not-allowed'}`}
+                      title={file.url || 'No URL'}
+                      type="button"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                    {!file.filePath && (
+                      <span className="text-xs bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded shrink-0">
+                        missing
+                      </span>
+                    )}
+                  </div>
 
-              <div className="w-32">
-                <Combobox
-                  value=""
-                  onValueChange={(value) => {
-                    if (value) handleSelectCatalogFile(index, parseInt(value, 10))
-                  }}
-                  options={selectableFiles.map((f) => ({
-                    value: f.id.toString(),
-                    label: f.name + (f.version ? ` (${f.version})` : '')
-                  }))}
-                  placeholder="Catalog..."
-                  className="bg-app-primary border-app"
-                  disabled={selectableFiles.length === 0}
-                />
-              </div>
+                  <div className="w-24">
+                    <Select
+                      value={file.fileType}
+                      onValueChange={(value) => handleUpdateFile(index, 'fileType', value)}
+                    >
+                      <SelectTrigger className="bg-app-primary border-app">
+                        <SelectValue placeholder="Type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-app-secondary border-app">
+                        <SelectItem value="WAD">WAD</SelectItem>
+                        <SelectItem value="PK3">PK3</SelectItem>
+                        <SelectItem value="ZIP">ZIP</SelectItem>
+                        <SelectItem value="DEH">DEH</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <Button
-                variant="ghost"
-                onClick={() => handleRemoveFile(index)}
-                className="text-red-500 hover:text-red-700 hover:bg-transparent"
-                type="button"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleBrowseFile(index)}
+                    className="border-app shrink-0 opacity-40 group-hover:opacity-100 transition-opacity"
+                    type="button"
+                  >
+                    <FolderOpenIcon className="h-4 w-4" />
+                  </Button>
+
+                  <div className="w-32">
+                    <Combobox
+                      value=""
+                      onValueChange={(value) => {
+                        if (value) handleSelectCatalogFile(index, parseInt(value, 10))
+                      }}
+                      options={selectableFiles.map((f) => ({
+                        value: f.id.toString(),
+                        label: f.name + (f.version ? ` (${f.version})` : '')
+                      }))}
+                      placeholder="Catalog..."
+                      className="bg-app-primary border-app"
+                      disabled={selectableFiles.length === 0}
+                    />
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleRemoveFile(index)}
+                    className="text-red-500 hover:text-red-700 hover:bg-transparent opacity-40 group-hover:opacity-100 transition-opacity"
+                    type="button"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              </Fragment>
+            )
+          })}
+
+          {insertionIndex === value.length && draggedIndex !== value.length - 1 && (
+            <div className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+              <span className="text-sm text-accent-highlight tracking-widest uppercase opacity-60">
+                new placement
+              </span>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
