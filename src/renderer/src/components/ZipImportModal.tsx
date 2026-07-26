@@ -495,13 +495,14 @@ export function ZipImportModal({
                     <span>Cat</span>
                     <span>URL</span>
                   </div>
-                  {scanResult.supported.map((f, idx) => {
-                    const meta = fileMeta[idx]
-                    const loadIdx = fileMeta.filter((m) => m.enabled).indexOf(meta!)
+                  {fileMeta.map((meta, idx) => {
+                    const f = scanResult.supported.find((sf) => sf.tempPath === meta.tempPath)
+                    if (!f) return null
+                    const loadIdx = fileMeta.filter((m) => m.enabled).indexOf(meta)
 
                     return (
                       <div
-                        key={f.tempPath}
+                        key={meta.tempPath}
                         className={`grid grid-cols-[auto_auto_auto_1fr_1fr_auto_auto_auto] gap-2 items-center ${meta?.enabled ? '' : 'opacity-50'}`}
                       >
                         <div className="flex flex-col gap-0.5">
