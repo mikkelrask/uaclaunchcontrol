@@ -106,5 +106,10 @@
   },
   "overrides": {
     "hono": "4.12.26"
+  },
+  "allowScripts": {
+    "electron@39.8.6": true,
+    "esbuild@0.25.12": true,
+    "electron-winstaller@5.4.0": true
   }
 }
