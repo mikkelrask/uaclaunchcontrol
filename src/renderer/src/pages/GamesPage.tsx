@@ -31,6 +31,7 @@ import GameListCard from '@/components/GameListCard'
 import GameSettingsModal from '@/components/GameSettingsModal'
 import { IProtocol, IDoomVersion, IModFile, IAppSettings } from '@shared/schema'
 import { api } from '@/api'
+import { formatRegistryName } from '@/lib/registryName'
 import { useToast } from '@/hooks/use-toast'
 import type { IRegistryMod, IIdgamesMod } from '@/api'
 import { REGISTRY_API_URL } from '@shared/registry-config'
@@ -180,7 +181,8 @@ export const GamesPage: React.FC = () => {
             if (settings.registryLookupEnabled) {
               const registryData = await api.lookupMod(result.hash, REGISTRY_API_URL)
               if (registryData && registryData.family_name) {
-                setImportFile((prev) => (prev ? { ...prev, name: registryData.family_name } : prev))
+                const name = formatRegistryName(registryData.family_name, registryData.display_name)
+                setImportFile((prev) => (prev ? { ...prev, name } : prev))
               }
             }
           } catch {
@@ -373,9 +375,7 @@ export const GamesPage: React.FC = () => {
                       {registryHits.map((mod, i) => (
                         <div key={i} className="bg-app-card border border-app rounded-lg p-4">
                           <p className="text-sm font-medium text-app-primary truncate">
-                            {mod.display_name && mod.display_name !== mod.family_name
-                              ? `${mod.family_name} — ${mod.display_name}`
-                              : mod.family_name}
+                            {formatRegistryName(mod.family_name, mod.display_name)}
                           </p>
                           <p className="text-xs text-app-muted mt-1">
                             {mod.version && `v${mod.version}`}

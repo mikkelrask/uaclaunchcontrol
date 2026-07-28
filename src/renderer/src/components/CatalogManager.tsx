@@ -23,6 +23,7 @@ import { Upload } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api, IRegistryMod } from '@/api'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
+import { formatRegistryName } from '@/lib/registryName'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { CATEGORIES } from '@shared/categories'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -397,10 +398,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
     const updatedForm: Partial<typeof addForm> = {
       filePath,
-      name:
-        registryData?.display_name && registryData.display_name !== registryData.family_name
-          ? `${registryData.family_name} — ${registryData.display_name}`
-          : registryData?.family_name || name,
+      name: registryData?.family_name
+        ? formatRegistryName(registryData.family_name, registryData.display_name)
+        : name,
       fileType,
       version: registryData?.version || '',
       url: '',
