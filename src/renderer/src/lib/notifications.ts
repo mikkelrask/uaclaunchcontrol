@@ -65,7 +65,7 @@ function emit(): void {
 function shouldRecord(title: string, variant: 'default' | 'destructive'): boolean {
   if (variant === 'destructive') return true
   if (title.startsWith('WARNING:')) return true
-  if (title === 'ACHIEVEMENT UNLOCKED' || title === 'RANK ADVANCEMENT') return true
+  if (title.endsWith('" Unlocked!') || title === 'RANK ADVANCEMENT') return true
   if (title.startsWith('SYSTEM: Update')) return true
   return false
 }
