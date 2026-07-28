@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Settings, FolderOpen, LayoutGrid, List, BookOpen } from 'lucide-react'
+import { Settings, FolderOpen, LayoutGrid, List, BookOpen, Download, Check } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
@@ -59,6 +59,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const [doomVersions, setDoomVersions] = useState<IDoomVersion[]>([])
   const [isLoadingVersions, setIsLoadingVersions] = useState(false)
   const [selectedWadIndex, setSelectedWadIndex] = useState(0)
+  const [freedoomDownloading, setFreedoomDownloading] = useState<'phase12' | 'freedm' | null>(null)
+  const [freedoomError, setFreedoomError] = useState('')
   const [appVersion, setAppVersion] = useState<string>('')
 
   // Snapshot of the saved theme/scale for revert-on-close
@@ -188,6 +190,23 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       } else {
         handleVersionChange(index, 'icon', selectedIconPath)
       }
+    }
+  }
+
+  const handleDownloadFreedoom = async (bundle: 'phase12' | 'freedm'): Promise<void> => {
+    setFreedoomDownloading(bundle)
+    setFreedoomError('')
+    try {
+      const result = await api.downloadFreedoom(bundle)
+      setDoomVersions(result.doomVersions)
+      toast({
+        title: 'SYSTEM: freedoom_installed',
+        description: `Installed: ${result.installed.join(', ')}`
+      })
+    } catch (e) {
+      setFreedoomError(e instanceof Error ? e.message : 'Download failed')
+    } finally {
+      setFreedoomDownloading(null)
     }
   }
 
@@ -732,157 +751,207 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               <SourcePortsTab settings={settings} setSettings={setSettings} />
             </TabsContent>
 
-            <TabsContent value="wad-config" className="flex-1 min-h-0 pt-0">
-              {isLoadingVersions ? (
-                <div className="flex items-center justify-center h-full gap-3 text-app-secondary font-mono italic">
-                  <div className="w-2 h-2 rounded-full bg-accent-highlight animate-pulse" />
-                  CALIBRATING REPOSITORIES ...
+            <TabsContent value="wad-config" className="flex-1 min-h-0 pt-0 flex flex-col">
+              <div className="p-4 border-b border-app bg-app-secondary/30 space-y-3 shrink-0">
+                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                  FreeDoom
+                </Label>
+                <p className="text-[0.625rem] text-app-muted leading-tight">
+                  Free, legally redistributable IWADs — no commercial Doom purchase required.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {(
+                    [
+                      { bundle: 'phase12' as const, label: 'FreeDoom (Phase 1 + 2)' },
+                      { bundle: 'freedm' as const, label: 'FreeDM' }
+                    ] as const
+                  ).map(({ bundle, label }) => {
+                    const slugs = bundle === 'phase12' ? ['freedoom1', 'freedoom2'] : ['freedm']
+                    const installed = slugs.every((slug) =>
+                      doomVersions.some((v) => v.slug === slug)
+                    )
+                    return (
+                      <div
+                        key={bundle}
+                        className="flex items-center justify-between gap-4 bg-app-primary p-2.5 rounded-lg border border-app"
+                      >
+                        <span className="text-sm text-app-primary">{label}</span>
+                        {installed ? (
+                          <span className="flex items-center gap-1 text-xs text-green-500 shrink-0">
+                            <Check className="w-3.5 h-3.5" />
+                            Installed
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownloadFreedoom(bundle)}
+                            disabled={freedoomDownloading !== null}
+                            className="text-xs h-7 bg-app-secondary hover:bg-app-hover text-app-primary border-app shrink-0"
+                          >
+                            <Download className="w-3 h-3 mr-1" />
+                            {freedoomDownloading === bundle ? 'Downloading…' : 'Download'}
+                          </Button>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              ) : doomVersions.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-app-secondary italic opacity-60">
-                    No WAD files detected in the secure sector.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-[240px,1fr] h-full overflow-hidden">
-                  {/* Master: WAD List Sidebar */}
-                  <div className="flex flex-col overflow-y-auto border-r border-app bg-app-secondary/20 scrollbar-thin scrollbar-thumb-app-hover">
-                    <div className="p-2 space-y-1">
-                      {doomVersions.map((version, index) => (
-                        <button
-                          key={version.id || index}
-                          onClick={() => setSelectedWadIndex(index)}
-                          className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left group shrink-0 border border-transparent ${
-                            selectedWadIndex === index
-                              ? 'bg-app-primary border-app shadow-sm outline-accent-highlight/30 outline-1'
-                              : 'hover:bg-app-primary/40'
-                          }`}
-                        >
-                          <div className="w-8 h-8 shrink-0 flex items-center justify-center overflow-hidden rounded bg-black/20 group-hover:bg-black/40 transition-colors">
-                            <DoomVersionIcon
-                              version={version.slug}
-                              customIcon={version.icon}
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                          <span
-                            className={`text-sm font-medium truncate flex-1 ${
+                {freedoomError && <p className="text-xs text-red-400">{freedoomError}</p>}
+              </div>
+
+              <div className="flex-1 min-h-0">
+                {isLoadingVersions ? (
+                  <div className="flex items-center justify-center h-full gap-3 text-app-secondary font-mono italic">
+                    <div className="w-2 h-2 rounded-full bg-accent-highlight animate-pulse" />
+                    CALIBRATING REPOSITORIES ...
+                  </div>
+                ) : doomVersions.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-app-secondary italic opacity-60">
+                      No WAD files detected in the secure sector.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-[240px,1fr] h-full overflow-hidden">
+                    {/* Master: WAD List Sidebar */}
+                    <div className="flex flex-col overflow-y-auto border-r border-app bg-app-secondary/20 scrollbar-thin scrollbar-thumb-app-hover">
+                      <div className="p-2 space-y-1">
+                        {doomVersions.map((version, index) => (
+                          <button
+                            key={version.id || index}
+                            onClick={() => setSelectedWadIndex(index)}
+                            className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left group shrink-0 border border-transparent ${
                               selectedWadIndex === index
-                                ? 'text-accent-highlight'
-                                : 'text-app-primary'
+                                ? 'bg-app-primary border-app shadow-sm outline-accent-highlight/30 outline-1'
+                                : 'hover:bg-app-primary/40'
                             }`}
                           >
-                            {version.name}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Detail: WAD Settings Editor */}
-                  <div className="flex flex-col gap-8 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-app-hover bg-app-primary">
-                    {doomVersions[selectedWadIndex] && (
-                      <>
-                        <div className="flex items-start gap-6">
-                          <div className="w-32 h-32 rounded-xl bg-app-secondary border border-app shadow-2xl group relative overflow-hidden shrink-0 flex items-center justify-center p-2 transition-transform hover:scale-[1.02]">
-                            <DoomVersionIcon
-                              version={doomVersions[selectedWadIndex].slug}
-                              customIcon={doomVersions[selectedWadIndex].icon}
-                              className="w-full h-full object-contain"
-                            />
-                            <button
-                              onClick={() => handleIconBrowse(selectedWadIndex)}
-                              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-bold text-white transition-opacity uppercase"
+                            <div className="w-8 h-8 shrink-0 flex items-center justify-center overflow-hidden rounded bg-black/20 group-hover:bg-black/40 transition-colors">
+                              <DoomVersionIcon
+                                version={version.slug}
+                                customIcon={version.icon}
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                            <span
+                              className={`text-sm font-medium truncate flex-1 ${
+                                selectedWadIndex === index
+                                  ? 'text-accent-highlight'
+                                  : 'text-app-primary'
+                              }`}
                             >
-                              Relocate Icon
-                            </button>
-                          </div>
-                          <div className="flex-1 space-y-6 min-w-0">
-                            <div className="space-y-2">
-                              <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                                WAD Identity
-                              </Label>
-                              <Input
-                                value={doomVersions[selectedWadIndex].name}
-                                onChange={(e) =>
-                                  handleVersionChange(selectedWadIndex, 'name', e.target.value)
-                                }
-                                className="bg-app-secondary border-app h-11 text-base focus-visible:ring-accent-highlight/40"
-                              />
-                            </div>
-                            {/* Engine Runtime removed — source port is now configured per-game via ISourcePort */}
-                          </div>
-                        </div>
+                              {version.name}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                        <div className="space-y-4 p-5 bg-app-secondary border border-app rounded-xl shadow-lg">
-                          <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block">
-                            Technical Parameters
-                          </Label>
-                          <div className="space-y-4 pt-1">
-                            <div className="flex flex-col gap-2">
-                              <span className="text-xs text-app-primary font-medium">
-                                Launch Arguments
-                              </span>
-                              <Input
-                                value={doomVersions[selectedWadIndex].args || ''}
-                                onChange={(e) =>
-                                  handleVersionChange(selectedWadIndex, 'args', e.target.value)
-                                }
-                                className="bg-app-primary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
+                    {/* Detail: WAD Settings Editor */}
+                    <div className="flex flex-col gap-8 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-app-hover bg-app-primary">
+                      {doomVersions[selectedWadIndex] && (
+                        <>
+                          <div className="flex items-start gap-6">
+                            <div className="w-32 h-32 rounded-xl bg-app-secondary border border-app shadow-2xl group relative overflow-hidden shrink-0 flex items-center justify-center p-2 transition-transform hover:scale-[1.02]">
+                              <DoomVersionIcon
+                                version={doomVersions[selectedWadIndex].slug}
+                                customIcon={doomVersions[selectedWadIndex].icon}
+                                className="w-full h-full object-contain"
                               />
+                              <button
+                                onClick={() => handleIconBrowse(selectedWadIndex)}
+                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-bold text-white transition-opacity uppercase"
+                              >
+                                Relocate Icon
+                              </button>
                             </div>
-                            <div className="flex flex-col gap-2">
-                              <span className="text-xs text-app-primary font-medium">
-                                Additional Parameters
-                              </span>
-                              <Input
-                                value={doomVersions[selectedWadIndex].parameters || ''}
-                                onChange={(e) =>
-                                  handleVersionChange(
-                                    selectedWadIndex,
-                                    'parameters',
-                                    e.target.value
-                                  )
-                                }
-                                className="bg-app-primary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
-                                placeholder="e.g. -nomonsters -warp 01"
-                              />
-                            </div>
-                            <div className="pt-2">
-                              <div className="flex items-center justify-between pb-4">
-                                <div className="space-y-0.5">
-                                  <Label className="text-xs text-app-primary font-medium">
-                                    Hide from Interface
-                                  </Label>
-                                  <p className="text-xs text-app-muted italic opacity-70">
-                                    Toggling will excluded this WAD from the sidebar and general WAD
-                                    selectors.
-                                  </p>
-                                </div>
-                                <Switch
-                                  checked={doomVersions[selectedWadIndex].ignored || false}
-                                  onCheckedChange={(checked) =>
-                                    handleVersionChange(selectedWadIndex, 'ignored', checked)
+                            <div className="flex-1 space-y-6 min-w-0">
+                              <div className="space-y-2">
+                                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                                  WAD Identity
+                                </Label>
+                                <Input
+                                  value={doomVersions[selectedWadIndex].name}
+                                  onChange={(e) =>
+                                    handleVersionChange(selectedWadIndex, 'name', e.target.value)
                                   }
+                                  className="bg-app-secondary border-app h-11 text-base focus-visible:ring-accent-highlight/40"
                                 />
                               </div>
-                            </div>
-                            <div className="flex flex-col gap-2 overflow-hidden">
-                              <span className="text-xs text-app-primary font-medium">
-                                File Source
-                              </span>
-                              <code className="text-xs font-mono p-3 bg-black/30 rounded-lg border border-app/50 break-all text-app-muted leading-relaxed">
-                                {doomVersions[selectedWadIndex].defaultIwad}
-                              </code>
+                              {/* Engine Runtime removed — source port is now configured per-game via ISourcePort */}
                             </div>
                           </div>
-                        </div>
-                      </>
-                    )}
+
+                          <div className="space-y-4 p-5 bg-app-secondary border border-app rounded-xl shadow-lg">
+                            <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block">
+                              Technical Parameters
+                            </Label>
+                            <div className="space-y-4 pt-1">
+                              <div className="flex flex-col gap-2">
+                                <span className="text-xs text-app-primary font-medium">
+                                  Launch Arguments
+                                </span>
+                                <Input
+                                  value={doomVersions[selectedWadIndex].args || ''}
+                                  onChange={(e) =>
+                                    handleVersionChange(selectedWadIndex, 'args', e.target.value)
+                                  }
+                                  className="bg-app-primary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                <span className="text-xs text-app-primary font-medium">
+                                  Additional Parameters
+                                </span>
+                                <Input
+                                  value={doomVersions[selectedWadIndex].parameters || ''}
+                                  onChange={(e) =>
+                                    handleVersionChange(
+                                      selectedWadIndex,
+                                      'parameters',
+                                      e.target.value
+                                    )
+                                  }
+                                  className="bg-app-primary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
+                                  placeholder="e.g. -nomonsters -warp 01"
+                                />
+                              </div>
+                              <div className="pt-2">
+                                <div className="flex items-center justify-between pb-4">
+                                  <div className="space-y-0.5">
+                                    <Label className="text-xs text-app-primary font-medium">
+                                      Hide from Interface
+                                    </Label>
+                                    <p className="text-xs text-app-muted italic opacity-70">
+                                      Toggling will excluded this WAD from the sidebar and general
+                                      WAD selectors.
+                                    </p>
+                                  </div>
+                                  <Switch
+                                    checked={doomVersions[selectedWadIndex].ignored || false}
+                                    onCheckedChange={(checked) =>
+                                      handleVersionChange(selectedWadIndex, 'ignored', checked)
+                                    }
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-2 overflow-hidden">
+                                <span className="text-xs text-app-primary font-medium">
+                                  File Source
+                                </span>
+                                <code className="text-xs font-mono p-3 bg-black/30 rounded-lg border border-app/50 break-all text-app-muted leading-relaxed">
+                                  {doomVersions[selectedWadIndex].defaultIwad}
+                                </code>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="advanced" className="space-y-4 mt-0 p-6">
