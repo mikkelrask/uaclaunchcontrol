@@ -93,7 +93,7 @@ describe('recordNotification filtering', () => {
       { title: 'FATAL: process_died', variant: 'destructive' as const }
     ],
     ['a WARNING: title', { title: 'WARNING: name_required' }],
-    ['an achievement unlock', { title: 'ACHIEVEMENT UNLOCKED' }],
+    ['an achievement unlock', { title: '"Doom Slayer" Unlocked!' }],
     ['a rank advancement', { title: 'RANK ADVANCEMENT' }],
     ['an update status toast', { title: 'SYSTEM: Update Ready' }]
   ])('records %s', async (_label, props) => {

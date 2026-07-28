@@ -190,8 +190,8 @@ export function buildUnlockToasts(
     } else {
       toasts.push({
         id: `achiev-${def.id}`,
-        title: 'ACHIEVEMENT UNLOCKED',
-        description: `${def.title} — ${def.description}`,
+        title: `"${def.title}" Unlocked!`,
+        description: def.description,
         duration: 6000
       })
     }
