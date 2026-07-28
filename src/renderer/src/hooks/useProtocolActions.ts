@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api'
 import { useToast } from '@/hooks/use-toast'
+import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import type { IProtocol, IModFile, InsertModFile } from '@shared/schema'
 
 interface UseProtocolActionsArgs {
@@ -45,7 +46,7 @@ export function useProtocolActions({
       protocol: Partial<IProtocol>
       files: Omit<IModFile, 'id' | 'modId'>[]
     }) => api.updateProtocol(id, protocol, files),
-    onSuccess: (updatedProtocol, variables) => {
+    onSuccess: async (updatedProtocol, variables) => {
       toast({
         title: 'SYSTEM: protocol_saved',
         description: 'Protocol settings successfully saved.'
@@ -55,6 +56,28 @@ export function useProtocolActions({
         protocol: updatedProtocol,
         files: variables.files
       })
+
+      // Dispatch achievement event for PROTOCOL_UPDATED — edits can push a
+      // protocol's file count past thresholds that creation didn't reach.
+      try {
+        const result = await dispatchAchievementEvent({
+          type: 'PROTOCOL_UPDATED',
+          fileCount: variables.files.length
+        })
+
+        const unlockToasts = buildUnlockToasts(result)
+        for (const t of unlockToasts) {
+          toast({
+            title: t.title,
+            description: t.description,
+            duration: t.duration as 6000 | 8000
+          })
+        }
+      } catch (err) {
+        // Fire-and-forget: don't block the save flow on achievement failures
+        console.error('Achievement dispatch failed:', err)
+      }
+
       onClose()
     },
     onError: (error) => {

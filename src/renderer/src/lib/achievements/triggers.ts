@@ -29,6 +29,10 @@ function eventToStatsDelta(event: AchievementEvent): Partial<IPlayerStats> {
         totalProtocolsCreated: 1,
         maxModFilesInSingleProtocol: event.fileCount
       }
+    case 'PROTOCOL_UPDATED':
+      return {
+        maxModFilesInSingleProtocol: event.fileCount
+      }
     case 'PROTOCOL_LAUNCHED':
       return {
         totalProtocolsLaunched: 1,

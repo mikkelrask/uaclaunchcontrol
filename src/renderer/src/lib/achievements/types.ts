@@ -35,6 +35,7 @@ export type IAchievementCondition = {
  */
 export type AchievementEvent =
   | { type: 'PROTOCOL_CREATED'; count: number; fileCount: number }
+  | { type: 'PROTOCOL_UPDATED'; fileCount: number }
   | { type: 'PROTOCOL_LAUNCHED'; protocolId: string }
   | { type: 'PROTOCOL_EXITED'; protocolId: string; sessionSeconds: number }
   | { type: 'MOD_FILE_ADDED'; count: number }
