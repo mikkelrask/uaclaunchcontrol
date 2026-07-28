@@ -18,6 +18,21 @@ import type { FileReorderHandlers } from '@/hooks/useFileReorder'
 
 let _nextTempId = Date.now()
 
+/** True if `candidate` (matched by hash, falling back to path) already exists
+ *  elsewhere in `files` — used to keep the same mod from being added twice. */
+function isDuplicateFile(
+  files: IModFile[],
+  excludeIndex: number,
+  candidate: { hashValue?: string; filePath?: string }
+): boolean {
+  return files.some((f, i) => {
+    if (i === excludeIndex) return false
+    if (candidate.hashValue && f.hashValue) return f.hashValue === candidate.hashValue
+    if (candidate.filePath && f.filePath) return f.filePath === candidate.filePath
+    return false
+  })
+}
+
 interface ModFileSelectorProps {
   value: IModFile[]
   onChange: (files: IModFile[]) => void
@@ -174,7 +189,30 @@ export function ModFileSelector({
       })
     }
 
-    newFiles.splice(index, 1, ...filesToInsert)
+    const deduped = filesToInsert.filter(
+      (f, i) =>
+        !isDuplicateFile(newFiles, index, f) &&
+        // Also drop repeats within this same load-order chain
+        filesToInsert.findIndex(
+          (other) =>
+            (f.hashValue && other.hashValue === f.hashValue) || other.filePath === f.filePath
+        ) === i
+    )
+
+    if (deduped.length < filesToInsert.length) {
+      toast({
+        title: 'SYSTEM: dupe_skipped',
+        description:
+          filesToInsert.length === 1
+            ? 'That file is already in this protocol.'
+            : 'Skipped one or more files already in this protocol.',
+        variant: 'default'
+      })
+    }
+
+    if (deduped.length === 0) return
+
+    newFiles.splice(index, 1, ...deduped)
     onChange(newFiles)
   }
 
@@ -262,14 +300,26 @@ export function ModFileSelector({
         console.log('File name:', fileName)
         console.log('Detected type:', detectedType)
 
+        const resolvedPath = fileToUse.filePath || relativePath
+        const resolvedHash = fileToUse.hashValue || fileHashValue
+
+        if (isDuplicateFile(value, index, { hashValue: resolvedHash, filePath: resolvedPath })) {
+          toast({
+            title: 'SYSTEM: dupe_skipped',
+            description: 'That file is already in this protocol.',
+            variant: 'default'
+          })
+          return
+        }
+
         const newFiles = [...value]
         newFiles[index] = {
           ...newFiles[index],
           id: fileToUse.id,
-          filePath: fileToUse.filePath || relativePath,
+          filePath: resolvedPath,
           fileName: fileToUse.fileName || fileName,
           fileType: fileToUse.fileType || detectedType,
-          hashValue: fileToUse.hashValue || fileHashValue,
+          hashValue: resolvedHash,
           name: !newFiles[index].name ? fileToUse.name : newFiles[index].name,
           isRequired: newFiles[index].isRequired !== undefined ? newFiles[index].isRequired : true
         }

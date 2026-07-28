@@ -5,6 +5,7 @@ import { Trash, GripVertical, Plus, ExternalLink } from 'lucide-react'
 import { Combobox } from '@/components/ui/combobox'
 import { api } from '@/api'
 import { useFileReorder } from '@/hooks/useFileReorder'
+import { useToast } from '@/hooks/use-toast'
 
 interface ModFileListProps {
   files: IModFile[] | InsertModFile[]
@@ -13,6 +14,7 @@ interface ModFileListProps {
 
 export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => {
   const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
+  const { toast } = useToast()
   const {
     draggedIndex,
     insertionIndex,
@@ -28,15 +30,10 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
 
   const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)
 
-  const generateUniqueId = (baseHash: string): string => {
-    const existingHashes = new Set(files.map((f) => f.hashValue))
-    if (baseHash && !existingHashes.has(baseHash)) return baseHash
-    let newHash = `${Date.now()}-${Math.floor(Math.random() * 1000)}`
-    while (existingHashes.has(newHash)) {
-      newHash = `${Date.now()}-${Math.floor(Math.random() * 1000)}`
-    }
-    return newHash
-  }
+  // Files without a hash (e.g. manually browsed with no computed hash yet)
+  // still need a stable React key — mint one only in that case, never as a
+  // way to dodge a real duplicate.
+  const generateFallbackId = (): string => `${Date.now()}-${Math.floor(Math.random() * 1000)}`
 
   const removeFile = (fileHash: string): void => {
     onChange(files.filter((f) => f.hashValue !== fileHash))
@@ -138,37 +135,43 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
               const catalogFile = catalogFiles.find((f) => f.id?.toString() === value)
               if (catalogFile && catalogFile.filePath) {
                 const updatedFiles = [...files]
-                const usedHashes = new Set(updatedFiles.map((f) => f.hashValue))
+                const usedHashes = new Set(
+                  updatedFiles.map((f) => f.hashValue).filter((h): h is string => !!h)
+                )
+                let skippedDupes = false
 
                 if (catalogFile.loadOrder && Object.keys(catalogFile.loadOrder).length > 0) {
                   const entries = Object.entries(catalogFile.loadOrder).sort((a, b) => a[1] - b[1])
                   for (const [hash] of entries) {
                     const reqFile = catalogFiles.find((f) => f.hashValue === hash)
                     if (reqFile) {
-                      const reqFileHash = generateUniqueId(reqFile.hashValue || '')
-                      if (!usedHashes.has(reqFileHash)) {
-                        usedHashes.add(reqFileHash)
-                        const reqFileName = reqFile.fileName || reqFile.name || ''
-                        const reqExt = reqFileName.split('.').pop()?.toUpperCase() || ''
-                        let reqFileType = 'WAD'
-                        if (reqExt === 'PK3' || reqExt === 'IPK3' || reqExt === 'ZIP') {
-                          reqFileType = 'PK3'
-                        } else if (reqExt === 'DEH' || reqExt === 'BEX') {
-                          reqFileType = 'DEH'
-                        }
-
-                        updatedFiles.push({
-                          filePath: reqFile.filePath || '',
-                          fileName: reqFileName,
-                          fileType: reqFileType,
-                          isRequired: true,
-                          name: reqFile.name || '',
-                          hashValue: reqFileHash,
-                          url: reqFile.url || ''
-                        } as InsertModFile)
+                      if (reqFile.hashValue && usedHashes.has(reqFile.hashValue)) {
+                        skippedDupes = true
+                        continue
                       }
+                      if (reqFile.hashValue) usedHashes.add(reqFile.hashValue)
+                      const reqFileName = reqFile.fileName || reqFile.name || ''
+                      const reqExt = reqFileName.split('.').pop()?.toUpperCase() || ''
+                      let reqFileType = 'WAD'
+                      if (reqExt === 'PK3' || reqExt === 'IPK3' || reqExt === 'ZIP') {
+                        reqFileType = 'PK3'
+                      } else if (reqExt === 'DEH' || reqExt === 'BEX') {
+                        reqFileType = 'DEH'
+                      }
+
+                      updatedFiles.push({
+                        filePath: reqFile.filePath || '',
+                        fileName: reqFileName,
+                        fileType: reqFileType,
+                        isRequired: true,
+                        name: reqFile.name || '',
+                        hashValue: reqFile.hashValue || generateFallbackId(),
+                        url: reqFile.url || ''
+                      } as InsertModFile)
                     }
                   }
+                } else if (catalogFile.hashValue && usedHashes.has(catalogFile.hashValue)) {
+                  skippedDupes = true
                 } else {
                   const fileName = catalogFile.fileName || catalogFile.name || ''
                   const extension = fileName.split('.').pop()?.toUpperCase() || ''
@@ -185,9 +188,20 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                     fileType,
                     isRequired: true,
                     name: catalogFile.name || '',
-                    hashValue: generateUniqueId(catalogFile.hashValue || ''),
+                    hashValue: catalogFile.hashValue || generateFallbackId(),
                     url: catalogFile.url || ''
                   } as InsertModFile)
+                }
+
+                if (skippedDupes) {
+                  toast({
+                    title: 'SYSTEM: dupe_skipped',
+                    description:
+                      updatedFiles.length === files.length
+                        ? 'That file is already in this protocol.'
+                        : 'Skipped one or more files already in this protocol.',
+                    variant: 'default'
+                  })
                 }
 
                 onChange(updatedFiles)
