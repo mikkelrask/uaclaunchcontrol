@@ -111,6 +111,18 @@ export const InstallPage: React.FC = () => {
     }
   }, [settings, form])
 
+  // Update doomVersionId default when settings/versions load — mirrors the
+  // sourcePortId default above.
+  useEffect(() => {
+    if (versions.length > 0 && !form.getValues('doomVersionId')) {
+      const defaultId =
+        (settings as IAppSettings).defaultDoomVersionId ||
+        versions.find((v) => !v.ignored)?.id ||
+        versions[0].id
+      form.setValue('doomVersionId', defaultId)
+    }
+  }, [settings, versions, form])
+
   // Compute launch command preview
   const watchedSourcePortId = form.watch('sourcePortId')
   const watchedDoomVersionId = form.watch('doomVersionId')

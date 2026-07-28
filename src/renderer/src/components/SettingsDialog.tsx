@@ -34,6 +34,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const [settings, setSettings] = useState<IAppSettings>({
     sourcePorts: [],
     defaultSourcePortId: undefined,
+    defaultDoomVersionId: undefined,
     theme: 'dark',
     savegamesPath: '',
     modsDirectory: '',
@@ -164,6 +165,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     })
   }
 
+  const handleSetDefaultDoomVersion = (id: string): void => {
+    setSettings((prev) => ({ ...prev, defaultDoomVersionId: id }))
+  }
+
   const handleIconBrowse = async (index: number): Promise<void> => {
     const version = doomVersions[index]
     const result = await api.showOpenDialog({
@@ -266,6 +271,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       const payload = {
         sourcePorts: settings.sourcePorts,
         defaultSourcePortId: settings.defaultSourcePortId,
+        defaultDoomVersionId: settings.defaultDoomVersionId,
         savegamesPath: settings.savegamesPath,
         modsDirectory: settings.modsDirectory,
         screenshotsPath: settings.screenshotsPath,
@@ -818,15 +824,32 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     <div className="flex flex-col overflow-y-auto border-r border-app bg-app-secondary/20 scrollbar-thin scrollbar-thumb-app-hover">
                       <div className="p-2 space-y-1">
                         {doomVersions.map((version, index) => (
-                          <button
+                          <div
                             key={version.id || index}
                             onClick={() => setSelectedWadIndex(index)}
-                            className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left group shrink-0 border border-transparent ${
+                            className={`flex items-center gap-2.5 p-3 rounded-lg transition-all text-left group shrink-0 border border-transparent cursor-pointer ${
                               selectedWadIndex === index
                                 ? 'bg-app-primary border-app shadow-sm outline-accent-highlight/30 outline-1'
                                 : 'hover:bg-app-primary/40'
                             }`}
                           >
+                            {/* Default indicator */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleSetDefaultDoomVersion(version.id)
+                              }}
+                              className={`shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${
+                                settings.defaultDoomVersionId === version.id
+                                  ? 'border-accent-highlight bg-accent-highlight'
+                                  : 'border-app-muted/40 hover:border-app-muted'
+                              }`}
+                              title={
+                                settings.defaultDoomVersionId === version.id
+                                  ? 'Default WAD — pre-fills Base WAD on new protocols'
+                                  : 'Set as default WAD'
+                              }
+                            />
                             <div className="w-8 h-8 shrink-0 flex items-center justify-center overflow-hidden rounded bg-black/20 group-hover:bg-black/40 transition-colors">
                               <DoomVersionIcon
                                 version={version.slug}
@@ -843,7 +866,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                             >
                               {version.name}
                             </span>
-                          </button>
+                          </div>
                         ))}
                       </div>
                     </div>

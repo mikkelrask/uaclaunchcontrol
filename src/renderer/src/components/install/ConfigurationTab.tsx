@@ -213,7 +213,17 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                   <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
                     Base WAD
                   </FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  {/* key forces a fresh mount the instant a value is first
+                      set programmatically (our default-fill effect in
+                      InstallPage) — without it, Radix Select's onValueChange
+                      spontaneously fires with '' right after a value is set
+                      on an already-mounted-empty instance, resetting the
+                      pre-fill before the user ever sees it. */}
+                  <Select
+                    key={field.value ? 'has-value' : 'no-value'}
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger className="bg-app-primary border-app">
                         <SelectValue placeholder="Select Base Game/Version" />

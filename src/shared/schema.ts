@@ -131,6 +131,7 @@ export interface ModProtocolConfig {
 export interface IAppSettings {
   sourcePorts: ISourcePort[]
   defaultSourcePortId?: string
+  defaultDoomVersionId?: string
   theme: ThemeMode
   savegamesPath?: string
   modsDirectory?: string

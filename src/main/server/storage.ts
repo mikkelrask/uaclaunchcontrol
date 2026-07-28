@@ -46,6 +46,7 @@ const DEFAULT_DATABASE_LINKS: IDatabaseLink[] = [
 const DEFAULT_SETTINGS: IAppSettings = {
   sourcePorts: [],
   defaultSourcePortId: undefined,
+  defaultDoomVersionId: undefined,
   theme: 'dark',
   savegamesPath: '~/.config/uac/saves',
   modsDirectory: '~/.config/uac/mods',
