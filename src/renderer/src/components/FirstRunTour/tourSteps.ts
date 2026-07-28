@@ -162,13 +162,16 @@ export const TOUR_STEPS: TourStepDef[] = [
     title: 'Step 2: Add a Source Port',
     description: `
       <p class="mb-2">
-        While still in the <strong>Path</strong> tab of Settings, click<br />
-        <em>"+ Add Port"</em>, and navigate to your GZDoom, UZDoom, or
+        Source ports have their own tab now. In Settings, go to the
+        <strong>Source Ports</strong> tab and click
+        <em>"+ Add Port"</em>, then navigate to your GZDoom, UZDoom, or
         Zandronum executable, and hit the <strong>Save</strong> button
         on that form after filling out the information.
       </p>
       <p class="mb-2">
         If you have multiple source ports installed, repeat the process for the ones you want to add.
+        The one marked with the highlighted dot is your <strong>default</strong> — it'll be
+        pre-selected whenever you create a new protocol.
       </p>
       <p class="mt-2 text-yellow-400/80 text-xs">
         ⚠ Click the main <strong>Apply</strong> button
@@ -234,9 +237,15 @@ export const TOUR_STEPS: TourStepDef[] = [
       <p class="mb-2">
         The tour has taken you back to INSTALL → <strong>Configuration</strong>. Hit <code>i</code> any time to get back here.
       </p>
+      <p class="mb-2">
+        Fill in at least a <strong>label</strong> under <em>Protocol Identity</em>.
+        Base WAD and source port are already pre-filled from your defaults —
+        open <strong>Advanced</strong> below if you'd rather pick different ones
+        for this protocol.
+      </p>
       <p>
-        Fill in at least a <strong>title</strong>, select a <strong>base wad</strong> and optionally add <strong>mod files</strong>,
-        before clicking the <strong>Create Protocol</strong> button at the bottom.
+        Optionally add <strong>mod files</strong>, then click the
+        <strong>Create Protocol</strong> button at the bottom.
       </p>
     `,
     placement: 'bottom-right',
