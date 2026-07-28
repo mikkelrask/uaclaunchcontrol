@@ -116,6 +116,15 @@ const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [
     defaultIwad: 'freedoom2.wad'
   },
   {
+    id: '10',
+    name: 'FreeDM',
+    slug: 'freedm',
+    args: '-iwad freedm.wad',
+    icon: 'freedm.png',
+    parameters: '',
+    defaultIwad: 'freedm.wad'
+  },
+  {
     id: '7',
     name: 'Heretic: Shadow of the Serpent',
     slug: 'heretic',
