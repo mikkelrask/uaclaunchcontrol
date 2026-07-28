@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react'
-import { Archive, Upload, ChevronUp, ChevronDown } from 'lucide-react'
+import { Fragment, useEffect, useState, useRef } from 'react'
+import { Archive, Upload, GripVertical } from 'lucide-react'
 import type { ZipScanResult } from '@/types/zipImport'
 import {
   Dialog,
@@ -19,6 +19,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
+import { useFileReorder } from '@/hooks/useFileReorder'
 import { api, type IRegistryMod } from '@/api'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { CATEGORIES } from '@shared/categories'
@@ -264,15 +265,14 @@ export function ZipImportModal({
     })
   }
 
-  const moveFile = (index: number, direction: -1 | 1): void => {
-    setFileMeta((prev) => {
-      const copy = [...prev]
-      const target = index + direction
-      if (target < 0 || target >= copy.length) return copy
-      ;[copy[index], copy[target]] = [copy[target], copy[index]]
-      return copy
-    })
-  }
+  const {
+    draggedIndex,
+    insertionIndex,
+    handleDragStart,
+    handleDragOver,
+    handleDrop,
+    handleDragEnd
+  } = useFileReorder(fileMeta, setFileMeta)
 
   const handleImport = async (): Promise<void> => {
     if (!scanResult) return
@@ -481,9 +481,9 @@ export function ZipImportModal({
               {fileMeta.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs text-app-muted italic">
-                    Reorder with the arrow buttons. The order determines each file&apos;s position
-                    in the shared load order (shown in the # column). When a player adds any of
-                    these files to a protocol, all of them auto-load in this order.
+                    Drag the handle to reorder. The order determines each file&apos;s position in
+                    the shared load order (shown in the # column). When a player adds any of these
+                    files to a protocol, all of them auto-load in this order.
                   </p>
                   <div className="grid grid-cols-[auto_auto_auto_1fr_1fr_auto_auto_auto] gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono px-1">
                     <span></span>
@@ -495,95 +495,111 @@ export function ZipImportModal({
                     <span>Cat</span>
                     <span>URL</span>
                   </div>
-                  {fileMeta.map((meta, idx) => {
-                    const f = scanResult.supported.find((sf) => sf.tempPath === meta.tempPath)
-                    if (!f) return null
-                    const loadIdx = fileMeta.filter((m) => m.enabled).indexOf(meta)
+                  <div onDragOver={handleDragOver} onDrop={handleDrop}>
+                    {fileMeta.map((meta, idx) => {
+                      const f = scanResult.supported.find((sf) => sf.tempPath === meta.tempPath)
+                      if (!f) return null
+                      const loadIdx = fileMeta.filter((m) => m.enabled).indexOf(meta)
+                      const isDragged = draggedIndex === idx
+                      const showPlaceholderBefore = insertionIndex === idx && draggedIndex !== idx
 
-                    return (
-                      <div
-                        key={meta.tempPath}
-                        className={`grid grid-cols-[auto_auto_auto_1fr_1fr_auto_auto_auto] gap-2 items-center ${meta?.enabled ? '' : 'opacity-50'}`}
-                      >
-                        <div className="flex flex-col gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => moveFile(idx, -1)}
-                            disabled={idx === 0}
-                            className="text-app-muted hover:text-app-primary disabled:opacity-20 p-0.5"
-                          >
-                            <ChevronUp className="w-3 h-3" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveFile(idx, 1)}
-                            disabled={idx >= fileMeta.length - 1}
-                            className="text-app-muted hover:text-app-primary disabled:opacity-20 p-0.5"
-                          >
-                            <ChevronDown className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        <span className="text-xs font-mono text-app-muted w-5 text-center">
-                          {meta?.enabled ? loadIdx + 1 : '-'}
-                        </span>
-
-                        <input
-                          type="checkbox"
-                          checked={meta?.enabled ?? true}
-                          onChange={(e) =>
-                            setFileMeta((prev) => {
-                              const copy = [...prev]
-                              copy[idx] = { ...copy[idx], enabled: e.target.checked }
-                              return copy
-                            })
-                          }
-                          className="w-4 h-4 accent-accent-highlight"
-                        />
-
-                        <div className="text-sm truncate" title={f.fileName}>
-                          <span className="font-mono text-xs text-app-muted mr-1">
-                            [{f.fileType}]
-                          </span>
-                          {f.fileName}
-                          {f.isReferencedByBat && (
-                            <span className="ml-1 text-xs text-yellow-500">.bat</span>
+                      return (
+                        <Fragment key={meta.tempPath}>
+                          {showPlaceholderBefore && (
+                            <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+                              <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
+                                drop here
+                              </span>
+                            </div>
                           )}
-                        </div>
+                          <div
+                            data-drag-index={idx}
+                            className={`grid grid-cols-[auto_auto_auto_1fr_1fr_auto_auto_auto] gap-2 items-center mb-2 ${
+                              isDragged ? 'hidden' : meta?.enabled ? '' : 'opacity-50'
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, idx)}
+                              onDragEnd={handleDragEnd}
+                              className="cursor-grab active:cursor-grabbing text-app-muted hover:text-app-primary opacity-40 hover:opacity-100 transition-opacity p-0.5"
+                              tabIndex={-1}
+                              aria-label="Reorder"
+                            >
+                              <GripVertical className="w-3.5 h-3.5" />
+                            </button>
 
-                        <input
-                          className="border border-app rounded p-1 text-sm bg-app-primary"
-                          placeholder="Display name"
-                          value={meta?.name ?? ''}
-                          onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
-                        />
-                        <input
-                          className="border border-app rounded p-1 text-sm bg-app-primary w-20"
-                          placeholder="Version"
-                          value={meta?.version ?? ''}
-                          onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
-                        />
-                        <select
-                          className="border border-app rounded p-1 text-sm bg-app-primary"
-                          value={meta?.category ?? ''}
-                          onChange={(e) => handleMetaChange(idx, 'category', e.target.value)}
-                        >
-                          <option value="">—</option>
-                          {CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat}>
-                              {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          className="border border-app rounded p-1 text-sm bg-app-primary w-40"
-                          placeholder="URL"
-                          value={meta?.url ?? ''}
-                          onChange={(e) => handleMetaChange(idx, 'url', e.target.value)}
-                        />
+                            <span className="text-xs font-mono text-app-muted w-5 text-center">
+                              {meta?.enabled ? loadIdx + 1 : '-'}
+                            </span>
+
+                            <input
+                              type="checkbox"
+                              checked={meta?.enabled ?? true}
+                              onChange={(e) =>
+                                setFileMeta((prev) => {
+                                  const copy = [...prev]
+                                  copy[idx] = { ...copy[idx], enabled: e.target.checked }
+                                  return copy
+                                })
+                              }
+                              className="w-4 h-4 accent-accent-highlight"
+                            />
+
+                            <div className="text-sm truncate" title={f.fileName}>
+                              <span className="font-mono text-xs text-app-muted mr-1">
+                                [{f.fileType}]
+                              </span>
+                              {f.fileName}
+                              {f.isReferencedByBat && (
+                                <span className="ml-1 text-xs text-yellow-500">.bat</span>
+                              )}
+                            </div>
+
+                            <input
+                              className="border border-app rounded p-1 text-sm bg-app-primary"
+                              placeholder="Display name"
+                              value={meta?.name ?? ''}
+                              onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
+                            />
+                            <input
+                              className="border border-app rounded p-1 text-sm bg-app-primary w-20"
+                              placeholder="Version"
+                              value={meta?.version ?? ''}
+                              onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
+                            />
+                            <select
+                              className="border border-app rounded p-1 text-sm bg-app-primary"
+                              value={meta?.category ?? ''}
+                              onChange={(e) => handleMetaChange(idx, 'category', e.target.value)}
+                            >
+                              <option value="">—</option>
+                              {CATEGORIES.map((cat) => (
+                                <option key={cat} value={cat}>
+                                  {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              className="border border-app rounded p-1 text-sm bg-app-primary w-40"
+                              placeholder="URL"
+                              value={meta?.url ?? ''}
+                              onChange={(e) => handleMetaChange(idx, 'url', e.target.value)}
+                            />
+                          </div>
+                        </Fragment>
+                      )
+                    })}
+
+                    {insertionIndex === fileMeta.length && draggedIndex !== fileMeta.length - 1 && (
+                      <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+                        <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
+                          new placement
+                        </span>
                       </div>
-                    )
-                  })}
+                    )}
+                  </div>
                 </div>
               )}
 
