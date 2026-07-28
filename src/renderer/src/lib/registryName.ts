@@ -7,7 +7,7 @@
  */
 export function formatRegistryName(familyName: string, displayName?: string | null): string {
   if (displayName && displayName !== familyName) {
-    return `${familyName} — ${displayName}`
+    return `${familyName} (${displayName})`
   }
   return familyName
 }
