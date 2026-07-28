@@ -15,6 +15,11 @@ import fs from 'fs-extra'
 import { debug } from '../../shared/debug'
 import { REGISTRY_API_URL } from '../../shared/registry-config'
 import { getPortReleases, downloadPortRelease } from './services/portService'
+import {
+  getFreedoomManifest,
+  downloadFreedoomBundle,
+  type FreedoomBundleId
+} from './services/freedoomService'
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json())
@@ -1103,6 +1108,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res
         .status(500)
         .json({ message: error instanceof Error ? error.message : 'Failed to download port' })
+    }
+  })
+
+  // === FreeDoom Download API ===
+  app.get('/api/freedoom/manifest', async (_req, res) => {
+    try {
+      const manifest = await getFreedoomManifest()
+      return res.json(manifest)
+    } catch (error) {
+      console.error('Failed to fetch FreeDoom manifest:', error)
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to fetch FreeDoom manifest'
+      })
+    }
+  })
+
+  app.post('/api/freedoom/download', async (req, res) => {
+    try {
+      const { bundle } = req.body as { bundle?: FreedoomBundleId }
+      if (bundle !== 'phase12' && bundle !== 'freedm') {
+        return res.status(400).json({ message: "bundle must be 'phase12' or 'freedm'" })
+      }
+      const settings = await storage.getSettings()
+      const wadDir = storage.resolvePath(
+        settings.wadFilesDirectory || path.join(os.homedir(), '.config', 'uac', 'wads')
+      )
+      const result = await downloadFreedoomBundle(wadDir, bundle)
+      await storage.syncDoomVersions({ notifyDelta: true })
+      const doomVersions = await storage.getDoomVersions()
+      return res.json({ ...result, doomVersions })
+    } catch (error) {
+      console.error('Failed to download FreeDoom:', error)
+      return res
+        .status(500)
+        .json({ message: error instanceof Error ? error.message : 'Failed to download FreeDoom' })
     }
   })
 

@@ -64,6 +64,26 @@ export interface PortDownloadResult {
   version: string
 }
 
+export interface FreedoomManifestEntry {
+  description: string
+  name: string
+  url: string
+  version: string
+  md5: string
+  sha1: string
+  sha256: string
+}
+
+export type FreedoomManifest = Record<
+  'freedoom1.wad' | 'freedoom2.wad' | 'freedm.wad',
+  FreedoomManifestEntry
+>
+
+export interface FreedoomDownloadResult {
+  installed: string[]
+  doomVersions: IDoomVersion[]
+}
+
 export interface OpenDialogOptions {
   title?: string
   defaultPath?: string
@@ -156,6 +176,20 @@ export const api = {
       body: JSON.stringify({ downloadUrl, assetName, family, version })
     })
     return handleApiResponse<PortDownloadResult>(response)
+  },
+
+  getFreedoomManifest: async (): Promise<FreedoomManifest> => {
+    const response = await fetch(`${API_BASE}/api/freedoom/manifest`)
+    return handleApiResponse<FreedoomManifest>(response)
+  },
+
+  downloadFreedoom: async (bundle: 'phase12' | 'freedm'): Promise<FreedoomDownloadResult> => {
+    const response = await fetch(`${API_BASE}/api/freedoom/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bundle })
+    })
+    return handleApiResponse<FreedoomDownloadResult>(response)
   },
 
   scanPorts: async (): Promise<ScannedPort[]> => {

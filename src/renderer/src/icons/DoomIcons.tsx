@@ -3,6 +3,7 @@ import doom from './doom.png'
 import doom2 from './doom2.png'
 import freedoom from './freedoom1.png'
 import freedoom2 from './freedoom2.png'
+import freedm from './freedm.png'
 import plutonia from './plutonia.png'
 import tnt from './tnt.png'
 import hexen from './hexen.png'
@@ -48,6 +49,15 @@ export const FreeDoom2Icon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }
     src={freedoom2}
     alt="FreeDoom 2 Icon"
     title="FREEDOOM: PHASE 2"
+    className={`${className} object-contain aspect-square`}
+  />
+)
+
+export const FreeDMIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
+  <img
+    src={freedm}
+    alt="FreeDM Icon"
+    title="FREEDM"
     className={`${className} object-contain aspect-square`}
   />
 )
@@ -151,6 +161,8 @@ export const DoomVersionIcon: React.FC<DoomVersionIconProps> = ({
       return <FreeDoomIcon className={className} />
     case 'freedoom2':
       return <FreeDoom2Icon className={className} />
+    case 'freedm':
+      return <FreeDMIcon className={className} />
     case 'plutonia':
       return <PlutoniaIcon className={className} />
     case 'tnt':
