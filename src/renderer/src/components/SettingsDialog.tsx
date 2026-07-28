@@ -34,6 +34,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const [settings, setSettings] = useState<IAppSettings>({
     sourcePorts: [],
     defaultSourcePortId: undefined,
+    defaultDoomVersionId: undefined,
     theme: 'dark',
     savegamesPath: '',
     modsDirectory: '',
@@ -164,6 +165,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     })
   }
 
+  const handleSetDefaultDoomVersion = (id: string): void => {
+    setSettings((prev) => ({ ...prev, defaultDoomVersionId: id }))
+  }
+
   const handleIconBrowse = async (index: number): Promise<void> => {
     const version = doomVersions[index]
     const result = await api.showOpenDialog({
@@ -266,6 +271,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       const payload = {
         sourcePorts: settings.sourcePorts,
         defaultSourcePortId: settings.defaultSourcePortId,
+        defaultDoomVersionId: settings.defaultDoomVersionId,
         savegamesPath: settings.savegamesPath,
         modsDirectory: settings.modsDirectory,
         screenshotsPath: settings.screenshotsPath,
@@ -751,8 +757,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               <SourcePortsTab settings={settings} setSettings={setSettings} />
             </TabsContent>
 
-            <TabsContent value="wad-config" className="flex-1 min-h-0 pt-0 flex flex-col">
-              <div className="p-4 border-b border-app bg-app-secondary/30 space-y-3 shrink-0">
+            <TabsContent
+              value="wad-config"
+              className="flex-1 min-h-0 p-6 flex flex-col gap-4 overflow-hidden"
+            >
+              <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3 shrink-0">
                 <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
                   FreeDoom
                 </Label>
@@ -800,7 +809,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 {freedoomError && <p className="text-xs text-red-400">{freedoomError}</p>}
               </div>
 
-              <div className="flex-1 min-h-0">
+              <div className="flex-1 min-h-0 bg-app-secondary rounded-xl border border-app shadow-sm overflow-hidden flex flex-col">
                 {isLoadingVersions ? (
                   <div className="flex items-center justify-center h-full gap-3 text-app-secondary font-mono italic">
                     <div className="w-2 h-2 rounded-full bg-accent-highlight animate-pulse" />
@@ -815,18 +824,35 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 ) : (
                   <div className="grid grid-cols-[240px,1fr] h-full overflow-hidden">
                     {/* Master: WAD List Sidebar */}
-                    <div className="flex flex-col overflow-y-auto border-r border-app bg-app-secondary/20 scrollbar-thin scrollbar-thumb-app-hover">
+                    <div className="flex flex-col overflow-y-auto border-r border-app bg-app-primary/20 scrollbar-thin scrollbar-thumb-app-hover">
                       <div className="p-2 space-y-1">
                         {doomVersions.map((version, index) => (
-                          <button
+                          <div
                             key={version.id || index}
                             onClick={() => setSelectedWadIndex(index)}
-                            className={`flex items-center gap-3 p-3 rounded-lg transition-all text-left group shrink-0 border border-transparent ${
+                            className={`flex items-center gap-2.5 p-3 rounded-lg transition-all text-left group shrink-0 border border-transparent cursor-pointer ${
                               selectedWadIndex === index
                                 ? 'bg-app-primary border-app shadow-sm outline-accent-highlight/30 outline-1'
                                 : 'hover:bg-app-primary/40'
                             }`}
                           >
+                            {/* Default indicator */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleSetDefaultDoomVersion(version.id)
+                              }}
+                              className={`shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${
+                                settings.defaultDoomVersionId === version.id
+                                  ? 'border-accent-highlight bg-accent-highlight'
+                                  : 'border-app-muted/40 hover:border-app-muted'
+                              }`}
+                              title={
+                                settings.defaultDoomVersionId === version.id
+                                  ? 'Default WAD — pre-fills Base WAD on new protocols'
+                                  : 'Set as default WAD'
+                              }
+                            />
                             <div className="w-8 h-8 shrink-0 flex items-center justify-center overflow-hidden rounded bg-black/20 group-hover:bg-black/40 transition-colors">
                               <DoomVersionIcon
                                 version={version.slug}
@@ -843,17 +869,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                             >
                               {version.name}
                             </span>
-                          </button>
+                          </div>
                         ))}
                       </div>
                     </div>
 
                     {/* Detail: WAD Settings Editor */}
-                    <div className="flex flex-col gap-8 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-app-hover bg-app-primary">
+                    <div className="flex flex-col gap-8 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-app-hover">
                       {doomVersions[selectedWadIndex] && (
                         <>
                           <div className="flex items-start gap-6">
-                            <div className="w-32 h-32 rounded-xl bg-app-secondary border border-app shadow-2xl group relative overflow-hidden shrink-0 flex items-center justify-center p-2 transition-transform hover:scale-[1.02]">
+                            <div className="w-32 h-32 rounded-xl bg-app-primary border border-app shadow-2xl group relative overflow-hidden shrink-0 flex items-center justify-center p-2 transition-transform hover:scale-[1.02]">
                               <DoomVersionIcon
                                 version={doomVersions[selectedWadIndex].slug}
                                 customIcon={doomVersions[selectedWadIndex].icon}
@@ -876,14 +902,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                   onChange={(e) =>
                                     handleVersionChange(selectedWadIndex, 'name', e.target.value)
                                   }
-                                  className="bg-app-secondary border-app h-11 text-base focus-visible:ring-accent-highlight/40"
+                                  className="bg-app-primary border-app h-11 text-base focus-visible:ring-accent-highlight/40"
                                 />
                               </div>
                               {/* Engine Runtime removed — source port is now configured per-game via ISourcePort */}
                             </div>
                           </div>
 
-                          <div className="space-y-4 p-5 bg-app-secondary border border-app rounded-xl shadow-lg">
+                          <div className="space-y-4 p-5 bg-app-primary border border-app rounded-xl shadow-lg">
                             <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block">
                               Technical Parameters
                             </Label>
@@ -897,7 +923,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                   onChange={(e) =>
                                     handleVersionChange(selectedWadIndex, 'args', e.target.value)
                                   }
-                                  className="bg-app-primary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
+                                  className="bg-app-secondary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
                                 />
                               </div>
                               <div className="flex flex-col gap-2">
@@ -913,7 +939,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                       e.target.value
                                     )
                                   }
-                                  className="bg-app-primary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
+                                  className="bg-app-secondary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
                                   placeholder="e.g. -nomonsters -warp 01"
                                 />
                               </div>
