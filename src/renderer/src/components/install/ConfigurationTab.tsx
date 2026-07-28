@@ -23,7 +23,6 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Combobox } from '@/components/ui/combobox'
-import { Separator } from '@/components/ui/separator'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { LaunchCommandPreview } from '@/components/install/LaunchCommandPreview'
 import { FolderOpen, FlaskConical, Plus, ChevronDown } from 'lucide-react'
@@ -377,8 +376,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
           )}
         </div>
 
-        <Separator />
-        <div>
+        <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm">
           <ModFileSelector value={files} onChange={handleFilesChange} fileReorder={fileReorder} />
         </div>
 
