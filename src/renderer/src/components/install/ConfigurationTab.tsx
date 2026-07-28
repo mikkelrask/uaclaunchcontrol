@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { UseMutationResult } from '@tanstack/react-query'
 import type { IModFile, IAppSettings, IDoomVersion, IProtocol } from '@shared/schema'
 import { slugify } from '@/lib/utils'
@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -25,8 +26,7 @@ import { Combobox } from '@/components/ui/combobox'
 import { Separator } from '@/components/ui/separator'
 import { ModFileSelector } from '@/components/ModFileSelector'
 import { LaunchCommandPreview } from '@/components/install/LaunchCommandPreview'
-import { ProtocolConfigControl } from '@/components/ProtocolConfigControl'
-import { FolderOpen, FlaskConical, Plus } from 'lucide-react'
+import { FolderOpen, FlaskConical, Plus, ChevronDown } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 import type { z } from 'zod'
 import type { formSchema } from '@/lib/install/schema'
@@ -52,15 +52,18 @@ export interface ConfigurationTabProps {
   toast: ToastLike
   onSubmit: (data: z.infer<typeof formSchema>) => Promise<void>
   handleFilesChange: (newFiles: IModFile[]) => void
-  configStatus: { hasConfig: boolean; statusText: string }
-  onCreateFreshConfig: () => void
-  isCreatingConfig: boolean
+  /** Name of the mod file that would auto-seed a config, if any — shown as a
+   *  note next to the isolated-config checkbox since checking it overrides
+   *  that auto-seed. */
+  templateSeedName: string | null
 }
 
 /**
  * The "Configuration" tab content — the main form for creating a new launch protocol.
- * Includes fields for title, screenshot, description, base WAD, source port, save dir,
- * launch parameters, drag-reorderable mod file selection, launch preview, and submit.
+ * Grouped into a "Protocol Identity" panel (label, cover, description — the fields
+ * that make a protocol recognizable in the library) and a collapsed "Advanced"
+ * section (base WAD / source port overrides, save dir, launch parameters, isolated
+ * config), plus drag-reorderable mod file selection, launch preview, and submit.
  */
 export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
   form,
@@ -73,15 +76,21 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
   toast,
   onSubmit,
   handleFilesChange,
-  configStatus,
-  onCreateFreshConfig,
-  isCreatingConfig
+  templateSeedName
 }) => {
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const isolatedConfigChecked = form.watch('isolatedConfig')
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
+        {/* Protocol Identity — what makes this protocol recognizable */}
+        <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-4">
+          <span className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+            Protocol Identity
+          </span>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="title"
@@ -183,145 +192,192 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                    Description (Optional)
-                  </FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter a fitting description"
-                      className="bg-app-primary border-app h-[126px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
 
-          <div className="space-y-4">
-            <FormField
-              control={form.control}
-              name="doomVersionId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                    Base WAD
-                  </FormLabel>
-                  {/* key forces a fresh mount the instant a value is first
-                      set programmatically (our default-fill effect in
-                      InstallPage) — without it, Radix Select's onValueChange
-                      spontaneously fires with '' right after a value is set
-                      on an already-mounted-empty instance, resetting the
-                      pre-fill before the user ever sees it. */}
-                  <Select
-                    key={field.value ? 'has-value' : 'no-value'}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="bg-app-primary border-app">
-                        <SelectValue placeholder="Select Base Game/Version" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-app-secondary border-app text-app-primary">
-                      {versions
-                        .filter((v) => !v.ignored)
-                        .map((version) => (
-                          <SelectItem key={version.id} value={version.id.toString()}>
-                            {version.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="sourcePortId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                    Source Port
-                  </FormLabel>
-                  <FormControl>
-                    <Combobox
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      options={(settings?.sourcePorts || [])
-                        .filter((p) => !p.ignored)
-                        .map((p) => ({
-                          value: p.id,
-                          label: p.name,
-                          description: p.version
-                        }))}
-                      placeholder="Select a source port"
-                      className="w-full bg-app-primary border-app"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="saveDirectory"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                    Save Directory (Optional)
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={settings?.savegamesPath || ''}
-                      className="bg-app-primary border-app"
-                      {...field}
-                      value={field.value || ''}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="launchParameters"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                    Launch Parameters (Optional)
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="-skill 4 -warp 01"
-                      className="bg-app-primary border-app"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                  Description (Optional)
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Enter a fitting description"
+                    className="bg-app-primary border-app"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
+
+        {/* Advanced — occasional per-protocol overrides, collapsed by default */}
+        <div className="border border-app rounded-xl bg-app-secondary overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen((open) => !open)}
+            className="w-full flex items-center justify-between gap-3 px-4 py-3 text-xs uppercase tracking-widest text-app-muted font-mono font-bold hover:text-app-primary hover:bg-app-hover transition-colors"
+          >
+            <span>Advanced — base WAD &amp; source port, save path, isolated config</span>
+            <ChevronDown
+              className={`w-4 h-4 shrink-0 transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {advancedOpen && (
+            <div className="p-4 pt-0 space-y-4 border-t border-app">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                <FormField
+                  control={form.control}
+                  name="doomVersionId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                        Base WAD
+                      </FormLabel>
+                      {/* key forces a fresh mount the instant a value is first
+                          set programmatically (our default-fill effect in
+                          InstallPage) — without it, Radix Select's onValueChange
+                          spontaneously fires with '' right after a value is set
+                          on an already-mounted-empty instance, resetting the
+                          pre-fill before the user ever sees it. */}
+                      <Select
+                        key={field.value ? 'has-value' : 'no-value'}
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="bg-app-primary border-app">
+                            <SelectValue placeholder="Select Base Game/Version" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-app-secondary border-app text-app-primary">
+                          {versions
+                            .filter((v) => !v.ignored)
+                            .map((version) => (
+                              <SelectItem key={version.id} value={version.id.toString()}>
+                                {version.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="sourcePortId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                        Source Port
+                      </FormLabel>
+                      <FormControl>
+                        <Combobox
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          options={(settings?.sourcePorts || [])
+                            .filter((p) => !p.ignored)
+                            .map((p) => ({
+                              value: p.id,
+                              label: p.name,
+                              description: p.version
+                            }))}
+                          placeholder="Select a source port"
+                          className="w-full bg-app-primary border-app"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="saveDirectory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                        Save Directory (Optional)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={settings?.savegamesPath || ''}
+                          className="bg-app-primary border-app"
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="launchParameters"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                        Launch Parameters (Optional)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="-skill 4 -warp 01"
+                          className="bg-app-primary border-app"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="isolatedConfig"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start gap-3 rounded-lg border border-app bg-app-primary p-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="mt-0.5"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-sm font-normal text-app-primary cursor-pointer">
+                        Create an isolated config for this protocol
+                      </FormLabel>
+                      <p className="text-xs text-app-muted">
+                        A private copy of the source port&apos;s current settings, so changes here
+                        won&apos;t affect other protocols. Created automatically when you save.
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              {templateSeedName && !isolatedConfigChecked && (
+                <p className="text-xs text-app-muted italic">
+                  This protocol will use the saved config from &quot;{templateSeedName}&quot;
+                  unless you check the box above.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         <Separator />
-        <ProtocolConfigControl
-          hasConfig={configStatus.hasConfig}
-          statusText={configStatus.statusText}
-          onCreateFresh={onCreateFreshConfig}
-          isCreating={isCreatingConfig}
-          variant="section"
-        />
         <div>
           <ModFileSelector value={files} onChange={handleFilesChange} fileReorder={fileReorder} />
         </div>

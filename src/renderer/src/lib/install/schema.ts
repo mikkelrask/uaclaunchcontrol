@@ -7,5 +7,6 @@ export const formSchema = z.object({
   sourcePortId: z.string().min(1, 'Source port is required'),
   saveDirectory: z.string().optional(),
   screenshotPath: z.string().optional(),
-  launchParameters: z.string().optional()
+  launchParameters: z.string().optional(),
+  isolatedConfig: z.boolean().optional()
 })

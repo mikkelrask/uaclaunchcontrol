@@ -33,13 +33,13 @@ export const InstallPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('install')
   // const [currentFilePath, setCurrentFilePath] = useState<string>('');
 
-  // Generated up front (not at submit time) so a fresh protocol config can be
-  // created against a real, stable ID while the form is still being filled
-  // out. InstallPage fully unmounts on navigation back to '/', so a fresh
-  // value is naturally generated again next time this page is visited.
+  // Generated up front (not at submit time) so it's stable across the whole
+  // time the form is being filled out — used as the protocol's real id and,
+  // if "isolated config" is checked, as the id a fresh config file is
+  // created against at submit time. InstallPage fully unmounts on
+  // navigation back to '/', so a fresh value is naturally generated again
+  // next time this page is visited.
   const [pendingProtocolId] = useState(() => Date.now().toString())
-  const [freshConfig, setFreshConfig] = useState<{ configFile: string } | null>(null)
-  const [isCreatingConfig, setIsCreatingConfig] = useState(false)
 
   // Fetch doom versions
   const { data: versions = [] } = useQuery<IDoomVersion[]>({
@@ -95,7 +95,8 @@ export const InstallPage: React.FC = () => {
       doomVersionId: '',
       sourcePortId: defaultPortId,
       saveDirectory: '',
-      launchParameters: ''
+      launchParameters: '',
+      isolatedConfig: false
     }
   })
 
@@ -221,42 +222,12 @@ export const InstallPage: React.FC = () => {
   })
 
   // Mod file carrying a config template, if one of the chosen files has one —
-  // used to preview what submitting will auto-seed, unless the user overrides
-  // it with their own fresh config below.
+  // surfaced as a note next to the isolated-config checkbox, since checking
+  // it overrides this auto-seed (see onSubmit).
   const templateFile = files.find((f) => f.configTemplate)
-
-  const configStatus = freshConfig
-    ? { hasConfig: true, statusText: `Custom config linked (${freshConfig.configFile}).` }
-    : templateFile?.configTemplate
-      ? {
-          hasConfig: true,
-          statusText: `Will be seeded from "${templateFile.name || templateFile.fileName}" when created.`
-        }
-      : {
-          hasConfig: false,
-          statusText:
-            "No isolated config yet — this protocol will share the source port's global settings."
-        }
-
-  const handleCreateFreshConfig = async (): Promise<void> => {
-    setIsCreatingConfig(true)
-    try {
-      const result = await api.createBlankConfig(pendingProtocolId)
-      setFreshConfig(result)
-      toast({
-        title: 'SYSTEM: config_created',
-        description: 'Fresh isolated config created for this protocol.'
-      })
-    } catch (error) {
-      toast({
-        title: 'FATAL: config_create_failed',
-        description: `Failed to create config: ${error}`,
-        variant: 'destructive'
-      })
-    } finally {
-      setIsCreatingConfig(false)
-    }
-  }
+  const templateSeedName = templateFile
+    ? templateFile.name || templateFile.fileName || 'a mod file'
+    : null
 
   // const removeFile = (index: number) => {
   //   const newFiles = [...files]
@@ -344,11 +315,23 @@ export const InstallPage: React.FC = () => {
       console.warn('[DEBUG] Failed to update some catalog entries:', err)
     }
 
-    // A user-created fresh config always wins over auto-seeding from a mod's
-    // template — it's an explicit override. Otherwise, seed from a mod's
-    // config template if one of the chosen files has one.
-    if (freshConfig) {
-      protocol.protocolConfig = { configFile: freshConfig.configFile }
+    // An explicit "isolated config" checkbox always wins over auto-seeding
+    // from a mod's template. The config file itself is only created here,
+    // at actual submit time — not when the checkbox is ticked — so
+    // abandoning the form never leaves an orphaned config file on disk for
+    // a protocol that was never created.
+    if (data.isolatedConfig) {
+      try {
+        const result = await api.createBlankConfig(uniqueId)
+        protocol.protocolConfig = { configFile: result.configFile }
+      } catch (error) {
+        toast({
+          title: 'FATAL: config_create_failed',
+          description: `Failed to create isolated config: ${error}`,
+          variant: 'destructive'
+        })
+        return
+      }
     } else if (templateFile?.configTemplate) {
       try {
         const protocolConfig = await api.copyConfigForProtocol(
@@ -447,9 +430,7 @@ export const InstallPage: React.FC = () => {
                     toast={toast}
                     onSubmit={onSubmit}
                     handleFilesChange={handleFilesChange}
-                    configStatus={configStatus}
-                    onCreateFreshConfig={handleCreateFreshConfig}
-                    isCreatingConfig={isCreatingConfig}
+                    templateSeedName={templateSeedName}
                   />
                 </TabsContent>
 
