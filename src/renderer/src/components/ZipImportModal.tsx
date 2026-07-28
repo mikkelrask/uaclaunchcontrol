@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { api, type IRegistryMod } from '@/api'
+import { formatRegistryName } from '@/lib/registryName'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { CATEGORIES } from '@shared/categories'
 import type { IModFile } from '@shared/schema'
@@ -186,7 +187,7 @@ export function ZipImportModal({
           if (data) {
             updates.push({
               index: i,
-              name: data.family_name,
+              name: formatRegistryName(data.family_name, data.display_name),
               version: data.version || '',
               url: pickBestUrl(data.urls),
               category: data.category || ''
@@ -239,7 +240,7 @@ export function ZipImportModal({
         if (!hash) return
         const { data } = await doRegistryLookup(hash)
         if (data) {
-          if (data.family_name) setZipName(data.family_name)
+          if (data.family_name) setZipName(formatRegistryName(data.family_name, data.display_name))
           if (data.version) setZipVersion(data.version)
           if (data.category) setZipCategory(data.category)
           const url = pickBestUrl(data.urls)
