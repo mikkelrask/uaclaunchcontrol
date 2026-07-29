@@ -368,8 +368,8 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
 
               {templateSeedName && !isolatedConfigChecked && (
                 <p className="text-xs text-app-muted italic">
-                  This protocol will use the saved config from &quot;{templateSeedName}&quot;
-                  unless you check the box above.
+                  This protocol will use the saved config from &quot;{templateSeedName}&quot; unless
+                  you check the box above.
                 </p>
               )}
             </div>
