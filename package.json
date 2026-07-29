@@ -106,7 +106,7 @@
     "vitest": "^4.1.9"
   },
   "overrides": {
-    "hono": "4.12.26"
+    "hono": "4.12.27"
   },
   "allowScripts": {
     "electron@39.8.6": true,
