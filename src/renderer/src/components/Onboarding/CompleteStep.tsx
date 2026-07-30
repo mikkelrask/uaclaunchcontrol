@@ -36,7 +36,7 @@ export const CompleteStep: React.FC<CompleteStepProps> = ({ onFinish, onBack }) 
         <span className="font-mono text-xs uppercase tracking-[0.3em] text-green-500/70">
           UAC-7 // Systems Nominal
         </span>
-        <h1 className="text-3xl font-bold tracking-tight text-app-primary">You&apos;re all set</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-app-primary">All set!</h1>
       </div>
 
       <p className="text-app-secondary max-w-md mx-auto leading-relaxed">

@@ -23,12 +23,12 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
           UAC-7 // Personnel Terminal
         </span>
         <h1 className="text-3xl font-bold tracking-tight text-app-primary">
-          Welcome to UAC Launch Control
+          Welcome to Mars, Cadet
         </h1>
       </div>
 
       <p className="text-app-secondary max-w-md mx-auto leading-relaxed">
-        Your command centre for managing and launching Doom source ports, IWADs, and mods.
+        This is the <strong>UAC Launch Control</strong> - your command centre for managing and launching Doom source ports, IWADs, and mods. <br /><br />
         Let&apos;s get the essentials in place — a source port and some WAD files — so you can start
         playing.
       </p>

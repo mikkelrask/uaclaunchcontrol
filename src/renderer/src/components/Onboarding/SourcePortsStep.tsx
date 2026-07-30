@@ -27,8 +27,8 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
         </span>
         <h2 className="text-2xl font-bold tracking-tight text-app-primary">Source Ports</h2>
         <p className="text-sm text-app-secondary max-w-lg mx-auto">
-          Scan your system for an installed source port (GZDoom, UZDoom, Zandronum, and others), add
-          one manually, or download one directly — no need to leave the app.
+          Your terminal have been scanned for any already installed source ports <em>(GZDoom, UZDoom, Zandronum, Helium and others)</em> - if any are found you can add all, some or add
+          one at a specific location manually. <br /><br />You can also download one of your choosing directly with the <strong>Get Port</strong> button — no need to leave the app.
         </p>
       </div>
 

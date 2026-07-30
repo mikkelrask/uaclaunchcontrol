@@ -97,8 +97,9 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
         </span>
         <h2 className="text-2xl font-bold tracking-tight text-app-primary">WAD Files</h2>
         <p className="text-sm text-app-secondary max-w-lg mx-auto">
-          Point at a folder with your Doom WAD files, or drop them into the folder below. No
-          commercial WAD yet? Grab FreeDoom — free and legally redistributable.
+          Point at a folder with your Doom WAD files, or drop them into the folder below.<br />  <br />
+
+            Don't own DOOM or DOOM II? Grab FreeDoom — free and legally redistributable, or <a href="" target="_blank" className="underline font-bold">click here</a> to see how to aquire them.
         </p>
       </div>
 
