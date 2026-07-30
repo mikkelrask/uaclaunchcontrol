@@ -26,6 +26,7 @@ import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { formatRegistryName } from '@/lib/registryName'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { CATEGORIES } from '@shared/categories'
+import { debug } from '@shared/debug'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ZipImportModal } from '@/components/ZipImportModal'
 import { ZipScanResult } from '@/types/zipImport'
@@ -353,7 +354,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     let hash = ''
     try {
       hash = await api.computeHash(filePath)
-      console.log('[Registry] Computed hash:', hash)
+      debug('[Registry] Computed hash:', hash)
     } catch {
       console.error('Failed to compute hash')
     } finally {
@@ -445,7 +446,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       updatedForm.loadOrder = [mainEntry, ...loadOrderEntries]
     }
 
-    console.log('[Registry] Setting form with:', updatedForm)
+    debug('[Registry] Setting form with:', updatedForm)
     return updatedForm
   }
 
@@ -914,7 +915,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                     settings.registryUuid,
                     REGISTRY_API_URL
                   )
-                  console.log('[Registry] Submitted updated file to pending:', hashValue)
+                  debug('[Registry] Submitted updated file to pending:', hashValue)
                 }
               } catch {
                 // Silently ignore - registry lookup failed
@@ -965,7 +966,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   return (
     <div className="space-y-4">
       <div
-        data-tour="mod-files-panel"
         onClick={handleBrowseFile}
         onDragOver={handleFileDragOver}
         onDragLeave={handleFileDragLeave}

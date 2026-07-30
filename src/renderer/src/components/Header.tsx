@@ -187,10 +187,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
           {databaseLink?.name ?? 'MODDB'}
         </a>
         <Link href="/install">
-          <span
-            data-tour="install-tab"
-            className={`nav-tab ${location === '/install' ? 'active' : ''} cursor-pointer`}
-          >
+          <span className={`nav-tab ${location === '/install' ? 'active' : ''} cursor-pointer`}>
             INSTALL
           </span>
         </Link>
@@ -224,7 +221,6 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
           </button>
         </NotificationsPopover>
         <button
-          data-tour="settings-button"
           className="w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover"
           onClick={openSettings}
         >
@@ -289,7 +285,10 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
                 onClick={() => {
                   setIsDrawerOpen(false)
                   api.reenableFirstRun().catch(() => {})
-                  setTimeout(() => window.dispatchEvent(new CustomEvent('uac:replay-tour')), 150)
+                  setTimeout(
+                    () => window.dispatchEvent(new CustomEvent('uac:replay-onboarding')),
+                    150
+                  )
                 }}
               >
                 <GraduationCap className="h-5 w-5 text-app-muted" />

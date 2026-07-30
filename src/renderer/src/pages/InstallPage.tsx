@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { IProtocol, IModFile, IAppSettings, IDoomVersion } from '@shared/schema'
 import { buildLaunchCommand } from '@/lib/utils'
+import { debug } from '@shared/debug'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { CatalogManager } from '@/components/CatalogManager'
 import { api } from '@/api'
@@ -270,10 +271,10 @@ export const InstallPage: React.FC = () => {
     let localScreenshotPath = data.screenshotPath
     if (data.screenshotPath && data.screenshotPath.startsWith('http')) {
       try {
-        console.log(`[DEBUG] Downloading screenshot for mod: ${data.screenshotPath}`)
+        debug(`[DEBUG] Downloading screenshot for mod: ${data.screenshotPath}`)
         const result = await api.downloadImage(data.screenshotPath, uniqueId)
         localScreenshotPath = result.fileName
-        console.log(`[DEBUG] Screenshot saved as: ${localScreenshotPath}`)
+        debug(`[DEBUG] Screenshot saved as: ${localScreenshotPath}`)
       } catch (error) {
         console.error('Failed to download screenshot, following with original URL:', error)
       }
@@ -292,23 +293,23 @@ export const InstallPage: React.FC = () => {
       files: fileData
     }
 
-    console.log('[DEBUG] Final protocol object for submission:', protocol)
-    console.log('[DEBUG] files state at submit:', files)
-    console.log('[DEBUG] fileData to process:', fileData)
+    debug('[DEBUG] Final protocol object for submission:', protocol)
+    debug('[DEBUG] files state at submit:', files)
+    debug('[DEBUG] fileData to process:', fileData)
 
     // Update catalog entries with any name changes
     try {
-      console.log(`[DEBUG] Attempting to update catalog for ${files.length} files`)
+      debug(`[DEBUG] Attempting to update catalog for ${files.length} files`)
       for (const file of files) {
         if (file.id && Number(file.id) > 0) {
-          console.log(`[DEBUG] Updating catalog entry ${file.id} with name: ${file.name}`)
+          debug(`[DEBUG] Updating catalog entry ${file.id} with name: ${file.name}`)
           // Update the catalog title/pretty name
           await api.updateInCatalog(file.id, {
             name: file.name,
             fileType: file.fileType
           })
         } else {
-          console.log(`[DEBUG] Skipping catalog update for file with ID: ${file.id}`)
+          debug(`[DEBUG] Skipping catalog update for file with ID: ${file.id}`)
         }
       }
     } catch (err) {
@@ -375,7 +376,6 @@ export const InstallPage: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
           <Card
-            data-tour="protocol-form"
             className={`bg-app-secondary border-app mb-6 transition-all ${
               jsonDrop.isJsonDragging
                 ? 'border-accent-highlight border-4 ring-2 ring-accent-highlight/30'

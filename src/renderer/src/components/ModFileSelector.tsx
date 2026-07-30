@@ -14,6 +14,7 @@ import { FolderOpenIcon, PlusIcon, TrashIcon, ExternalLink, GripVertical } from 
 import type { IModFile } from '@shared/schema'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
+import { debug } from '@shared/debug'
 import type { FileReorderHandlers } from '@/hooks/useFileReorder'
 
 let _nextTempId = Date.now()
@@ -76,7 +77,7 @@ export function ModFileSelector({
   ): Promise<{ fullPath: string; relativePath: string; hashValue: string }> => {
     try {
       const result = await api.moveToModFolder(sourcePath)
-      console.log('[DEBUG] File moved successfully:', result)
+      debug('[DEBUG] File moved successfully:', result)
       return result
     } catch (error) {
       console.error('Failed to move file:', error)
@@ -260,7 +261,7 @@ export function ModFileSelector({
         if (fileHashValue) {
           const existingEntry = catalogFiles.find((f) => f.hashValue === fileHashValue)
           if (existingEntry) {
-            console.log(
+            debug(
               `[DEBUG] Duplicate file detected by hash ${fileHashValue}, using existing catalog entry ${existingEntry.id}`
             )
             toast({
@@ -295,10 +296,10 @@ export function ModFileSelector({
           }
         }
 
-        console.log('Selected file:', selectedFilePath)
-        console.log('New file path:', newFullPath)
-        console.log('File name:', fileName)
-        console.log('Detected type:', detectedType)
+        debug('Selected file:', selectedFilePath)
+        debug('New file path:', newFullPath)
+        debug('File name:', fileName)
+        debug('Detected type:', detectedType)
 
         const resolvedPath = fileToUse.filePath || relativePath
         const resolvedHash = fileToUse.hashValue || fileHashValue
@@ -324,10 +325,10 @@ export function ModFileSelector({
           isRequired: newFiles[index].isRequired !== undefined ? newFiles[index].isRequired : true
         }
 
-        console.log('Updating files with:', newFiles)
+        debug('Updating files with:', newFiles)
         onChange(newFiles)
       } else {
-        console.log('No file selected or dialog canceled')
+        debug('No file selected or dialog canceled')
       }
     } catch (error) {
       const err = error as Error
