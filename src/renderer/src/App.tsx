@@ -17,7 +17,7 @@ import { IAppSettings, IInstallType, IProtocol } from '@shared/schema'
 import { useAutoUpdater } from '@/hooks/useAutoUpdater'
 import UpdateModal from '@/components/UpdateModal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { FirstRunTour } from '@/components/FirstRunTour'
+import { OnboardingWizard } from '@/components/Onboarding'
 import { CrashLogDialog, type CrashLogData } from '@/components/CrashLogDialog'
 import { ToastAction } from '@/components/ui/toast'
 import { inferCrashHint } from '@/lib/crashHints'
@@ -266,7 +266,7 @@ const App: React.FC = () => {
       <ErrorBoundary>
         <AppRouter />
       </ErrorBoundary>
-      <FirstRunTour />
+      <OnboardingWizard />
       <CrashLogDialog data={crashLog} onClose={() => setCrashLog(null)} />
     </TooltipProvider>
   )

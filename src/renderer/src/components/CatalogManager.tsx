@@ -965,7 +965,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   return (
     <div className="space-y-4">
       <div
-        data-tour="mod-files-panel"
         onClick={handleBrowseFile}
         onDragOver={handleFileDragOver}
         onDragLeave={handleFileDragLeave}
