@@ -375,7 +375,6 @@ export const InstallPage: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
           <Card
-            data-tour="protocol-form"
             className={`bg-app-secondary border-app mb-6 transition-all ${
               jsonDrop.isJsonDragging
                 ? 'border-accent-highlight border-4 ring-2 ring-accent-highlight/30'

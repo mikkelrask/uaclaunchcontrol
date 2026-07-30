@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -18,9 +18,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 interface SourcePortsTabProps {
   settings: IAppSettings
   setSettings: React.Dispatch<React.SetStateAction<IAppSettings>>
+  /** Kick off a scan on mount — used by the onboarding wizard so arriving at
+   *  this step starts working immediately instead of waiting on a click. */
+  autoScan?: boolean
 }
 
-export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({ settings, setSettings }) => {
+export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
+  settings,
+  setSettings,
+  autoScan
+}) => {
   const [editingPort, setEditingPort] = useState<ISourcePort | null>(null)
   const [showPortForm, setShowPortForm] = useState(false)
   const [scanning, setScanning] = useState(false)
@@ -58,6 +65,14 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({ settings, setSet
       setScanning(false)
     }
   }
+
+  const hasAutoScannedRef = useRef(false)
+  useEffect(() => {
+    if (!autoScan || hasAutoScannedRef.current) return
+    hasAutoScannedRef.current = true
+    handleScanPorts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoScan])
 
   const handleImportScanned = (): void => {
     if (!scanResults) return

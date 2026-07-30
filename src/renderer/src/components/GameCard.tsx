@@ -38,10 +38,7 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
     : imagePlaceholder
 
   return (
-    <div
-      data-tour="launch-card"
-      className="game-card group cursor-pointer relative border shadow-accent-hightlight/20"
-    >
+    <div className="game-card group cursor-pointer relative border shadow-accent-hightlight/20">
       <div className="aspect-w-16 aspect-h-9 overflow-hidden relative">
         <img
           src={displayImagePath}
@@ -98,7 +95,6 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
                     flex items-center justify-between p-2"
       >
         <Button
-          data-tour="launch-button"
           size="sm"
           onClick={handleLaunch}
           disabled={isPending}
