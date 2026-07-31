@@ -25,7 +25,9 @@ export default defineConfig(
     },
     rules: {
       ...eslintPluginReactHooks.configs.recommended.rules,
-      ...eslintPluginReactRefresh.configs.vite.rules
+      ...eslintPluginReactRefresh.configs.vite.rules,
+      // React Compiler isn't enabled — this rule only flags compiler memoization skips
+      'react-hooks/incompatible-library': 'off'
     }
   },
   eslintConfigPrettier
