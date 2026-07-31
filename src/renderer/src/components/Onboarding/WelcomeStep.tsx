@@ -28,7 +28,9 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
       </div>
 
       <p className="text-app-secondary max-w-md mx-auto leading-relaxed">
-        This is the <strong>UAC Launch Control</strong> - your command centre for managing and launching Doom source ports, IWADs, and mods. <br /><br />
+        This is the <strong>UAC Launch Control</strong> - your command centre for managing and
+        launching Doom source ports, IWADs, and mods. <br />
+        <br />
         Let&apos;s get the essentials in place — a source port and some WAD files — so you can start
         playing.
       </p>
