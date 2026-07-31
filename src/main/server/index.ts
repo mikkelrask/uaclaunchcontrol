@@ -1,11 +1,22 @@
 import express, { type Request, Response, NextFunction } from 'express'
 import { registerRoutes } from './routes'
-const log = console.log
+import { debug } from '../../shared/debug'
 import * as storage from './storage'
 import cors from 'cors'
 
 const expressApp = express()
-expressApp.use(cors()) // Enable CORS for all routes
+
+// CORS is restricted to the app's own renderer origins: the packaged renderer
+// loads from file:// (sends `Origin: null`) and the Vite dev server runs on
+// localhost. Any other origin — e.g. a random website in the user's browser —
+// gets no CORS headers and cannot call the local API.
+const allowedOrigin = (origin: string | undefined): boolean => {
+  if (!origin) return true // non-browser clients send no Origin header; CORS doesn't apply
+  if (origin === 'null') return true // file:// renderer (packaged app)
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) // Vite dev server
+}
+
+expressApp.use(cors({ origin: (origin, cb) => cb(null, allowedOrigin(origin)) }))
 expressApp.use(express.json())
 expressApp.use(express.urlencoded({ extended: false }))
 
@@ -32,7 +43,7 @@ expressApp.use((req: Request, res: Response, next: NextFunction) => {
         logLine = logLine.slice(0, 79) + '…'
       }
 
-      log(logLine)
+      debug(logLine)
     }
   })
 
@@ -40,8 +51,8 @@ expressApp.use((req: Request, res: Response, next: NextFunction) => {
 })
 
 export async function startServer(): Promise<void> {
-  console.log('Starting Production Server...')
-  console.log('Current working directory:', process.cwd())
+  debug('Starting Production Server...')
+  debug('Current working directory:', process.cwd())
 
   // Ensure storage is initialized and watcher starts
   storage.initStorage()
@@ -65,11 +76,11 @@ export async function startServer(): Promise<void> {
   )
 
   // Use serveStatic directly for production
-  console.log('Starting static server...')
+  debug('Starting static server...')
   // serveStatic(expressApp); // In Electron we don't serve static files from Express typically
 
   const port = 7666
-  server.listen(port, '0.0.0.0', () => {
-    log(`Production server is running on port ${port}`)
+  server.listen(port, '127.0.0.1', () => {
+    debug(`Production server is running on port ${port}`)
   })
 }

@@ -79,8 +79,14 @@ updateJSON('package.json', (json) => {
   json.version = version
 })
 
+// Keep the docs honest before tagging (aborts the bump if lint/tests fail)
+console.log('📋 Syncing docs (AGENTS.md, README, website check)...')
+execSync('node scripts/sync-docs.mjs', { stdio: 'inherit' })
+
 try {
-  execSync('git add package.json scripts/bump-version.mjs resources/')
+  execSync(
+    'git add package.json README.md scripts/bump-version.mjs scripts/sync-docs.mjs scripts/sync-agents.mjs resources/'
+  )
   const status = execSync('git status --porcelain').toString().trim()
   if (status) {
     execSync(`git commit -m "chore: bump version to ${version} 🚀"`)
@@ -96,6 +102,25 @@ try {
   execSync(`git push origin ${TAG} --force`)
 
   console.log(`🚀 Version ${version} committed, tagged as ${TAG}, and pushed.`)
+
+  // Refresh the graphify knowledge graph (best-effort; free — no LLM labels)
+  try {
+    if (execSync('command -v graphify').toString().trim()) {
+      console.log('🧠 Refreshing graphify knowledge graph...')
+      execSync('graphify update .', { stdio: 'inherit' })
+      execSync('graphify cluster-only . --no-label', { stdio: 'inherit' })
+      const graphStatus = execSync('git status --porcelain graphify-out/').toString().trim()
+      if (graphStatus) {
+        execSync('git add graphify-out/')
+        execSync('git commit -m "chore: refresh knowledge graph"')
+        execSync(`git push origin ${branch}`)
+      } else {
+        console.log('🧠 Graph unchanged — nothing to commit')
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Graphify refresh skipped:', err.message)
+  }
 } catch (error) {
   console.error('❌ Error during bump:', error.message)
   process.exit(1)
