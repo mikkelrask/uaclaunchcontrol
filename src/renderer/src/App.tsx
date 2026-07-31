@@ -14,6 +14,7 @@ import { api } from '@/api'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import type { AchievementEvent } from '@/lib/achievements'
 import { IAppSettings, IInstallType, IProtocol } from '@shared/schema'
+import { debug } from '@shared/debug'
 import { useAutoUpdater } from '@/hooks/useAutoUpdater'
 import UpdateModal from '@/components/UpdateModal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -117,7 +118,7 @@ const App: React.FC = () => {
     // Listen for version updates from the main process
     if (window.api?.onVersionsUpdated) {
       window.api.onVersionsUpdated((data) => {
-        console.log('[DEBUG] Versions updated, invalidating query...')
+        debug('[DEBUG] Versions updated, invalidating query...')
         queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
 
         // Show toasts if wads were added or removed
