@@ -105,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   })
 
   app.post('/api/move-file', async (req, res) => {
-    console.log('POST /api/move-file received with body:', req.body)
+    debug('POST /api/move-file received with body:', req.body)
     const { filePath, newPath } = req.body
     if (!filePath || !newPath) {
       return res.status(400).json({ message: 'Missing file path or new path' })
@@ -409,19 +409,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/mod-files/catalog', async (req, res) => {
     try {
-      console.log('POST /api/mod-files/catalog received with body:', req.body)
+      debug('POST /api/mod-files/catalog received with body:', req.body)
 
       const fileData = req.body
 
       // Basic validation
       if (!fileData || !fileData.filePath) {
-        console.log('Validation failed: Missing required file properties')
+        debug('Validation failed: Missing required file properties')
         return res.status(400).json({ message: 'Missing required file properties' })
       }
 
-      console.log('Adding file to catalog:', fileData)
+      debug('Adding file to catalog:', fileData)
       const savedFile = await storage.addModFileToCatalog(fileData)
-      console.log('File added to catalog successfully:', savedFile)
+      debug('File added to catalog successfully:', savedFile)
 
       return res.status(201).json(savedFile)
     } catch (error: unknown) {
@@ -887,7 +887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params
       const updates = req.body
-      console.log(`[API] PUT /api/versions/${id} - Updates:`, updates)
+      debug(`[API] PUT /api/versions/${id} - Updates:`, updates)
       const updatedVersion = await storage.updateDoomVersion(id, updates)
       res.json({ success: true, data: updatedVersion })
     } catch (error: unknown) {

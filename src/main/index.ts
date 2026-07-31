@@ -6,14 +6,7 @@ import { startServer } from './server'
 import { autoUpdater } from 'electron-updater'
 import { getSettings } from './server/storage'
 import { IInstallType } from '../shared/schema'
-
-const isDebug = process.env.DEBUG === 'true'
-
-function debug(...args: unknown[]): void {
-  if (isDebug) {
-    console.log(...args)
-  }
-}
+import { debug } from '../shared/debug'
 
 let mainWindow: BrowserWindow | null = null
 let lastCheckWasManual = false
@@ -93,7 +86,7 @@ function createWindow(): void {
     ...(process.platform === 'linux' && linuxIcon ? { icon: linuxIcon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: true
     }
   })
 
@@ -214,7 +207,7 @@ async function checkForUpdates(options: { manual?: boolean } = {}): Promise<void
 
 async function checkGitHubRelease(): Promise<void> {
   const currentVersion = app.getVersion()
-  console.log(`[Updater] Checking GitHub for latest version (current: ${currentVersion})`)
+  debug(`[Updater] Checking GitHub for latest version (current: ${currentVersion})`)
 
   try {
     const response = await net.fetch(
@@ -230,7 +223,7 @@ async function checkGitHubRelease(): Promise<void> {
 
     if (!response.ok) {
       const body = await response.text()
-      console.log(`[Updater] GitHub API returned ${response.status}: ${body.slice(0, 300)}`)
+      debug(`[Updater] GitHub API returned ${response.status}: ${body.slice(0, 300)}`)
       if (lastCheckWasManual) {
         mainWindow?.webContents.send('update-status', {
           status: 'not-available',
@@ -247,17 +240,17 @@ async function checkGitHubRelease(): Promise<void> {
       body?: string
     }
     const latestVersion = (release.tag_name || '').replace(/^v/, '')
-    console.log(`[Updater] GitHub latest: ${latestVersion} | Current: ${currentVersion}`)
+    debug(`[Updater] GitHub latest: ${latestVersion} | Current: ${currentVersion}`)
 
     if (latestVersion && latestVersion !== currentVersion) {
-      console.log(`[Updater] Update available: ${latestVersion}`)
+      debug(`[Updater] Update available: ${latestVersion}`)
       mainWindow?.webContents.send('update-status', {
         status: 'available',
         version: latestVersion,
         releaseNotes: release.body || ''
       })
     } else {
-      console.log(
+      debug(
         `[Updater] No update available (GitHub: ${latestVersion}, local: ${currentVersion})`
       )
       mainWindow?.webContents.send('update-status', {
@@ -267,7 +260,7 @@ async function checkGitHubRelease(): Promise<void> {
       })
     }
   } catch (err) {
-    console.log(`[Updater] GitHub API error: ${(err as Error).message}`)
+    debug(`[Updater] GitHub API error: ${(err as Error).message}`)
     if (lastCheckWasManual) {
       mainWindow?.webContents.send('update-status', {
         status: 'not-available',
@@ -293,7 +286,7 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  ipcMain.on('ping', () => console.log('pong'))
+  ipcMain.on('ping', () => debug('pong'))
 
   ipcMain.handle('get-app-version', () => {
     return app.getVersion()
@@ -306,7 +299,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('get-install-type', () => {
     debug('[IPC] get-install-type called')
     const result = getInstallType()
-    console.log('[IPC] get-install-type returning:', result)
+    debug('[IPC] get-install-type returning:', result)
     return result
   })
 

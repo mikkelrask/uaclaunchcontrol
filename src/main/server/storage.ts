@@ -225,7 +225,7 @@ export function initStorage(): boolean {
       startWadWatcher()
     })
 
-    console.log('Storage initialized successfully')
+    debug('Storage initialized successfully')
     return true
   } catch (error: unknown) {
     console.error('Failed to initialize storage:', error)
@@ -691,7 +691,7 @@ export async function moveFile(filePath: string, newPath: string): Promise<strin
     // Use copy then potentially delete (or just copy for now as per original code)
     await fs.copy(resolvedSource, resolvedDest)
 
-    console.log('Moved file to', resolvedDest)
+    debug('Moved file to', resolvedDest)
     return resolvedDest
   } catch (error: unknown) {
     console.error('Error moving file:', error)
@@ -1358,7 +1358,7 @@ export async function deleteModFileFromCatalog(
       const resolved = resolvePath(file.filePath)
       try {
         await fs.remove(resolved)
-        console.log(`[storage] Deleted file from disk: ${resolved}`)
+        debug(`[storage] Deleted file from disk: ${resolved}`)
       } catch (err) {
         console.warn(`[storage] Failed to delete file from disk: ${resolved}`, err)
       }

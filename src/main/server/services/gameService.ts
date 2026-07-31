@@ -51,7 +51,7 @@ export class GameService {
   async loadProtocolsFromConfig(): Promise<void> {
     try {
       await storage.getProtocols()
-      console.log('Checked protocols directory.')
+      debug('Checked protocols directory.')
     } catch (error) {
       console.error('Error during initial protocol loading:', error)
     }
@@ -199,7 +199,7 @@ export class GameService {
       )
       const quotedExecutable =
         executable.includes(' ') && !executable.startsWith('"') ? `"${executable}"` : executable
-      console.log('Launching command:', quotedExecutable, quotedArgs.join(' '))
+      debug('Launching command:', quotedExecutable, quotedArgs.join(' '))
 
       // Launch the game
       const success = await fileService.launchGame(executable, args, protocol.id)
@@ -234,7 +234,7 @@ export class GameService {
       )
       const quotedExecutable =
         executable.includes(' ') && !executable.startsWith('"') ? `"${executable}"` : executable
-      console.log('Test launch command:', quotedExecutable, quotedArgs.join(' '))
+      debug('Test launch command:', quotedExecutable, quotedArgs.join(' '))
 
       const success = await fileService.launchGame(executable, args, 'test')
       return { success }
