@@ -104,7 +104,7 @@
     "vitest": "^4.1.9"
   },
   "overrides": {
-    "hono": "4.12.27",
+    "hono": "4.13.0",
     "tmp": "0.2.7",
     "safer-buffer": "2.1.2"
   },
