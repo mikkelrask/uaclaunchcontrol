@@ -177,6 +177,28 @@ const App: React.FC = () => {
             })
         }
 
+        // Dispatch PROTOCOL_CRASHED achievement event — unlocks 'first-crash'
+        // on the first non-clean exit. Repeat crashes are a no-op
+        // (checkEventQualifiers skips already-unlocked achievements).
+        if (!data.clean) {
+          dispatchAchievementEvent({
+            type: 'PROTOCOL_CRASHED',
+            protocolId: data.protocolId
+          })
+            .then((result) => {
+              for (const t of buildUnlockToasts(result)) {
+                toast({
+                  title: t.title,
+                  description: t.description,
+                  duration: t.duration as 6000 | 8000
+                })
+              }
+            })
+            .catch((err) => {
+              console.error('Achievement dispatch failed:', err)
+            })
+        }
+
         // Show crash toast for non-clean exits
         if (!data.clean) {
           const codeStr = data.exitCode === null ? 'a signal' : `exit code ${data.exitCode}`

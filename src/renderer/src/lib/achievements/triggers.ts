@@ -44,6 +44,10 @@ function eventToStatsDelta(event: AchievementEvent): Partial<IPlayerStats> {
       return {
         totalPlaytimeSeconds: event.sessionSeconds
       }
+    case 'PROTOCOL_CRASHED':
+      // No stat to accumulate — a pure event-qualifier achievement (first
+      // crash), checked against the event payload in checkEventQualifiers().
+      return {}
     case 'MOD_FILE_ADDED':
       return {
         totalModFilesAdded: event.count

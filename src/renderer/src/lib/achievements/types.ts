@@ -38,6 +38,7 @@ export type AchievementEvent =
   | { type: 'PROTOCOL_UPDATED'; fileCount: number }
   | { type: 'PROTOCOL_LAUNCHED'; protocolId: string }
   | { type: 'PROTOCOL_EXITED'; protocolId: string; sessionSeconds: number }
+  | { type: 'PROTOCOL_CRASHED'; protocolId: string }
   | { type: 'MOD_FILE_ADDED'; count: number }
   | { type: 'WAD_IMPORTED'; count: number }
   | { type: 'CATALOG_FILE_MANAGED'; count: number }

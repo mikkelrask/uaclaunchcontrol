@@ -242,6 +242,17 @@ export const ACHIEVEMENT_REGISTRY: IAchievementDefinition[] = [
     conditions: [{ stat: 'totalProtocolsLaunched', min: 1 }],
     eventQualifier: (event) => event.type === 'CHEAT_ACTIVATED',
     hidden: true
+  },
+  {
+    id: 'first-crash',
+    title: 'DEAD: Marine KIA',
+    description:
+      'Your first source port crash. The UAC extends its condolences — and its standard replacement policy.',
+    category: 'exploration',
+    icon: 'Flame',
+    type: 'event-qualifier',
+    conditions: [{ stat: 'totalProtocolsLaunched', min: 1 }],
+    eventQualifier: (event) => event.type === 'PROTOCOL_CRASHED'
   }
 ]
 
