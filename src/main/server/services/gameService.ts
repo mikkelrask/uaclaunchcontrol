@@ -2,9 +2,9 @@ import path from 'path'
 
 import * as storage from '../storage'
 import { fileService } from './fileService'
-import { IProtocol, IModFile, IDoomVersion, IAppSettings } from '../../../shared/schema'
+import { IProtocol, IModFile, IDoomVersion, IAppSettings } from '@shared/schema'
 import { MODS_DIR } from '../storage'
-import { debug } from '../../../shared/debug'
+import { debug } from '@shared/debug'
 
 // Service to handle game-related operations
 export class GameService {

@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from 'express'
 import { registerRoutes } from './routes'
-import { debug } from '../../shared/debug'
+import { debug } from '@shared/debug'
 import * as storage from './storage'
 import cors from 'cors'
 

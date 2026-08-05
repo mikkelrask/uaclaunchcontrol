@@ -12,8 +12,8 @@ import {
 import path from 'path'
 import os from 'os'
 import fs from 'fs-extra'
-import { debug } from '../../shared/debug'
-import { REGISTRY_API_URL } from '../../shared/registry-config'
+import { debug } from '@shared/debug'
+import { REGISTRY_API_URL } from '@shared/registry-config'
 import { getPortReleases, downloadPortRelease } from './services/portService'
 import {
   getFreedoomManifest,

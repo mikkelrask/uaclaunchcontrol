@@ -13,8 +13,8 @@ import {
   IProtocol,
   IModFile,
   ModProtocolConfig
-} from '../../shared/schema'
-import { debug } from '../../shared/debug'
+} from '@shared/schema'
+import { debug } from '@shared/debug'
 
 // Debounce timer for WAD watcher events
 let wadSyncTimer: ReturnType<typeof setTimeout> | null = null

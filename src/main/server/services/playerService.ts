@@ -7,8 +7,8 @@ import {
   IAchievementState,
   IAppSettings,
   IProtocol
-} from '../../../shared/schema'
-import { debug } from '../../../shared/debug'
+} from '@shared/schema'
+import { debug } from '@shared/debug'
 
 // ── Paths ───────────────────────────────────────────────
 const CONFIG_DIR = path.join(os.homedir(), '.config', 'uac')

@@ -5,8 +5,8 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { startServer } from './server'
 import { autoUpdater } from 'electron-updater'
 import { getSettings } from './server/storage'
-import { IInstallType } from '../shared/schema'
-import { debug } from '../shared/debug'
+import { IInstallType } from '@shared/schema'
+import { debug } from '@shared/debug'
 
 let mainWindow: BrowserWindow | null = null
 let lastCheckWasManual = false
