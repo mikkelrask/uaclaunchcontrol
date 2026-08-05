@@ -13,6 +13,7 @@ import path from 'path'
 import os from 'os'
 import fs from 'fs-extra'
 import { debug } from '@shared/debug'
+import { wrapRoute } from './wrapRoute'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { getPortReleases, downloadPortRelease } from './services/portService'
 import {
@@ -31,64 +32,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === API Routes ===
 
   // === Doom Versions API ===
-  app.get('/api/versions', async (_req, res) => {
-    const versions = await storage.getDoomVersions()
-    return res.json(versions) // Ensure this sends the array directly
-  })
+  app.get(
+    '/api/versions',
+    wrapRoute(async (_req, res) => {
+      const versions = await storage.getDoomVersions()
+      return res.json(versions) // Ensure this sends the array directly
+    }, '/api/versions')
+  )
 
-  app.put('/api/versions', async (req, res) => {
-    const versions = req.body
-    if (!Array.isArray(versions)) {
-      return res.status(400).json({ message: 'Expected an array of versions' })
-    }
-    try {
+  app.put(
+    '/api/versions',
+    wrapRoute(async (req, res) => {
+      const versions = req.body
+      if (!Array.isArray(versions)) {
+        return res.status(400).json({ message: 'Expected an array of versions' })
+      }
       await storage.saveDoomVersions(versions)
       return res.json({ success: true })
-    } catch (error) {
-      console.error('Error saving doom versions:', error)
-      return res.status(500).json({ message: 'Failed to save doom versions' })
-    }
-  })
+    }, '/api/versions')
+  )
 
   // === Move the mod file to the mod directory set in settings ===
   app.get('/api/media', (req, res) => {
-    try {
-      const filePath = req.query.path as string
-      if (!filePath) {
-        return res.status(400).json({ message: 'Path is required' })
-      }
-      const resolved = storage.resolvePath(filePath)
-
-      if (!fs.existsSync(resolved)) {
-        console.warn(`[DEBUG] Media not found on disk: ${resolved}`)
-        return res.status(404).json({ message: 'File not found' })
-      }
-
-      const ext = path.extname(resolved).toLowerCase()
-      const mimeTypes: Record<string, string> = {
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.webp': 'image/webp'
-      }
-
-      res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream')
-      return fs.createReadStream(resolved).pipe(res)
-    } catch (error: unknown) {
-      console.error('Error serving media:', error)
-      const message =
-        error instanceof Error
-          ? error instanceof Error
-            ? error.message
-            : 'Failed to serve media'
-          : 'Failed to serve media'
-      return res.status(500).json({ message })
+    const filePath = req.query.path as string
+    if (!filePath) {
+      return res.status(400).json({ message: 'Path is required' })
     }
+    const resolved = storage.resolvePath(filePath)
+
+    if (!fs.existsSync(resolved)) {
+      console.warn(`[DEBUG] Media not found on disk: ${resolved}`)
+      return res.status(404).json({ message: 'File not found' })
+    }
+
+    const ext = path.extname(resolved).toLowerCase()
+    const mimeTypes: Record<string, string> = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp'
+    }
+
+    res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream')
+    return fs.createReadStream(resolved).pipe(res)
   })
 
-  app.post('/api/file-read', async (req, res) => {
-    try {
+  app.post(
+    '/api/file-read',
+    wrapRoute(async (req, res) => {
       const { filePath } = req.body
       if (!filePath) return res.status(400).json({ message: 'Missing filePath' })
       const resolved = storage.resolvePath(filePath)
@@ -97,31 +89,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const content = await fs.readFile(resolved, 'utf-8')
       return res.json({ content })
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to read file' })
-    }
-  })
+    }, '/api/file-read')
+  )
 
-  app.post('/api/move-file', async (req, res) => {
-    debug('POST /api/move-file received with body:', req.body)
-    const { filePath, newPath } = req.body
-    if (!filePath || !newPath) {
-      return res.status(400).json({ message: 'Missing file path or new path' })
-    }
+  app.post(
+    '/api/move-file',
+    wrapRoute(async (req, res) => {
+      debug('POST /api/move-file received with body:', req.body)
+      const { filePath, newPath } = req.body
+      if (!filePath || !newPath) {
+        return res.status(400).json({ message: 'Missing file path or new path' })
+      }
 
-    try {
       const returnPath = await storage.moveFile(filePath, newPath)
       return res.json({ message: returnPath })
-    } catch (error) {
-      console.error('Error moving file:', error)
-      return res.status(500).json({ message: 'Failed to move file' })
-    }
-  })
+    }, '/api/move-file')
+  )
 
-  app.post('/api/wads/import', async (req, res) => {
-    try {
+  app.post(
+    '/api/wads/import',
+    wrapRoute(async (req, res) => {
       const { sourcePath } = req.body
       if (!sourcePath) {
         return res.status(400).json({ message: 'Missing sourcePath' })
@@ -129,20 +116,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await storage.importWadFile(sourcePath)
       return res.json(result)
-    } catch (error: unknown) {
-      console.error('Error importing WAD:', error)
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to import WAD'
-      })
-    }
-  })
+    }, '/api/wads/import')
+  )
 
   // Serve mod images dynamically from the images directory
-  app.get('/images/:fileName', async (req, res) => {
-    try {
-      const filePath = path.join(storage.IMAGES_DIR, req.params.fileName)
+  app.get(
+    '/images/:fileName',
+    wrapRoute(async (req, res) => {
+      const filePath = path.join(storage.IMAGES_DIR, req.params.fileName as string)
 
-      debug(`Serving image request: ${req.params.fileName}`)
+      debug(`Serving image request: ${req.params.fileName as string}`)
       debug(`Full disk path: ${filePath}`)
 
       if (fs.existsSync(filePath)) {
@@ -163,85 +146,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`[DEBUG] Image file NOT FOUND on disk: ${filePath}`)
         return res.status(404).send('Image file not found on disk')
       }
-    } catch (error) {
-      console.error(`[DEBUG] Exception serving image ${req.params.fileName}:`, error)
-      return res.status(500).send('Server error serving image')
-    }
-  })
+    }, '/images/:fileName')
+  )
 
   // Download image route
-  app.post('/api/protocol/download-image', async (req, res) => {
-    const { url, protocolId } = req.body
-    if (!url || !protocolId) {
-      return res.status(400).json({ message: 'Missing url or protocolId' })
-    }
-    try {
+  app.post(
+    '/api/protocol/download-image',
+    wrapRoute(async (req, res) => {
+      const { url, protocolId } = req.body
+      if (!url || !protocolId) {
+        return res.status(400).json({ message: 'Missing url or protocolId' })
+      }
       const fileName = await storage.downloadImage(url, protocolId)
       return res.json({ fileName })
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to serve media' })
-    }
-  })
+    }, '/api/protocol/download-image')
+  )
 
   // Upload screenshot route
-  app.post('/api/screenshots/upload', async (req, res) => {
-    const { filePath } = req.body
-    if (!filePath) {
-      return res.status(400).json({ message: 'Missing filePath' })
-    }
-    try {
+  app.post(
+    '/api/screenshots/upload',
+    wrapRoute(async (req, res) => {
+      const { filePath } = req.body
+      if (!filePath) {
+        return res.status(400).json({ message: 'Missing filePath' })
+      }
       const fileName = await storage.copyImageToImages(filePath)
       return res.json({ fileName })
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to upload screenshot' })
-    }
-  })
+    }, '/api/screenshots/upload')
+  )
 
   // Read a screenshot as base64, for embedding in a modpack export
-  app.get('/api/screenshots/:fileName/content', async (req, res) => {
-    try {
-      const result = await storage.readScreenshotAsBase64(req.params.fileName)
+  app.get(
+    '/api/screenshots/:fileName/content',
+    wrapRoute(async (req, res) => {
+      const result = await storage.readScreenshotAsBase64(req.params.fileName as string)
       return res.json(result)
-    } catch (error: unknown) {
-      return res
-        .status(404)
-        .json({ message: error instanceof Error ? error.message : 'Screenshot not found' })
-    }
-  })
+    }, '/api/screenshots/:fileName/content')
+  )
 
   // Write a base64-encoded screenshot from a modpack import
-  app.post('/api/screenshots/import', async (req, res) => {
-    const { fileName, data } = req.body
-    if (!fileName || !data) {
-      return res.status(400).json({ message: 'Missing fileName or data' })
-    }
-    try {
+  app.post(
+    '/api/screenshots/import',
+    wrapRoute(async (req, res) => {
+      const { fileName, data } = req.body
+      if (!fileName || !data) {
+        return res.status(400).json({ message: 'Missing fileName or data' })
+      }
       const savedFileName = await storage.writeScreenshotFromBase64(fileName, data)
       return res.json({ fileName: savedFileName })
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to import screenshot' })
-    }
-  })
+    }, '/api/screenshots/import')
+  )
 
-  app.get('/api/versions/:slug', async (req, res) => {
-    const version = await storage.getDoomVersionBySlug(req.params.slug)
-    if (!version) {
-      return res.status(404).json({ message: 'Doom version not found' })
-    }
-    return res.json(version)
-  })
+  app.get(
+    '/api/versions/:slug',
+    wrapRoute(async (req, res) => {
+      const version = await storage.getDoomVersionBySlug(req.params.slug as string)
+      if (!version) {
+        return res.status(404).json({ message: 'Doom version not found' })
+      }
+      return res.json(version)
+    }, '/api/versions/:slug')
+  )
 
   // === Protocols API ===
-  app.get('/api/protocols', async (req, res) => {
-    const { version, search } = req.query
+  app.get(
+    '/api/protocols',
+    wrapRoute(async (req, res) => {
+      const { version, search } = req.query
 
-    try {
       let protocols = await gameService.getAllProtocols()
 
       if (version && typeof version === 'string') {
@@ -263,152 +235,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       return res.json(protocols)
-    } catch (error) {
-      console.error('Error fetching protocols:', error)
-      return res.status(500).json({ message: 'Failed to fetch protocols' })
-    }
-  })
+    }, '/api/protocols')
+  )
 
-  app.get('/api/protocols/:id', async (req, res) => {
-    const id = req.params.id
+  app.get(
+    '/api/protocols/:id',
+    wrapRoute(async (req, res) => {
+      const id = req.params.id as string
 
-    try {
       const { protocol, files } = await gameService.getProtocol(id)
       return res.json({ protocol, files })
-    } catch (error: unknown) {
-      return res.status(404).json({
-        message: error instanceof Error ? error.message : 'Protocol not found'
-      })
-    }
-  })
+    }, '/api/protocols/:id')
+  )
 
-  app.post('/api/protocols', async (req, res) => {
-    const { protocol } = req.body
-    const files = req.body.files || []
+  app.post(
+    '/api/protocols',
+    wrapRoute(async (req, res) => {
+      const { protocol } = req.body
+      const files = req.body.files || []
 
-    if (!protocol || !protocol.title) {
-      return res.status(400).json({ message: 'Missing required protocol properties' })
-    }
+      if (!protocol || !protocol.title) {
+        return res.status(400).json({ message: 'Missing required protocol properties' })
+      }
 
-    try {
       const saved = await gameService.saveProtocol(protocol, files)
       return res.status(201).json(saved)
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to save protocol'
-      })
-    }
-  })
+    }, '/api/protocols')
+  )
 
-  app.put('/api/protocols/:id', async (req, res) => {
-    const id = req.params.id
-    const { protocol } = req.body
-    const files = req.body.files || []
+  app.put(
+    '/api/protocols/:id',
+    wrapRoute(async (req, res) => {
+      const id = req.params.id as string
+      const { protocol } = req.body
+      const files = req.body.files || []
 
-    if (!protocol) {
-      return res.status(400).json({ message: 'Missing protocol data' })
-    }
+      if (!protocol) {
+        return res.status(400).json({ message: 'Missing protocol data' })
+      }
 
-    protocol.id = id
-    try {
+      protocol.id = id
       const updated = await gameService.saveProtocol(protocol, files)
       return res.json(updated)
-    } catch (error: unknown) {
-      return res.status(404).json({
-        message: error instanceof Error ? error.message : 'Protocol not found or failed to update'
-      })
-    }
-  })
+    }, '/api/protocols/:id')
+  )
 
-  app.delete('/api/protocols/:id', async (req, res) => {
-    const id = req.params.id
+  app.delete(
+    '/api/protocols/:id',
+    wrapRoute(async (req, res) => {
+      const id = req.params.id as string
 
-    try {
       const success = await gameService.deleteProtocol(id)
       if (!success) {
         throw new Error('Protocol not found or failed to delete')
       }
       return res.status(204).send()
-    } catch (error: unknown) {
-      return res.status(404).json({
-        message: error instanceof Error ? error.message : 'Protocol not found or failed to delete'
-      })
-    }
-  })
+    }, '/api/protocols/:id')
+  )
 
   // Launch a protocol
   // Test-launch a protocol from form data without saving
-  app.post('/api/protocols/test-launch', async (req, res) => {
-    const { protocol, files } = req.body
-    if (!protocol) {
-      return res.status(400).json({ message: 'Missing protocol data' })
-    }
-    try {
+  app.post(
+    '/api/protocols/test-launch',
+    wrapRoute(async (req, res) => {
+      const { protocol, files } = req.body
+      if (!protocol) {
+        return res.status(400).json({ message: 'Missing protocol data' })
+      }
       const result = await gameService.testLaunch(protocol, files || [])
       if (!result.success) {
         throw new Error(result.message || 'Failed to test-launch')
       }
       return res.json({ success: true })
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to test-launch'
-      })
-    }
-  })
+    }, '/api/protocols/test-launch')
+  )
 
-  app.post('/api/protocols/:id/launch', async (req, res) => {
-    const id = req.params.id
-    if (!id) {
-      return res.status(400).json({ message: 'Invalid protocol ID' })
-    }
-    try {
+  app.post(
+    '/api/protocols/:id/launch',
+    wrapRoute(async (req, res) => {
+      const id = req.params.id as string
+      if (!id) {
+        return res.status(400).json({ message: 'Invalid protocol ID' })
+      }
       const result = await gameService.launchProtocol(id)
       if (!result.success) {
         throw new Error(result.message || 'Failed to launch protocol')
       }
       return res.json({ success: true })
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to launch protocol'
-      })
-    }
-  })
+    }, '/api/protocols/:id/launch')
+  )
 
   // Record playtime for a protocol
-  app.post('/api/protocols/:id/playtime', async (req, res) => {
-    const { sessionSeconds } = req.body
-    const id = req.params.id
-    if (!id || typeof sessionSeconds !== 'number' || sessionSeconds <= 0) {
-      return res.status(400).json({ message: 'Invalid request' })
-    }
-    try {
+  app.post(
+    '/api/protocols/:id/playtime',
+    wrapRoute(async (req, res) => {
+      const { sessionSeconds } = req.body
+      const id = req.params.id as string
+      if (!id || typeof sessionSeconds !== 'number' || sessionSeconds <= 0) {
+        return res.status(400).json({ message: 'Invalid request' })
+      }
       await storage.addPlaytime(id, sessionSeconds)
       // Also update the total playtime in player stats
       updatePlayerStats({ totalPlaytimeSeconds: sessionSeconds }).catch(() => {})
       return res.json({ success: true })
-    } catch (error) {
-      console.error('Error recording playtime:', error)
-      return res.status(500).json({ message: 'Failed to record playtime' })
-    }
-  })
+    }, '/api/protocols/:id/playtime')
+  )
 
   // === Mod Files API === // New Section
-  app.get('/api/mod-files/catalog', async (_req, res) => {
-    try {
+  app.get(
+    '/api/mod-files/catalog',
+    wrapRoute(async (_req, res) => {
       const catalog = await storage.getModFileCatalog()
       if (!Array.isArray(catalog)) {
         console.warn('routes.ts: getModFileCatalog did not return an array:', catalog)
         return res.json([])
       }
       return res.json(catalog)
-    } catch (error) {
-      console.error('routes.ts: Error in /api/mod-files/catalog:', error)
-      return res.json([])
-    }
-  })
+    }, '/api/mod-files/catalog')
+  )
 
-  app.post('/api/mod-files/catalog', async (req, res) => {
-    try {
+  app.post(
+    '/api/mod-files/catalog',
+    wrapRoute(async (req, res) => {
       debug('POST /api/mod-files/catalog received with body:', req.body)
 
       const fileData = req.body
@@ -424,43 +372,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debug('File added to catalog successfully:', savedFile)
 
       return res.status(201).json(savedFile)
-    } catch (error: unknown) {
-      console.error('Error in POST /api/mod-files/catalog:', error)
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to add file to catalog'
-      })
-    }
-  })
+    }, '/api/mod-files/catalog')
+  )
 
-  app.post('/api/mod-files/move', async (req, res) => {
-    try {
+  app.post(
+    '/api/mod-files/move',
+    wrapRoute(async (req, res) => {
       const { sourcePath } = req.body
       if (!sourcePath) return res.status(400).json({ message: 'Missing sourcePath' })
       const result = await storage.moveToModFolder(sourcePath)
       return res.json(result)
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to serve media' })
-    }
-  })
+    }, '/api/mod-files/move')
+  )
 
-  app.post('/api/mod-files/hash', async (req, res) => {
-    try {
+  app.post(
+    '/api/mod-files/hash',
+    wrapRoute(async (req, res) => {
       const { filePath } = req.body
       if (!filePath) return res.status(400).json({ message: 'Missing filePath' })
       const hash = await storage.computeFileHashOrThrow(filePath)
       return res.json(hash)
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to compute hash' })
-    }
-  })
+    }, '/api/mod-files/hash')
+  )
 
-  app.put('/api/mod-files/catalog/:id', async (req, res) => {
-    try {
-      const id = parseInt(req.params.id, 10)
+  app.put(
+    '/api/mod-files/catalog/:id',
+    wrapRoute(async (req, res) => {
+      const id = parseInt(req.params.id as string, 10)
       const updates = req.body
 
       if (isNaN(id)) {
@@ -469,18 +407,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedFile = await storage.updateModFileInCatalog(id, updates)
       return res.json(updatedFile)
-    } catch (error: unknown) {
-      console.error(`Error in PUT /api/mod-files/catalog/${req.params.id}:`, error)
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to update file in catalog'
-      })
-    }
-  })
+    }, '/api/mod-files/catalog/:id')
+  )
 
   // Delete a file from the catalog
-  app.delete('/api/mod-files/catalog/:id', async (req, res) => {
-    try {
-      const { id } = req.params
+  app.delete(
+    '/api/mod-files/catalog/:id',
+    wrapRoute(async (req, res) => {
+      const id: string = req.params.id as string
       const fileId = parseInt(id, 10)
       if (isNaN(fileId)) {
         return res.status(400).json({ message: 'Invalid file ID' })
@@ -488,126 +422,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const deleteFile = req.query.deleteFile === 'true'
       await storage.deleteModFileFromCatalog(fileId, deleteFile)
       return res.json({ success: true })
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to delete file from catalog'
-      })
-    }
-  })
+    }, '/api/mod-files/catalog/:id')
+  )
 
-  app.post('/api/mod-files/unzip-scan', async (req, res) => {
-    try {
+  app.post(
+    '/api/mod-files/unzip-scan',
+    wrapRoute(async (req, res) => {
       const { zipFilePath } = req.body
       if (!zipFilePath) {
         return res.status(400).json({ message: 'Missing zipFilePath' })
       }
       const result = await storage.unzipAndScan(zipFilePath)
       return res.json(result)
-    } catch (error: unknown) {
-      console.error('Error in POST /api/mod-files/unzip-scan:', error)
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to unzip and scan archive'
-      })
-    }
-  })
+    }, '/api/mod-files/unzip-scan')
+  )
 
-  app.post('/api/mod-files/unzip-import', async (req, res) => {
-    try {
+  app.post(
+    '/api/mod-files/unzip-import',
+    wrapRoute(async (req, res) => {
       const { tempDir, filesToImport } = req.body
       if (!tempDir || !Array.isArray(filesToImport)) {
         return res.status(400).json({ message: 'Missing tempDir or filesToImport' })
       }
       const result = await storage.importUnzippedFiles(tempDir, filesToImport)
       return res.json(result)
-    } catch (error: unknown) {
-      console.error('Error in POST /api/mod-files/unzip-import:', error)
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to import unzipped files'
-      })
-    }
-  })
+    }, '/api/mod-files/unzip-import')
+  )
 
-  app.post('/api/mod-files/unrar-scan', async (req, res) => {
-    try {
+  app.post(
+    '/api/mod-files/unrar-scan',
+    wrapRoute(async (req, res) => {
       const { rarFilePath } = req.body
       if (!rarFilePath) {
         return res.status(400).json({ message: 'Missing rarFilePath' })
       }
       const result = await storage.unrarAndScan(rarFilePath)
       return res.json(result)
-    } catch (error: unknown) {
-      console.error('Error in POST /api/mod-files/unrar-scan:', error)
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to extract and scan RAR archive'
-      })
-    }
-  })
+    }, '/api/mod-files/unrar-scan')
+  )
 
   // === Config File API ===
 
   /** Create a blank, isolated config for a protocol with no originating template. */
-  app.post('/api/configs/blank', async (req, res) => {
-    try {
+  app.post(
+    '/api/configs/blank',
+    wrapRoute(async (req, res) => {
       const { protocolId, ext } = req.body
       if (!protocolId) {
         return res.status(400).json({ message: 'Missing protocolId' })
       }
       const result = await storage.createBlankProtocolConfig(protocolId, ext)
       return res.json(result)
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to create blank config'
-      })
-    }
-  })
+    }, '/api/configs/blank')
+  )
 
   /** Copy a config template to a protocol-specific copy. */
-  app.post('/api/configs/copy-for-protocol', async (req, res) => {
-    try {
+  app.post(
+    '/api/configs/copy-for-protocol',
+    wrapRoute(async (req, res) => {
       const { templateHash, protocolId } = req.body
       if (!templateHash || !protocolId) {
         return res.status(400).json({ message: 'Missing templateHash or protocolId' })
       }
       const result = await storage.copyConfigForProtocol(templateHash, protocolId)
       return res.json(result)
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to copy config for protocol'
-      })
-    }
-  })
+    }, '/api/configs/copy-for-protocol')
+  )
 
   /** Read a config file content by hash or protocolId. */
-  app.get('/api/configs/:key', async (req, res) => {
-    try {
-      const { key } = req.params
+  app.get(
+    '/api/configs/:key',
+    wrapRoute(async (req, res) => {
+      const key: string = req.params.key as string
       if (!key) return res.status(400).json({ message: 'Missing config key' })
       const content = await storage.readConfigFileContent(key)
       return res.json({ content })
-    } catch (error: unknown) {
-      return res.status(404).json({
-        message: error instanceof Error ? error.message : 'Config file not found'
-      })
-    }
-  })
+    }, '/api/configs/:key')
+  )
 
   /** Hash a file (reused for configs too) */
-  app.post('/api/configs/hash', async (req, res) => {
-    try {
+  app.post(
+    '/api/configs/hash',
+    wrapRoute(async (req, res) => {
       const { filePath } = req.body
       if (!filePath) return res.status(400).json({ message: 'Missing filePath' })
       const hash = await storage.computeFileHash(filePath)
       return res.json(hash)
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to compute hash'
-      })
-    }
-  })
+    }, '/api/configs/hash')
+  )
 
   /** Upload a config file: hash it, copy to cfgs dir, return the hash. */
-  app.post('/api/configs/upload', async (req, res) => {
-    try {
+  app.post(
+    '/api/configs/upload',
+    wrapRoute(async (req, res) => {
       const { filePath } = req.body
       if (!filePath) return res.status(400).json({ message: 'Missing filePath' })
 
@@ -629,59 +536,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       debug(`Uploaded config file: ${filePath} -> ${destPath} (hash: ${hash})`)
 
       return res.json({ hash, configFile })
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to upload config file'
-      })
-    }
-  })
+    }, '/api/configs/upload')
+  )
 
   /** Write a config file content (for import reconstruction). Must stay after the
    *  literal /api/configs/hash and /api/configs/upload routes above — Express
    *  matches this :key wildcard against any single path segment, so registering
    *  it first would shadow those literal routes. */
-  app.post('/api/configs/:key', async (req, res) => {
-    try {
-      const { key } = req.params
+  app.post(
+    '/api/configs/:key',
+    wrapRoute(async (req, res) => {
+      const key: string = req.params.key as string
       const { content } = req.body
       if (!key || !content) {
         return res.status(400).json({ message: 'Missing key or content' })
       }
       await storage.writeConfigFileContent(key, content)
       return res.json({ success: true })
-    } catch (error: unknown) {
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to write config file'
-      })
-    }
-  })
+    }, '/api/configs/:key')
+  )
 
   // Search the mod file catalogue by name
-  app.get('/api/mod-files/catalog/search', async (req, res) => {
-    const { q } = req.query
-    if (!q || typeof q !== 'string') {
-      return res.json([])
-    }
-    try {
+  app.get(
+    '/api/mod-files/catalog/search',
+    wrapRoute(async (req, res) => {
+      const { q } = req.query
+      if (!q || typeof q !== 'string') {
+        return res.json([])
+      }
       const catalog = await storage.getModFileCatalog()
       const query = q.toLowerCase()
       const results = catalog.filter((f) =>
         (f.name || f.fileName || '').toLowerCase().includes(query)
       )
       return res.json(results)
-    } catch (error) {
-      console.error('Error searching mod file catalog:', error)
-      return res.status(500).json({ message: 'Failed to search mod file catalog' })
-    }
-  })
+    }, '/api/mod-files/catalog/search')
+  )
 
   // Search the UAC Registry by query string
-  app.get('/api/search/registry', async (req, res) => {
-    const { q } = req.query
-    if (!q || typeof q !== 'string' || q.trim().length === 0) {
-      return res.json([])
-    }
-    try {
+  app.get(
+    '/api/search/registry',
+    wrapRoute(async (req, res) => {
+      const { q } = req.query
+      if (!q || typeof q !== 'string' || q.trim().length === 0) {
+        return res.json([])
+      }
       const registryUrl = REGISTRY_API_URL
       const response = await fetch(`${registryUrl}/api/mods?q=${encodeURIComponent(q)}`, {
         signal: AbortSignal.timeout(5000)
@@ -716,19 +615,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       return res.json(Array.from(grouped.values()))
-    } catch (error) {
-      console.error('Error searching UAC Registry:', error)
-      return res.json([]) // Graceful: registry unavailable -> just no results
-    }
-  })
+    }, '/api/search/registry')
+  )
 
   // Search idgames Archive by name
-  app.get('/api/search/idgames', async (req, res) => {
-    const { q } = req.query
-    if (!q || typeof q !== 'string' || q.trim().length === 0) {
-      return res.json([])
-    }
-    try {
+  app.get(
+    '/api/search/idgames',
+    wrapRoute(async (req, res) => {
+      const { q } = req.query
+      if (!q || typeof q !== 'string' || q.trim().length === 0) {
+        return res.json([])
+      }
       const response = await fetch(
         `https://www.doomworld.com/idgames/api/api.php?action=search&query=${encodeURIComponent(q)}&type=name`,
         { signal: AbortSignal.timeout(10000) }
@@ -814,19 +711,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       return res.json(results)
-    } catch (error) {
-      console.error('Error searching idgames Archive:', error)
-      return res.json([])
-    }
-  })
+    }, '/api/search/idgames')
+  )
 
   // Download a file from idgames mirror to a temp location (no import — caller decides)
-  app.post('/api/search/idgames/download', async (req, res) => {
-    const { downloadUrl, title } = req.body
-    if (!downloadUrl || typeof downloadUrl !== 'string') {
-      return res.status(400).json({ message: 'Missing downloadUrl' })
-    }
-    try {
+  app.post(
+    '/api/search/idgames/download',
+    wrapRoute(async (req, res) => {
+      const { downloadUrl, title } = req.body
+      if (!downloadUrl || typeof downloadUrl !== 'string') {
+        return res.status(400).json({ message: 'Missing downloadUrl' })
+      }
       const parsedUrl = new URL(downloadUrl)
       const fileName = path.basename(parsedUrl.pathname)
       const ext = path.extname(fileName).toLowerCase()
@@ -852,19 +747,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: title || path.basename(fileName, ext),
         hash: hashValue || ''
       })
-    } catch (error) {
-      console.error('Error downloading from idgames:', error)
-      return res.status(500).json({ message: 'Failed to download file' })
-    }
-  })
+    }, '/api/search/idgames/download')
+  )
 
   // Import a single file downloaded from idgames into the mods directory
-  app.post('/api/search/idgames/import-single', async (req, res) => {
-    const { tempPath, fileName, name, hashValue, fileType } = req.body
-    if (!tempPath || typeof tempPath !== 'string') {
-      return res.status(400).json({ message: 'Missing tempPath' })
-    }
-    try {
+  app.post(
+    '/api/search/idgames/import-single',
+    wrapRoute(async (req, res) => {
+      const { tempPath, fileName, name, hashValue, fileType } = req.body
+      if (!tempPath || typeof tempPath !== 'string') {
+        return res.status(400).json({ message: 'Missing tempPath' })
+      }
       const moved = await storage.moveToModFolder(tempPath)
       const catalogEntry = await storage.addModFileToCatalog({
         fileName: fileName || path.basename(tempPath),
@@ -876,94 +769,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clean up the temp file
       await fs.remove(tempPath).catch(() => {})
       return res.json({ file: catalogEntry })
-    } catch (error) {
-      console.error('Error importing idgames file:', error)
-      return res.status(500).json({ message: 'Failed to import file' })
-    }
-  })
+    }, '/api/search/idgames/import-single')
+  )
 
   // Update a Doom version (e.g., for ignoring/hiding)
-  app.put('/api/versions/:id', async (req, res) => {
-    try {
-      const { id } = req.params
+  app.put(
+    '/api/versions/:id',
+    wrapRoute(async (req, res) => {
+      const id: string = req.params.id as string
       const updates = req.body
       debug(`[API] PUT /api/versions/${id} - Updates:`, updates)
       const updatedVersion = await storage.updateDoomVersion(id, updates)
       res.json({ success: true, data: updatedVersion })
-    } catch (error: unknown) {
-      console.error(`[API] Error updating version ${req.params.id}:`, error)
-      res.status(500).json({
-        success: false,
-        message: error instanceof Error ? error.message : 'Failed to serve media'
-      })
-    }
-  })
+    }, '/api/versions/:id')
+  )
 
   // === Settings API ===
-  app.get('/api/settings', async (_req, res) => {
-    try {
+  app.get(
+    '/api/settings',
+    wrapRoute(async (_req, res) => {
       const settings = await storage.getSettings()
       // Return a default empty object if not found
       return res.json(settings || {})
-    } catch (error) {
-      console.error('Failed to load settings:', error)
+    }, '/api/settings')
+  )
 
-      return res.status(500).json({ message: 'Failed to load settings' })
-    }
-  })
-
-  app.put('/api/settings', async (req, res) => {
-    try {
+  app.put(
+    '/api/settings',
+    wrapRoute(async (req, res) => {
       const newSettings = req.body
       if (!newSettings) {
         return res.status(400).json({ message: 'No settings data provided' })
       }
       const updatedSettings = await storage.saveSettings(newSettings)
       return res.json(updatedSettings)
-    } catch (error) {
-      console.error('Failed to save settings:', error)
-
-      return res.status(500).json({ message: 'Failed to save settings' })
-    }
-  })
+    }, '/api/settings')
+  )
 
   // === First Run / Tour API ===
-  app.get('/api/first-run', async (_req, res) => {
-    try {
+  app.get(
+    '/api/first-run',
+    wrapRoute(async (_req, res) => {
       const isFirstRun = storage.getIsFirstRun()
       return res.json({ isFirstRun })
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to check first run' })
-    }
-  })
+    }, '/api/first-run')
+  )
 
-  app.post('/api/first-run/dismiss', async (_req, res) => {
-    try {
+  app.post(
+    '/api/first-run/dismiss',
+    wrapRoute(async (_req, res) => {
       storage.dismissFirstRun()
       return res.json({ success: true })
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to dismiss first run' })
-    }
-  })
+    }, '/api/first-run/dismiss')
+  )
 
-  app.post('/api/first-run/reenable', async (_req, res) => {
-    try {
+  app.post(
+    '/api/first-run/reenable',
+    wrapRoute(async (_req, res) => {
       storage.reenableFirstRun()
       return res.json({ isFirstRun: true })
-    } catch (error: unknown) {
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to re-enable first run' })
-    }
-  })
+    }, '/api/first-run/reenable')
+  )
 
   // === Source Port Scanner ===
-  app.get('/api/settings/scan-ports', async (_req, res) => {
-    try {
+  app.get(
+    '/api/settings/scan-ports',
+    wrapRoute(async (_req, res) => {
       const scanResults: {
         path: string
         name: string
@@ -1074,27 +945,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       return res.json(scanResults)
-    } catch (error: unknown) {
-      console.error('Failed to scan for source ports:', error)
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to scan for source ports'
-      })
-    }
-  })
+    }, '/api/settings/scan-ports')
+  )
 
   // === Port Download API ===
-  app.get('/api/ports/releases', async (_req, res) => {
-    try {
+  app.get(
+    '/api/ports/releases',
+    wrapRoute(async (_req, res) => {
       const releases = await getPortReleases()
       return res.json(releases)
-    } catch (error) {
-      console.error('Failed to fetch port releases:', error)
-      return res.status(500).json({ message: 'Failed to fetch port releases' })
-    }
-  })
+    }, '/api/ports/releases')
+  )
 
-  app.post('/api/ports/download', async (req, res) => {
-    try {
+  app.post(
+    '/api/ports/download',
+    wrapRoute(async (req, res) => {
       const { downloadUrl, assetName, family, version } = req.body
       if (!downloadUrl || !assetName || !family || !version) {
         return res
@@ -1103,29 +968,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const result = await downloadPortRelease(downloadUrl, assetName, family, version)
       return res.json(result)
-    } catch (error) {
-      console.error('Failed to download port release:', error)
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to download port' })
-    }
-  })
+    }, '/api/ports/download')
+  )
 
   // === FreeDoom Download API ===
-  app.get('/api/freedoom/manifest', async (_req, res) => {
-    try {
+  app.get(
+    '/api/freedoom/manifest',
+    wrapRoute(async (_req, res) => {
       const manifest = await getFreedoomManifest()
       return res.json(manifest)
-    } catch (error) {
-      console.error('Failed to fetch FreeDoom manifest:', error)
-      return res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to fetch FreeDoom manifest'
-      })
-    }
-  })
+    }, '/api/freedoom/manifest')
+  )
 
-  app.post('/api/freedoom/download', async (req, res) => {
-    try {
+  app.post(
+    '/api/freedoom/download',
+    wrapRoute(async (req, res) => {
       const { bundle } = req.body as { bundle?: FreedoomBundleId }
       if (bundle !== 'phase12' && bundle !== 'freedm') {
         return res.status(400).json({ message: "bundle must be 'phase12' or 'freedm'" })
@@ -1138,70 +995,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.syncDoomVersions({ notifyDelta: true })
       const doomVersions = await storage.getDoomVersions()
       return res.json({ ...result, doomVersions })
-    } catch (error) {
-      console.error('Failed to download FreeDoom:', error)
-      return res
-        .status(500)
-        .json({ message: error instanceof Error ? error.message : 'Failed to download FreeDoom' })
-    }
-  })
+    }, '/api/freedoom/download')
+  )
 
   // === Player Data / Achievements API ===
-  app.get('/api/player-data', async (_req, res) => {
-    try {
+  app.get(
+    '/api/player-data',
+    wrapRoute(async (_req, res) => {
       const data = await getPlayerData()
       return res.json(data)
-    } catch (error) {
-      console.error('Failed to get player data:', error)
-      return res.status(500).json({ message: 'Failed to get player data' })
-    }
-  })
+    }, '/api/player-data')
+  )
 
-  app.put('/api/player-data', async (req, res) => {
-    try {
+  app.put(
+    '/api/player-data',
+    wrapRoute(async (req, res) => {
       const partial = req.body
       if (!partial) {
         return res.status(400).json({ message: 'No player data provided' })
       }
       const updated = await savePlayerData(partial)
       return res.json(updated)
-    } catch (error) {
-      console.error('Failed to save player data:', error)
-      return res.status(500).json({ message: 'Failed to save player data' })
-    }
-  })
+    }, '/api/player-data')
+  )
 
-  app.post('/api/player-data/stats', async (req, res) => {
-    try {
+  app.post(
+    '/api/player-data/stats',
+    wrapRoute(async (req, res) => {
       const delta = req.body
       if (!delta) {
         return res.status(400).json({ message: 'No stats delta provided' })
       }
       const updated = await updatePlayerStats(delta)
       return res.json(updated)
-    } catch (error) {
-      console.error('Failed to update player stats:', error)
-      return res.status(500).json({ message: 'Failed to update player stats' })
-    }
-  })
+    }, '/api/player-data/stats')
+  )
 
-  app.post('/api/player-data/achievements/unlock', async (req, res) => {
-    try {
+  app.post(
+    '/api/player-data/achievements/unlock',
+    wrapRoute(async (req, res) => {
       const { id, state } = req.body
       if (!id || !state) {
         return res.status(400).json({ message: 'Missing achievement id or state' })
       }
       const updated = await unlockAchievement(id, state)
       return res.json(updated)
-    } catch (error) {
-      console.error('Failed to unlock achievement:', error)
-      return res.status(500).json({ message: 'Failed to unlock achievement' })
-    }
-  })
+    }, '/api/player-data/achievements/unlock')
+  )
 
   // === Dialog API (for file/directory selection) ===
-  app.post('/api/dialog/open', async (req, res) => {
-    try {
+  app.post(
+    '/api/dialog/open',
+    wrapRoute(async (req, res) => {
       const { dialog, BrowserWindow } = await import('electron')
       const options = req.body || {}
 
@@ -1220,11 +1065,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await dialog.showOpenDialog(win, options)
       return res.json(result)
-    } catch (error) {
-      console.error('Failed to show open dialog:', error)
-      return res.status(500).json({ canceled: true, filePaths: [] })
-    }
-  })
+    }, '/api/dialog/open')
+  )
 
   return httpServer
 }
