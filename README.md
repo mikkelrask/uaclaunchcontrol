@@ -1,6 +1,6 @@
 # UAC Launch Control
 
-A modern desktop application for managing and launching Doom mods, built with Electron, React, and TypeScript. It is a WIP and still very _early stage_!
+A desktop app for managing and launching Doom mods, built with Electron, React, and TypeScript. Still a work in progress and very early stage.
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/mikkelrask/uaclaunchcontrol)
 ![Electron](https://img.shields.io/badge/Electron-Latest-47848F?logo=electron)
@@ -11,44 +11,36 @@ A modern desktop application for managing and launching Doom mods, built with El
 
 ## Overview
 
-**UAC Launch Control** is a mod launcher for **UZDoom/GZDoom/ZDoom**. It provides an intuitive interface for **organizing your Doom WADs and mod files**, and launching games with custom configurations to test multi mod compatability.
+UAC Launch Control is a mod launcher for UZDoom, GZDoom, and ZDoom. It gives you a clean interface for organizing your Doom WADs and mod files, then launching them with custom configurations so you can test how several mods behave together.
 
-No more having to remember the launch order of your mods, or blindly trusting and launching `.bat` scripts to rip and tear!
+No more memorizing launch order or blindly running .bat files to rip and tear.
 
-#### Key Features
+### What it does
 
-- 🎮 **Game Management**: Organize and launch different configurations of wads, mods and modpacks with ease
-- 📁 **File Catalog**: Maintain a catalog of mod files with search, sidecar flags, and dependency/load-order tracking
-- 📦 **"Mod-dependencies"**: if a mod requires another specific modfile, you can set it as required, and the app will always add additional mods when creating a new game instance
-- ⚙️ **Custom Launch Parameters**: Configure launch arguments per mod
-- 🔄 **Import and Export**: Export your configuration as a JSON file to share with friends, or drag-and-drop a modpack JSON to import\*
-- 🌐 **UAC Registry**: Community-sourced mod metadata lookups with anonymous submissions (opt-in)
-- 🗺️ **WAD Management**: Import and configure base game WADs with auto-detection and real-time file watching
-- 🎯 **Bring your own Source port**: UZDoom, GZDoom, Zandronum, and more — configure per-mod or globally
-- ⌨️ **Keyboard Shortcuts**: Quick navigation with global hotkeys — see the [Keyboard Shortcuts wiki](https://uac-soft.online/reference/keyboard-shortcuts/) for the full list
+You can build and launch different setups of wads, mods, and modpacks without fuss. Keep a catalog of your mod files with search, per-file flags, and dependency and load-order tracking. If one mod needs another to run, mark it as required and the app pulls it in automatically whenever you start a new game instance.
 
-_\* They still need the actual modfiles — the JSON only stores references and load orders. No mod data is shared, keeping support with the original mod creators._
+Set launch arguments per mod. Export your whole configuration as a JSON file to hand to a friend, or just drag a modpack JSON onto the window to import it. The UAC Registry looks up community-sourced mod metadata, and you can submit entries anonymously if you opt in.
+
+It auto-detects your base game WADs and watches those files in real time. Bring your own source port: UZDoom, GZDoom, Zandronum, and others, configured per mod or globally. Global hotkeys keep navigation quick — the full list is on the [keyboard shortcuts wiki](https://uac-soft.online/reference/keyboard-shortcuts/).
+
+Imported JSON files only store references and load orders, not the mods themselves. No mod data leaves your machine, which keeps things square with the original creators.
 
 ## Install
 
-**UAC Launch Control** is available for **Windows, MacOS** and **Linux**.
-**Download** the latest release for you operating system from the **[Releases page](https://github.com/mikkelrask/uaclaunchcontrol/releases)**
+UAC Launch Control runs on Windows, macOS, and Linux. Grab the latest release for your system from the [Releases page](https://github.com/mikkelrask/uaclaunchcontrol/releases).
 
-More detailed instructions can be found in the **[Install Wiki](https://uac-soft.online/installation/)**.
+Step-by-step instructions are in the [Install Wiki](https://uac-soft.online/installation/).
 
 ## License
 
-This is free software. Free as in freedom _and_ free beer.
+Free software. Free as in freedom, FreeDoom and free beer.
 
-## Development & Contributing
+## Development
 
-Contributions are welcome! Please feel free to submit a Pull Request or raise issues.
-
-For more developer details refer to the [wiki](https://uac-soft.online/getting-started/) or [DeepWiki](https://deepwiki.com/mikkelrask/uaclaunchcontrol) for a more detailed go-through.
+Building from source or want to contribute? The [wiki](https://uac-soft.online/getting-started/) and [DeepWiki](https://deepwiki.com/mikkelrask/uaclaunchcontrol) have the details. Pull requests and issues are welcome.
 
 ## Acknowledgments
 
-- Built with [electron-vite](https://electron-vite.org/)
-- UI components from [shadcn/ui](https://ui.shadcn.com/)
-- Icons from [Lucide](https://lucide.dev/)
-- This application is in no way related to the **Doom IP**, **ID Software** or **Bethesda** - it's an _homage_ to the **Doom Universe** using the **Union Aerospace Corporation** as a gimmick for the "evil corporation".
+Built with [electron-vite](https://electron-vite.org/). UI components from [shadcn/ui](https://ui.shadcn.com/). Icons from [Lucide](https://lucide.dev/).
+
+This app has nothing to do with the Doom IP, id Software, or Bethesda. It's a love letter to the Doom universe, borrowing the Union Aerospace Corporation as a gimmick for the evil corporation bit.
