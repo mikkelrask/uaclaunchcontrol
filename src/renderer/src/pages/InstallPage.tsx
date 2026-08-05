@@ -28,11 +28,9 @@ export const InstallPage: React.FC = () => {
   const [location, setLocation] = useLocation()
 
   const [activeVersion] = useState<string | null>(null)
-  // const [searchQuery] = useState('');
   const [files, setFiles] = useState<IModFile[]>([])
   const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
   const [activeTab, setActiveTab] = useState('install')
-  // const [currentFilePath, setCurrentFilePath] = useState<string>('');
 
   // Generated up front (not at submit time) so it's stable across the whole
   // time the form is being filled out — used as the protocol's real id and,
@@ -229,19 +227,6 @@ export const InstallPage: React.FC = () => {
   const templateSeedName = templateFile
     ? templateFile.name || templateFile.fileName || 'a mod file'
     : null
-
-  // const removeFile = (index: number) => {
-  //   const newFiles = [...files]
-  //   newFiles.splice(index, 1)
-  //
-  //   // Update load orders to maintain spacing
-  //   const updatedFiles = newFiles.map((file, idx) => ({
-  //     ...file,
-  //     loadOrder: idx * 10
-  //   }))
-  //
-  //   setFiles(updatedFiles)
-  // }
 
   const onSubmit = async (data: z.infer<typeof formSchema>): Promise<void> => {
     const fileData: IModFile[] = files.map((file) => {
