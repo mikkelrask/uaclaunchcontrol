@@ -146,7 +146,7 @@ const App: React.FC = () => {
   // Listen for game exits (clean or crash) to record playtime and show crash toasts
   useEffect(() => {
     if (window.api?.onGameExited) {
-      window.api.onGameExited((data) => {
+      window.api.onGameExited(async (data) => {
         if (!data.protocolId) return
 
         // Record playtime (fire-and-forget)
@@ -157,24 +157,23 @@ const App: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ['/api/player-data'] })
 
           // Dispatch PROTOCOL_EXITED achievement event
-          dispatchAchievementEvent({
-            type: 'PROTOCOL_EXITED',
-            protocolId: data.protocolId,
-            sessionSeconds: data.sessionSeconds
-          })
-            .then((result) => {
-              const unlockToasts = buildUnlockToasts(result)
-              for (const t of unlockToasts) {
-                toast({
-                  title: t.title,
-                  description: t.description,
-                  duration: t.duration as 6000 | 8000
-                })
-              }
+          try {
+            const result = await dispatchAchievementEvent({
+              type: 'PROTOCOL_EXITED',
+              protocolId: data.protocolId,
+              sessionSeconds: data.sessionSeconds
             })
-            .catch((err) => {
-              console.error('Achievement dispatch failed:', err)
-            })
+            const unlockToasts = buildUnlockToasts(result)
+            for (const t of unlockToasts) {
+              toast({
+                title: t.title,
+                description: t.description,
+                duration: t.duration as 6000 | 8000
+              })
+            }
+          } catch (err) {
+            console.error('Achievement dispatch failed:', err)
+          }
         }
 
         // Dispatch PROTOCOL_CRASHED achievement event — unlocks 'first-crash'
@@ -253,7 +252,7 @@ const App: React.FC = () => {
   // system — pure flavor, no reward attached.
   useEffect(() => {
     if (!window.api?.onGameEventDetected) return
-    window.api.onGameEventDetected((data) => {
+    window.api.onGameEventDetected(async (data) => {
       if (!data.protocolId) return
 
       const event: AchievementEvent =
@@ -261,19 +260,18 @@ const App: React.FC = () => {
           ? { type: 'MAP_REACHED', protocolId: data.protocolId, mapName: data.mapName }
           : { type: 'CHEAT_ACTIVATED', protocolId: data.protocolId, cheat: data.cheat }
 
-      dispatchAchievementEvent(event)
-        .then((result) => {
-          for (const t of buildUnlockToasts(result)) {
-            toast({
-              title: t.title,
-              description: t.description,
-              duration: t.duration as 6000 | 8000
-            })
-          }
-        })
-        .catch((err) => {
-          console.error('Achievement dispatch failed:', err)
-        })
+      try {
+        const result = await dispatchAchievementEvent(event)
+        for (const t of buildUnlockToasts(result)) {
+          toast({
+            title: t.title,
+            description: t.description,
+            duration: t.duration as 6000 | 8000
+          })
+        }
+      } catch (err) {
+        console.error('Achievement dispatch failed:', err)
+      }
     })
   }, [toast])
 

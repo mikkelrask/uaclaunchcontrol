@@ -147,16 +147,18 @@ async function handleApiResponse<T>(response: Response): Promise<T> {
 
 export const api = {
   // Settings operations
-  getSettings: (): Promise<IAppSettings> => {
-    return fetch(`${API_BASE}/api/settings`).then((res) => handleApiResponse<IAppSettings>(res))
+  getSettings: async (): Promise<IAppSettings> => {
+    const res = await fetch(`${API_BASE}/api/settings`)
+    return handleApiResponse<IAppSettings>(res)
   },
 
-  updateSettings: (settings: Partial<IAppSettings>): Promise<IAppSettings> => {
-    return fetch(`${API_BASE}/api/settings`, {
+  updateSettings: async (settings: Partial<IAppSettings>): Promise<IAppSettings> => {
+    const res = await fetch(`${API_BASE}/api/settings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings)
-    }).then((res) => handleApiResponse<IAppSettings>(res))
+    })
+    return handleApiResponse<IAppSettings>(res)
   },
 
   getPortReleases: async (): Promise<PortRelease[]> => {

@@ -296,22 +296,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       const oldFamilies = new Set(initialPortFamiliesRef.current)
       for (const port of newPorts) {
         if (port.family && !oldFamilies.has(port.family)) {
-          dispatchAchievementEvent({
+          const srcResult = await dispatchAchievementEvent({
             type: 'SOURCE_PORT_ADDED',
             count: 1,
             family: port.family
           })
-            .then((srcResult) => {
-              const unlockToasts = buildUnlockToasts(srcResult)
-              for (const t of unlockToasts) {
-                toast({
-                  title: t.title,
-                  description: t.description,
-                  duration: t.duration as 6000 | 8000
-                })
-              }
+          const unlockToasts = buildUnlockToasts(srcResult)
+          for (const t of unlockToasts) {
+            toast({
+              title: t.title,
+              description: t.description,
+              duration: t.duration as 6000 | 8000
             })
-            .catch(() => {})
+          }
           oldFamilies.add(port.family)
         }
       }

@@ -243,11 +243,11 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
         if (shouldSubmit && addForm.url) {
           // Fire and forget - get settings for UUID
-          api
-            .getSettings()
-            .then((settings) => {
+          void (async () => {
+            try {
+              const settings = await api.getSettings()
               if (settings?.registryUuid) {
-                api.submitToPending(
+                await api.submitToPending(
                   {
                     hash: hashValue,
                     suggested_name: prettyName,
@@ -261,10 +261,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                   REGISTRY_API_URL
                 )
               }
-            })
-            .catch(() => {
+            } catch {
               // Silently ignore
-            })
+            }
+          })()
         }
       }
 
@@ -291,23 +291,18 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       })
 
       // Dispatch MOD_FILE_ADDED achievement event
-      dispatchAchievementEvent({
+      const result = await dispatchAchievementEvent({
         type: 'MOD_FILE_ADDED',
         count: 1
       })
-        .then((result) => {
-          const unlockToasts = buildUnlockToasts(result)
-          for (const t of unlockToasts) {
-            toast({
-              title: t.title,
-              description: t.description,
-              duration: t.duration as 6000 | 8000
-            })
-          }
+      const unlockToasts = buildUnlockToasts(result)
+      for (const t of unlockToasts) {
+        toast({
+          title: t.title,
+          description: t.description,
+          duration: t.duration as 6000 | 8000
         })
-        .catch((err) => {
-          console.error('Achievement dispatch failed:', err)
-        })
+      }
 
       resetLookupState()
       setIsAddModalOpen(false)
@@ -892,14 +887,13 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
       // Submit to pending if hash not in registry and we have URL
       if (hashValue && editForm.url) {
-        api
-          .getSettings()
-          .then(async (settings) => {
+        void (async () => {
+          try {
+            const settings = await api.getSettings()
             if (settings?.registryLookupEnabled && settings?.registryUuid) {
               try {
                 const lookup = await api.lookupMod(hashValue, REGISTRY_API_URL)
                 if (!lookup) {
-                  // Not in registry, submit to pending
                   await api.submitToPending(
                     {
                       hash: hashValue,
@@ -921,10 +915,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                 // Silently ignore - registry lookup failed
               }
             }
-          })
-          .catch(() => {
+          } catch {
             // Silently ignore
-          })
+          }
+        })()
       }
 
       toast({
