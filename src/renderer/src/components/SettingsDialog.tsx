@@ -89,7 +89,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     api
       .getVersion()
       .then(setAppVersion)
-      .catch(() => {})
+      .catch(console.error)
 
     api
       .getSettings()

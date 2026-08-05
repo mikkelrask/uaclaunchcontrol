@@ -336,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       await storage.addPlaytime(id, sessionSeconds)
       // Also update the total playtime in player stats
-      updatePlayerStats({ totalPlaytimeSeconds: sessionSeconds }).catch(() => {})
+      updatePlayerStats({ totalPlaytimeSeconds: sessionSeconds }).catch(console.error)
       return res.json({ success: true })
     }, '/api/protocols/:id/playtime')
   )

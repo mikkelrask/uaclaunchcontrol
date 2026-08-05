@@ -41,7 +41,7 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
       .then((versions) => {
         if (!cancelled) setDoomVersions(versions)
       })
-      .catch(() => {})
+      .catch(console.error)
       .finally(() => {
         if (!cancelled) setIsLoadingVersions(false)
       })

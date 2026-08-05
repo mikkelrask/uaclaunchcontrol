@@ -20,7 +20,7 @@ export const CompleteStep: React.FC<CompleteStepProps> = ({ onFinish, onBack }) 
         setPortCount(settings.sourcePorts.length)
         setWadCount(versions.length)
       })
-      .catch(() => {})
+      .catch(console.error)
     return () => {
       cancelled = true
     }

@@ -52,7 +52,7 @@ export const OnboardingWizard: React.FC = () => {
           activate()
         }
       })
-      .catch(() => {})
+      .catch(console.error)
   }, [activate])
 
   // Manual replay from the header's "Guided Tour" button
@@ -79,7 +79,7 @@ export const OnboardingWizard: React.FC = () => {
           defaultSourcePortId: draft.defaultSourcePortId,
           defaultDoomVersionId: draft.defaultDoomVersionId
         })
-        .catch(() => {})
+        .catch(console.error)
 
       const activeFamilies = (draft.sourcePorts || [])
         .filter((p) => !p.ignored)
@@ -97,7 +97,7 @@ export const OnboardingWizard: React.FC = () => {
               })
             }
           })
-          .catch(() => {})
+          .catch(console.error)
       }
     }, 400)
 
@@ -105,7 +105,7 @@ export const OnboardingWizard: React.FC = () => {
   }, [draft, isActive, toast])
 
   const finish = useCallback(() => {
-    api.dismissFirstRun().catch(() => {})
+    api.dismissFirstRun().catch(console.error)
     setIsActive(false)
     setDraft(null)
   }, [])
