@@ -17,26 +17,25 @@ import {
 } from '@/components/ui/dialog'
 import { DataTable } from '@/components/ui/data-table'
 import { getCatalogColumns } from '@/components/catalog-columns'
-import { IModFile, IAppSettings } from '@shared/schema'
+import { IModFile } from '@shared/schema'
 import { Button } from '@/components/ui/button'
 import { Upload } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { api, IRegistryMod } from '@/api'
-import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
-import { formatRegistryName } from '@/lib/registryName'
+import { api } from '@/api'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { CATEGORIES } from '@shared/categories'
 import { debug } from '@shared/debug'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { ZipImportModal } from '@/components/ZipImportModal'
-import { ZipScanResult } from '@/types/zipImport'
+import { useFileImport } from '@/hooks/useFileImport'
+import { useCatalogAdd } from '@/hooks/useCatalogAdd'
 import { parseBatContent, resolveRelativePaths, deriveFileType } from '@/lib/install/parsers'
 import { useFileDrop } from '@/lib/catalog/useFileDrop'
 import { useRequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
 import { AddFileDialog } from '@/components/catalog/AddFileDialog'
 import { EditFileDialog } from '@/components/catalog/EditFileDialog'
 import { SIDECAR_EXPLANATION } from '@/lib/catalog/types'
-import type { RequiredModEntry, AddFormState, EditFormState } from '@/lib/catalog/types'
+import type { RequiredModEntry, EditFormState } from '@/lib/catalog/types'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 interface CatalogManagerProps {
@@ -46,35 +45,44 @@ interface CatalogManagerProps {
 
 export function CatalogManager({ files, onChange }: CatalogManagerProps): React.ReactElement {
   const { toast } = useToast()
-  const queryClient = useQueryClient()
   const { data: catalogFiles = [] } = useQuery({
     queryKey: ['/api/mod-files/catalog'],
     queryFn: () => api.getModFileCatalog()
   })
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [isAddingFile, setIsAddingFile] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<IModFile | null>(null)
 
-  const [isZipModalOpen, setIsZipModalOpen] = useState(false)
-  const [zipScanResult, setZipScanResult] = useState<ZipScanResult | null>(null)
-  const [zipFilePath, setZipFilePath] = useState<string>('')
+  const {
+    isZipModalOpen,
+    setIsZipModalOpen,
+    zipScanResult,
+    zipFilePath,
+    tryZipImport,
+    handleZipImportComplete
+  } = useFileImport({ onChange })
+
+  const availableRequiredFiles = catalogFiles.filter((f) => !f.sidecarOnly && f.hashValue)
+
+  const {
+    addForm,
+    setAddForm,
+    isAddModalOpen,
+    setIsAddModalOpen,
+    isAddingFile,
+    selectableFilesForAdd,
+    addRequiredMods,
+    handleAddFile,
+    initializeAddFormFromPath,
+    handleBrowseFile,
+    handleBrowseConfigFile,
+    handleClearConfigFile,
+    resetLookupState
+  } = useCatalogAdd({ files, onChange, catalogFiles, availableRequiredFiles, tryZipImport })
 
   const [deleteTarget, setDeleteTarget] = useState<IModFile | null>(null)
   const [deleteFromDisk, setDeleteFromDisk] = useState(false)
 
-  const [addForm, setAddForm] = useState<AddFormState>({
-    name: '',
-    filePath: '',
-    fileType: 'PK3',
-    version: '',
-    url: '',
-    loadOrder: [],
-    sidecarOnly: false,
-    category: '',
-    configTemplate: null
-  })
   const { isDraggingFile, handleFileDragOver, handleFileDragLeave, processDrop } = useFileDrop()
   const [showSidecarOnly, setShowSidecarOnly] = useState(false)
   const [fileTypeFilter, setFileTypeFilter] = useState<string>('all')
@@ -89,23 +97,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     category: '',
     configTemplate: null
   })
-
-  const [lastLookupHash, setLastLookupHash] = useState<string | null>(null)
-  const [lastLookupFound, setLastLookupFound] = useState<boolean>(false)
-  const [lastLookupData, setLastLookupData] = useState<IRegistryMod | null>(null)
-
-  const availableRequiredFiles = catalogFiles.filter((f) => !f.sidecarOnly && f.hashValue)
-
-  const addRequiredMods = useRequiredModsActions(
-    addForm.loadOrder,
-    (updater) =>
-      setAddForm((prev) => ({
-        ...prev,
-        loadOrder: typeof updater === 'function' ? updater(prev.loadOrder) : updater
-      })),
-    catalogFiles,
-    toast
-  )
 
   const editRequiredMods = useRequiredModsActions(
     editForm.loadOrder,
@@ -163,402 +154,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     return result
   }
 
-  const resetLookupState = (): void => {
-    setLastLookupHash(null)
-    setLastLookupFound(false)
-    setLastLookupData(null)
-  }
-
-  const handleAddFile = async (): Promise<void> => {
-    if (!addForm.filePath.trim() || isAddingFile) return
-
-    const fileName = addForm.filePath.split(/[\\/]/).pop() || addForm.filePath
-    const prettyName = addForm.name.trim() || fileName.replace(/\.[^.]+$/, '')
-    const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
-
-    setIsAddingFile(true)
-    try {
-      // Move file to mods folder — returns relative path and hash
-      const moveResult = await api.moveToModFolder(addForm.filePath)
-      const hashValue = moveResult.hashValue
-
-      // Check for duplicates based on hashValue (content-based)
-      const exists = files.some((f) => f.hashValue === hashValue)
-      if (exists) {
-        toast({
-          title: 'SYSTEM: dupe_hash',
-          description: 'This file is already in your catalog',
-          variant: 'destructive'
-        })
-        return
-      }
-
-      const selfRefCheck = addForm.loadOrder.some(
-        (r) => r.isNew && !r.isMain && r.filePath === addForm.filePath
-      )
-      if (selfRefCheck) {
-        toast({
-          title: 'SYSTEM: circular_ref',
-          description: 'A mod cannot require itself',
-          variant: 'destructive'
-        })
-        return
-      }
-
-      const processedLoadOrder = await processRequiredMods(addForm.loadOrder, hashValue)
-
-      await api.addToCatalog({
-        name: prettyName,
-        filePath: moveResult.relativePath,
-        fileType,
-        fileName,
-        version: addForm.version,
-        url: addForm.url,
-        hashValue,
-        loadOrder: processedLoadOrder,
-        sidecarOnly: addForm.sidecarOnly,
-        category: addForm.category || undefined,
-        configTemplate: addForm.configTemplate
-          ? {
-              configFile: addForm.configTemplate.configFile,
-              md5Hash: addForm.configTemplate.md5Hash
-            }
-          : undefined
-      })
-
-      // Check if we should submit to pending registry
-      if (lastLookupHash === hashValue) {
-        let shouldSubmit = false
-
-        if (!lastLookupFound) {
-          // Hash not in registry - new submission
-          shouldSubmit = true
-        } else if (lastLookupData) {
-          // Hash in registry - check if user provided NEW info
-          const urlInRegistry = lastLookupData.urls?.some((u) => u.url === addForm.url)
-          const hasNewUrl = !!(addForm.url && !urlInRegistry)
-          const hasNewVersion = !!(addForm.version && !lastLookupData.version)
-          shouldSubmit = hasNewUrl || hasNewVersion
-        }
-
-        if (shouldSubmit && addForm.url) {
-          // Fire and forget - get settings for UUID
-          void (async () => {
-            try {
-              const settings = await api.getSettings()
-              if (settings?.registryUuid) {
-                await api.submitToPending(
-                  {
-                    hash: hashValue,
-                    suggested_name: prettyName,
-                    url: addForm.url,
-                    version: addForm.version || undefined,
-                    category: addForm.category || undefined,
-                    is_sidecar: addForm.sidecarOnly ? 1 : 0,
-                    load_order: processedLoadOrder ? JSON.stringify(processedLoadOrder) : undefined
-                  },
-                  settings.registryUuid,
-                  REGISTRY_API_URL
-                )
-              }
-            } catch {
-              // Silently ignore
-            }
-          })()
-        }
-      }
-
-      for (const req of addForm.loadOrder) {
-        if (req.isMain) continue
-        if (req.isNew && req.filePath) {
-          continue
-        }
-        const reqFile = catalogFiles.find((f) => f.hashValue === req.hash)
-        if (reqFile) {
-          const updates: Partial<IModFile> = {
-            requiredBy: [...(reqFile.requiredBy || []), hashValue].filter(Boolean)
-          }
-          if (req.sidecarOnly !== reqFile.sidecarOnly) {
-            updates.sidecarOnly = req.sidecarOnly
-          }
-          await api.updateInCatalog(reqFile.id, updates)
-        }
-      }
-
-      toast({
-        title: 'SYSTEM: add_success',
-        description: `Added "${prettyName}" to your mod file catalog.`
-      })
-
-      // Dispatch MOD_FILE_ADDED achievement event
-      const result = await dispatchAchievementEvent({
-        type: 'MOD_FILE_ADDED',
-        count: 1
-      })
-      const unlockToasts = buildUnlockToasts(result)
-      for (const t of unlockToasts) {
-        toast({
-          title: t.title,
-          description: t.description,
-          duration: t.duration as 6000 | 8000
-        })
-      }
-
-      resetLookupState()
-      setIsAddModalOpen(false)
-      setAddForm({
-        name: '',
-        filePath: '',
-        fileType: 'PK3',
-        version: '',
-        url: '',
-        loadOrder: [],
-        sidecarOnly: false,
-        category: '',
-        configTemplate: null
-      })
-
-      // Fetch fresh authoritative list, notify parent, and bust search cache
-      const freshCatalog = await api.getModFileCatalog()
-      queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
-      queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
-      onChange(freshCatalog)
-    } catch (error: unknown) {
-      toast({
-        title: 'FATAL: add_failed',
-        description: `Failed to add file: ${error}`,
-        variant: 'destructive'
-      })
-    } finally {
-      setIsAddingFile(false)
-    }
-  }
-
-  const initializeAddFormFromPath = async (
-    filePath: string
-  ): Promise<Partial<typeof addForm> | null> => {
-    const fileName = filePath.split(/[\\/]/).pop() || ''
-    const name = fileName.replace(/\.[^.]+$/, '')
-    const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
-
-    const hashingToast = toast({
-      title: 'SYSTEM: hashing',
-      description: `Hashing ${fileName} — this can take a while for large files.`
-    })
-
-    let hash = ''
-    try {
-      hash = await api.computeHash(filePath)
-      debug('[Registry] Computed hash:', hash)
-    } catch {
-      console.error('Failed to compute hash')
-    } finally {
-      hashingToast.dismiss()
-    }
-
-    let settings: IAppSettings | null = null
-    try {
-      settings = await api.getSettings()
-    } catch {
-      console.error('Failed to fetch settings')
-    }
-
-    let registryData: IRegistryMod | null = null
-    if (settings?.registryLookupEnabled && hash) {
-      try {
-        registryData = await api.lookupMod(hash, REGISTRY_API_URL)
-      } catch (error: unknown) {
-        console.error('[Registry] Lookup failed:', error)
-      }
-    }
-
-    if (registryData) {
-      setLastLookupHash(hash)
-      setLastLookupFound(true)
-      setLastLookupData(registryData)
-    } else {
-      setLastLookupHash(hash)
-      setLastLookupFound(false)
-      setLastLookupData(null)
-    }
-
-    const mainEntry = {
-      hash: hash || '',
-      name,
-      filePath,
-      isNew: true,
-      offset: 1,
-      sidecarOnly: false,
-      isMain: true
-    }
-
-    const updatedForm: Partial<typeof addForm> = {
-      filePath,
-      name: registryData?.family_name
-        ? formatRegistryName(registryData.family_name, registryData.display_name)
-        : name,
-      fileType,
-      version: registryData?.version || '',
-      url: '',
-      loadOrder: [mainEntry],
-      sidecarOnly: registryData?.is_sidecar === 1
-    }
-
-    if (registryData?.category) {
-      updatedForm.category = registryData.category
-    }
-
-    if (registryData?.urls && registryData.urls.length > 0) {
-      let selectedUrl = registryData.urls[0].url
-      if (settings?.databaseLinkPresets && settings?.selectedPresetIndex !== undefined) {
-        const preset = settings.databaseLinkPresets[settings.selectedPresetIndex]
-        if (preset) {
-          try {
-            const presetDomain = new URL(preset.url).hostname.replace('www.', '')
-            const matchingUrl = registryData.urls.find(
-              (u) => u.domain.replace('www.', '') === presetDomain
-            )
-            if (matchingUrl) selectedUrl = matchingUrl.url
-          } catch {
-            // use default
-          }
-        }
-      }
-      updatedForm.url = selectedUrl
-    }
-
-    if (registryData?.load_order) {
-      const loadOrderEntries = Object.entries(registryData.load_order)
-        .filter(([h]) => h !== hash)
-        .map(([h, offset]) => ({
-          hash: h,
-          name: h,
-          filePath: '',
-          isNew: false,
-          offset: offset as number,
-          sidecarOnly: false
-        }))
-      updatedForm.loadOrder = [mainEntry, ...loadOrderEntries]
-    }
-
-    debug('[Registry] Setting form with:', updatedForm)
-    return updatedForm
-  }
-
-  const handleBrowseFile = async (): Promise<void> => {
-    try {
-      const result = await api.showOpenDialog({
-        title: 'Select Mod File',
-        properties: ['openFile'],
-        filters: [
-          {
-            name: 'Mod stuff',
-            extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip', 'rar', 'bat']
-          }
-        ]
-      })
-
-      if (!result.canceled && result.filePaths.length > 0) {
-        const selectedPath = result.filePaths[0]
-
-        if (selectedPath.toLowerCase().endsWith('.zip')) {
-          try {
-            toast({
-              title: 'SYSTEM: decompressing',
-              description: 'Analyzing zip contents.'
-            })
-            const scan = (await api.unzipScan(selectedPath)) as ZipScanResult
-            setZipScanResult(scan)
-            setZipFilePath(selectedPath)
-            setIsZipModalOpen(true)
-          } catch (error: unknown) {
-            console.error(error)
-            toast({
-              title: 'FATAL: zip_scan_failed',
-              description: error instanceof Error ? error.message : 'Failed to scan zip file',
-              variant: 'destructive'
-            })
-          }
-          return
-        }
-
-        if (selectedPath.toLowerCase().endsWith('.rar')) {
-          try {
-            toast({
-              title: 'SYSTEM: decompressing',
-              description: 'Analyzing rar contents.'
-            })
-            const scan = (await api.unrarScan(selectedPath)) as ZipScanResult
-            setZipScanResult(scan)
-            setZipFilePath(selectedPath)
-            setIsZipModalOpen(true)
-          } catch (error: unknown) {
-            console.error(error)
-            toast({
-              title: 'FATAL: rar_scan_failed',
-              description: error instanceof Error ? error.message : 'Failed to scan rar file',
-              variant: 'destructive'
-            })
-          }
-          return
-        }
-
-        if (selectedPath.toLowerCase().endsWith('.bat')) {
-          try {
-            const content = await api.readFile(selectedPath)
-            const parsed = parseBatContent(content)
-            const resolvedFiles = resolveRelativePaths(selectedPath, parsed.modFiles)
-
-            if (resolvedFiles.length === 0) {
-              toast({
-                title: 'FATAL: bat_no_files',
-                description: 'No -file entries found in .bat file',
-                variant: 'destructive'
-              })
-              return
-            }
-
-            const updatedForm = await initializeAddFormFromPath(resolvedFiles[0])
-            if (!updatedForm) return
-
-            const additionalReqs = resolvedFiles.slice(1).map((fp, idx) => ({
-              hash: '',
-              name:
-                fp
-                  .split(/[\\/]/)
-                  .pop()
-                  ?.replace(/\.[^.]+$/, '') || fp,
-              filePath: fp,
-              isNew: true,
-              offset: (updatedForm.loadOrder?.length || 0) + idx + 1,
-              sidecarOnly: false
-            }))
-
-            updatedForm.loadOrder = [...(updatedForm.loadOrder || []), ...additionalReqs]
-            setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
-            setIsAddModalOpen(true)
-          } catch (error: unknown) {
-            console.error('Failed to parse .bat:', error)
-            toast({
-              title: 'FATAL: bat_parse_failed',
-              description: 'Failed to parse .bat file',
-              variant: 'destructive'
-            })
-          }
-          return
-        }
-
-        const updatedForm = await initializeAddFormFromPath(selectedPath)
-        if (updatedForm) {
-          setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
-          setIsAddModalOpen(true)
-        }
-      }
-    } catch (error: unknown) {
-      console.error('Failed to open file dialog:', error)
-    }
-  }
-
   const handleFileDrop = async (e: React.DragEvent): Promise<void> => {
     const droppedPath = processDrop(e)
     if (!droppedPath) return
@@ -575,40 +170,9 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       return
     }
 
-    if (ext === 'ZIP') {
-      try {
-        toast({ title: 'SYSTEM: decompressing', description: 'Analyzing zip contents.' })
-        const scan = (await api.unzipScan(droppedPath)) as ZipScanResult
-        setZipScanResult(scan)
-        setZipFilePath(droppedPath)
-        setIsZipModalOpen(true)
-      } catch (error: unknown) {
-        console.error(error)
-        toast({
-          title: 'FATAL: zip_scan_failed',
-          description: error instanceof Error ? error.message : 'Failed to scan zip file',
-          variant: 'destructive'
-        })
-      }
-      return
-    }
-
-    if (ext === 'RAR') {
-      try {
-        toast({ title: 'SYSTEM: decompressing', description: 'Analyzing rar contents.' })
-        const scan = (await api.unrarScan(droppedPath)) as ZipScanResult
-        setZipScanResult(scan)
-        setZipFilePath(droppedPath)
-        setIsZipModalOpen(true)
-      } catch (error: unknown) {
-        console.error(error)
-        toast({
-          title: 'FATAL: decompress_failed',
-          description: error instanceof Error ? error.message : 'Failed to scan rar file',
-          variant: 'destructive'
-        })
-      }
-      return
+    if (ext === 'ZIP' || ext === 'RAR') {
+      const handled = await tryZipImport(droppedPath, ext)
+      if (handled) return
     }
 
     if (ext === 'BAT') {
@@ -661,51 +225,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
       setIsAddModalOpen(true)
     }
-  }
-
-  /** Browse for a config file to link as template. */
-  const handleBrowseConfigFile = async (): Promise<void> => {
-    try {
-      const result = await api.showOpenDialog({
-        title: 'Select Config File',
-        properties: ['openFile'],
-        filters: [
-          {
-            name: 'Config files',
-            extensions: ['cfg', 'ini', 'conf']
-          }
-        ]
-      })
-
-      if (!result.canceled && result.filePaths.length > 0) {
-        const configPath = result.filePaths[0]
-        const uploadResult = await api.uploadConfigFile(configPath)
-        setAddForm((prev) => ({
-          ...prev,
-          configTemplate: {
-            filePath: configPath,
-            configFile: uploadResult.configFile,
-            md5Hash: uploadResult.hash
-          }
-        }))
-        toast({
-          title: 'SYSTEM: config_linked',
-          description: `Config template linked: ${configPath.split(/[\\/]/).pop()}`
-        })
-      }
-    } catch (error: unknown) {
-      console.error('Failed to browse config file:', error)
-      toast({
-        title: 'FATAL: config_link_failed',
-        description: `Failed to link config file: ${error}`,
-        variant: 'destructive'
-      })
-    }
-  }
-
-  /** Clear the config template selection. */
-  const handleClearConfigFile = (): void => {
-    setAddForm((prev) => ({ ...prev, configTemplate: null }))
   }
 
   /** Browse for a config file to link as template in the edit dialog. */
@@ -947,10 +466,6 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     }
   }
 
-  const selectableFilesForAdd = availableRequiredFiles.filter(
-    (f) => !addForm.loadOrder.some((r) => r.hash === f.hashValue)
-  )
-
   const selectableFilesForEdit = availableRequiredFiles.filter(
     (f) =>
       !editForm.loadOrder.some((r) => r.hash === f.hashValue) &&
@@ -1132,14 +647,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         onOpenChange={setIsZipModalOpen}
         scanResult={zipScanResult}
         zipFilePath={zipFilePath || undefined}
-        onImportComplete={async () => {
-          const freshCatalog = await api.getModFileCatalog()
-          queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
-          queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
-          onChange(freshCatalog)
-          setZipScanResult(null)
-          setZipFilePath('')
-        }}
+        onImportComplete={handleZipImportComplete}
       />
     </div>
   )
