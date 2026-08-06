@@ -15,6 +15,9 @@ import {
 } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('SourcePortsTabx')
 interface SourcePortsTabProps {
   settings: IAppSettings
   setSettings: React.Dispatch<React.SetStateAction<IAppSettings>>
@@ -60,7 +63,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
         )
       )
     } catch (e: unknown) {
-      console.error('Failed to scan for source ports:', e)
+      log.error('Failed to scan for source ports:', e)
     } finally {
       setScanning(false)
     }

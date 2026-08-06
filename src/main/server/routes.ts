@@ -21,6 +21,9 @@ import {
   downloadFreedoomBundle,
   type FreedoomBundleId
 } from './services/freedoomService'
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('routes')
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json())
@@ -61,7 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const resolved = storage.resolvePath(filePath)
 
     if (!fs.existsSync(resolved)) {
-      console.warn(`[DEBUG] Media not found on disk: ${resolved}`)
+      log.warn(`[DEBUG] Media not found on disk: ${resolved}`)
       return res.status(404).json({ message: 'File not found' })
     }
 
@@ -143,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream')
         return stream.pipe(res)
       } else {
-        console.warn(`[DEBUG] Image file NOT FOUND on disk: ${filePath}`)
+        log.warn(`[DEBUG] Image file NOT FOUND on disk: ${filePath}`)
         return res.status(404).send('Image file not found on disk')
       }
     }, '/images/:fileName')
@@ -337,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.addPlaytime(id, sessionSeconds)
       // Also update the total playtime in player stats
       updatePlayerStats({ totalPlaytimeSeconds: sessionSeconds }).catch((err: unknown) =>
-        console.error(err)
+        log.error(err)
       )
       return res.json({ success: true })
     }, '/api/protocols/:id/playtime')
@@ -349,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     wrapRoute(async (_req, res) => {
       const catalog = await storage.getModFileCatalog()
       if (!Array.isArray(catalog)) {
-        console.warn('routes.ts: getModFileCatalog did not return an array:', catalog)
+        log.warn('routes.ts: getModFileCatalog did not return an array:', catalog)
         return res.json([])
       }
       return res.json(catalog)
@@ -588,7 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         signal: AbortSignal.timeout(5000)
       })
       if (!response.ok) {
-        console.warn(`Registry search returned ${response.status}`)
+        log.warn(`Registry search returned ${response.status}`)
         return res.json([])
       }
       const rows = await response.json()
@@ -633,7 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { signal: AbortSignal.timeout(10000) }
       )
       if (!response.ok) {
-        console.warn('idgames API returned', response.status)
+        log.warn('idgames API returned', response.status)
         return res.json([])
       }
       const xml = await response.text()

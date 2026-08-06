@@ -17,6 +17,9 @@ import marine from '@/assets/marine.webp'
 import sergeant from '@/assets/sergeant.webp'
 import doomSlayer from '@/assets/DoomSlayer.webp'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('Headerx')
 const RANK_IMAGES: Record<string, string> = {
   marine,
   sergeant,
@@ -284,7 +287,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
                 className="justify-start gap-3 text-app-primary hover:bg-app-hover h-12 px-4"
                 onClick={() => {
                   setIsDrawerOpen(false)
-                  api.reenableFirstRun().catch((err: unknown) => console.error(err))
+                  api.reenableFirstRun().catch((err: unknown) => log.error(err))
                   setTimeout(
                     () => window.dispatchEvent(new CustomEvent('uac:replay-onboarding')),
                     150

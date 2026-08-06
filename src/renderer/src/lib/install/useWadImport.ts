@@ -2,8 +2,11 @@ import { useState, useCallback } from 'react'
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query'
 import type { IAppSettings } from '@shared/schema'
 import { api } from '@/api'
+import { createLogger } from '@shared/logger'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { buildHashFileName } from '@/lib/install/parsers'
+
+const log = createLogger('install/useWadImport')
 import type { WadImportSelection } from '@/lib/install/types'
 
 export interface WadImportHandlers {
@@ -119,7 +122,7 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
             }
           })
           .catch((err: unknown) => {
-            console.error('Achievement dispatch failed:', err)
+            log.error('Achievement dispatch failed:', err)
           })
       }
     },

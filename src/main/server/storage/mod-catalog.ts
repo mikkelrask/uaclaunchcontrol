@@ -15,6 +15,9 @@ import {
 } from './core'
 import { syncDoomVersions } from './doom-versions'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('storage/mod-catalog')
 const IMAGE_MIME_TYPES: Record<string, string> = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
@@ -37,11 +40,11 @@ export async function getModFileCatalog(): Promise<IModFile[]> {
     try {
       data = JSON.parse(raw)
     } catch (err: unknown) {
-      console.error('mod-catalog.ts: Failed to parse modFileCatalogue.json:', err, 'Raw:', raw)
+      log.error('mod-catalog.ts: Failed to parse modFileCatalogue.json:', err, 'Raw:', raw)
       data = []
     }
     if (!Array.isArray(data)) {
-      console.warn('mod-catalog.ts: modFileCatalogue.json is not an array, got:', data)
+      log.warn('mod-catalog.ts: modFileCatalogue.json is not an array, got:', data)
       return []
     }
 
@@ -85,7 +88,7 @@ export async function getModFileCatalog(): Promise<IModFile[]> {
 
     return migratedData
   } catch (error: unknown) {
-    console.error('mod-catalog.ts: Error reading modFileCatalogue.json:', error)
+    log.error('mod-catalog.ts: Error reading modFileCatalogue.json:', error)
     return []
   }
 }
@@ -107,7 +110,7 @@ export async function moveFile(filePath: string, newPath: string): Promise<strin
     debug('Moved file to', resolvedDest)
     return resolvedDest
   } catch (error: unknown) {
-    console.error('Error moving file:', error)
+    log.error('Error moving file:', error)
     throw new Error(
       `Failed to move file: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -136,7 +139,7 @@ export async function moveToModFolder(
     debug(`Moved file to mod folder: ${fullPath} (relative: ${relativePath}, hash: ${hashValue})`)
     return { fullPath, relativePath, hashValue }
   } catch (error: unknown) {
-    console.error('Error moving file to mod folder:', error)
+    log.error('Error moving file to mod folder:', error)
     throw new Error(
       `Failed to move file to mod folder: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -194,7 +197,7 @@ export async function importWadFile(
     debug(`Imported WAD file: ${fullPath} (hash: ${hashValue})`)
     return { fileName, fullPath, hashValue, alreadyExists: false }
   } catch (error: unknown) {
-    console.error('Error importing WAD file:', error)
+    log.error('Error importing WAD file:', error)
     throw new Error(
       `Failed to import WAD file: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -215,7 +218,7 @@ export async function copyImageToImages(sourcePath: string): Promise<string> {
     debug(`Image copied to: ${destPath}`)
     return uniqueFileName
   } catch (error: unknown) {
-    console.error('Error copying image:', error)
+    log.error('Error copying image:', error)
     throw new Error(
       `Failed to copy image: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -251,7 +254,7 @@ export async function downloadImage(url: string, protocolId: string): Promise<st
     debug(`Image downloaded via fetch and saved to: ${filePath}`)
     return fileName // Return just the filename
   } catch (error: unknown) {
-    console.error('Error downloading image:', error)
+    log.error('Error downloading image:', error)
     throw new Error(
       `Failed to download image: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -319,7 +322,7 @@ export async function createBlankProtocolConfig(
     debug(`Created blank protocol config: ${dest}`)
     return { configFile }
   } catch (error: unknown) {
-    console.error('Error creating blank protocol config:', error)
+    log.error('Error creating blank protocol config:', error)
     throw new Error(
       `Failed to create blank protocol config: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -356,7 +359,7 @@ export async function copyConfigForProtocol(
       templateHash
     }
   } catch (error: unknown) {
-    console.error('Error copying config for protocol:', error)
+    log.error('Error copying config for protocol:', error)
     throw new Error(
       `Failed to copy config for protocol: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -377,7 +380,7 @@ export async function readConfigFileContent(key: string): Promise<string> {
     const content = await fs.readFile(filePath, 'utf-8')
     return content
   } catch (error: unknown) {
-    console.error('Error reading config file:', error)
+    log.error('Error reading config file:', error)
     throw new Error(
       `Failed to read config file: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -398,7 +401,7 @@ export async function writeConfigFileContent(key: string, content: string): Prom
     debug(`Wrote config file: ${filePath}`)
     return key
   } catch (error: unknown) {
-    console.error('Error writing config file:', error)
+    log.error('Error writing config file:', error)
     throw new Error(
       `Failed to write config file: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -477,7 +480,7 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
     }
     throw new Error('Invalid file: filePath is required')
   } catch (error: unknown) {
-    console.error('Error adding mod file to catalog:', error)
+    log.error('Error adding mod file to catalog:', error)
     throw new Error(
       `Failed to add mod file to catalog: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -495,7 +498,7 @@ export async function updateModFileInCatalog(
     const index = catalog.findIndex((f) => String(f.id) === String(id))
 
     if (index === -1) {
-      console.error(
+      log.error(
         `[DEBUG] Catalog update failed: Mod file with ID ${id} not found in catalog. Content of catalog IDs:`,
         catalog.map((f) => f.id)
       )
@@ -509,7 +512,7 @@ export async function updateModFileInCatalog(
     debug(`Successfully updated mod file ${id} in catalog (new name: ${updates.name})`)
     return updatedFile
   } catch (error: unknown) {
-    console.error(`Error updating mod file ${id} in catalog:`, error)
+    log.error(`Error updating mod file ${id} in catalog:`, error)
     throw new Error(
       `Failed to update mod file: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -535,7 +538,7 @@ export async function deleteModFileFromCatalog(
         await fs.remove(resolved)
         debug(`[storage] Deleted file from disk: ${resolved}`)
       } catch (err: unknown) {
-        console.warn(`[storage] Failed to delete file from disk: ${resolved}`, err)
+        log.warn(`[storage] Failed to delete file from disk: ${resolved}`, err)
       }
     }
 
@@ -543,7 +546,7 @@ export async function deleteModFileFromCatalog(
     await fs.writeJSON(MOD_FILE_CATALOG, catalog, { spaces: 2 })
     return true
   } catch (error: unknown) {
-    console.error('Error deleting file from catalog:', error)
+    log.error('Error deleting file from catalog:', error)
     throw new Error(
       `Failed to delete file from catalog: ${error instanceof Error ? error.message : String(error)}`
     )

@@ -21,6 +21,9 @@ import { useJsonDrop } from '@/lib/install/useJsonDrop'
 import { useWadImport } from '@/lib/install/useWadImport'
 import { ConfigurationTab } from '@/components/install/ConfigurationTab'
 import { WadImportTab } from '@/components/install/WadImportTab'
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('InstallPage')
 
 export const InstallPage: React.FC = () => {
   const { toast } = useToast()
@@ -184,7 +187,7 @@ export const InstallPage: React.FC = () => {
         }
       } catch (err: unknown) {
         // Fire-and-forget: don't block navigation on achievement failures
-        console.error('Achievement dispatch failed:', err)
+        log.error('Achievement dispatch failed:', err)
       }
 
       queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
@@ -261,7 +264,7 @@ export const InstallPage: React.FC = () => {
         localScreenshotPath = result.fileName
         debug(`[DEBUG] Screenshot saved as: ${localScreenshotPath}`)
       } catch (error: unknown) {
-        console.error('Failed to download screenshot, following with original URL:', error)
+        log.error('Failed to download screenshot, following with original URL:', error)
       }
     }
 
@@ -298,7 +301,7 @@ export const InstallPage: React.FC = () => {
         }
       }
     } catch (err: unknown) {
-      console.warn('[DEBUG] Failed to update some catalog entries:', err)
+      log.warn('[DEBUG] Failed to update some catalog entries:', err)
     }
 
     // An explicit "isolated config" checkbox always wins over auto-seeding
@@ -330,7 +333,7 @@ export const InstallPage: React.FC = () => {
           description: `Seeded config from "${templateFile.name || templateFile.fileName || 'unknown'}"`
         })
       } catch (err: unknown) {
-        console.warn('[DEBUG] Failed to seed config for protocol:', err)
+        log.warn('[DEBUG] Failed to seed config for protocol:', err)
         // Non-fatal — protocol still created without config
       }
     }

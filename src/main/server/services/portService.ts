@@ -4,7 +4,9 @@ import fs from 'fs-extra'
 import { existsSync } from 'fs'
 import { execSync } from 'child_process'
 import AdmZip from 'adm-zip'
+import { createLogger } from '@shared/logger'
 
+const log = createLogger('portService')
 const CONFIG_DIR = path.join(os.homedir(), '.config', 'uac')
 
 export interface ReleaseAsset {
@@ -168,7 +170,7 @@ async function fetchRepoReleases(
       res.status === 403 || res.status === 429
         ? ' — rate limited. Set GITHUB_TOKEN env var for 5000 req/hr.'
         : ''
-    console.warn(`[ports] GitHub API returned ${res.status} for ${owner}/${repo}${rateMsg}`)
+    log.warn(`[ports] GitHub API returned ${res.status} for ${owner}/${repo}${rateMsg}`)
     return []
   }
   const releases: GitHubRelease[] = await res.json()

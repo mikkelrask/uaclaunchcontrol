@@ -6,6 +6,9 @@ import { IProtocol, IModFile, IDoomVersion, IAppSettings } from '@shared/schema'
 import { MODS_DIR } from '../storage'
 import { debug } from '@shared/debug'
 
+import { createLogger } from '@shared/logger'
+const log = createLogger('gameService')
+
 // Service to handle game-related operations
 export class GameService {
   async getAllProtocols(): Promise<IProtocol[]> {
@@ -33,7 +36,7 @@ export class GameService {
       const saved = await storage.saveProtocol(dataToSave)
       return saved
     } catch (error: unknown) {
-      console.error(`Error saving protocol ${protocol.id}:`, error)
+      log.error(`Error saving protocol ${protocol.id}:`, error)
       return undefined
     }
   }
@@ -43,7 +46,7 @@ export class GameService {
       const filePath = path.join(MODS_DIR, `${id}.json`)
       return await fileService.deleteFile(filePath)
     } catch (error: unknown) {
-      console.error(`Error deleting protocol ${id}:`, error)
+      log.error(`Error deleting protocol ${id}:`, error)
       return false
     }
   }
@@ -53,7 +56,7 @@ export class GameService {
       await storage.getProtocols()
       debug('Checked protocols directory.')
     } catch (error: unknown) {
-      console.error('Error during initial protocol loading:', error)
+      log.error('Error during initial protocol loading:', error)
     }
   }
 
@@ -123,7 +126,7 @@ export class GameService {
           }
           fileArgs.push(fullPath)
         } else {
-          console.warn(`File ${file.id} for protocol ${protocol.id} is missing filePath.`)
+          log.warn(`File ${file.id} for protocol ${protocol.id} is missing filePath.`)
         }
       })
     }
@@ -212,7 +215,7 @@ export class GameService {
 
       return { success }
     } catch (error: unknown) {
-      console.error(`Error launching protocol ${id}:`, error)
+      log.error(`Error launching protocol ${id}:`, error)
       return { success: false, message: error instanceof Error ? error.message : String(error) }
     }
   }
@@ -239,7 +242,7 @@ export class GameService {
       const success = await fileService.launchGame(executable, args, 'test')
       return { success }
     } catch (error: unknown) {
-      console.error('Error in test launch:', error)
+      log.error('Error in test launch:', error)
       return { success: false, message: error instanceof Error ? error.message : String(error) }
     }
   }

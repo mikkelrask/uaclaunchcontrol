@@ -4,6 +4,9 @@ import { useToast } from '@/hooks/use-toast'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import type { IProtocol } from '@shared/schema'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('useLaunchProtocol')
 /**
  * Shared launch flow for every protocol card view (grid/GameCard,
  * detail/GameDetailCard, list/GameListCard): fire the launch, invalidate the
@@ -42,7 +45,7 @@ export function useLaunchProtocol(protocol: IProtocol): {
           }
         })
         .catch((err: unknown) => {
-          console.error('Achievement dispatch failed:', err)
+          log.error('Achievement dispatch failed:', err)
         })
     },
     onError: (error) => {

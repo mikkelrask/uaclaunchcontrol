@@ -11,6 +11,9 @@ import { CompleteStep } from './CompleteStep'
 import { OnboardingChrome } from './OnboardingChrome'
 import { BootSequence } from './BootSequence'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('onboarding/OnboardingWizardx')
 const STEP_COUNT = 4
 
 export const OnboardingWizard: React.FC = () => {
@@ -52,7 +55,7 @@ export const OnboardingWizard: React.FC = () => {
           activate()
         }
       })
-      .catch((err: unknown) => console.error(err))
+      .catch((err: unknown) => log.error(err))
   }, [activate])
 
   // Manual replay from the header's "Guided Tour" button
@@ -79,7 +82,7 @@ export const OnboardingWizard: React.FC = () => {
           defaultSourcePortId: draft.defaultSourcePortId,
           defaultDoomVersionId: draft.defaultDoomVersionId
         })
-        .catch((err: unknown) => console.error(err))
+        .catch((err: unknown) => log.error(err))
 
       const activeFamilies = (draft.sourcePorts || [])
         .filter((p) => !p.ignored)
@@ -97,7 +100,7 @@ export const OnboardingWizard: React.FC = () => {
               })
             }
           })
-          .catch((err: unknown) => console.error(err))
+          .catch((err: unknown) => log.error(err))
       }
     }, 400)
 
@@ -105,7 +108,7 @@ export const OnboardingWizard: React.FC = () => {
   }, [draft, isActive, toast])
 
   const finish = useCallback(() => {
-    api.dismissFirstRun().catch((err: unknown) => console.error(err))
+    api.dismissFirstRun().catch((err: unknown) => log.error(err))
     setIsActive(false)
     setDraft(null)
   }, [])

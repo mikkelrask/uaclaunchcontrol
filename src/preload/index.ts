@@ -1,5 +1,8 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('preload')
 const api = {
   onVersionsUpdated: (callback: (data?: unknown) => void) =>
     ipcRenderer.on('doom-versions-updated', (_event, data) => callback(data)),
@@ -42,7 +45,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } catch (error: unknown) {
-    console.error(error)
+    log.error(error)
   }
 } else {
   // @ts-expect-error (define in dts)

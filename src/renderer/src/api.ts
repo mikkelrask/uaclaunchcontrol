@@ -8,6 +8,9 @@ import {
   IPlayerData,
   IPlayerStats
 } from '@shared/schema'
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('api')
 
 export interface IIdgamesMod {
   id: number
@@ -131,10 +134,10 @@ async function handleApiResponse<T>(response: Response): Promise<T> {
         errorMessage = errorData.message || errorData.error || errorMessage
       } else {
         const text = await response.text()
-        console.error('API non-json error:', text)
+        log.error('API non-json error:', text)
       }
     } catch (error: unknown) {
-      console.error('Failed to parse error response', error)
+      log.error('Failed to parse error response', error)
     }
     throw new Error(errorMessage)
   }
@@ -248,7 +251,7 @@ export const api = {
       }
       return null
     } catch {
-      console.error('[api] lookupMod failed for hash', hash)
+      log.error('[api] lookupMod failed for hash', hash)
       return null
     }
   },
@@ -277,7 +280,7 @@ export const api = {
       })
       // Silently ignore all responses
     } catch {
-      console.debug('[api] submitToPending network error (silent)')
+      log.debug('[api] submitToPending network error (silent)')
       // Network error - silently ignore
     }
   },
@@ -412,7 +415,7 @@ export const api = {
     })
 
     if (!response.ok) {
-      console.error('Failed to open dialog:', response.statusText)
+      log.error('Failed to open dialog:', response.statusText)
       return { canceled: true, filePaths: [] }
     }
 
@@ -427,7 +430,7 @@ export const api = {
     })
 
     if (!response.ok) {
-      console.error('Failed to open save dialog:', response.statusText)
+      log.error('Failed to open save dialog:', response.statusText)
       return { canceled: true }
     }
 

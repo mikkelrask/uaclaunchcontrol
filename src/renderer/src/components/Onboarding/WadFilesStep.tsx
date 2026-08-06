@@ -7,6 +7,9 @@ import { api } from '@/api'
 import type { IAppSettings, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('onboarding/WadFilesStepx')
 interface WadFilesStepProps {
   settings: IAppSettings
   setSettings: React.Dispatch<React.SetStateAction<IAppSettings>>
@@ -41,7 +44,7 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
       .then((versions) => {
         if (!cancelled) setDoomVersions(versions)
       })
-      .catch((err: unknown) => console.error(err))
+      .catch((err: unknown) => log.error(err))
       .finally(() => {
         if (!cancelled) setIsLoadingVersions(false)
       })

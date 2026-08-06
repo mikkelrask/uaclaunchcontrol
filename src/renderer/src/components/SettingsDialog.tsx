@@ -23,6 +23,9 @@ import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import uacLogo from '@/assets/UAC Logo.svg'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('SettingsDialogx')
 interface SettingsDialogProps {
   isOpen: boolean
   onClose: () => void
@@ -89,7 +92,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     api
       .getVersion()
       .then(setAppVersion)
-      .catch((err: unknown) => console.error(err))
+      .catch((err: unknown) => log.error(err))
 
     api
       .getSettings()
@@ -129,7 +132,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         const versions = await api.getDoomVersions()
         setDoomVersions(versions)
       } catch {
-        console.error('[settings] Failed to load doom versions')
+        log.error('[settings] Failed to load doom versions')
         toast({
           title: 'FATAL: version_load_err',
           description: 'Failed to load doom versions',

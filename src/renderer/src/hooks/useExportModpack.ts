@@ -3,6 +3,9 @@ import { useToast } from '@/hooks/use-toast'
 import { slugify } from '@/lib/utils'
 import type { IProtocol, InsertModFile, IDoomVersion, ISourcePort } from '@shared/schema'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('useExportModpack')
 /** Builds and downloads a `.uac-modpack` JSON export, inlining referenced config file contents. */
 export function useExportModpack(
   protocol: IProtocol,
@@ -28,7 +31,7 @@ export function useExportModpack(
           const content = await api.readConfigContent(f.configTemplate.md5Hash)
           configs[f.configTemplate.md5Hash] = { content }
         } catch {
-          console.warn(`Failed to read config ${f.configTemplate.md5Hash} for export`)
+          log.warn(`Failed to read config ${f.configTemplate.md5Hash} for export`)
         }
       }
     }
@@ -39,7 +42,7 @@ export function useExportModpack(
         const content = await api.readConfigContent(protocol.protocolConfig.templateHash)
         configs[protocol.protocolConfig.templateHash] = { content }
       } catch {
-        console.warn(
+        log.warn(
           `Failed to read protocol config ${protocol.protocolConfig.templateHash} for export`
         )
       }
@@ -60,7 +63,7 @@ export function useExportModpack(
       try {
         screenshot = await api.readScreenshotContent(protocol.screenshotPath!)
       } catch {
-        console.warn('Failed to read screenshot for export')
+        log.warn('Failed to read screenshot for export')
       }
     }
 

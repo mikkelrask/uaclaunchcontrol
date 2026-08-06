@@ -3,6 +3,9 @@ import { Button } from '@/components/ui/button'
 import { ChevronLeft, CheckCircle2 } from 'lucide-react'
 import { api } from '@/api'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('onboarding/CompleteStepx')
 interface CompleteStepProps {
   onFinish: () => void
   onBack: () => void
@@ -20,7 +23,7 @@ export const CompleteStep: React.FC<CompleteStepProps> = ({ onFinish, onBack }) 
         setPortCount(settings.sourcePorts.length)
         setWadCount(versions.length)
       })
-      .catch((err: unknown) => console.error(err))
+      .catch((err: unknown) => log.error(err))
     return () => {
       cancelled = true
     }

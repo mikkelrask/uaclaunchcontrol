@@ -11,6 +11,9 @@ import { useRequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
 import type { RequiredModEntry, AddFormState } from '@/lib/catalog/types'
 import type { IModFile, IAppSettings } from '@shared/schema'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('useCatalogAdd')
 interface UseCatalogAddOptions {
   files: IModFile[]
   onChange: (files: IModFile[]) => void
@@ -282,7 +285,7 @@ export function useCatalogAdd({
       hash = await api.computeHash(filePath)
       debug('[Registry] Computed hash:', hash)
     } catch {
-      console.error('Failed to compute hash')
+      log.error('Failed to compute hash')
     } finally {
       hashingToast.dismiss()
     }
@@ -291,7 +294,7 @@ export function useCatalogAdd({
     try {
       settings = await api.getSettings()
     } catch {
-      console.error('Failed to fetch settings')
+      log.error('Failed to fetch settings')
     }
 
     let registryData: IRegistryMod | null = null
@@ -299,7 +302,7 @@ export function useCatalogAdd({
       try {
         registryData = await api.lookupMod(hash, REGISTRY_API_URL)
       } catch (error: unknown) {
-        console.error('[Registry] Lookup failed:', error)
+        log.error('[Registry] Lookup failed:', error)
       }
     }
 
@@ -436,7 +439,7 @@ export function useCatalogAdd({
             setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
             setIsAddModalOpen(true)
           } catch (error: unknown) {
-            console.error('Failed to parse .bat:', error)
+            log.error('Failed to parse .bat:', error)
             toast({
               title: 'FATAL: bat_parse_failed',
               description: 'Failed to parse .bat file',
@@ -453,7 +456,7 @@ export function useCatalogAdd({
         }
       }
     } catch (error: unknown) {
-      console.error('Failed to open file dialog:', error)
+      log.error('Failed to open file dialog:', error)
     }
   }
 
@@ -487,7 +490,7 @@ export function useCatalogAdd({
         })
       }
     } catch (error: unknown) {
-      console.error('Failed to browse config file:', error)
+      log.error('Failed to browse config file:', error)
       toast({
         title: 'FATAL: config_link_failed',
         description: `Failed to link config file: ${error}`,

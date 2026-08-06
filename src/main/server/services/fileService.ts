@@ -6,6 +6,9 @@ import { BrowserWindow } from 'electron'
 import { logFilePathFor } from '../storage'
 import { matchGameplayEvent } from './gameplayWatchers'
 
+import { createLogger } from '@shared/logger'
+const log = createLogger('fileService')
+
 const LOG_RING_BUFFER_SIZE = 60
 
 // Service to handle file system operations
@@ -16,7 +19,7 @@ export class FileService {
       await fs.access(filePath)
       return true
     } catch {
-      console.error('[fileService] fileExists failed:', filePath)
+      log.error('[fileService] fileExists failed:', filePath)
       return false
     }
   }
@@ -26,7 +29,7 @@ export class FileService {
     try {
       return await fs.stat(filePath)
     } catch {
-      console.error('[fileService] getFileInfo failed:', filePath)
+      log.error('[fileService] getFileInfo failed:', filePath)
       return null
     }
   }
@@ -36,7 +39,7 @@ export class FileService {
     try {
       return await fs.readdir(dirPath)
     } catch {
-      console.error('[fileService] readDirectory failed:', dirPath)
+      log.error('[fileService] readDirectory failed:', dirPath)
       return []
     }
   }
@@ -46,7 +49,7 @@ export class FileService {
     try {
       return await fs.readFile(filePath, 'utf8')
     } catch {
-      console.error('[fileService] readFile failed:', filePath)
+      log.error('[fileService] readFile failed:', filePath)
       return null
     }
   }
@@ -59,7 +62,7 @@ export class FileService {
       await fs.writeFile(filePath, data, 'utf8')
       return true
     } catch {
-      console.error('[fileService] writeFile failed:', filePath)
+      log.error('[fileService] writeFile failed:', filePath)
       return false
     }
   }
@@ -70,7 +73,7 @@ export class FileService {
       await fs.unlink(filePath)
       return true
     } catch {
-      console.error('[fileService] deleteFile failed:', filePath)
+      log.error('[fileService] deleteFile failed:', filePath)
       return false
     }
   }
@@ -92,7 +95,7 @@ export class FileService {
       try {
         if (logFilePath) logStream = createWriteStream(logFilePath, { flags: 'w' })
       } catch (err: unknown) {
-        console.error('[fileService] Failed to open launch log file:', err)
+        log.error('[fileService] Failed to open launch log file:', err)
       }
 
       return await new Promise<boolean>((resolve) => {
@@ -170,7 +173,7 @@ export class FileService {
         }, checkWindow)
 
         proc.on('error', (err) => {
-          console.error('Failed to launch game process:', err)
+          log.error('Failed to launch game process:', err)
           finish(false)
         })
 
@@ -180,7 +183,7 @@ export class FileService {
             finish(true)
           } else if (!settled) {
             // Non-zero or null exit within window — launch failure
-            console.error(`Game process exited with code ${code} immediately after launch`)
+            log.error(`Game process exited with code ${code} immediately after launch`)
             finish(false)
           }
 
@@ -203,7 +206,7 @@ export class FileService {
         })
       })
     } catch (error: unknown) {
-      console.error('Error launching game:', error)
+      log.error('Error launching game:', error)
       return false
     }
   }

@@ -7,6 +7,9 @@ import { api } from '@/api'
 import { useFileReorder } from '@/hooks/useFileReorder'
 import { useToast } from '@/hooks/use-toast'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('ModFileListx')
 interface ModFileListProps {
   files: IModFile[] | InsertModFile[]
   onChange: (files: IModFile[] | InsertModFile[]) => void
@@ -28,7 +31,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
     api
       .getModFileCatalog()
       .then(setCatalogFiles)
-      .catch((err: unknown) => console.error(err))
+      .catch((err: unknown) => log.error(err))
   }, [])
 
   const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)

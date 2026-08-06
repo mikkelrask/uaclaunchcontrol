@@ -8,6 +8,9 @@ import { useRequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
 import type { RequiredModEntry, EditFormState } from '@/lib/catalog/types'
 import type { IModFile } from '@shared/schema'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('useCatalogEdit')
 interface UseCatalogEditOptions {
   onChange: (files: IModFile[]) => void
   catalogFiles: IModFile[]
@@ -159,7 +162,7 @@ export function useCatalogEdit({
         try {
           hashValue = await api.computeHash(selectedFile.filePath)
         } catch {
-          console.error('Failed to compute hash')
+          log.error('Failed to compute hash')
         }
       }
 
@@ -282,7 +285,7 @@ export function useCatalogEdit({
         })
       }
     } catch (error: unknown) {
-      console.error('Failed to browse config file:', error)
+      log.error('Failed to browse config file:', error)
       toast({
         title: 'FATAL: config_link_failed',
         description: `Failed to link config file: ${error}`,

@@ -18,6 +18,9 @@ import {
   computeFileHash,
   DEFAULT_DOOM_VERSIONS
 } from './core'
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('storage/doom-versions')
 
 let wadSyncTimer: ReturnType<typeof setTimeout> | null = null
 let wadWatcher: FSWatcher | null = null
@@ -49,7 +52,7 @@ export async function startWadWatcher(): Promise<void> {
     try {
       fs.ensureDirSync(wadDir)
     } catch (error: unknown) {
-      console.error(`Failed to ensure directory ${wadDir}:`, error)
+      log.error(`Failed to ensure directory ${wadDir}:`, error)
       return
     }
 
@@ -75,12 +78,12 @@ export async function startWadWatcher(): Promise<void> {
     })
 
     wadWatcher.on('error', (error) => {
-      console.error(`[DEBUG] Chokidar watcher error:`, error)
+      log.error(`[DEBUG] Chokidar watcher error:`, error)
     })
 
     debug(`Started WAD watcher on ${wadDir}`)
   } catch (err: unknown) {
-    console.error('[DEBUG] Error starting WAD watcher:', err)
+    log.error('[DEBUG] Error starting WAD watcher:', err)
   }
 }
 
@@ -231,7 +234,7 @@ export async function syncDoomVersions(
 
     return resolvedVersions
   } catch (error: unknown) {
-    console.error('Error syncing Doom versions:', error)
+    log.error('Error syncing Doom versions:', error)
     return []
   }
 }
@@ -253,7 +256,7 @@ export async function getDoomVersions(): Promise<IDoomVersion[]> {
     debug('getDoomVersions: Returning resolved versions:', resolved.length)
     return resolved
   } catch (error: unknown) {
-    console.error('Error getting Doom versions:', error)
+    log.error('Error getting Doom versions:', error)
     return [] // Return empty array on error
   }
 }
@@ -264,7 +267,7 @@ export async function getDoomVersionBySlug(slug: string): Promise<IDoomVersion |
     const versions = await getDoomVersions()
     return versions.find((v) => v.slug === slug)
   } catch (error: unknown) {
-    console.error(`Error getting Doom version by slug ${slug}:`, error)
+    log.error(`Error getting Doom version by slug ${slug}:`, error)
     return undefined
   }
 }
@@ -281,7 +284,7 @@ export async function saveDoomVersions(versions: IDoomVersion[]): Promise<void> 
       win.webContents.send('doom-versions-updated')
     })
   } catch (error: unknown) {
-    console.error('Error saving Doom versions:', error)
+    log.error('Error saving Doom versions:', error)
     throw new Error(
       `Failed to save Doom versions: ${error instanceof Error ? error.message : String(error)}`
     )

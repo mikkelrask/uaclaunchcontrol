@@ -3,6 +3,9 @@ import { api } from '@/api'
 import type { IModFile } from '@shared/schema'
 import type { RequiredModEntry } from '@/lib/catalog/types'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('catalog/useRequiredModsActions')
 export interface RequiredModsActions {
   handleAddFromCatalog: (catalogFileId: number) => void
   handleBrowseFile: () => Promise<void>
@@ -76,7 +79,7 @@ export function useRequiredModsActions(
         setLoadOrder((prev) => [...prev, newReq])
       }
     } catch (error: unknown) {
-      console.error('Failed to open file dialog:', error)
+      log.error('Failed to open file dialog:', error)
     }
   }, [loadOrder.length, setLoadOrder])
 

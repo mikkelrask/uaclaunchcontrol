@@ -8,6 +8,9 @@ import { getSettings } from './server/storage'
 import { IInstallType } from '@shared/schema'
 import { debug } from '@shared/debug'
 
+import { createLogger } from '@shared/logger'
+const log = createLogger('main')
+
 let mainWindow: BrowserWindow | null = null
 let lastCheckWasManual = false
 
@@ -305,7 +308,7 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('download-update', () => {
     autoUpdater.downloadUpdate().catch((err: unknown) => {
-      console.error('Error downloading update:', err)
+      log.error('Error downloading update:', err)
     })
   })
 

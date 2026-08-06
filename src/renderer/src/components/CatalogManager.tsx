@@ -27,6 +27,9 @@ import { DeleteConfirmDialog } from '@/components/catalog/DeleteConfirmDialog'
 import { SIDECAR_EXPLANATION } from '@/lib/catalog/types'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('CatalogManagerx')
 interface CatalogManagerProps {
   files: IModFile[]
   onChange: (files: IModFile[]) => void
@@ -148,7 +151,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
         setIsAddModalOpen(true)
       } catch (error: unknown) {
-        console.error('Failed to parse .bat:', error)
+        log.error('Failed to parse .bat:', error)
         toast({
           title: 'FATAL: bat_parse_failed',
           description: 'Failed to parse .bat file',

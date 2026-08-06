@@ -3,6 +3,8 @@ import type { UseFormReturn } from 'react-hook-form'
 import type { z } from 'zod'
 import type { IModFile, IAppSettings, IDoomVersion, ISourcePort } from '@shared/schema'
 import { api } from '@/api'
+import { createLogger } from '@shared/logger'
+const log = createLogger('install/useJsonDrop')
 import { parseBatContent, resolveRelativePaths, deriveFileType } from '@/lib/install/parsers'
 import type { formSchema } from '@/lib/install/schema'
 import type { UacModpackImport } from '@/lib/install/types'
@@ -89,7 +91,7 @@ async function buildFileFromPath(filePath: string, catalogData: IModFile[]): Pro
   try {
     hashValue = await api.computeHash(filePath)
   } catch {
-    console.warn(`Failed to compute hash for ${filePath}`)
+    log.warn(`Failed to compute hash for ${filePath}`)
   }
 
   if (hashValue) {
@@ -240,7 +242,7 @@ async function importFromJsonFile(
       try {
         await api.writeConfigContent(hash, cfg.content)
       } catch (err: unknown) {
-        console.warn(`Failed to write config ${hash}:`, err)
+        log.warn(`Failed to write config ${hash}:`, err)
       }
     }
     if (entries.length > 0) {
@@ -267,7 +269,7 @@ async function importFromJsonFile(
       )
       form.setValue('screenshotPath', fileName)
     } catch (err: unknown) {
-      console.warn('Failed to import screenshot:', err)
+      log.warn('Failed to import screenshot:', err)
     }
   } else if (game.screenshotPath) {
     form.setValue('screenshotPath', game.screenshotPath)
@@ -351,7 +353,7 @@ export function useJsonDrop({
         await importFromJsonFile(droppedFile, form, versions, settings, setFiles, toast)
       } catch (error: unknown) {
         const isJson = fileName.endsWith('.json')
-        console.error(`Failed to parse ${isJson ? 'JSON' : '.bat'}:`, error)
+        log.error(`Failed to parse ${isJson ? 'JSON' : '.bat'}:`, error)
         toast({
           title: isJson ? 'FATAL: import_failed' : 'FATAL: bat_parse_failed',
           description: isJson

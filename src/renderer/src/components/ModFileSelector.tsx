@@ -17,6 +17,9 @@ import { api } from '@/api'
 import { debug } from '@shared/debug'
 import type { FileReorderHandlers } from '@/hooks/useFileReorder'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('ModFileSelectorx')
 let _nextTempId = Date.now()
 
 /** True if `candidate` (matched by hash, falling back to path) already exists
@@ -80,7 +83,7 @@ export function ModFileSelector({
       debug('[DEBUG] File moved successfully:', result)
       return result
     } catch (error: unknown) {
-      console.error('Failed to move file:', error)
+      log.error('Failed to move file:', error)
       toast({
         title: 'FATAL: copy.fail',
         description:
@@ -292,7 +295,7 @@ export function ModFileSelector({
               variant: 'default'
             })
           } catch (err: unknown) {
-            console.error('Failed to add to catalog eagerly:', err)
+            log.error('Failed to add to catalog eagerly:', err)
           }
         }
 
@@ -332,7 +335,7 @@ export function ModFileSelector({
       }
     } catch (error: unknown) {
       const err = error as Error
-      console.error('Failed to open file dialog:', error)
+      log.error('Failed to open file dialog:', error)
       toast({
         title: 'FATAL: dialog_err',
         description: err.message || 'Failed to open file dialog',

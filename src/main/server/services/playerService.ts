@@ -10,6 +10,9 @@ import {
 } from '@shared/schema'
 import { debug } from '@shared/debug'
 
+import { createLogger } from '@shared/logger'
+const log = createLogger('playerService')
+
 // ── Paths ───────────────────────────────────────────────
 const CONFIG_DIR = path.join(os.homedir(), '.config', 'uac')
 const PLAYER_DATA_FILE = path.join(CONFIG_DIR, 'playerData.json')
@@ -120,7 +123,7 @@ async function computeInitialStatsFromDisk(): Promise<IPlayerStats> {
       stats.maxModFilesInSingleProtocol = maxFiles
     }
   } catch (err: unknown) {
-    console.error('[playerService] Error scanning protocols for stats:', err)
+    log.error('[playerService] Error scanning protocols for stats:', err)
   }
 
   // Count catalog entries
@@ -133,7 +136,7 @@ async function computeInitialStatsFromDisk(): Promise<IPlayerStats> {
       }
     }
   } catch (err: unknown) {
-    console.error('[playerService] Error scanning catalog for stats:', err)
+    log.error('[playerService] Error scanning catalog for stats:', err)
   }
 
   // Count WAD files from doom versions (non-default ones)
@@ -150,7 +153,7 @@ async function computeInitialStatsFromDisk(): Promise<IPlayerStats> {
       }
     }
   } catch (err: unknown) {
-    console.error('[playerService] Error scanning WADs for stats:', err)
+    log.error('[playerService] Error scanning WADs for stats:', err)
   }
 
   // Count source ports from settings
@@ -164,7 +167,7 @@ async function computeInitialStatsFromDisk(): Promise<IPlayerStats> {
       ]
     }
   } catch (err: unknown) {
-    console.error('[playerService] Error scanning source ports for stats:', err)
+    log.error('[playerService] Error scanning source ports for stats:', err)
   }
 
   return stats
@@ -204,7 +207,7 @@ async function readPlayerDataRaw(): Promise<IPlayerData> {
         }
       }
     } catch (err: unknown) {
-      console.error('[playerService] Error migrating rank from settings:', err)
+      log.error('[playerService] Error migrating rank from settings:', err)
     }
 
     // 3. Seed initial stats from existing data
@@ -234,7 +237,7 @@ async function readPlayerDataRaw(): Promise<IPlayerData> {
     const hasRealAchievements = Object.keys(merged.achievements).length > 0
     const statsLooksWiped = !data.stats || Object.keys(data.stats).length === 0
     if (hasRealAchievements && statsLooksWiped) {
-      console.error(
+      log.error(
         '[playerService] stats missing/empty despite existing achievement progress — recomputing from disk instead of persisting zeroes'
       )
       merged.stats = await computeInitialStatsFromDisk()
@@ -264,7 +267,7 @@ async function readPlayerDataRaw(): Promise<IPlayerData> {
 
     return merged
   } catch (err: unknown) {
-    console.error('[playerService] Error reading playerData.json:', err)
+    log.error('[playerService] Error reading playerData.json:', err)
     return { ...DEFAULT_PLAYER_DATA }
   }
 }

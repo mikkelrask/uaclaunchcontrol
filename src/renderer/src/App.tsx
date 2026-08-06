@@ -23,6 +23,9 @@ import { CrashLogDialog, type CrashLogData } from '@/components/CrashLogDialog'
 import { ToastAction } from '@/components/ui/toast'
 import { inferCrashHint } from '@/lib/crashHints'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('App')
 const AppRouter: React.FC = () => {
   return (
     <Router hook={useHashLocation}>
@@ -58,7 +61,7 @@ const App: React.FC = () => {
     api
       .getInstallType()
       .then(setInstallType)
-      .catch((err: unknown) => console.error(err))
+      .catch((err: unknown) => log.error(err))
   }, [])
 
   // Global settings query for theme sync
@@ -175,7 +178,7 @@ const App: React.FC = () => {
               })
             }
           } catch (err: unknown) {
-            console.error('Achievement dispatch failed:', err)
+            log.error('Achievement dispatch failed:', err)
           }
         }
 
@@ -197,7 +200,7 @@ const App: React.FC = () => {
               }
             })
             .catch((err: unknown) => {
-              console.error('Achievement dispatch failed:', err)
+              log.error('Achievement dispatch failed:', err)
             })
         }
 
@@ -273,7 +276,7 @@ const App: React.FC = () => {
           })
         }
       } catch (err: unknown) {
-        console.error('Achievement dispatch failed:', err)
+        log.error('Achievement dispatch failed:', err)
       }
     })
   }, [toast])

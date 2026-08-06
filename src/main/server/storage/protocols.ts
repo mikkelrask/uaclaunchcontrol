@@ -8,6 +8,9 @@ import { initStorage, getSettings, resolvePath, computeFileHash } from './core'
 import { getDoomVersions, saveDoomVersions } from './doom-versions'
 import { getModFileCatalog } from './mod-catalog'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('storage/protocols')
 /** Enrich each file in a protocol with catalogue metadata (url, name, version). */
 async function enrichFilesWithCatalog(files: IModFile[]): Promise<IModFile[]> {
   if (files.length === 0) return files
@@ -59,7 +62,7 @@ export async function saveProtocol(
     delete (protocol as Record<string, unknown>).files
     return protocol as IProtocol
   } catch (error: unknown) {
-    console.error('Error saving mod:', error)
+    log.error('Error saving mod:', error)
     throw new Error(`Failed to save mod: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
@@ -87,13 +90,13 @@ export async function getProtocols(): Promise<IProtocol[]> {
           protocol.files = await enrichFilesWithCatalog(protocol.files)
           protocols.push(protocol as IProtocol)
         } catch (err: unknown) {
-          console.error(`Error reading protocol file ${filename}:`, err)
+          log.error(`Error reading protocol file ${filename}:`, err)
         }
       }
     }
     return protocols
   } catch (error: unknown) {
-    console.error('Error getting protocols:', error)
+    log.error('Error getting protocols:', error)
     return []
   }
 }
@@ -114,7 +117,7 @@ export async function getProtocol(protocolId: string): Promise<IProtocol & { fil
     data.files = await enrichFilesWithCatalog(data.files)
     return data as IProtocol & { files: IModFile[] }
   } catch (error: unknown) {
-    console.error(`Error getting protocol ${protocolId}:`, error)
+    log.error(`Error getting protocol ${protocolId}:`, error)
     throw new Error(
       `Failed to get protocol: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -126,7 +129,7 @@ export async function getDoomVersion(id: string): Promise<IDoomVersion | undefin
     const versions = await getDoomVersions()
     return versions.find((v) => v.id === id)
   } catch (error: unknown) {
-    console.error(`Error getting Doom version by id ${id}:`, error)
+    log.error(`Error getting Doom version by id ${id}:`, error)
     return undefined
   }
 }
@@ -154,7 +157,7 @@ export async function addPlaytime(id: string, sessionSeconds: number): Promise<v
     const filePath = path.join(targetDir, `${id}.json`)
 
     if (!fs.existsSync(filePath)) {
-      console.warn(`addPlaytime: Protocol ${id} not found`)
+      log.warn(`addPlaytime: Protocol ${id} not found`)
       return
     }
 
@@ -165,7 +168,7 @@ export async function addPlaytime(id: string, sessionSeconds: number): Promise<v
 
     debug(`Added ${sessionSeconds}s playtime to protocol ${id} (total: ${data.playtimeSeconds}s)`)
   } catch (error: unknown) {
-    console.error(`Error adding playtime to protocol ${id}:`, error)
+    log.error(`Error adding playtime to protocol ${id}:`, error)
   }
 }
 
@@ -180,11 +183,11 @@ export async function deleteProtocol(id: string | number): Promise<boolean | und
       debug('Deleted protocol file:', filePath)
       return true
     } else {
-      console.warn('[DEBUG] Protocol file does not exist:', filePath)
+      log.warn('[DEBUG] Protocol file does not exist:', filePath)
       return false
     }
   } catch (error: unknown) {
-    console.error('Error deleting protocol:', error)
+    log.error('Error deleting protocol:', error)
     return false
   }
 }

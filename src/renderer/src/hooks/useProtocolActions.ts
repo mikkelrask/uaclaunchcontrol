@@ -5,6 +5,9 @@ import { useToast } from '@/hooks/use-toast'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import type { IProtocol, IModFile, InsertModFile } from '@shared/schema'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('useProtocolActions')
 interface UseProtocolActionsArgs {
   protocolId: string
   protocol: IProtocol
@@ -75,7 +78,7 @@ export function useProtocolActions({
         }
       } catch (err: unknown) {
         // Fire-and-forget: don't block the save flow on achievement failures
-        console.error('Achievement dispatch failed:', err)
+        log.error('Achievement dispatch failed:', err)
       }
 
       onClose()

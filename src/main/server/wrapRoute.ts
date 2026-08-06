@@ -1,5 +1,8 @@
 import type { Request, Response } from 'express'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('wrapRoute')
 /** Wraps an async route handler so thrown errors are caught, logged, and returned as 500. */
 export function wrapRoute(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -8,7 +11,7 @@ export function wrapRoute(
 ): (req: Request, res: Response) => void {
   return (req, res) => {
     handler(req, res).catch((error: unknown) => {
-      console.error(`[${label}]`, error)
+      log.error(`[${label}]`, error)
       const msg = error instanceof Error ? error.message : 'Internal server error'
       res.status(500).json({ message: msg })
     })

@@ -5,6 +5,9 @@ import { api } from '@/api'
 import type { IModFile } from '@shared/schema'
 import type { ZipScanResult } from '@/types/zipImport'
 
+import { createLogger } from '@shared/logger'
+
+const log = createLogger('useFileImport')
 interface UseFileImportOptions {
   onChange: (files: IModFile[]) => void
 }
@@ -39,7 +42,7 @@ export function useFileImport({ onChange }: UseFileImportOptions): UseFileImport
         setZipFilePath(filePath)
         setIsZipModalOpen(true)
       } catch (error: unknown) {
-        console.error(error)
+        log.error(error)
         toast({
           title: 'FATAL: zip_scan_failed',
           description: error instanceof Error ? error.message : 'Failed to scan zip file',
@@ -57,7 +60,7 @@ export function useFileImport({ onChange }: UseFileImportOptions): UseFileImport
         setZipFilePath(filePath)
         setIsZipModalOpen(true)
       } catch (error: unknown) {
-        console.error(error)
+        log.error(error)
         toast({
           title: 'FATAL: decompress_failed',
           description: error instanceof Error ? error.message : 'Failed to scan rar file',

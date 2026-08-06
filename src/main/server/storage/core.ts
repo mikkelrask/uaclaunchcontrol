@@ -3,6 +3,7 @@ import path from 'path'
 import crypto from 'crypto'
 import os from 'os'
 import { IAppSettings, IDatabaseLink, IDoomVersion } from '@shared/schema'
+import { createLogger } from '@shared/logger'
 import { debug } from '@shared/debug'
 import {
   CONFIG_DIR,
@@ -15,6 +16,8 @@ import {
   LOGS_DIR,
   FIRST_RUN_SENTINEL
 } from './paths'
+
+const log = createLogger('storage/core')
 
 const DEFAULT_DATABASE_LINKS: IDatabaseLink[] = [
   { name: 'MODDB', url: 'https://www.moddb.com/games/doom-ii' },
@@ -180,7 +183,7 @@ export function initStorage(): boolean {
     })
     return true
   } catch (error: unknown) {
-    console.error('[storage] Failed to initialize storage:', error)
+    log.error('[storage] Failed to initialize storage:', error)
     isInitialized = false
     return false
   }
@@ -213,7 +216,7 @@ export async function getSettings(): Promise<IAppSettings> {
     }
     return resolvedSettings
   } catch (error: unknown) {
-    console.error(
+    log.error(
       `[storage] Error getting settings: ${error instanceof Error ? error.message : String(error)}`
     )
     return DEFAULT_SETTINGS
@@ -237,7 +240,7 @@ export async function saveSettings(settings: Partial<IAppSettings>): Promise<IAp
     }
     return updatedSettings
   } catch (error: unknown) {
-    console.error(
+    log.error(
       `[storage] Error saving settings: ${error instanceof Error ? error.message : String(error)}`
     )
     throw new Error(
@@ -278,7 +281,7 @@ export async function computeFileHash(filePath: string): Promise<string> {
     debug(`Computed MD5 hash for ${resolvedPath}: ${hash}`)
     return hash
   } catch (error: unknown) {
-    console.error(`Error computing hash for ${filePath}:`, error)
+    log.error(`Error computing hash for ${filePath}:`, error)
     return ''
   }
 }
