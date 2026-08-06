@@ -173,7 +173,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                                 title: 'SYSTEM: image_ul',
                                 description: 'Image added successfully.'
                               })
-                            } catch (error) {
+                            } catch (error: unknown) {
                               toast({
                                 title: 'FATAL: err_284',
                                 description: `Failed to upload image: ${error}`,
@@ -408,7 +408,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                   title: 'SYSTEM: test_launch',
                   description: 'Game launched. Close it to return here.'
                 })
-              } catch (err) {
+              } catch (err: unknown) {
                 toast({
                   title: 'FATAL: test_failed',
                   description: String(err),

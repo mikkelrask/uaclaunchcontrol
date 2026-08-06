@@ -19,6 +19,14 @@ export default defineConfig(
   },
   {
     files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['tailwind.config.ts', 'vitest.config.ts', 'src/audit.test.ts']
+        },
+        tsconfigRootDir: import.meta.dirname
+      }
+    },
     plugins: {
       'react-hooks': eslintPluginReactHooks,
       'react-refresh': eslintPluginReactRefresh
@@ -27,7 +35,9 @@ export default defineConfig(
       ...eslintPluginReactHooks.configs.recommended.rules,
       ...eslintPluginReactRefresh.configs.vite.rules,
       // React Compiler isn't enabled — this rule only flags compiler memoization skips
-      'react-hooks/incompatible-library': 'off'
+      'react-hooks/incompatible-library': 'off',
+      // Enforce typed catch variables
+      '@typescript-eslint/use-unknown-in-catch-callback-variable': 'error'
     }
   },
   eslintConfigPrettier

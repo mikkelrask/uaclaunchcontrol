@@ -284,7 +284,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
                 className="justify-start gap-3 text-app-primary hover:bg-app-hover h-12 px-4"
                 onClick={() => {
                   setIsDrawerOpen(false)
-                  api.reenableFirstRun().catch(console.error)
+                  api.reenableFirstRun().catch((err: unknown) => console.error(err))
                   setTimeout(
                     () => window.dispatchEvent(new CustomEvent('uac:replay-onboarding')),
                     150

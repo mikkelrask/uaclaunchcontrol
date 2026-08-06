@@ -41,7 +41,7 @@ export function useLaunchProtocol(protocol: IProtocol): {
             })
           }
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           console.error('Achievement dispatch failed:', err)
         })
     },

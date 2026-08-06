@@ -75,7 +75,7 @@ export function useRequiredModsActions(
 
         setLoadOrder((prev) => [...prev, newReq])
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to open file dialog:', error)
     }
   }, [loadOrder.length, setLoadOrder])

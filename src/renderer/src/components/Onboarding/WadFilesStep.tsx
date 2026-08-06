@@ -41,7 +41,7 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
       .then((versions) => {
         if (!cancelled) setDoomVersions(versions)
       })
-      .catch(console.error)
+      .catch((err: unknown) => console.error(err))
       .finally(() => {
         if (!cancelled) setIsLoadingVersions(false)
       })
@@ -80,7 +80,7 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
     try {
       const result = await api.downloadFreedoom(bundle)
       setDoomVersions(result.doomVersions)
-    } catch (e) {
+    } catch (e: unknown) {
       setFreedoomError(e instanceof Error ? e.message : 'Download failed')
     } finally {
       setFreedoomDownloading(null)

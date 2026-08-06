@@ -119,7 +119,7 @@ async function computeInitialStatsFromDisk(): Promise<IPlayerStats> {
       stats.totalProtocolsLaunched = launchedIds.size
       stats.maxModFilesInSingleProtocol = maxFiles
     }
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[playerService] Error scanning protocols for stats:', err)
   }
 
@@ -132,7 +132,7 @@ async function computeInitialStatsFromDisk(): Promise<IPlayerStats> {
         stats.totalCatalogFilesManaged = catalog.length
       }
     }
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[playerService] Error scanning catalog for stats:', err)
   }
 
@@ -149,7 +149,7 @@ async function computeInitialStatsFromDisk(): Promise<IPlayerStats> {
         stats.totalWadsImported = importedWads.length
       }
     }
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[playerService] Error scanning WADs for stats:', err)
   }
 
@@ -163,7 +163,7 @@ async function computeInitialStatsFromDisk(): Promise<IPlayerStats> {
         ...new Set(activePorts.map((p) => p.family).filter(Boolean))
       ]
     }
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[playerService] Error scanning source ports for stats:', err)
   }
 
@@ -203,7 +203,7 @@ async function readPlayerDataRaw(): Promise<IPlayerData> {
           debug('[playerService] Removed rank from settings.json')
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('[playerService] Error migrating rank from settings:', err)
     }
 
@@ -263,7 +263,7 @@ async function readPlayerDataRaw(): Promise<IPlayerData> {
     hasLoadedOnce = true
 
     return merged
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[playerService] Error reading playerData.json:', err)
     return { ...DEFAULT_PLAYER_DATA }
   }

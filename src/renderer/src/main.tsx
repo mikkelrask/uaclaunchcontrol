@@ -13,7 +13,7 @@ async function applyThemeFromSettings(): Promise<void> {
       document.documentElement.classList.remove('dark', 'light')
       document.documentElement.classList.add(settings.theme)
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to load theme from settings:', error)
   }
 }

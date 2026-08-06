@@ -64,7 +64,7 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
           hashValue,
           targetFileName: buildHashFileName(fileName, hashValue)
         })
-      } catch (error) {
+      } catch (error: unknown) {
         toast({
           title: 'FATAL: err_139',
           description: `Failed to prepare WAD import: ${error}`,
@@ -118,7 +118,7 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
               })
             }
           })
-          .catch((err) => {
+          .catch((err: unknown) => {
             console.error('Achievement dispatch failed:', err)
           })
       }

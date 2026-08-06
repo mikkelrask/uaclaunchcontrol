@@ -239,7 +239,7 @@ async function importFromJsonFile(
     for (const [hash, cfg] of entries) {
       try {
         await api.writeConfigContent(hash, cfg.content)
-      } catch (err) {
+      } catch (err: unknown) {
         console.warn(`Failed to write config ${hash}:`, err)
       }
     }
@@ -266,7 +266,7 @@ async function importFromJsonFile(
         game.screenshot.data
       )
       form.setValue('screenshotPath', fileName)
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Failed to import screenshot:', err)
     }
   } else if (game.screenshotPath) {
@@ -349,7 +349,7 @@ export function useJsonDrop({
         }
 
         await importFromJsonFile(droppedFile, form, versions, settings, setFiles, toast)
-      } catch (error) {
+      } catch (error: unknown) {
         const isJson = fileName.endsWith('.json')
         console.error(`Failed to parse ${isJson ? 'JSON' : '.bat'}:`, error)
         toast({

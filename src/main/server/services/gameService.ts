@@ -52,7 +52,7 @@ export class GameService {
     try {
       await storage.getProtocols()
       debug('Checked protocols directory.')
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error during initial protocol loading:', error)
     }
   }

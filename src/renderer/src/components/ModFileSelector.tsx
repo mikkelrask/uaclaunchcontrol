@@ -79,7 +79,7 @@ export function ModFileSelector({
       const result = await api.moveToModFolder(sourcePath)
       debug('[DEBUG] File moved successfully:', result)
       return result
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to move file:', error)
       toast({
         title: 'FATAL: copy.fail',
@@ -291,7 +291,7 @@ export function ModFileSelector({
               description: 'Mod file copied to your mods directory.',
               variant: 'default'
             })
-          } catch (err) {
+          } catch (err: unknown) {
             console.error('Failed to add to catalog eagerly:', err)
           }
         }
@@ -330,7 +330,7 @@ export function ModFileSelector({
       } else {
         debug('No file selected or dialog canceled')
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as Error
       console.error('Failed to open file dialog:', error)
       toast({

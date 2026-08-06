@@ -31,7 +31,7 @@ export function ProtocolScreenshotPicker({
           title: 'SYSTEM: screenshot_saved',
           description: 'New screenshot saved. Click Save to apply.'
         })
-      } catch (error) {
+      } catch (error: unknown) {
         toast({
           title: 'FATAL: upload_failed',
           description: `Failed to upload screenshot: ${error}`,

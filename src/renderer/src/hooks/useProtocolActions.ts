@@ -73,7 +73,7 @@ export function useProtocolActions({
             duration: t.duration as 6000 | 8000
           })
         }
-      } catch (err) {
+      } catch (err: unknown) {
         // Fire-and-forget: don't block the save flow on achievement failures
         console.error('Achievement dispatch failed:', err)
       }
@@ -167,7 +167,7 @@ export function useProtocolActions({
         title: 'SYSTEM: config_created',
         description: 'Fresh isolated config created. Click Save Changes to apply.'
       })
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         title: 'FATAL: config_create_failed',
         description: `Failed to create config: ${error}`,

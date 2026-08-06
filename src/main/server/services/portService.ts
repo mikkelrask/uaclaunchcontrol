@@ -469,7 +469,7 @@ async function extractDeb(debPath: string, destDir: string, family: string): Pro
 
     await fs.remove(tempDir)
     return destBin
-  } catch (err) {
+  } catch (err: unknown) {
     await fs.remove(tempDir).catch(() => {})
     throw new Error(`Failed to extract .deb: ${err instanceof Error ? err.message : String(err)}`)
   }

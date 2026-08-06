@@ -323,7 +323,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
       queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
       onChange(freshCatalog)
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         title: 'FATAL: add_failed',
         description: `Failed to add file: ${error}`,
@@ -471,7 +471,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             setZipScanResult(scan)
             setZipFilePath(selectedPath)
             setIsZipModalOpen(true)
-          } catch (error) {
+          } catch (error: unknown) {
             console.error(error)
             toast({
               title: 'FATAL: zip_scan_failed',
@@ -492,7 +492,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             setZipScanResult(scan)
             setZipFilePath(selectedPath)
             setIsZipModalOpen(true)
-          } catch (error) {
+          } catch (error: unknown) {
             console.error(error)
             toast({
               title: 'FATAL: rar_scan_failed',
@@ -537,7 +537,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
             updatedForm.loadOrder = [...(updatedForm.loadOrder || []), ...additionalReqs]
             setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
             setIsAddModalOpen(true)
-          } catch (error) {
+          } catch (error: unknown) {
             console.error('Failed to parse .bat:', error)
             toast({
               title: 'FATAL: bat_parse_failed',
@@ -554,7 +554,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           setIsAddModalOpen(true)
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to open file dialog:', error)
     }
   }
@@ -582,7 +582,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         setZipScanResult(scan)
         setZipFilePath(droppedPath)
         setIsZipModalOpen(true)
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(error)
         toast({
           title: 'FATAL: zip_scan_failed',
@@ -600,7 +600,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         setZipScanResult(scan)
         setZipFilePath(droppedPath)
         setIsZipModalOpen(true)
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(error)
         toast({
           title: 'FATAL: decompress_failed',
@@ -645,7 +645,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         updatedForm.loadOrder = [...(updatedForm.loadOrder || []), ...additionalReqs]
         setAddForm((prev) => ({ ...prev, ...updatedForm }) as typeof addForm)
         setIsAddModalOpen(true)
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to parse .bat:', error)
         toast({
           title: 'FATAL: bat_parse_failed',
@@ -693,7 +693,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           description: `Config template linked: ${configPath.split(/[\\/]/).pop()}`
         })
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to browse config file:', error)
       toast({
         title: 'FATAL: config_link_failed',
@@ -738,7 +738,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
           description: `Config template linked: ${configPath.split(/[\\/]/).pop()}`
         })
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to browse config file:', error)
       toast({
         title: 'FATAL: config_link_failed',
@@ -932,7 +932,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       const freshCatalog = await api.getModFileCatalog()
       onChange(freshCatalog)
       setSelectedFile(null)
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         title: 'FATAL: update_failed',
         description: `Failed to update: ${error}`,

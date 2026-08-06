@@ -182,7 +182,7 @@ export const InstallPage: React.FC = () => {
             duration: t.duration as 6000 | 8000
           })
         }
-      } catch (err) {
+      } catch (err: unknown) {
         // Fire-and-forget: don't block navigation on achievement failures
         console.error('Achievement dispatch failed:', err)
       }
@@ -260,7 +260,7 @@ export const InstallPage: React.FC = () => {
         const result = await api.downloadImage(data.screenshotPath, uniqueId)
         localScreenshotPath = result.fileName
         debug(`[DEBUG] Screenshot saved as: ${localScreenshotPath}`)
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to download screenshot, following with original URL:', error)
       }
     }
@@ -297,7 +297,7 @@ export const InstallPage: React.FC = () => {
           debug(`[DEBUG] Skipping catalog update for file with ID: ${file.id}`)
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('[DEBUG] Failed to update some catalog entries:', err)
     }
 
@@ -310,7 +310,7 @@ export const InstallPage: React.FC = () => {
       try {
         const result = await api.createBlankConfig(uniqueId)
         protocol.protocolConfig = { configFile: result.configFile }
-      } catch (error) {
+      } catch (error: unknown) {
         toast({
           title: 'FATAL: config_create_failed',
           description: `Failed to create isolated config: ${error}`,
@@ -329,7 +329,7 @@ export const InstallPage: React.FC = () => {
           title: 'SYSTEM: config_seeded',
           description: `Seeded config from "${templateFile.name || templateFile.fileName || 'unknown'}"`
         })
-      } catch (err) {
+      } catch (err: unknown) {
         console.warn('[DEBUG] Failed to seed config for protocol:', err)
         // Non-fatal — protocol still created without config
       }

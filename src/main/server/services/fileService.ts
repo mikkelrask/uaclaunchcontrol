@@ -91,7 +91,7 @@ export class FileService {
       let logStream: WriteStream | null = null
       try {
         if (logFilePath) logStream = createWriteStream(logFilePath, { flags: 'w' })
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('[fileService] Failed to open launch log file:', err)
       }
 
@@ -202,7 +202,7 @@ export class FileService {
           sendGameExited(code)
         })
       })
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error launching game:', error)
       return false
     }

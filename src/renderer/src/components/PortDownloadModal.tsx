@@ -35,7 +35,7 @@ export function PortDownloadModal({
     api
       .getPortReleases()
       .then(setReleases)
-      .catch((e) => setError(e.message))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false))
   }, [open])
 
@@ -57,7 +57,7 @@ export function PortDownloadModal({
       )
       onPortDownloaded(result)
       onOpenChange(false)
-    } catch (e) {
+    } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Download failed')
     } finally {
       setDownloadingTag(null)

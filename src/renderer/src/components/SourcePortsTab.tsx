@@ -59,7 +59,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
             )
         )
       )
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('Failed to scan for source ports:', e)
     } finally {
       setScanning(false)

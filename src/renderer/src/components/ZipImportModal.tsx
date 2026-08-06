@@ -363,7 +363,7 @@ export function ZipImportModal({
 
       onImportComplete()
       onOpenChange(false)
-    } catch (e) {
+    } catch (e: unknown) {
       toast({
         title: 'FATAL: err_586',
         description: (e as Error).message,

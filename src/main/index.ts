@@ -197,8 +197,8 @@ async function checkForUpdates(options: { manual?: boolean } = {}): Promise<void
 
     // AppImage or other - use electron-updater
     debug(`[AutoUpdater] Calling autoUpdater.checkForUpdates()`)
-    autoUpdater.checkForUpdates().catch((err) => {
-      debug(`[AutoUpdater] Error: ${err.message}`)
+    autoUpdater.checkForUpdates().catch((err: unknown) => {
+      debug(`[AutoUpdater] Error: ${err instanceof Error ? err.message : String(err)}`)
     })
   } else {
     debug('[AutoUpdater] Skipped - running in dev mode')
@@ -257,7 +257,7 @@ async function checkGitHubRelease(): Promise<void> {
         isManual: lastCheckWasManual
       })
     }
-  } catch (err) {
+  } catch (err: unknown) {
     debug(`[Updater] GitHub API error: ${(err as Error).message}`)
     if (lastCheckWasManual) {
       mainWindow?.webContents.send('update-status', {
@@ -304,7 +304,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('open-log-file', (_event, filePath: string) => shell.openPath(filePath))
 
   ipcMain.handle('download-update', () => {
-    autoUpdater.downloadUpdate().catch((err) => {
+    autoUpdater.downloadUpdate().catch((err: unknown) => {
       console.error('Error downloading update:', err)
     })
   })

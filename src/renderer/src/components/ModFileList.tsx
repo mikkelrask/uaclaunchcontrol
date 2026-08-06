@@ -25,7 +25,10 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
   } = useFileReorder(files, onChange)
 
   useEffect(() => {
-    api.getModFileCatalog().then(setCatalogFiles).catch(console.error)
+    api
+      .getModFileCatalog()
+      .then(setCatalogFiles)
+      .catch((err: unknown) => console.error(err))
   }, [])
 
   const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)

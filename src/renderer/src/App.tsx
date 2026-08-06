@@ -55,7 +55,10 @@ const App: React.FC = () => {
 
   // Fetch install type on mount
   useEffect(() => {
-    api.getInstallType().then(setInstallType).catch(console.error)
+    api
+      .getInstallType()
+      .then(setInstallType)
+      .catch((err: unknown) => console.error(err))
   }, [])
 
   // Global settings query for theme sync
@@ -171,7 +174,7 @@ const App: React.FC = () => {
                 duration: t.duration as 6000 | 8000
               })
             }
-          } catch (err) {
+          } catch (err: unknown) {
             console.error('Achievement dispatch failed:', err)
           }
         }
@@ -193,7 +196,7 @@ const App: React.FC = () => {
                 })
               }
             })
-            .catch((err) => {
+            .catch((err: unknown) => {
               console.error('Achievement dispatch failed:', err)
             })
         }
@@ -269,7 +272,7 @@ const App: React.FC = () => {
             duration: t.duration as 6000 | 8000
           })
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('Achievement dispatch failed:', err)
       }
     })

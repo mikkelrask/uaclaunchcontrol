@@ -89,7 +89,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     api
       .getVersion()
       .then(setAppVersion)
-      .catch(console.error)
+      .catch((err: unknown) => console.error(err))
 
     api
       .getSettings()
@@ -208,7 +208,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         title: 'SYSTEM: freedoom_installed',
         description: `Installed: ${result.installed.join(', ')}`
       })
-    } catch (e) {
+    } catch (e: unknown) {
       setFreedoomError(e instanceof Error ? e.message : 'Download failed')
     } finally {
       setFreedoomDownloading(null)
