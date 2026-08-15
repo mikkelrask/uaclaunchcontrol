@@ -594,7 +594,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         log.warn(`Registry search returned ${response.status}`)
         return res.json([])
       }
-      const rows = await response.json()
+      const payload = await response.json()
+      // Registry pagination wraps rows in `{ mods, total, limit, offset }`; older
+      // deployments return a bare array. Accept both shapes.
+      const rows = Array.isArray(payload) ? payload : (payload.mods ?? [])
       // Group rows by hash so each mod has an array of urls
       const grouped = new Map()
       for (const row of rows) {
