@@ -25,7 +25,7 @@ export const RegistryPage: React.FC = () => {
 
         <div className="flex-1 min-h-0">
           <iframe
-            src={`${REGISTRY_FRONTEND_URL}/protocols?embedded=1`}
+            src={`${REGISTRY_FRONTEND_URL}?embedded=1`}
             title="UAC Registry"
             className="w-full h-full border-0"
             allow="fullscreen"
