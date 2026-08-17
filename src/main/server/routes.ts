@@ -26,7 +26,7 @@ import { createLogger } from '@shared/logger'
 const log = createLogger('routes')
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  app.use(express.json())
+  app.use(express.json({ limit: '10mb' }))
   const httpServer = createServer(app)
 
   // Initialize services and load protocols from config
