@@ -194,6 +194,11 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
             INSTALL
           </span>
         </Link>
+        <Link href="/registry">
+          <span className={`nav-tab ${location === '/registry' ? 'active' : ''} cursor-pointer`}>
+            REGISTRY
+          </span>
+        </Link>
       </nav>
 
       {/* User Profile */}

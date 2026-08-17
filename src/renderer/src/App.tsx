@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 
 import GamesPage from '@/pages/GamesPage'
 import InstallPage from '@/pages/InstallPage'
+import RegistryPage from '@/pages/RegistryPage'
 import NotFound from '@/pages/not-found'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api'
@@ -32,6 +33,7 @@ const AppRouter: React.FC = () => {
       <Switch>
         <Route path="/" component={GamesPage} />
         <Route path="/install" component={InstallPage} />
+        <Route path="/registry" component={RegistryPage} />
         <Route component={NotFound} />
       </Switch>
     </Router>

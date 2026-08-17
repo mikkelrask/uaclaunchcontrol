@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { matchImportFiles } from './useJsonDrop'
+import { matchImportFiles } from './applyModpackImport'
 import type { IModFile } from '@shared/schema'
 import type { UacModpackImport } from './types'
 
