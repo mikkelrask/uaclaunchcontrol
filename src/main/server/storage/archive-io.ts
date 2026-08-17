@@ -3,7 +3,7 @@ import { createExtractorFromFile } from 'node-unrar-js'
 import fs from 'fs-extra'
 import path from 'path'
 import os from 'os'
-import extractZip from 'extract-zip'
+import { open, type Entry, type ZipFile } from 'yauzl'
 import type { IModFile } from '@shared/schema'
 import { CONFIG_DIR, MOD_FILE_CATALOG } from './paths'
 import { resolvePath, computeFileHash, getSettings } from './core'
@@ -213,6 +213,86 @@ async function createExtractDir(): Promise<string> {
   return tempExtractDir
 }
 
+const ZIP_SYMLINK_MODE = 0o120000 // S_IFLNK
+
+/**
+ * Stream-extract a zip archive into `destDir`.
+ *
+ * Replaces extract-zip, which extracts symlink entries without validating
+ * their targets (GHSA-jmr9-qjv8-65gv — a crafted archive could plant a
+ * symlink pointing outside the extraction directory). Here every entry is
+ * checked to stay inside `destDir` and symlinks are rejected outright —
+ * mod archives never legitimately contain them.
+ *
+ * Still streams entries via yauzl's random-access fd reads instead of
+ * reading the whole archive into a Buffer, so it isn't bound by Node's
+ * ~2GiB readFileSync limit (adm-zip failed on archives >2GiB).
+ */
+export async function extractZipSafe(zipFilePath: string, destDir: string): Promise<void> {
+  const resolvedDest = path.resolve(destDir)
+  const zipfile = await new Promise<ZipFile>((resolve, reject) => {
+    open(zipFilePath, { lazyEntries: true }, (err, zip) => {
+      if (err) reject(err)
+      else resolve(zip)
+    })
+  })
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      zipfile.on('error', reject)
+      zipfile.on('end', resolve)
+
+      const fail = (error: Error): void => {
+        zipfile.close()
+        reject(error)
+      }
+
+      zipfile.on('entry', (entry: Entry) => {
+        const destPath = path.join(resolvedDest, entry.fileName)
+        const relative = path.relative(resolvedDest, destPath)
+        if (
+          relative === '..' ||
+          relative.startsWith(`..${path.sep}`) ||
+          path.isAbsolute(relative)
+        ) {
+          fail(new Error(`Archive entry escapes extraction directory: ${entry.fileName}`))
+          return
+        }
+        if (((entry.externalFileAttributes >>> 16) & 0o170000) === ZIP_SYMLINK_MODE) {
+          fail(new Error(`Archive contains a symlink, which is not allowed: ${entry.fileName}`))
+          return
+        }
+        if (entry.fileName.endsWith('/')) {
+          fs.ensureDir(destPath)
+            .then(() => zipfile.readEntry())
+            .catch(reject)
+          return
+        }
+        fs.ensureDir(path.dirname(destPath))
+          .then(() => {
+            zipfile.openReadStream(entry, (streamErr, readStream) => {
+              if (streamErr || !readStream) {
+                fail(streamErr ?? new Error(`Failed to open archive entry: ${entry.fileName}`))
+                return
+              }
+              readStream.on('error', reject)
+              const out = fs.createWriteStream(destPath)
+              out.on('error', reject)
+              out.on('close', () => zipfile.readEntry())
+              readStream.pipe(out)
+            })
+          })
+          .catch(reject)
+      })
+
+      zipfile.readEntry()
+    })
+  } catch (error) {
+    zipfile.close()
+    throw error
+  }
+}
+
 /** Scan and extract a .zip archive, returning metadata about its contents. */
 export async function unzipAndScan(zipFilePath: string): Promise<IUnzipScanResult> {
   const resolvedZipPath = resolvePath(zipFilePath)
@@ -223,10 +303,7 @@ export async function unzipAndScan(zipFilePath: string): Promise<IUnzipScanResul
   const tempExtractDir = await createExtractDir()
 
   try {
-    // extract-zip streams entries via yauzl instead of reading the whole
-    // archive into a single Buffer, so it isn't bound by Node's ~2GiB
-    // readFileSync limit (unlike adm-zip, which failed on archives >2GiB).
-    await extractZip(resolvedZipPath, { dir: tempExtractDir })
+    await extractZipSafe(resolvedZipPath, tempExtractDir)
     return await scanExtractedArchive(tempExtractDir)
   } catch (error: unknown) {
     await fs.remove(tempExtractDir).catch(() => {})
