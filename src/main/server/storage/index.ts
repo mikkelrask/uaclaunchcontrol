@@ -3,6 +3,9 @@
 // Path constants
 export { MODS_DIR, IMAGES_DIR, CFGS_DIR, LOGS_DIR, logFilePathFor } from './paths'
 
+// Image downscaling (screenshots stay export-safe)
+export { resizeImageIfNeeded, MAX_LONGEST_EDGE, MAX_SAFE_BYTES } from './image-resize'
+
 // Core init + settings
 export {
   getIsFirstRun,
