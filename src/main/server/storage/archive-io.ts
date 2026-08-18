@@ -85,7 +85,7 @@ async function scanDirRecursive(dir: string, baseDir: string = dir): Promise<str
   return results
 }
 
-function getFileType(fileName: string): string {
+export function getFileType(fileName: string): string {
   const ext = path.extname(fileName).toUpperCase()
   if (ext === '.ZIP') return 'ZIP'
   if (ext === '.PK3' || ext === '.PK7' || ext === '.IPK3') return 'PK3'

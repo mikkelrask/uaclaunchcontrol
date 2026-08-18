@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { createLogger } from '@shared/logger'
+import type { ModDownloadEvent } from '@shared/modDownload'
 
 const log = createLogger('preload')
 const api = {
@@ -26,6 +27,9 @@ const api = {
   ) => ipcRenderer.on('game-event-detected', (_event, data) => callback(data)),
   onUpdateStatus: (callback: (data: unknown) => void) =>
     ipcRenderer.on('update-status', (_event, data) => callback(data)),
+  onModDownloadStatus: (callback: (data: ModDownloadEvent) => void) =>
+    ipcRenderer.on('mod-download-status', (_event, data) => callback(data)),
+  cancelModDownload: (id: string) => ipcRenderer.invoke('cancel-mod-download', id),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),

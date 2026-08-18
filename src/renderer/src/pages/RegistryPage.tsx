@@ -13,7 +13,11 @@ import { useRegistryInstallHandoff } from '@/lib/install/registryInstall'
  */
 export const RegistryPage: React.FC = () => {
   const [, setLocation] = useLocation()
-  const handleInstall = useCallback(() => setLocation('/install'), [setLocation])
+  // Explicit tab intent: wouter's navigate() keeps any pre-existing ?tab=
+  // (e.g. a previous visit's ?tab=files) — without stating the target tab,
+  // a registry install would land back on the stale tab instead of the
+  // Configuration default where the pre-filled form lives.
+  const handleInstall = useCallback(() => setLocation('/install?tab=install'), [setLocation])
   useRegistryInstallHandoff(handleInstall)
 
   return (

@@ -18,6 +18,7 @@ import { IAppSettings, IInstallType, IProtocol } from '@shared/schema'
 import { debug } from '@shared/debug'
 import { useAutoUpdater } from '@/hooks/useAutoUpdater'
 import UpdateModal from '@/components/UpdateModal'
+import { ModDownloadManager } from '@/components/ModDownloadManager'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { OnboardingWizard } from '@/components/Onboarding'
 import { CrashLogDialog, type CrashLogData } from '@/components/CrashLogDialog'
@@ -286,6 +287,7 @@ const App: React.FC = () => {
   return (
     <TooltipProvider>
       <Toaster />
+      <ModDownloadManager />
       <UpdateModal
         isOpen={isUpdateModalOpen}
         onClose={() => setIsUpdateModalOpen(false)}
