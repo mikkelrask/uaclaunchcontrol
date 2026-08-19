@@ -37,8 +37,9 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
   } = useFileReorder(files, onChange)
 
   // Re-hydrate entries that lost their path (e.g. a missing file re-downloaded
-  // via its open-link icon): once the catalog refreshes, fill empty filePath /
-  // url from the matching catalog entry. Never overwrites existing values.
+  // via its open-link icon): once the catalog refreshes, fill empty filePath,
+  // url and registry metadata (name/version/category) from the matching
+  // catalog entry. Never overwrites existing values.
   useEffect(() => {
     if (catalogFiles.length === 0) return
     let changed = false
@@ -49,7 +50,15 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
       )
       if (!match || !match.filePath) return f
       changed = true
-      return { ...f, filePath: match.filePath, url: f.url || match.url || '' }
+      return {
+        ...f,
+        filePath: match.filePath,
+        url: f.url || match.url || '',
+        name: f.name || match.name || '',
+        version: f.version || match.version || '',
+        category: f.category || match.category || '',
+        sidecarOnly: f.sidecarOnly ?? match.sidecarOnly ?? false
+      }
     })
     if (changed) onChange(updated)
   }, [catalogFiles, files, onChange])

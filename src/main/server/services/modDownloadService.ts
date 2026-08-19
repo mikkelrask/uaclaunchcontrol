@@ -60,16 +60,28 @@ function pickBestUrl(urls: { url: string; domain: string }[] | undefined): strin
   return moddb ? moddb.url : urls[0].url
 }
 
-/** Best-effort registry enrichment for a downloaded file's hash. */
-async function lookupRegistryMod(hash: string): Promise<RegistryMod | null> {
+/**
+ * Best-effort registry enrichment for a downloaded file: exact hash lookup
+ * first, then (when the hash misses — e.g. a release asset was re-uploaded
+ * with different bytes while the registry still keys the entry by the
+ * original hash) an exact download-URL lookup, which is the stable identity.
+ */
+async function lookupRegistryMod(hash: string, sourceUrl?: string): Promise<RegistryMod | null> {
   try {
     const settings = await getSettings()
     if (!settings.registryLookupEnabled) return null
-    const response = await fetch(`${REGISTRY_API_URL}/mod/${hash}`, {
+    const byHash = await fetch(`${REGISTRY_API_URL}/mod/${hash}`, {
       signal: AbortSignal.timeout(REGISTRY_LOOKUP_TIMEOUT_MS)
     })
-    if (!response.ok) return null
-    return (await response.json()) as RegistryMod
+    if (byHash.ok) return (await byHash.json()) as RegistryMod
+    if (sourceUrl) {
+      const byUrl = await fetch(
+        `${REGISTRY_API_URL}/api/mods/by-url?url=${encodeURIComponent(sourceUrl)}`,
+        { signal: AbortSignal.timeout(REGISTRY_LOOKUP_TIMEOUT_MS) }
+      )
+      if (byUrl.ok) return (await byUrl.json()) as RegistryMod
+    }
+    return null
   } catch (err: unknown) {
     log.error('Registry lookup failed for', hash, err)
     return null
@@ -330,7 +342,7 @@ async function finalizeDownload(task: DownloadTask): Promise<void> {
     // Enrich from the registry (display name, version, category, preferred
     // url) — same enrichment the ZipImportModal applies on archive imports.
     // Falls back to filename-derived values when the hash isn't registered.
-    const registryMod = await lookupRegistryMod(hashValue)
+    const registryMod = await lookupRegistryMod(hashValue, task.url)
     const catalogEntry = await addModFileToCatalog({
       filePath: destPath,
       fileName: path.basename(destPath),
