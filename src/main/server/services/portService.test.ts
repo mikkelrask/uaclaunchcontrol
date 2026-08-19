@@ -44,6 +44,27 @@ describe('pickGzdoomAsset', () => {
     expect(pickGzdoomAsset(assets)?.name).toBe('gzdoom-windows.zip')
   })
 
+  it('picks Windows-64bit.zip over the pdb .7z on Windows', async () => {
+    setPlatform('win32')
+    vi.resetModules()
+    const { pickGzdoomAsset } = await import('./portService')
+    // Real GZDoom asset order: the PDB archive is listed before the build zip.
+    const assets = makeAssets([
+      'gzdoom-4-9-0-macOS.zip',
+      'gzdoom-4-9-0-Windows-64bit-pdb.7z',
+      'gzdoom-4-9-0-Windows-64bit.zip'
+    ])
+    expect(pickGzdoomAsset(assets)?.name).toBe('gzdoom-4-9-0-Windows-64bit.zip')
+  })
+
+  it('never picks a pdb .7z as the build', async () => {
+    setPlatform('win32')
+    vi.resetModules()
+    const { pickGzdoomAsset } = await import('./portService')
+    const assets = makeAssets(['gzdoom-4-14-2-windows-pdb.7z', 'gzdoom-4-14-2-windows.zip'])
+    expect(pickGzdoomAsset(assets)?.name).toBe('gzdoom-4-14-2-windows.zip')
+  })
+
   it('picks macos.zip on macOS', async () => {
     setPlatform('darwin')
     vi.resetModules()
