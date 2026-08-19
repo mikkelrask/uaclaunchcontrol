@@ -14,7 +14,7 @@ import { Upload } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import { CATEGORIES } from '@shared/categories'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ZipImportModal } from '@/components/ZipImportModal'
 import { useFileImport } from '@/hooks/useFileImport'
 import { useCatalogAdd } from '@/hooks/useCatalogAdd'
@@ -37,6 +37,7 @@ interface CatalogManagerProps {
 
 export function CatalogManager({ files, onChange }: CatalogManagerProps): React.ReactElement {
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const { data: catalogFiles = [] } = useQuery({
     queryKey: ['/api/mod-files/catalog'],
     queryFn: () => api.getModFileCatalog()
@@ -180,6 +181,11 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     try {
       await api.deleteFromCatalog(file.id, deleteFromDisk)
       handleRemoveFile(file.id)
+      // The catalog query caches with staleTime: Infinity — without
+      // invalidating, other views (install page, file lists, re-hydration)
+      // keep seeing the deleted entry until a full reload.
+      void queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog'] })
+      void queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
       const extra = deleteFromDisk ? ' and its file from disk' : ''
       toast({
         title: 'SYSTEM: remove_success',
