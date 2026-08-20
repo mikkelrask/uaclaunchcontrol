@@ -5,6 +5,12 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { startServer } from './server'
 import { autoUpdater } from 'electron-updater'
 import { getSettings } from './server/storage'
+import {
+  isGithubReleaseAsset,
+  isModdbStartPage,
+  registerModDownloadSession,
+  startModDownload
+} from './server/services/modDownloadService'
 import { IInstallType } from '@shared/schema'
 import { debug } from '@shared/debug'
 
@@ -108,7 +114,17 @@ function createWindow(): void {
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    try {
+      const url = new URL(details.url)
+      if (isGithubReleaseAsset(url) || isModdbStartPage(url)) {
+        void startModDownload(details.url)
+      } else {
+        shell.openExternal(details.url)
+      }
+    } catch {
+      // Malformed URL — keep today's external-open behavior.
+      shell.openExternal(details.url)
+    }
     return { action: 'deny' }
   })
 
@@ -335,6 +351,7 @@ app.whenReady().then(async () => {
   })
 
   createWindow()
+  if (mainWindow) registerModDownloadSession(mainWindow)
 
   setupAutoUpdater()
   checkForUpdates()

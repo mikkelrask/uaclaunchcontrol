@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Select,
@@ -62,6 +62,33 @@ export function ModFileSelector({
   })
 
   const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)
+
+  // Re-hydrate entries that lost their path (e.g. a missing file re-downloaded
+  // via its open-link icon): once the catalog refreshes, fill empty filePath,
+  // url and registry metadata (name/version/category) from the matching
+  // catalog entry. Never overwrites existing values.
+  useEffect(() => {
+    if (catalogFiles.length === 0) return
+    let changed = false
+    const updated = value.map((f) => {
+      if (f.filePath) return f
+      const match = catalogFiles.find(
+        (c) => (f.hashValue && c.hashValue === f.hashValue) || c.fileName === f.fileName
+      )
+      if (!match || !match.filePath) return f
+      changed = true
+      return {
+        ...f,
+        filePath: match.filePath,
+        url: f.url || match.url || '',
+        name: f.name || match.name || '',
+        version: f.version || match.version || '',
+        category: f.category || match.category || '',
+        sidecarOnly: f.sidecarOnly ?? match.sidecarOnly ?? false
+      }
+    })
+    if (changed) onChange(updated)
+  }, [catalogFiles, value, onChange])
 
   const handleAddFile = (): void => {
     const newFile: IModFile = {

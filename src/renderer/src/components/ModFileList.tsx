@@ -1,4 +1,5 @@
-import React, { Fragment, useState, useEffect } from 'react'
+import React, { Fragment, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { IModFile, InsertModFile } from '@shared/schema'
 import { Trash, GripVertical, Plus, ExternalLink } from 'lucide-react'
@@ -7,16 +8,24 @@ import { api } from '@/api'
 import { useFileReorder } from '@/hooks/useFileReorder'
 import { useToast } from '@/hooks/use-toast'
 
-import { createLogger } from '@shared/logger'
-
-const log = createLogger('ModFileListx')
 interface ModFileListProps {
   files: IModFile[] | InsertModFile[]
   onChange: (files: IModFile[] | InsertModFile[]) => void
 }
 
+// Files without a hash (e.g. manually browsed with no computed hash yet)
+// still need a stable React key — mint one only in that case, never as a
+// way to dodge a real duplicate. Module scope: keeps the impure calls out of
+// the component body (react-hooks/purity).
+function generateFallbackId(): string {
+  return `${Date.now()}-${Math.floor(Math.random() * 1000)}`
+}
+
 export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => {
-  const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
+  const { data: catalogFiles = [] } = useQuery({
+    queryKey: ['/api/mod-files/catalog'],
+    queryFn: () => api.getModFileCatalog()
+  })
   const { toast } = useToast()
   const {
     draggedIndex,
@@ -27,19 +36,34 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
     handleDragEnd
   } = useFileReorder(files, onChange)
 
+  // Re-hydrate entries that lost their path (e.g. a missing file re-downloaded
+  // via its open-link icon): once the catalog refreshes, fill empty filePath,
+  // url and registry metadata (name/version/category) from the matching
+  // catalog entry. Never overwrites existing values.
   useEffect(() => {
-    api
-      .getModFileCatalog()
-      .then(setCatalogFiles)
-      .catch((err: unknown) => log.error(err))
-  }, [])
+    if (catalogFiles.length === 0) return
+    let changed = false
+    const updated = files.map((f) => {
+      if (f.filePath) return f
+      const match = catalogFiles.find(
+        (c) => (f.hashValue && c.hashValue === f.hashValue) || c.fileName === f.fileName
+      )
+      if (!match || !match.filePath) return f
+      changed = true
+      return {
+        ...f,
+        filePath: match.filePath,
+        url: f.url || match.url || '',
+        name: f.name || match.name || '',
+        version: f.version || match.version || '',
+        category: f.category || match.category || '',
+        sidecarOnly: f.sidecarOnly ?? match.sidecarOnly ?? false
+      }
+    })
+    if (changed) onChange(updated)
+  }, [catalogFiles, files, onChange])
 
   const selectableFiles = catalogFiles.filter((f) => !f.sidecarOnly)
-
-  // Files without a hash (e.g. manually browsed with no computed hash yet)
-  // still need a stable React key — mint one only in that case, never as a
-  // way to dodge a real duplicate.
-  const generateFallbackId = (): string => `${Date.now()}-${Math.floor(Math.random() * 1000)}`
 
   const removeFile = (fileHash: string): void => {
     onChange(files.filter((f) => f.hashValue !== fileHash))

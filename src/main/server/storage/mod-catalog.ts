@@ -14,6 +14,7 @@ import {
   wadNamePriority
 } from './core'
 import { syncDoomVersions } from './doom-versions'
+import { resizeImageIfNeeded } from './image-resize'
 
 import { createLogger } from '@shared/logger'
 
@@ -204,16 +205,20 @@ export async function importWadFile(
   }
 }
 
-// Copy a local image file to the images directory
+// Copy a local image file to the images directory, downscaling it if large so
+// protocol exports (which embed screenshots as base64) stay under 2MB.
 export async function copyImageToImages(sourcePath: string): Promise<string> {
   try {
     const fileName = sourcePath.split(/[\\/]/).pop() || `image_${Date.now()}`
     const timestamp = Date.now()
-    const uniqueFileName = `${timestamp}_${fileName}`
+    const sourceExt = path.extname(fileName)
+    const { buffer, ext } = await resizeImageIfNeeded(await fs.readFile(sourcePath), sourceExt)
+    const baseName = sourceExt ? fileName.slice(0, -sourceExt.length) : fileName
+    const uniqueFileName = `${timestamp}_${baseName}${ext}`
     const destPath = path.join(IMAGES_DIR, uniqueFileName)
 
     await fs.ensureDir(IMAGES_DIR)
-    await fs.copy(sourcePath, destPath)
+    await fs.writeFile(destPath, buffer)
 
     debug(`Image copied to: ${destPath}`)
     return uniqueFileName
@@ -246,10 +251,14 @@ export async function downloadImage(url: string, protocolId: string): Promise<st
 
     if (extension.length > 5) extension = '.jpg'
 
-    const fileName = `${protocolId}-poster${extension}`
+    const { buffer, ext } = await resizeImageIfNeeded(
+      Buffer.from(await res.arrayBuffer()),
+      extension
+    )
+    const fileName = `${protocolId}-poster${ext}`
     const filePath = path.join(IMAGES_DIR, fileName)
 
-    await fs.writeFile(filePath, Buffer.from(await res.arrayBuffer()))
+    await fs.writeFile(filePath, buffer)
 
     debug(`Image downloaded via fetch and saved to: ${filePath}`)
     return fileName // Return just the filename
@@ -279,14 +288,18 @@ export async function readScreenshotAsBase64(
 }
 
 // Write a base64-encoded image (from a modpack import) into the images
-// directory, mirroring copyImageToImages' unique-filename scheme.
+// directory, mirroring copyImageToImages' unique-filename scheme and applying
+// the same downscaling so the file stays export-safe.
 export async function writeScreenshotFromBase64(fileName: string, data: string): Promise<string> {
   const safeName = path.basename(fileName)
-  const uniqueFileName = `${Date.now()}_${safeName}`
+  const ext = path.extname(safeName)
+  const { buffer, ext: outExt } = await resizeImageIfNeeded(Buffer.from(data, 'base64'), ext)
+  const baseName = ext ? safeName.slice(0, -ext.length) : safeName
+  const uniqueFileName = `${Date.now()}_${baseName}${outExt}`
   const destPath = path.join(IMAGES_DIR, uniqueFileName)
 
   await fs.ensureDir(IMAGES_DIR)
-  await fs.writeFile(destPath, Buffer.from(data, 'base64'))
+  await fs.writeFile(destPath, buffer)
 
   debug(`Screenshot imported to: ${destPath}`)
   return uniqueFileName

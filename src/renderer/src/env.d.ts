@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 import { IUpdateInfo, IVersionData } from '@shared/schema'
+import { ModDownloadEvent } from '@shared/modDownload'
 
 interface ICustomAPI {
   onVersionsUpdated: (callback: (data?: IVersionData) => void) => void
@@ -23,6 +24,8 @@ interface ICustomAPI {
     ) => void
   ) => void
   onUpdateStatus: (callback: (data: IUpdateInfo) => void) => void
+  onModDownloadStatus: (callback: (data: ModDownloadEvent) => void) => void
+  cancelModDownload: (id: string) => Promise<void>
   getAppVersion: () => Promise<string>
   checkForUpdates: () => Promise<void>
   downloadUpdate: () => Promise<void>

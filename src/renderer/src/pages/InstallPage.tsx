@@ -18,6 +18,8 @@ import { api } from '@/api'
 import { formSchema } from '@/lib/install/schema'
 import { useFileReorder } from '@/hooks/useFileReorder'
 import { useJsonDrop } from '@/lib/install/useJsonDrop'
+import { applyModpackImport } from '@/lib/install/applyModpackImport'
+import { consumePendingProtocolImport } from '@/lib/install/pendingProtocolImport'
 import { useWadImport } from '@/lib/install/useWadImport'
 import { ConfigurationTab } from '@/components/install/ConfigurationTab'
 import { WadImportTab } from '@/components/install/WadImportTab'
@@ -125,6 +127,36 @@ export const InstallPage: React.FC = () => {
       form.setValue('doomVersionId', defaultId)
     }
   }, [settings, versions, form])
+
+  // Registry handoff: "Install Protocol" in the registry page stashes the
+  // parsed export and navigates here; apply it like a JSON drop once
+  // versions/settings have loaded (needed to match port and version).
+  useEffect(() => {
+    if (versions.length === 0 || !(settings as IAppSettings)?.sourcePorts?.length) return
+    const pending = consumePendingProtocolImport()
+    if (!pending) return
+    void applyModpackImport(pending, {
+      form,
+      versions,
+      settings: settings as IAppSettings,
+      setFiles,
+      toast
+    })
+      .then(() => {
+        toast({
+          title: 'SYSTEM: registry_import',
+          description: `Imported "${pending.game.title}" from the registry — review, then create.`
+        })
+      })
+      .catch((err: unknown) => {
+        log.error('Failed to apply registry import:', err)
+        toast({
+          title: 'FATAL: registry_import_failed',
+          description: 'Failed to apply the registry protocol.',
+          variant: 'destructive'
+        })
+      })
+  }, [versions, settings, form, toast, setFiles])
 
   // Compute launch command preview
   const watchedSourcePortId = form.watch('sourcePortId')

@@ -17,7 +17,12 @@ const allowedOrigin = (origin: string | undefined): boolean => {
 }
 
 expressApp.use(cors({ origin: (origin, cb) => cb(null, allowedOrigin(origin)) }))
-expressApp.use(express.json())
+// 10mb JSON limit: protocol exports embed screenshots as base64 (up to
+// ~1.9MB for the 800px downscaled images, more for older pre-downscale
+// exports), which exceeds the 100kb express default and silently broke
+// screenshot imports. Localhost-only + CORS-restricted, so a larger limit
+// is safe.
+expressApp.use(express.json({ limit: '10mb' }))
 expressApp.use(express.urlencoded({ extended: false }))
 
 expressApp.use((req: Request, res: Response, next: NextFunction) => {

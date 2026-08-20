@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 
 import GamesPage from '@/pages/GamesPage'
 import InstallPage from '@/pages/InstallPage'
+import RegistryPage from '@/pages/RegistryPage'
 import NotFound from '@/pages/not-found'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api'
@@ -17,6 +18,7 @@ import { IAppSettings, IInstallType, IProtocol } from '@shared/schema'
 import { debug } from '@shared/debug'
 import { useAutoUpdater } from '@/hooks/useAutoUpdater'
 import UpdateModal from '@/components/UpdateModal'
+import { ModDownloadManager } from '@/components/ModDownloadManager'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { OnboardingWizard } from '@/components/Onboarding'
 import { CrashLogDialog, type CrashLogData } from '@/components/CrashLogDialog'
@@ -32,6 +34,7 @@ const AppRouter: React.FC = () => {
       <Switch>
         <Route path="/" component={GamesPage} />
         <Route path="/install" component={InstallPage} />
+        <Route path="/registry" component={RegistryPage} />
         <Route component={NotFound} />
       </Switch>
     </Router>
@@ -284,6 +287,7 @@ const App: React.FC = () => {
   return (
     <TooltipProvider>
       <Toaster />
+      <ModDownloadManager />
       <UpdateModal
         isOpen={isUpdateModalOpen}
         onClose={() => setIsUpdateModalOpen(false)}

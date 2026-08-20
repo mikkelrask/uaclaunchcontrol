@@ -189,9 +189,16 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
         >
           {databaseLink?.name ?? 'MODDB'}
         </a>
-        <Link href="/install">
-          <span className={`nav-tab ${location === '/install' ? 'active' : ''} cursor-pointer`}>
+        <Link href="/install?tab=install">
+          <span
+            className={`nav-tab ${location.split('?')[0] === '/install' ? 'active' : ''} cursor-pointer`}
+          >
             INSTALL
+          </span>
+        </Link>
+        <Link href="/registry">
+          <span className={`nav-tab ${location === '/registry' ? 'active' : ''} cursor-pointer`}>
+            REGISTRY
           </span>
         </Link>
       </nav>

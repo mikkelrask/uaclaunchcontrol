@@ -76,8 +76,10 @@ function pickAsset(
 export function pickGzdoomAsset(assets: GitHubAsset[]): GitHubAsset | null {
   if (isWindows) {
     return pickAsset(assets, [
-      { match: (n) => /windows\.zip$/i.test(n), rank: 10 },
-      { match: (n) => /windows/i.test(n), rank: 5 }
+      // GZDoom names builds both gzdoom-windows.zip and gzdoom-4-x-x-Windows-64bit.zip;
+      // the .7z assets are PDB symbol archives, never the build.
+      { match: (n) => /windows.*\.zip$/i.test(n) && !/pdb/i.test(n), rank: 10 },
+      { match: (n) => /windows/i.test(n) && !/pdb/i.test(n), rank: 5 }
     ])
   }
   if (isMac) {
