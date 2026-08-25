@@ -5,12 +5,8 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { startServer } from './server'
 import { autoUpdater } from 'electron-updater'
 import { getSettings } from './server/storage'
-import {
-  isGithubReleaseAsset,
-  isModdbStartPage,
-  registerModDownloadSession,
-  startModDownload
-} from './server/services/modDownloadService'
+import { registerModDownloadSession, startModDownload } from './server/services/modDownloadService'
+import { isGithubReleaseAsset, isModdbStartPage } from '@shared/mod-download-url'
 import { IInstallType } from '@shared/schema'
 import { debug } from '@shared/debug'
 

@@ -19,14 +19,13 @@ import { getModFileCatalog, addModFileToCatalog } from '../storage/mod-catalog'
 import { computeFileHashOrThrow, getSettings } from '../storage/core'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import type { ModDownloadEvent } from '@shared/modDownload'
+import { isGithubReleaseAsset, isModdbStartPage } from '@shared/mod-download-url'
 import { debug } from '@shared/debug'
 import { createLogger } from '@shared/logger'
 
 const log = createLogger('modDownload')
 
 const DOWNLOADS_DIR = path.join(CONFIG_DIR, 'downloads')
-const GITHUB_RELEASE_RE = /^\/[^/]+\/[^/]+\/releases\/download\//
-const MODDB_START_RE = /^\/(?:downloads|addons)\/start\//
 const REGISTRY_LOOKUP_TIMEOUT_MS = 5000
 
 /** Registry mod shape — mirrors the renderer's IRegistryMod (api.ts). */
@@ -89,20 +88,6 @@ async function lookupRegistryMod(hash: string, sourceUrl?: string): Promise<Regi
 }
 const GITHUB_GUARD_MS = 30_000 // release URL never fires a download (e.g. 404) → fallback
 const MODDB_GUARD_MS = 45_000 // ModDB countdown + page load budget → fallback
-
-/** GitHub release-asset URLs: github.com/<owner>/<repo>/releases/download/<tag>/<asset> */
-export function isGithubReleaseAsset(url: URL): boolean {
-  const host = url.hostname.toLowerCase()
-  return (
-    (host === 'github.com' || host === 'www.github.com') && GITHUB_RELEASE_RE.test(url.pathname)
-  )
-}
-
-/** ModDB download start pages: moddb.com/downloads/start/<id> and addons/start/<id> */
-export function isModdbStartPage(url: URL): boolean {
-  const host = url.hostname.toLowerCase()
-  return (host === 'moddb.com' || host === 'www.moddb.com') && MODDB_START_RE.test(url.pathname)
-}
 
 interface DownloadTask {
   id: string

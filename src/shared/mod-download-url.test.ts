@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isGithubReleaseAsset, isModdbStartPage } from './modDownloadService'
+import { isGithubReleaseAsset, isModdbStartPage, isInAppDownloadUrl } from './mod-download-url'
 
 describe('isGithubReleaseAsset', () => {
   it('accepts github.com release download asset URLs', () => {
@@ -27,7 +27,7 @@ describe('isGithubReleaseAsset', () => {
     ).toBe(false)
   })
 
-  it('rejects codeload.github.com hosts', () => {
+  it('rejects codeload archive links', () => {
     expect(
       isGithubReleaseAsset(new URL('https://codeload.github.com/owner/repo/zip/refs/heads/main'))
     ).toBe(false)
@@ -63,5 +63,25 @@ describe('isModdbStartPage', () => {
 
   it('rejects other hosts with a matching path', () => {
     expect(isModdbStartPage(new URL('https://example.com/downloads/start/12345'))).toBe(false)
+  })
+})
+
+describe('isInAppDownloadUrl', () => {
+  it('accepts github release asset strings', () => {
+    expect(isInAppDownloadUrl('https://github.com/a/b/releases/download/v1/mod.pk3')).toBe(true)
+  })
+
+  it('accepts moddb start-page strings', () => {
+    expect(isInAppDownloadUrl('https://www.moddb.com/downloads/start/123')).toBe(true)
+  })
+
+  it('rejects ordinary URLs', () => {
+    expect(isInAppDownloadUrl('https://example.com/mod.pk3')).toBe(false)
+    expect(isInAppDownloadUrl('https://www.moddb.com/mods/foo')).toBe(false)
+  })
+
+  it('returns false for malformed URLs instead of throwing', () => {
+    expect(isInAppDownloadUrl('not a url')).toBe(false)
+    expect(isInAppDownloadUrl('')).toBe(false)
   })
 })

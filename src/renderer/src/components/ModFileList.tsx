@@ -2,7 +2,8 @@ import React, { Fragment, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { IModFile, InsertModFile } from '@shared/schema'
-import { Trash, GripVertical, Plus, ExternalLink } from 'lucide-react'
+import { isInAppDownloadUrl } from '@shared/mod-download-url'
+import { Trash, GripVertical, Plus, ExternalLink, Download } from 'lucide-react'
 import { Combobox } from '@/components/ui/combobox'
 import { api } from '@/api'
 import { useFileReorder } from '@/hooks/useFileReorder'
@@ -132,7 +133,11 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                       className="p-1 h-6 w-6 shrink-0 text-app-muted hover:text-app-primary opacity-40 group-hover:opacity-100 transition-opacity"
                       title={file.url}
                     >
-                      <ExternalLink className="h-3 w-3" />
+                      {isInAppDownloadUrl(file.url) ? (
+                        <Download className="h-3 w-3" />
+                      ) : (
+                        <ExternalLink className="h-3 w-3" />
+                      )}
                     </button>
                   )}
                 </div>
