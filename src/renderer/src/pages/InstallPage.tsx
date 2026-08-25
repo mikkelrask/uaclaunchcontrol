@@ -46,6 +46,8 @@ export const InstallPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('install')
   const [missingDownloadPrompt, setMissingDownloadPrompt] =
     useState<MissingDownloadClassification | null>(null)
+  const [downloadsStarted, setDownloadsStarted] = useState(false)
+  const [browserLinksOpened, setBrowserLinksOpened] = useState(false)
 
   // Generated up front (not at submit time) so it's stable across the whole
   // time the form is being filled out — used as the protocol's real id and,
@@ -167,6 +169,8 @@ export const InstallPage: React.FC = () => {
         const { files: orderedFiles } = matchImportFiles(pending.files, catalog, pending.configs)
         const classification = classifyMissingDownloads(orderedFiles)
         if (classification.inApp.length > 0 || classification.browserOnly.length > 0) {
+          setDownloadsStarted(false)
+          setBrowserLinksOpened(false)
           setMissingDownloadPrompt(classification)
         }
       })
@@ -302,6 +306,39 @@ export const InstallPage: React.FC = () => {
     }
     return `${browserOnly.length} missing file${browserOnly.length > 1 ? 's' : ''} can only be fetched in your browser — open the link${browserOnly.length > 1 ? 's' : ''} to download them manually.`
   }, [missingDownloadPrompt])
+
+  // Each action starts its links and keeps the prompt open so the user can
+  // do both (in-app downloads + browser links); a used action disables its
+  // button (double-clicking would re-download). The prompt closes itself
+  // once every available action has been taken.
+  const handleStartInAppDownloads = (): void => {
+    if (!missingDownloadPrompt || downloadsStarted) return
+    openDownloadLinks(missingDownloadPrompt.inApp.map((f) => f.url as string))
+    setDownloadsStarted(true)
+  }
+
+  const handleOpenBrowserLinks = (): void => {
+    if (!missingDownloadPrompt || browserLinksOpened) return
+    openDownloadLinks(missingDownloadPrompt.browserOnly.map((f) => f.url as string))
+    setBrowserLinksOpened(true)
+  }
+
+  const closeDownloadPrompt = (): void => {
+    setMissingDownloadPrompt(null)
+    setDownloadsStarted(false)
+    setBrowserLinksOpened(false)
+  }
+
+  useEffect(() => {
+    if (!missingDownloadPrompt) return
+    const inAppDone = missingDownloadPrompt.inApp.length === 0 || downloadsStarted
+    const browserDone = missingDownloadPrompt.browserOnly.length === 0 || browserLinksOpened
+    if (inAppDone && browserDone) {
+      setMissingDownloadPrompt(null)
+      setDownloadsStarted(false)
+      setBrowserLinksOpened(false)
+    }
+  }, [missingDownloadPrompt, downloadsStarted, browserLinksOpened])
 
   const onSubmit = async (data: z.infer<typeof formSchema>): Promise<void> => {
     const fileData: IModFile[] = files.map((file) => {
@@ -524,37 +561,30 @@ export const InstallPage: React.FC = () => {
       <Dialog
         open={missingDownloadPrompt !== null}
         onOpenChange={(open) => {
-          if (!open) setMissingDownloadPrompt(null)
+          if (!open) closeDownloadPrompt()
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Download missing mod files?</DialogTitle>
             <DialogDescription>{missingDownloadCopy}</DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setMissingDownloadPrompt(null)}>
+          <DialogFooter className="flex-wrap gap-2">
+            <Button variant="ghost" onClick={closeDownloadPrompt}>
               Cancel
             </Button>
             {missingDownloadPrompt && missingDownloadPrompt.browserOnly.length > 0 && (
               <Button
                 variant="outline"
-                onClick={() => {
-                  openDownloadLinks(missingDownloadPrompt.browserOnly.map((f) => f.url as string))
-                  setMissingDownloadPrompt(null)
-                }}
+                onClick={handleOpenBrowserLinks}
+                disabled={browserLinksOpened}
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Open {missingDownloadPrompt.browserOnly.length} in browser
               </Button>
             )}
             {missingDownloadPrompt && missingDownloadPrompt.inApp.length > 0 && (
-              <Button
-                onClick={() => {
-                  openDownloadLinks(missingDownloadPrompt.inApp.map((f) => f.url as string))
-                  setMissingDownloadPrompt(null)
-                }}
-              >
+              <Button onClick={handleStartInAppDownloads} disabled={downloadsStarted}>
                 <Download className="w-4 h-4 mr-2" />
                 Download {missingDownloadPrompt.inApp.length} in-app
               </Button>
