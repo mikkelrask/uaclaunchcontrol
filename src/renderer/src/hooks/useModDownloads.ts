@@ -12,6 +12,8 @@ interface UseModDownloadsReturn {
   dismiss: (id: string) => void
 }
 
+export type { UseModDownloadsReturn }
+
 /**
  * Tracks in-app mod downloads (main-process `mod-download-status` events).
  * Events merge by id; terminal states (completed/cancelled/error) auto-dismiss

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
-import { useModDownloads } from '@/hooks/useModDownloads'
+import type { UseModDownloadsReturn } from '@/hooks/useModDownloads'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import type { ModDownloadEvent, ModDownloadRegistryMeta } from '@shared/modDownload'
@@ -23,15 +23,22 @@ interface ZipImportState {
 
 const ARCHIVE_EXT_RE = /\.(zip|rar)$/i
 
+interface ModDownloadManagerProps {
+  /** Shared download state — the card stack renders inside the toast
+   *  viewport (Toaster), this component owns the handoff/invalidation. */
+  modDownloads: UseModDownloadsReturn
+}
+
 /**
- * Global overlay for in-app mod downloads: fixed top-right card stack, one
- * card per active download (progress + cancel), error/completed summaries.
- * Top-right so it never collides with the toast notifications (bottom-right).
- * Downloaded .zip/.rar archives hand off to the ZipImportModal; catalog
- * additions invalidate the catalog queries so existing UI refetches.
+ * Owns the in-app mod download lifecycle: .zip/.rar completions hand off to
+ * the ZipImportModal, catalog additions invalidate catalog/protocol queries.
+ * The download cards themselves render in the Toaster, stacked with the
+ * regular toast notifications in one bottom-right column.
  */
-export function ModDownloadManager(): React.ReactElement {
-  const { downloads, fileNames, cancel, dismiss } = useModDownloads()
+export function ModDownloadManager({
+  modDownloads
+}: ModDownloadManagerProps): React.ReactElement {
+  const { downloads, dismiss } = modDownloads
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const [zipImport, setZipImport] = useState<ZipImportState | null>(null)
@@ -99,23 +106,8 @@ export function ModDownloadManager(): React.ReactElement {
     setZipImport(null)
   }
 
-  const events = Object.values(downloads)
-
   return (
     <>
-      {events.length > 0 && (
-        <div className="fixed right-4 top-20 z-[120] flex w-80 flex-col gap-2">
-          {events.map((event) => (
-            <DownloadCard
-              key={event.id}
-              event={event}
-              fileName={fileNames[event.id]}
-              onCancel={() => cancel(event.id)}
-              onDismiss={() => dismiss(event.id)}
-            />
-          ))}
-        </div>
-      )}
       {zipImport && (
         <ZipImportModal
           open
@@ -132,7 +124,8 @@ export function ModDownloadManager(): React.ReactElement {
   )
 }
 
-function DownloadCard({
+/** One download card — rendered by the Toaster inside the toast viewport. */
+export function DownloadCard({
   event,
   fileName,
   onCancel,
