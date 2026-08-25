@@ -226,7 +226,7 @@ async function readPlayerDataRaw(): Promise<IPlayerData> {
     const merged: IPlayerData = {
       ...DEFAULT_PLAYER_DATA,
       ...data,
-      stats: { ...DEFAULT_PLAYER_DATA.stats, ...(data.stats || {}) },
+      stats: { ...DEFAULT_PLAYER_DATA.stats, ...data.stats },
       achievements: data.achievements ?? {}
     }
 
