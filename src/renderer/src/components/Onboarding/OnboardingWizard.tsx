@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '@/api'
+import { queryClient } from '@/lib/queryClient'
 import { useToast } from '@/hooks/use-toast'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import type { IAppSettings } from '@shared/schema'
@@ -7,6 +8,7 @@ import uacLogo from '@/assets/UAC Logo.svg'
 import { WelcomeStep } from './WelcomeStep'
 import { SourcePortsStep } from './SourcePortsStep'
 import { WadFilesStep } from './WadFilesStep'
+import { RegistryStep } from './RegistryStep'
 import { CompleteStep } from './CompleteStep'
 import { OnboardingChrome } from './OnboardingChrome'
 import { BootSequence } from './BootSequence'
@@ -14,9 +16,17 @@ import { BootSequence } from './BootSequence'
 import { createLogger } from '@shared/logger'
 
 const log = createLogger('onboarding/OnboardingWizardx')
-const STEP_COUNT = 4
+const STEP_COUNT = 5
 
-export const OnboardingWizard: React.FC = () => {
+interface OnboardingWizardProps {
+  /** Start immediately without the getFirstRun round trip — used when the
+   *  App shell is gated on the first-run flag (first launch). */
+  autoActivate?: boolean
+  /** Called when the wizard finishes/skips — lets App switch to the shell. */
+  onFinished?: () => void
+}
+
+export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate, onFinished }) => {
   const { toast } = useToast()
   const [isActive, setIsActive] = useState(false)
   const [showBoot, setShowBoot] = useState(false)
@@ -28,6 +38,10 @@ export const OnboardingWizard: React.FC = () => {
 
   const activate = useCallback(async () => {
     isSeedingRef.current = true
+    // Activate + boot sequence FIRST so the settings fetch below is covered
+    // by themed UI — never a blank frame or a flash of the app behind it.
+    setIsActive(true)
+    setShowBoot(true)
     try {
       const settings = await api.getSettings()
       knownFamiliesRef.current = new Set(
@@ -35,10 +49,9 @@ export const OnboardingWizard: React.FC = () => {
       )
       setDraft(settings)
       setStep(0)
-      setIsActive(true)
-      setShowBoot(true)
     } catch {
       // Onboarding is non-essential — fail silently, user can still use Settings directly.
+      setIsActive(false)
     } finally {
       isSeedingRef.current = false
     }
@@ -47,6 +60,11 @@ export const OnboardingWizard: React.FC = () => {
   // Auto-start on first run
   useEffect(() => {
     if (hasAutoStartedRef.current) return
+    if (autoActivate) {
+      hasAutoStartedRef.current = true
+      void activate()
+      return
+    }
     api
       .getFirstRun()
       .then(({ isFirstRun }) => {
@@ -56,7 +74,7 @@ export const OnboardingWizard: React.FC = () => {
         }
       })
       .catch((err: unknown) => log.error(err))
-  }, [activate])
+  }, [activate, autoActivate])
 
   // Manual replay from the header's "Guided Tour" button
   useEffect(() => {
@@ -80,7 +98,16 @@ export const OnboardingWizard: React.FC = () => {
         .updateSettings({
           sourcePorts: draft.sourcePorts,
           defaultSourcePortId: draft.defaultSourcePortId,
-          defaultDoomVersionId: draft.defaultDoomVersionId
+          defaultDoomVersionId: draft.defaultDoomVersionId,
+          registryLookupEnabled: draft.registryLookupEnabled,
+          registryUuid: draft.registryUuid
+        })
+        .then(() => {
+          // The settings query is globally mounted (App theme sync) and the
+          // cache is immutable (staleTime: Infinity) — without this, source
+          // ports added here never show up in the new-protocol form until a
+          // restart (the WAD watcher covers versions, but not settings).
+          queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
         })
         .catch((err: unknown) => log.error(err))
 
@@ -109,9 +136,27 @@ export const OnboardingWizard: React.FC = () => {
 
   const finish = useCallback(() => {
     api.dismissFirstRun().catch((err: unknown) => log.error(err))
+    // Flush any changes still inside the debounce window — the timer is
+    // cleared on unmount below, so finishing fast would otherwise drop the
+    // last edit (ports/WAD default). Same payload as the debounced save.
+    if (draft) {
+      api
+        .updateSettings({
+          sourcePorts: draft.sourcePorts,
+          defaultSourcePortId: draft.defaultSourcePortId,
+          defaultDoomVersionId: draft.defaultDoomVersionId,
+          registryLookupEnabled: draft.registryLookupEnabled,
+          registryUuid: draft.registryUuid
+        })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
+        })
+        .catch((err: unknown) => log.error(err))
+    }
     setIsActive(false)
     setDraft(null)
-  }, [])
+    onFinished?.()
+  }, [draft, onFinished])
 
   useEffect(() => {
     if (!isActive) return
@@ -125,7 +170,7 @@ export const OnboardingWizard: React.FC = () => {
     return () => window.removeEventListener('keydown', handler)
   }, [isActive, finish])
 
-  if (!isActive || !draft) return null
+  if (!isActive) return null
 
   const setDraftSettings: React.Dispatch<React.SetStateAction<IAppSettings>> = (action) => {
     setDraft((prev) => {
@@ -167,28 +212,38 @@ export const OnboardingWizard: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto flex items-start justify-center px-8 py-10 scrollbar-thin scrollbar-thumb-app-hover">
-        <div key={step} className="w-full max-w-2xl uac-step-enter">
-          {step === 0 && <WelcomeStep onNext={() => setStep(1)} />}
-          {step === 1 && (
-            <SourcePortsStep
-              settings={draft}
-              setSettings={setDraftSettings}
-              onNext={() => setStep(2)}
-              onBack={() => setStep(0)}
-            />
-          )}
-          {step === 2 && (
-            <WadFilesStep
-              settings={draft}
-              setSettings={setDraftSettings}
-              onNext={() => setStep(3)}
-              onBack={() => setStep(1)}
-            />
-          )}
-          {step === 3 && <CompleteStep onFinish={finish} onBack={() => setStep(2)} />}
+      {draft && (
+        <div className="flex-1 min-h-0 overflow-y-auto flex items-start justify-center px-8 py-10 scrollbar-thin scrollbar-thumb-app-hover">
+          <div key={step} className="w-full max-w-2xl uac-step-enter">
+            {step === 0 && <WelcomeStep onNext={() => setStep(1)} />}
+            {step === 1 && (
+              <SourcePortsStep
+                settings={draft}
+                setSettings={setDraftSettings}
+                onNext={() => setStep(2)}
+                onBack={() => setStep(0)}
+              />
+            )}
+            {step === 2 && (
+              <WadFilesStep
+                settings={draft}
+                setSettings={setDraftSettings}
+                onNext={() => setStep(3)}
+                onBack={() => setStep(1)}
+              />
+            )}
+            {step === 3 && (
+              <RegistryStep
+                settings={draft}
+                setSettings={setDraftSettings}
+                onNext={() => setStep(4)}
+                onBack={() => setStep(2)}
+              />
+            )}
+            {step === 4 && <CompleteStep onFinish={finish} onBack={() => setStep(3)} />}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

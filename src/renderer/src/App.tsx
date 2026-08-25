@@ -17,6 +17,7 @@ import type { AchievementEvent } from '@/lib/achievements'
 import { IAppSettings, IInstallType, IProtocol } from '@shared/schema'
 import { debug } from '@shared/debug'
 import { useAutoUpdater } from '@/hooks/useAutoUpdater'
+import { useModDownloads } from '@/hooks/useModDownloads'
 import UpdateModal from '@/components/UpdateModal'
 import { ModDownloadManager } from '@/components/ModDownloadManager'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -47,6 +48,12 @@ const App: React.FC = () => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
   const [installType, setInstallType] = useState<IInstallType | null>(null)
   const [crashLog, setCrashLog] = useState<CrashLogData | null>(null)
+  // Resolved synchronously from the preload (sentinel read in main) so the
+  // shell is never rendered behind the onboarding wizard on first launch.
+  const [isFirstRun, setIsFirstRun] = useState(() => window.api.isFirstRun)
+  // Shared by the Toaster (card stack) and ModDownloadManager (handoff), so
+  // dismissing a card in one is reflected in the other.
+  const modDownloads = useModDownloads()
 
   // Best-effort protocol title lookup from whatever's already cached —
   // avoids an extra fetch just to label the crash log dialog.
@@ -286,8 +293,8 @@ const App: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <Toaster />
-      <ModDownloadManager />
+      <Toaster modDownloads={modDownloads} />
+      <ModDownloadManager modDownloads={modDownloads} />
       <UpdateModal
         isOpen={isUpdateModalOpen}
         onClose={() => setIsUpdateModalOpen(false)}
@@ -295,9 +302,15 @@ const App: React.FC = () => {
         installType={installType}
       />
       <ErrorBoundary>
-        <AppRouter />
+        {isFirstRun ? (
+          <OnboardingWizard autoActivate onFinished={() => setIsFirstRun(false)} />
+        ) : (
+          <>
+            <AppRouter />
+            <OnboardingWizard />
+          </>
+        )}
       </ErrorBoundary>
-      <OnboardingWizard />
       <CrashLogDialog data={crashLog} onClose={() => setCrashLog(null)} />
     </TooltipProvider>
   )

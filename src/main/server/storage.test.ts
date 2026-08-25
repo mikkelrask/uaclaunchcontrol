@@ -7,7 +7,8 @@ import {
   countMd5Suffixes,
   wadNamePriority,
   resolvePath,
-  computeFileHash
+  computeFileHash,
+  sanitizeBaseName
 } from './storage'
 
 describe('stripMd5Suffix', () => {
@@ -86,6 +87,30 @@ describe('resolvePath', () => {
   it('handles tilde alone', () => {
     const result = resolvePath('~')
     expect(result).toBe(os.homedir())
+  })
+})
+
+describe('sanitizeBaseName', () => {
+  it('leaves plain names untouched', () => {
+    expect(sanitizeBaseName('1781167581288-poster')).toBe('1781167581288-poster')
+  })
+
+  it('strips characters Windows forbids in filenames', () => {
+    // All of these are legal on POSIX, so an unsanitized name would import
+    // on Linux but make fs.writeFile throw on Windows.
+    expect(sanitizeBaseName('a:b<c>d"e\\f/g|h?i*j')).toBe('abcdefghij')
+  })
+
+  it('strips trailing dots and spaces', () => {
+    expect(sanitizeBaseName('poster... ')).toBe('poster')
+  })
+
+  it('falls back to a generic slug when nothing remains', () => {
+    expect(sanitizeBaseName(':::')).toBe('screenshot')
+  })
+
+  it('preserves inner spaces', () => {
+    expect(sanitizeBaseName('Pasted image')).toBe('Pasted image')
   })
 })
 

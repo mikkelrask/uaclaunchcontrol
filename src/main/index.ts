@@ -4,13 +4,9 @@ import { existsSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { startServer } from './server'
 import { autoUpdater } from 'electron-updater'
-import { getSettings } from './server/storage'
-import {
-  isGithubReleaseAsset,
-  isModdbStartPage,
-  registerModDownloadSession,
-  startModDownload
-} from './server/services/modDownloadService'
+import { getIsFirstRun, getSettings } from './server/storage'
+import { registerModDownloadSession, startModDownload } from './server/services/modDownloadService'
+import { isGithubArchiveUrl, isGithubReleaseAsset, isModdbStartPage } from '@shared/mod-download-url'
 import { IInstallType } from '@shared/schema'
 import { debug } from '@shared/debug'
 
@@ -116,7 +112,7 @@ function createWindow(): void {
   mainWindow.webContents.setWindowOpenHandler((details) => {
     try {
       const url = new URL(details.url)
-      if (isGithubReleaseAsset(url) || isModdbStartPage(url)) {
+      if (isGithubReleaseAsset(url) || isGithubArchiveUrl(url) || isModdbStartPage(url)) {
         void startModDownload(details.url)
       } else {
         shell.openExternal(details.url)
@@ -304,6 +300,14 @@ app.whenReady().then(async () => {
   })
 
   ipcMain.on('ping', () => debug('pong'))
+
+  // Synchronous read for the renderer's startup gate — the preload resolves
+  // it before the page renders, so the app shell never flashes behind the
+  // onboarding wizard on first launch (initStorage has run by now:
+  // startServer() precedes createWindow()).
+  ipcMain.on('get-first-run', (event) => {
+    event.returnValue = getIsFirstRun()
+  })
 
   ipcMain.handle('get-app-version', () => {
     return app.getVersion()

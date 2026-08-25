@@ -70,14 +70,14 @@ function parseBatContent(content: string): BatParseResult {
   return { sourcePortFamily, iwad, modFiles, extraParams }
 }
 
-async function scanDirRecursive(dir: string, baseDir: string = dir): Promise<string[]> {
+async function scanDirRecursive(dir: string): Promise<string[]> {
   const files = await fs.readdir(dir)
   const results: string[] = []
   for (const file of files) {
     const fullPath = path.join(dir, file)
     const stat = await fs.stat(fullPath)
     if (stat.isDirectory()) {
-      results.push(...(await scanDirRecursive(fullPath, baseDir)))
+      results.push(...(await scanDirRecursive(fullPath)))
     } else {
       results.push(fullPath)
     }

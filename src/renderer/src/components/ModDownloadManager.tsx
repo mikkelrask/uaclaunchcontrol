@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
-import { useModDownloads } from '@/hooks/useModDownloads'
+import type { UseModDownloadsReturn } from '@/hooks/useModDownloads'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
-import type { ModDownloadEvent } from '@shared/modDownload'
+import type { ModDownloadEvent, ModDownloadRegistryMeta } from '@shared/modDownload'
 import type { ZipScanResult } from '@/types/zipImport'
 import { ZipImportModal } from '@/components/ZipImportModal'
 import { Card, CardContent } from '@/components/ui/card'
@@ -18,18 +18,27 @@ const log = createLogger('ModDownloadManager')
 interface ZipImportState {
   scanResult: ZipScanResult
   filePath: string
+  registryMeta?: ModDownloadRegistryMeta
 }
 
 const ARCHIVE_EXT_RE = /\.(zip|rar)$/i
 
+interface ModDownloadManagerProps {
+  /** Shared download state — the card stack renders inside the toast
+   *  viewport (Toaster), this component owns the handoff/invalidation. */
+  modDownloads: UseModDownloadsReturn
+}
+
 /**
- * Global overlay for in-app mod downloads: fixed top-right card stack, one
- * card per active download (progress + cancel), error/completed summaries.
- * Downloaded .zip/.rar archives hand off to the ZipImportModal; catalog
- * additions invalidate the catalog queries so existing UI refetches.
+ * Owns the in-app mod download lifecycle: .zip/.rar completions hand off to
+ * the ZipImportModal, catalog additions invalidate catalog/protocol queries.
+ * The download cards themselves render in the Toaster, stacked with the
+ * regular toast notifications in one bottom-right column.
  */
-export function ModDownloadManager(): React.ReactElement {
-  const { downloads, fileNames, cancel, dismiss } = useModDownloads()
+export function ModDownloadManager({
+  modDownloads
+}: ModDownloadManagerProps): React.ReactElement {
+  const { downloads, dismiss } = modDownloads
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const [zipImport, setZipImport] = useState<ZipImportState | null>(null)
@@ -46,7 +55,7 @@ export function ModDownloadManager(): React.ReactElement {
       if (scannedZipIds.current.has(event.id)) continue
       scannedZipIds.current.add(event.id)
       dismiss(event.id)
-      void openZipImport(event.filePath)
+      void openZipImport(event.filePath, event.registry)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [downloads, dismiss])
@@ -70,14 +79,17 @@ export function ModDownloadManager(): React.ReactElement {
     }
   }, [downloads, queryClient])
 
-  const openZipImport = async (filePath: string): Promise<void> => {
+  const openZipImport = async (
+    filePath: string,
+    registryMeta?: ModDownloadRegistryMeta
+  ): Promise<void> => {
     const isRar = filePath.toLowerCase().endsWith('.rar')
     try {
       toast({ title: 'SYSTEM: decompressing', description: 'Analyzing archive contents.' })
       const scan = (
         isRar ? await api.unrarScan(filePath) : await api.unzipScan(filePath)
       ) as ZipScanResult
-      setZipImport({ scanResult: scan, filePath })
+      setZipImport({ scanResult: scan, filePath, registryMeta })
     } catch (error: unknown) {
       log.error(error)
       toast({
@@ -94,28 +106,14 @@ export function ModDownloadManager(): React.ReactElement {
     setZipImport(null)
   }
 
-  const events = Object.values(downloads)
-
   return (
     <>
-      {events.length > 0 && (
-        <div className="fixed right-4 bottom-4 z-[120] flex w-80 flex-col gap-2">
-          {events.map((event) => (
-            <DownloadCard
-              key={event.id}
-              event={event}
-              fileName={fileNames[event.id]}
-              onCancel={() => cancel(event.id)}
-              onDismiss={() => dismiss(event.id)}
-            />
-          ))}
-        </div>
-      )}
       {zipImport && (
         <ZipImportModal
           open
           scanResult={zipImport.scanResult}
           zipFilePath={zipImport.filePath}
+          registryMeta={zipImport.registryMeta}
           onOpenChange={(open) => {
             if (!open) setZipImport(null)
           }}
@@ -126,7 +124,8 @@ export function ModDownloadManager(): React.ReactElement {
   )
 }
 
-function DownloadCard({
+/** One download card — rendered by the Toaster inside the toast viewport. */
+export function DownloadCard({
   event,
   fileName,
   onCancel,

@@ -4,6 +4,8 @@ import { IUpdateInfo, IVersionData } from '@shared/schema'
 import { ModDownloadEvent } from '@shared/modDownload'
 
 interface ICustomAPI {
+  /** First-run flag resolved synchronously at preload load (startup gate). */
+  isFirstRun: boolean
   onVersionsUpdated: (callback: (data?: IVersionData) => void) => void
   onGameExited: (
     callback: (data: {

@@ -5,6 +5,8 @@ import type { ModDownloadEvent } from '@shared/modDownload'
 
 const log = createLogger('preload')
 const api = {
+  /** First-run flag, resolved synchronously at preload load so the renderer can gate startup rendering without a round trip. */
+  isFirstRun: ipcRenderer.sendSync('get-first-run') as boolean,
   onVersionsUpdated: (callback: (data?: unknown) => void) =>
     ipcRenderer.on('doom-versions-updated', (_event, data) => callback(data)),
   onGameExited: (

@@ -10,7 +10,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Combobox } from '@/components/ui/combobox'
-import { FolderOpenIcon, PlusIcon, TrashIcon, ExternalLink, GripVertical } from 'lucide-react'
+import { FolderOpenIcon, PlusIcon, TrashIcon, ExternalLink, Download, GripVertical } from 'lucide-react'
+import { isInAppDownloadUrl } from '@shared/mod-download-url'
 import type { IModFile } from '@shared/schema'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
@@ -79,6 +80,10 @@ export function ModFileSelector({
       changed = true
       return {
         ...f,
+        // Adopt the real catalog id — rows created from imports/downloads
+        // carry a temp id (Date.now()+random) that updateInCatalog would
+        // otherwise 404 on at protocol create.
+        id: match.id ?? f.id,
         filePath: match.filePath,
         url: f.url || match.url || '',
         name: f.name || match.name || '',
@@ -458,7 +463,11 @@ export function ModFileSelector({
                       title={file.url || 'No URL'}
                       type="button"
                     >
-                      <ExternalLink className="h-4 w-4" />
+                      {file.url && isInAppDownloadUrl(file.url) ? (
+                        <Download className="h-4 w-4" />
+                      ) : (
+                        <ExternalLink className="h-4 w-4" />
+                      )}
                     </Button>
                     {!file.filePath && (
                       <span className="text-xs bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded shrink-0">
