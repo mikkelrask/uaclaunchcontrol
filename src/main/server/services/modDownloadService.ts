@@ -19,7 +19,7 @@ import { getModFileCatalog, addModFileToCatalog } from '../storage/mod-catalog'
 import { computeFileHashOrThrow, getSettings } from '../storage/core'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import type { ModDownloadEvent } from '@shared/modDownload'
-import { isGithubReleaseAsset, isModdbStartPage } from '@shared/mod-download-url'
+import { isGithubArchiveUrl, isGithubReleaseAsset, isModdbStartPage } from '@shared/mod-download-url'
 import { debug } from '@shared/debug'
 import { createLogger } from '@shared/logger'
 
@@ -129,7 +129,12 @@ export function registerModDownloadSession(mainWindow: BrowserWindow): void {
 /** Starts an in-app download for a target URL. No-op for non-target URLs. */
 export async function startModDownload(url: string): Promise<void> {
   const parsed = new URL(url)
-  const source = isGithubReleaseAsset(parsed) ? 'github' : isModdbStartPage(parsed) ? 'moddb' : null
+  const source =
+    isGithubReleaseAsset(parsed) || isGithubArchiveUrl(parsed)
+      ? 'github'
+      : isModdbStartPage(parsed)
+        ? 'moddb'
+        : null
   if (!source) return
 
   debug(`[ModDownload] Starting ${source} download for ${url}`)

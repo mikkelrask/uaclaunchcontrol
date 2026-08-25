@@ -6,7 +6,7 @@ import { startServer } from './server'
 import { autoUpdater } from 'electron-updater'
 import { getIsFirstRun, getSettings } from './server/storage'
 import { registerModDownloadSession, startModDownload } from './server/services/modDownloadService'
-import { isGithubReleaseAsset, isModdbStartPage } from '@shared/mod-download-url'
+import { isGithubArchiveUrl, isGithubReleaseAsset, isModdbStartPage } from '@shared/mod-download-url'
 import { IInstallType } from '@shared/schema'
 import { debug } from '@shared/debug'
 
@@ -112,7 +112,7 @@ function createWindow(): void {
   mainWindow.webContents.setWindowOpenHandler((details) => {
     try {
       const url = new URL(details.url)
-      if (isGithubReleaseAsset(url) || isModdbStartPage(url)) {
+      if (isGithubReleaseAsset(url) || isGithubArchiveUrl(url) || isModdbStartPage(url)) {
         void startModDownload(details.url)
       } else {
         shell.openExternal(details.url)
