@@ -24,6 +24,7 @@ import { api, type IRegistryMod } from '@/api'
 import { formatRegistryName } from '@/lib/registryName'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { CATEGORIES } from '@shared/categories'
+import type { ModDownloadRegistryMeta } from '@shared/modDownload'
 import type { IModFile } from '@shared/schema'
 
 export interface ZipImportModalProps {
@@ -32,6 +33,8 @@ export interface ZipImportModalProps {
   scanResult: ZipScanResult | null
   onImportComplete: () => void
   zipFilePath?: string
+  /** Registry metadata of the downloaded archive — pre-fills the import fields. */
+  registryMeta?: ModDownloadRegistryMeta
 }
 
 interface FileMeta {
@@ -67,7 +70,8 @@ export function ZipImportModal({
   onOpenChange,
   scanResult,
   onImportComplete,
-  zipFilePath
+  zipFilePath,
+  registryMeta
 }: ZipImportModalProps): React.ReactElement | null {
   const { toast } = useToast()
   const [fileMeta, setFileMeta] = useState<FileMeta[]>([])
@@ -170,6 +174,19 @@ export function ZipImportModal({
         enabled: true,
         category: ''
       }))
+
+      // The downloaded archive IS the registered mod — carry its metadata
+      // onto every extracted file. Per-file lookups below refine any row
+      // whose own hash is registered too.
+      if (registryMeta) {
+        for (const m of initial) {
+          m.name = registryMeta.name
+          m.version = registryMeta.version || ''
+          m.url = registryMeta.url || ''
+          m.category = registryMeta.category || ''
+        }
+      }
+
       setFileMeta(initial)
 
       // Registry lookup for each file that has a hash
@@ -213,7 +230,7 @@ export function ZipImportModal({
       }
       doLookups()
     }
-  }, [scanResult])
+  }, [scanResult, registryMeta])
 
   // Reset zip-as-mod form when modal opens with a new scan
   useEffect(() => {
@@ -221,14 +238,14 @@ export function ZipImportModal({
       const pathParts = (zipFilePath || '').split(/[\\/]/)
       const lastPart = pathParts.pop() || ''
       const defaultName = lastPart.replace(/\.zip$/i, '')
-      setZipName(defaultName)
-      setZipVersion('')
-      setZipUrl('')
+      setZipName(registryMeta?.name ?? defaultName)
+      setZipVersion(registryMeta?.version ?? '')
+      setZipUrl(registryMeta?.url ?? '')
       setZipHash('')
-      setZipCategory('')
+      setZipCategory(registryMeta?.category ?? '')
       setImportAsZip(false)
     }
-  }, [open, scanResult, zipFilePath])
+  }, [open, scanResult, zipFilePath, registryMeta])
 
   // ── Registry lookup for zip-as-is when checkbox is toggled ──
   useEffect(() => {

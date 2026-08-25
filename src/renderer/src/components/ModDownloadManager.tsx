@@ -4,7 +4,7 @@ import { X } from 'lucide-react'
 import { useModDownloads } from '@/hooks/useModDownloads'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
-import type { ModDownloadEvent } from '@shared/modDownload'
+import type { ModDownloadEvent, ModDownloadRegistryMeta } from '@shared/modDownload'
 import type { ZipScanResult } from '@/types/zipImport'
 import { ZipImportModal } from '@/components/ZipImportModal'
 import { Card, CardContent } from '@/components/ui/card'
@@ -18,6 +18,7 @@ const log = createLogger('ModDownloadManager')
 interface ZipImportState {
   scanResult: ZipScanResult
   filePath: string
+  registryMeta?: ModDownloadRegistryMeta
 }
 
 const ARCHIVE_EXT_RE = /\.(zip|rar)$/i
@@ -46,7 +47,7 @@ export function ModDownloadManager(): React.ReactElement {
       if (scannedZipIds.current.has(event.id)) continue
       scannedZipIds.current.add(event.id)
       dismiss(event.id)
-      void openZipImport(event.filePath)
+      void openZipImport(event.filePath, event.registry)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [downloads, dismiss])
@@ -70,14 +71,17 @@ export function ModDownloadManager(): React.ReactElement {
     }
   }, [downloads, queryClient])
 
-  const openZipImport = async (filePath: string): Promise<void> => {
+  const openZipImport = async (
+    filePath: string,
+    registryMeta?: ModDownloadRegistryMeta
+  ): Promise<void> => {
     const isRar = filePath.toLowerCase().endsWith('.rar')
     try {
       toast({ title: 'SYSTEM: decompressing', description: 'Analyzing archive contents.' })
       const scan = (
         isRar ? await api.unrarScan(filePath) : await api.unzipScan(filePath)
       ) as ZipScanResult
-      setZipImport({ scanResult: scan, filePath })
+      setZipImport({ scanResult: scan, filePath, registryMeta })
     } catch (error: unknown) {
       log.error(error)
       toast({
@@ -116,6 +120,7 @@ export function ModDownloadManager(): React.ReactElement {
           open
           scanResult={zipImport.scanResult}
           zipFilePath={zipImport.filePath}
+          registryMeta={zipImport.registryMeta}
           onOpenChange={(open) => {
             if (!open) setZipImport(null)
           }}

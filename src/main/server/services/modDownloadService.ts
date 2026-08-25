@@ -18,7 +18,7 @@ import { getFileType } from '../storage/archive-io'
 import { getModFileCatalog, addModFileToCatalog } from '../storage/mod-catalog'
 import { computeFileHashOrThrow, getSettings } from '../storage/core'
 import { REGISTRY_API_URL } from '@shared/registry-config'
-import type { ModDownloadEvent } from '@shared/modDownload'
+import type { ModDownloadEvent, ModDownloadRegistryMeta } from '@shared/modDownload'
 import { isGithubArchiveUrl, isGithubReleaseAsset, isModdbStartPage } from '@shared/mod-download-url'
 import { debug } from '@shared/debug'
 import { createLogger } from '@shared/logger'
@@ -309,8 +309,25 @@ async function finalizeDownload(task: DownloadTask): Promise<void> {
 
     if (ext === '.zip' || ext === '.rar') {
       // Archives go through the existing ZipImportModal flow — the file stays
-      // in the downloads dir until the user imports (or cancels) it.
-      sendStatus({ state: 'completed', id: task.id, filePath: destPath })
+      // in the downloads dir until the user imports (or cancels) it. Look up
+      // the archive's registry entry so the import UI can carry the mod's
+      // metadata (name/version/url/category) instead of showing raw files.
+      let registry: ModDownloadRegistryMeta | undefined
+      try {
+        const archiveHash = await computeFileHashOrThrow(destPath)
+        const registryMod = await lookupRegistryMod(archiveHash, task.url)
+        if (registryMod) {
+          registry = {
+            name: formatRegistryName(registryMod.family_name, registryMod.display_name),
+            version: registryMod.version || undefined,
+            url: pickBestUrl(registryMod.urls) || task.url,
+            category: registryMod.category ?? undefined
+          }
+        }
+      } catch (err: unknown) {
+        log.warn('Archive registry lookup failed:', err)
+      }
+      sendStatus({ state: 'completed', id: task.id, filePath: destPath, registry })
       return
     }
 
