@@ -564,12 +564,12 @@ export const InstallPage: React.FC = () => {
           if (!open) closeDownloadPrompt()
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Download missing mod files?</DialogTitle>
             <DialogDescription>{missingDownloadCopy}</DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex-wrap gap-2">
+          <DialogFooter>
             <Button variant="ghost" onClick={closeDownloadPrompt}>
               Cancel
             </Button>
