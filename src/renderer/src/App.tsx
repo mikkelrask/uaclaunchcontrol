@@ -47,6 +47,9 @@ const App: React.FC = () => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
   const [installType, setInstallType] = useState<IInstallType | null>(null)
   const [crashLog, setCrashLog] = useState<CrashLogData | null>(null)
+  // Resolved synchronously from the preload (sentinel read in main) so the
+  // shell is never rendered behind the onboarding wizard on first launch.
+  const [isFirstRun, setIsFirstRun] = useState(() => window.api.isFirstRun)
 
   // Best-effort protocol title lookup from whatever's already cached —
   // avoids an extra fetch just to label the crash log dialog.
@@ -295,9 +298,15 @@ const App: React.FC = () => {
         installType={installType}
       />
       <ErrorBoundary>
-        <AppRouter />
+        {isFirstRun ? (
+          <OnboardingWizard autoActivate onFinished={() => setIsFirstRun(false)} />
+        ) : (
+          <>
+            <AppRouter />
+            <OnboardingWizard />
+          </>
+        )}
       </ErrorBoundary>
-      <OnboardingWizard />
       <CrashLogDialog data={crashLog} onClose={() => setCrashLog(null)} />
     </TooltipProvider>
   )

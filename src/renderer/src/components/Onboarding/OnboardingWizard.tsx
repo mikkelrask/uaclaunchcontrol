@@ -17,7 +17,15 @@ import { createLogger } from '@shared/logger'
 const log = createLogger('onboarding/OnboardingWizardx')
 const STEP_COUNT = 4
 
-export const OnboardingWizard: React.FC = () => {
+interface OnboardingWizardProps {
+  /** Start immediately without the getFirstRun round trip — used when the
+   *  App shell is gated on the first-run flag (first launch). */
+  autoActivate?: boolean
+  /** Called when the wizard finishes/skips — lets App switch to the shell. */
+  onFinished?: () => void
+}
+
+export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate, onFinished }) => {
   const { toast } = useToast()
   const [isActive, setIsActive] = useState(false)
   const [showBoot, setShowBoot] = useState(false)
@@ -29,6 +37,10 @@ export const OnboardingWizard: React.FC = () => {
 
   const activate = useCallback(async () => {
     isSeedingRef.current = true
+    // Activate + boot sequence FIRST so the settings fetch below is covered
+    // by themed UI — never a blank frame or a flash of the app behind it.
+    setIsActive(true)
+    setShowBoot(true)
     try {
       const settings = await api.getSettings()
       knownFamiliesRef.current = new Set(
@@ -36,10 +48,9 @@ export const OnboardingWizard: React.FC = () => {
       )
       setDraft(settings)
       setStep(0)
-      setIsActive(true)
-      setShowBoot(true)
     } catch {
       // Onboarding is non-essential — fail silently, user can still use Settings directly.
+      setIsActive(false)
     } finally {
       isSeedingRef.current = false
     }
@@ -48,6 +59,11 @@ export const OnboardingWizard: React.FC = () => {
   // Auto-start on first run
   useEffect(() => {
     if (hasAutoStartedRef.current) return
+    if (autoActivate) {
+      hasAutoStartedRef.current = true
+      void activate()
+      return
+    }
     api
       .getFirstRun()
       .then(({ isFirstRun }) => {
@@ -57,7 +73,7 @@ export const OnboardingWizard: React.FC = () => {
         }
       })
       .catch((err: unknown) => log.error(err))
-  }, [activate])
+  }, [activate, autoActivate])
 
   // Manual replay from the header's "Guided Tour" button
   useEffect(() => {
@@ -134,7 +150,8 @@ export const OnboardingWizard: React.FC = () => {
     }
     setIsActive(false)
     setDraft(null)
-  }, [draft])
+    onFinished?.()
+  }, [draft, onFinished])
 
   useEffect(() => {
     if (!isActive) return
@@ -148,7 +165,7 @@ export const OnboardingWizard: React.FC = () => {
     return () => window.removeEventListener('keydown', handler)
   }, [isActive, finish])
 
-  if (!isActive || !draft) return null
+  if (!isActive) return null
 
   const setDraftSettings: React.Dispatch<React.SetStateAction<IAppSettings>> = (action) => {
     setDraft((prev) => {
@@ -190,28 +207,30 @@ export const OnboardingWizard: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto flex items-start justify-center px-8 py-10 scrollbar-thin scrollbar-thumb-app-hover">
-        <div key={step} className="w-full max-w-2xl uac-step-enter">
-          {step === 0 && <WelcomeStep onNext={() => setStep(1)} />}
-          {step === 1 && (
-            <SourcePortsStep
-              settings={draft}
-              setSettings={setDraftSettings}
-              onNext={() => setStep(2)}
-              onBack={() => setStep(0)}
-            />
-          )}
-          {step === 2 && (
-            <WadFilesStep
-              settings={draft}
-              setSettings={setDraftSettings}
-              onNext={() => setStep(3)}
-              onBack={() => setStep(1)}
-            />
-          )}
-          {step === 3 && <CompleteStep onFinish={finish} onBack={() => setStep(2)} />}
+      {draft && (
+        <div className="flex-1 min-h-0 overflow-y-auto flex items-start justify-center px-8 py-10 scrollbar-thin scrollbar-thumb-app-hover">
+          <div key={step} className="w-full max-w-2xl uac-step-enter">
+            {step === 0 && <WelcomeStep onNext={() => setStep(1)} />}
+            {step === 1 && (
+              <SourcePortsStep
+                settings={draft}
+                setSettings={setDraftSettings}
+                onNext={() => setStep(2)}
+                onBack={() => setStep(0)}
+              />
+            )}
+            {step === 2 && (
+              <WadFilesStep
+                settings={draft}
+                setSettings={setDraftSettings}
+                onNext={() => setStep(3)}
+                onBack={() => setStep(1)}
+              />
+            )}
+            {step === 3 && <CompleteStep onFinish={finish} onBack={() => setStep(2)} />}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
