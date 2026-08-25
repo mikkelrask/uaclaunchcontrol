@@ -398,7 +398,10 @@ export const InstallPage: React.FC = () => {
     try {
       debug(`[DEBUG] Attempting to update catalog for ${files.length} files`)
       for (const file of files) {
-        if (file.id && Number(file.id) > 0) {
+        // Only rows backed by a real catalog entry can be updated — imported
+        // rows that never matched (e.g. still-missing downloads) keep a temp
+        // id and would 404 on the server.
+        if (file.id && Number(file.id) > 0 && file.filePath) {
           debug(`[DEBUG] Updating catalog entry ${file.id} with name: ${file.name}`)
           // Update the catalog title/pretty name
           await api.updateInCatalog(file.id, {

@@ -26,6 +26,7 @@ const ARCHIVE_EXT_RE = /\.(zip|rar)$/i
 /**
  * Global overlay for in-app mod downloads: fixed top-right card stack, one
  * card per active download (progress + cancel), error/completed summaries.
+ * Top-right so it never collides with the toast notifications (bottom-right).
  * Downloaded .zip/.rar archives hand off to the ZipImportModal; catalog
  * additions invalidate the catalog queries so existing UI refetches.
  */
@@ -103,7 +104,7 @@ export function ModDownloadManager(): React.ReactElement {
   return (
     <>
       {events.length > 0 && (
-        <div className="fixed right-4 bottom-4 z-[120] flex w-80 flex-col gap-2">
+        <div className="fixed right-4 top-20 z-[120] flex w-80 flex-col gap-2">
           {events.map((event) => (
             <DownloadCard
               key={event.id}

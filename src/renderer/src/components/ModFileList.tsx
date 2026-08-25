@@ -53,6 +53,10 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
       changed = true
       return {
         ...f,
+        // Adopt the real catalog id — rows created from imports/downloads
+        // carry a temp id (Date.now()+random) that updateInCatalog would
+        // otherwise 404 on at protocol create.
+        id: match.id ?? f.id,
         filePath: match.filePath,
         url: f.url || match.url || '',
         name: f.name || match.name || '',
