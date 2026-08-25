@@ -18,11 +18,19 @@ import { api } from '@/api'
 import { formSchema } from '@/lib/install/schema'
 import { useFileReorder } from '@/hooks/useFileReorder'
 import { useJsonDrop } from '@/lib/install/useJsonDrop'
-import { applyModpackImport } from '@/lib/install/applyModpackImport'
+import { applyModpackImport, matchImportFiles } from '@/lib/install/applyModpackImport'
+import {
+  classifyMissingDownloads,
+  openDownloadLinks,
+  type MissingDownloadClassification
+} from '@/lib/install/classifyMissingDownloads'
 import { consumePendingProtocolImport } from '@/lib/install/pendingProtocolImport'
 import { useWadImport } from '@/lib/install/useWadImport'
 import { ConfigurationTab } from '@/components/install/ConfigurationTab'
 import { WadImportTab } from '@/components/install/WadImportTab'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Download, ExternalLink } from 'lucide-react'
 import { createLogger } from '@shared/logger'
 
 const log = createLogger('InstallPage')
@@ -36,6 +44,8 @@ export const InstallPage: React.FC = () => {
   const [files, setFiles] = useState<IModFile[]>([])
   const [catalogFiles, setCatalogFiles] = useState<IModFile[]>([])
   const [activeTab, setActiveTab] = useState('install')
+  const [missingDownloadPrompt, setMissingDownloadPrompt] =
+    useState<MissingDownloadClassification | null>(null)
 
   // Generated up front (not at submit time) so it's stable across the whole
   // time the form is being filled out — used as the protocol's real id and,
@@ -142,11 +152,23 @@ export const InstallPage: React.FC = () => {
       setFiles,
       toast
     })
-      .then(() => {
+      .then(async () => {
         toast({
           title: 'SYSTEM: registry_import',
           description: `Imported "${pending.game.title}" from the registry — review, then create.`
         })
+
+        // Offer to auto-download the missing files the app can fetch itself
+        // (GitHub release assets, ModDB start pages); everything else stays
+        // a manual browser open. applyModpackImport doesn't return the
+        // ordered list, so re-derive it — matchImportFiles is pure and
+        // deterministic, so this matches exactly what's in the form.
+        const catalog = await api.getModFileCatalog()
+        const { files: orderedFiles } = matchImportFiles(pending.files, catalog, pending.configs)
+        const classification = classifyMissingDownloads(orderedFiles)
+        if (classification.inApp.length > 0 || classification.browserOnly.length > 0) {
+          setMissingDownloadPrompt(classification)
+        }
       })
       .catch((err: unknown) => {
         log.error('Failed to apply registry import:', err)
@@ -266,6 +288,20 @@ export const InstallPage: React.FC = () => {
   const templateSeedName = templateFile
     ? templateFile.name || templateFile.fileName || 'a mod file'
     : null
+
+  // Copy for the post-import download prompt (registry handoff).
+  const missingDownloadCopy = useMemo(() => {
+    if (!missingDownloadPrompt) return ''
+    const { inApp, browserOnly } = missingDownloadPrompt
+    const total = inApp.length + browserOnly.length
+    if (inApp.length > 0 && browserOnly.length > 0) {
+      return `${inApp.length} of ${total} missing files can be downloaded automatically — the other ${browserOnly.length} can only be fetched in your browser. Start the downloads?`
+    }
+    if (inApp.length > 0) {
+      return `${inApp.length} missing file${inApp.length > 1 ? 's' : ''} can be downloaded automatically. Start now?`
+    }
+    return `${browserOnly.length} missing file${browserOnly.length > 1 ? 's' : ''} can only be fetched in your browser — open the link${browserOnly.length > 1 ? 's' : ''} to download them manually.`
+  }, [missingDownloadPrompt])
 
   const onSubmit = async (data: z.infer<typeof formSchema>): Promise<void> => {
     const fileData: IModFile[] = files.map((file) => {
@@ -482,6 +518,50 @@ export const InstallPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Registry-install download prompt: auto-start the in-app downloads,
+          leave browser-only links to the user. */}
+      <Dialog
+        open={missingDownloadPrompt !== null}
+        onOpenChange={(open) => {
+          if (!open) setMissingDownloadPrompt(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Download missing mod files?</DialogTitle>
+            <DialogDescription>{missingDownloadCopy}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setMissingDownloadPrompt(null)}>
+              Cancel
+            </Button>
+            {missingDownloadPrompt && missingDownloadPrompt.browserOnly.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  openDownloadLinks(missingDownloadPrompt.browserOnly.map((f) => f.url as string))
+                  setMissingDownloadPrompt(null)
+                }}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Open {missingDownloadPrompt.browserOnly.length} in browser
+              </Button>
+            )}
+            {missingDownloadPrompt && missingDownloadPrompt.inApp.length > 0 && (
+              <Button
+                onClick={() => {
+                  openDownloadLinks(missingDownloadPrompt.inApp.map((f) => f.url as string))
+                  setMissingDownloadPrompt(null)
+                }}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download {missingDownloadPrompt.inApp.length} in-app
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
