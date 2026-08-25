@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { classifyMissingDownloads } from './classifyMissingDownloads'
+import { describe, it, expect, afterEach } from 'vitest'
+import { classifyMissingDownloads, openDownloadLinks } from './classifyMissingDownloads'
 
 const GH_ASSET = 'https://github.com/owner/repo/releases/download/v1.0/file.pk3'
 const MODDB_START = 'https://www.moddb.com/downloads/start/1234'
@@ -46,5 +46,29 @@ describe('classifyMissingDownloads', () => {
     const { inApp, browserOnly } = classifyMissingDownloads([])
     expect(inApp).toEqual([])
     expect(browserOnly).toEqual([])
+  })
+})
+
+describe('openDownloadLinks', () => {
+  const opened: string[] = []
+  let originalWindow: typeof globalThis.window
+
+  afterEach(() => {
+    opened.length = 0
+    globalThis.window = originalWindow
+  })
+
+  it('opens each unique url only once, preserving first-seen order', () => {
+    originalWindow = globalThis.window
+    globalThis.window = { open: (u: string) => opened.push(u) } as unknown as typeof globalThis.window
+    openDownloadLinks([GH_ASSET, GH_ASSET, GDRIVE, GH_ASSET, GDRIVE])
+    expect(opened).toEqual([GH_ASSET, GDRIVE])
+  })
+
+  it('does nothing for an empty list', () => {
+    originalWindow = globalThis.window
+    globalThis.window = { open: (u: string) => opened.push(u) } as unknown as typeof globalThis.window
+    openDownloadLinks([])
+    expect(opened).toEqual([])
   })
 })

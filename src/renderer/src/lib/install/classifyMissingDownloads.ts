@@ -41,10 +41,12 @@ export function classifyMissingDownloads(
 /**
  * Fire-and-forget URL opens routed by the main process's window-open
  * handler (in-app download vs external browser). Always denies the actual
- * window, so this never surfaces a popup.
+ * window, so this never surfaces a popup. A modpack that unpacks into
+ * several files can list the same download link multiple times — one
+ * download covers them all, so each unique URL is opened at most once.
  */
 export function openDownloadLinks(urls: string[]): void {
-  for (const url of urls) {
+  for (const url of new Set(urls)) {
     window.open(url, '_blank', 'noopener')
   }
 }
