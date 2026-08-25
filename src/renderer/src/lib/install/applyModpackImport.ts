@@ -155,7 +155,15 @@ export async function applyModpackImport(
       )
       form.setValue('screenshotPath', fileName)
     } catch (err: unknown) {
+      // Non-fatal — the rest of the import continues — but never fail
+      // silently: an empty screenshot field with no explanation reads as a
+      // broken import (and on Windows, path/name issues used to do exactly
+      // that).
       log.warn('Failed to import screenshot:', err)
+      toast({
+        title: 'SYSTEM: screenshot_import_failed',
+        description: `Screenshot could not be saved: ${err instanceof Error ? err.message : String(err)}`
+      })
     }
   } else if (game.screenshotPath) {
     form.setValue('screenshotPath', game.screenshotPath)

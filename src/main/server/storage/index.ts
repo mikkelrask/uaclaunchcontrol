@@ -45,6 +45,7 @@ export {
   downloadImage,
   readScreenshotAsBase64,
   writeScreenshotFromBase64,
+  sanitizeBaseName,
   createBlankProtocolConfig,
   copyConfigForProtocol,
   readConfigFileContent,

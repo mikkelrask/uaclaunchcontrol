@@ -287,14 +287,44 @@ export async function readScreenshotAsBase64(
   }
 }
 
+// Windows rejects these characters in filenames (all legal on POSIX), so a
+// name that imports fine on Linux would make fs.writeFile throw on Windows —
+// leaving the import with a silently empty screenshot field. Trailing
+// dots/spaces are likewise invalid there.
+const WINDOWS_ILLEGAL_FILENAME_CHARS = '<>:"/\\|?*'
+
+/**
+ * Strip everything a platform's filesystem can't store from an imported
+ * screenshot's base name, so one name works on every OS. Falls back to a
+ * generic slug rather than returning an empty string.
+ */
+export function sanitizeBaseName(name: string): string {
+  const cleaned = [...name]
+    .filter((ch) => ch.charCodeAt(0) >= 32 && !WINDOWS_ILLEGAL_FILENAME_CHARS.includes(ch))
+    .join('')
+    .replace(/[. ]+$/, '')
+    .trim()
+  return cleaned || 'screenshot'
+}
+
 // Write a base64-encoded image (from a modpack import) into the images
 // directory, mirroring copyImageToImages' unique-filename scheme and applying
 // the same downscaling so the file stays export-safe.
-export async function writeScreenshotFromBase64(fileName: string, data: string): Promise<string> {
-  const safeName = path.basename(fileName)
+export async function writeScreenshotFromBase64(
+  fileName: string | undefined,
+  data: string
+): Promise<string> {
+  // Missing/empty names (older or hand-crafted exports) get a generated one
+  // instead of path.basename(undefined) throwing and killing the import.
+  const safeName =
+    typeof fileName === 'string' && fileName.trim().length > 0
+      ? path.basename(fileName)
+      : `screenshot-${Date.now()}`
   const ext = path.extname(safeName)
   const { buffer, ext: outExt } = await resizeImageIfNeeded(Buffer.from(data, 'base64'), ext)
-  const baseName = ext ? safeName.slice(0, -ext.length) : safeName
+  const baseName = ext
+    ? sanitizeBaseName(safeName.slice(0, -ext.length))
+    : sanitizeBaseName(safeName)
   const uniqueFileName = `${Date.now()}_${baseName}${outExt}`
   const destPath = path.join(IMAGES_DIR, uniqueFileName)
 
