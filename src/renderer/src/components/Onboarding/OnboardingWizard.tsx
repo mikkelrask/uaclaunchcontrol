@@ -8,6 +8,7 @@ import uacLogo from '@/assets/UAC Logo.svg'
 import { WelcomeStep } from './WelcomeStep'
 import { SourcePortsStep } from './SourcePortsStep'
 import { WadFilesStep } from './WadFilesStep'
+import { RegistryStep } from './RegistryStep'
 import { CompleteStep } from './CompleteStep'
 import { OnboardingChrome } from './OnboardingChrome'
 import { BootSequence } from './BootSequence'
@@ -15,7 +16,7 @@ import { BootSequence } from './BootSequence'
 import { createLogger } from '@shared/logger'
 
 const log = createLogger('onboarding/OnboardingWizardx')
-const STEP_COUNT = 4
+const STEP_COUNT = 5
 
 interface OnboardingWizardProps {
   /** Start immediately without the getFirstRun round trip — used when the
@@ -97,7 +98,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
         .updateSettings({
           sourcePorts: draft.sourcePorts,
           defaultSourcePortId: draft.defaultSourcePortId,
-          defaultDoomVersionId: draft.defaultDoomVersionId
+          defaultDoomVersionId: draft.defaultDoomVersionId,
+          registryLookupEnabled: draft.registryLookupEnabled,
+          registryUuid: draft.registryUuid
         })
         .then(() => {
           // The settings query is globally mounted (App theme sync) and the
@@ -141,7 +144,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
         .updateSettings({
           sourcePorts: draft.sourcePorts,
           defaultSourcePortId: draft.defaultSourcePortId,
-          defaultDoomVersionId: draft.defaultDoomVersionId
+          defaultDoomVersionId: draft.defaultDoomVersionId,
+          registryLookupEnabled: draft.registryLookupEnabled,
+          registryUuid: draft.registryUuid
         })
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
@@ -227,7 +232,15 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
                 onBack={() => setStep(1)}
               />
             )}
-            {step === 3 && <CompleteStep onFinish={finish} onBack={() => setStep(2)} />}
+            {step === 3 && (
+              <RegistryStep
+                settings={draft}
+                setSettings={setDraftSettings}
+                onNext={() => setStep(4)}
+                onBack={() => setStep(2)}
+              />
+            )}
+            {step === 4 && <CompleteStep onFinish={finish} onBack={() => setStep(3)} />}
           </div>
         </div>
       )}
