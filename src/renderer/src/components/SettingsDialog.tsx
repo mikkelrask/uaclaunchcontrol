@@ -207,6 +207,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     try {
       const result = await api.downloadFreedoom(bundle)
       setDoomVersions(result.doomVersions)
+      // The WAD watcher usually fires for new files too, but refresh
+      // deterministically so the versions cache never goes stale
+      // (queryCacheContracts: downloadFreedoom → /api/versions).
+      queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
       toast({
         title: 'SYSTEM: freedoom_installed',
         description: `Installed: ${result.installed.join(', ')}`

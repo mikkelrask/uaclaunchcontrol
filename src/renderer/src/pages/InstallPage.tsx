@@ -223,6 +223,10 @@ export const InstallPage: React.FC = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
+      // The submit loop renamed catalog entries via updateInCatalog — refresh
+      // the catalog cache too, or add-file dialogs keep the old names.
+      queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog'] })
+      queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
       form.reset()
       setFiles([])
       // Navigate to the Games page

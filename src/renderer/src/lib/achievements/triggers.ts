@@ -1,5 +1,6 @@
 import { api } from '@/api'
-import type { IPlayerStats } from '@shared/schema'
+import { queryClient } from '@/lib/queryClient'
+import type { IPlayerData, IPlayerStats } from '@shared/schema'
 import type { AchievementEvent, AchievementCheckResult } from './types'
 import { checkAllAchievements, checkEventQualifiers } from './conditions'
 import { getAchievementDef } from './registry'
@@ -155,6 +156,29 @@ async function dispatchAchievementEventUnqueued(event: AchievementEvent): Promis
       await api.updateSettings({ rank: newRank } as never)
     }
   }
+
+  // 8. Sync the query cache so rank, achievement states, and live progress
+  // bars reflect this event immediately — no hard refresh needed. Stats
+  // change on every dispatch (even without new unlocks), so always refresh.
+  const nextAchievements = { ...playerData.achievements }
+  for (const unlock of allNewUnlocks) {
+    nextAchievements[unlock.id] = {
+      unlocked: true,
+      unlockedAt: new Date().toISOString(),
+      progress: unlock.progress,
+      target: unlock.target
+    }
+  }
+  queryClient.setQueryData<IPlayerData>(['/api/player-data'], {
+    ...playerData,
+    rank: newRank ?? playerData.rank,
+    stats: updatedStats,
+    achievements: nextAchievements
+  })
+  // Invalidate so any other consumer refetches the canonical server state —
+  // Header's rank fallback reads settings, which also carries rank.
+  queryClient.invalidateQueries({ queryKey: ['/api/player-data'] })
+  queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
 
   return {
     newUnlocks: allNewUnlocks,

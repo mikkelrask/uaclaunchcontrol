@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, FolderOpen, Download, Check } from 'lucide-react'
 import { api } from '@/api'
+import { queryClient } from '@/lib/queryClient'
 import type { IAppSettings, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 
@@ -58,6 +59,12 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
       await api.updateSettings({ wadFilesDirectory: dir })
       const versions = await api.getDoomVersions()
       setDoomVersions(versions)
+      // Refresh the shared caches so the new directory and re-scanned WADs
+      // show up immediately in InstallPage/Settings — the WAD watcher event
+      // usually covers versions, but the settings cache never refreshes on
+      // its own (staleTime: Infinity).
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
+      queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
     } catch {
       // Directory persistence is best-effort here — the field itself already
       // reflects the user's intent, and the main Settings dialog remains the
@@ -83,6 +90,9 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
     try {
       const result = await api.downloadFreedoom(bundle)
       setDoomVersions(result.doomVersions)
+      // New IWADs are on disk now — make the versions cache refetch so the
+      // new-protocol form lists them without a restart.
+      queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
     } catch (e: unknown) {
       setFreedoomError(e instanceof Error ? e.message : 'Download failed')
     } finally {

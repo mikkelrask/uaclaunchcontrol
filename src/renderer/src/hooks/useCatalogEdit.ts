@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
+import { queryClient } from '@/lib/queryClient'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import { debug } from '@shared/debug'
 import { deriveFileType } from '@/lib/install/parsers'
@@ -244,6 +245,11 @@ export function useCatalogEdit({
       setIsEditModalOpen(false)
 
       const freshCatalog = await api.getModFileCatalog()
+      // Mirror useFileImport/useCatalogAdd: without updating the shared
+      // catalog cache, other views (add-file selectors, search) keep the
+      // pre-edit entry until a restart (staleTime: Infinity).
+      queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
+      queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
       onChange(freshCatalog)
       setSelectedFile(null)
     } catch (error: unknown) {

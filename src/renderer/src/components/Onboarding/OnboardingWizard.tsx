@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '@/api'
+import { queryClient } from '@/lib/queryClient'
 import { useToast } from '@/hooks/use-toast'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import type { IAppSettings } from '@shared/schema'
@@ -82,6 +83,13 @@ export const OnboardingWizard: React.FC = () => {
           defaultSourcePortId: draft.defaultSourcePortId,
           defaultDoomVersionId: draft.defaultDoomVersionId
         })
+        .then(() => {
+          // The settings query is globally mounted (App theme sync) and the
+          // cache is immutable (staleTime: Infinity) — without this, source
+          // ports added here never show up in the new-protocol form until a
+          // restart (the WAD watcher covers versions, but not settings).
+          queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
+        })
         .catch((err: unknown) => log.error(err))
 
       const activeFamilies = (draft.sourcePorts || [])
@@ -109,9 +117,24 @@ export const OnboardingWizard: React.FC = () => {
 
   const finish = useCallback(() => {
     api.dismissFirstRun().catch((err: unknown) => log.error(err))
+    // Flush any changes still inside the debounce window — the timer is
+    // cleared on unmount below, so finishing fast would otherwise drop the
+    // last edit (ports/WAD default). Same payload as the debounced save.
+    if (draft) {
+      api
+        .updateSettings({
+          sourcePorts: draft.sourcePorts,
+          defaultSourcePortId: draft.defaultSourcePortId,
+          defaultDoomVersionId: draft.defaultDoomVersionId
+        })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
+        })
+        .catch((err: unknown) => log.error(err))
+    }
     setIsActive(false)
     setDraft(null)
-  }, [])
+  }, [draft])
 
   useEffect(() => {
     if (!isActive) return
