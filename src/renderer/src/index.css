@@ -572,13 +572,11 @@
     }
   }
 
+  /* Reduced motion suppresses the jarring glitch step transition only. The
+     ambient HUD texture — the scrolling terminal-log feed and scanline
+     flicker — is slow, decorative backdrop (26s / 7s loops) and keeps
+     running; it's the themed life of the onboarding screen. */
   @media (prefers-reduced-motion: reduce) {
-    .uac-scanlines {
-      animation: none;
-    }
-    .uac-log-track {
-      animation: none;
-    }
     .uac-step-enter {
       animation: none;
     }
