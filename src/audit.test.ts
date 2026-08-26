@@ -20,11 +20,17 @@ interface AuditVuln {
 
 describe('npm audit', () => {
   it('no high-severity vulnerabilities in dependencies (except accepted unpatched advisories)', () => {
-    const result = spawnSync('npm', ['audit', '--json', '--omit=dev'], {
+    // On Windows npm is npm.cmd; spawnSync('npm') fails to launch (EINVAL)
+    // because Node cannot execute a bare .cmd without the extension.
+    const npmExecutable = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+    const result = spawnSync(npmExecutable, ['audit', '--json', '--omit=dev'], {
       encoding: 'utf8',
       timeout: 30_000
     })
-    expect(result.status, result.stderr || 'npm audit failed to run').not.toBeNull()
+    expect(
+      result.status,
+      result.error?.message || result.stderr || 'npm audit failed to run'
+    ).not.toBeNull()
 
     const audit = JSON.parse(result.stdout) as { vulnerabilities?: Record<string, AuditVuln> }
     const entries = Object.entries(audit.vulnerabilities ?? {})

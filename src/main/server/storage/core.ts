@@ -250,7 +250,12 @@ export async function saveSettings(settings: Partial<IAppSettings>): Promise<IAp
 }
 
 export function resolvePath(p: string): string {
-  if (p && typeof p === 'string' && p.startsWith('~')) return p.replace(/^~/, os.homedir())
+  if (p && typeof p === 'string' && p.startsWith('~')) {
+    // path.normalize joins os.homedir() with the remainder using the platform
+    // separator — a bare replace() would yield mixed separators on Windows
+    // (e.g. C:\Users\runneradmin/test).
+    return path.normalize(p.replace(/^~/, os.homedir()))
+  }
   return p
 }
 
