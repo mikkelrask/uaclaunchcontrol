@@ -1,0 +1,10 @@
+name: Search Registry
+method: GET
+url: $base_url/api/search/registry
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+params:
+  - name: q
+    value: ''
+body_type: none

@@ -1,0 +1,12 @@
+name: Import Screenshot
+method: POST
+url: $base_url/api/screenshots/import
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "fileName": "screenshot.png",
+    "data": "<base64 data>"
+  }
+body_type: json

@@ -1,0 +1,14 @@
+name: Download Port Release
+method: POST
+url: $base_url/api/ports/download
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "downloadUrl": "https://example.com/gzdoom-linux-x86_64.tar.xz",
+    "assetName": "gzdoom-linux-x86_64.tar.xz",
+    "family": "gzdoom",
+    "version": "4.12.2"
+  }
+body_type: json

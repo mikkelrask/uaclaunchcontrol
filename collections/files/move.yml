@@ -1,0 +1,12 @@
+name: Move File
+method: POST
+url: $base_url/api/move-file
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "filePath": "/path/to/source",
+    "newPath": "/path/to/destination"
+  }
+body_type: json

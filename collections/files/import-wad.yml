@@ -1,0 +1,11 @@
+name: Import WAD
+method: POST
+url: $base_url/api/wads/import
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "sourcePath": "/path/to/mod.pk3"
+  }
+body_type: json

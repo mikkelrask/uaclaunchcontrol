@@ -1,0 +1,11 @@
+name: Upload Config
+method: POST
+url: $base_url/api/configs/upload
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "filePath": "/path/to/config.cfg"
+  }
+body_type: json

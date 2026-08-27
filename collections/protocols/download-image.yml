@@ -1,0 +1,12 @@
+name: Download Protocol Image
+method: POST
+url: $base_url/api/protocol/download-image
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "url": "https://example.com/image.png",
+    "protocolId": "$protocol_id"
+  }
+body_type: json

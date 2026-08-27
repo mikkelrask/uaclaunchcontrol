@@ -1,0 +1,14 @@
+name: Create Protocol
+method: POST
+url: $base_url/api/protocols
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "protocol": {
+      "title": "My Resource"
+    },
+    "files": []
+  }
+body_type: json

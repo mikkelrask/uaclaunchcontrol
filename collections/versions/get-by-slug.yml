@@ -1,0 +1,10 @@
+name: Get Version by Slug
+method: GET
+url: $base_url/api/versions/:slug
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+path_params:
+  - name: slug
+    value: $version_slug
+body_type: none

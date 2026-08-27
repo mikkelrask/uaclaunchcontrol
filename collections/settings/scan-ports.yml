@@ -1,0 +1,7 @@
+name: Scan Source Ports
+method: GET
+url: $base_url/api/settings/scan-ports
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body_type: none

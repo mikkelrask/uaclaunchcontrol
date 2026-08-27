@@ -1,0 +1,11 @@
+name: Move Mod File
+method: POST
+url: $base_url/api/mod-files/move
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "sourcePath": "/path/to/mod.pk3"
+  }
+body_type: json

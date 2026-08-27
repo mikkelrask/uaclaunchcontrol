@@ -1,0 +1,11 @@
+name: Unrar Scan
+method: POST
+url: $base_url/api/mod-files/unrar-scan
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "rarFilePath": "/path/to/archive.rar"
+  }
+body_type: json

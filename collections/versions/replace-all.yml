@@ -1,0 +1,15 @@
+name: Replace All Versions
+method: PUT
+url: $base_url/api/versions
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  [
+    {
+      "id": "example",
+      "name": "Example Version",
+      "slug": "example"
+    }
+  ]
+body_type: json

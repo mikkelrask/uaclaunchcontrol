@@ -1,0 +1,10 @@
+name: Get Image
+method: GET
+url: $base_url/images/:fileName
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+path_params:
+  - name: fileName
+    value: $image_filename
+body_type: none

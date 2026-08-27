@@ -1,0 +1,11 @@
+name: Update Player Stats
+method: POST
+url: $base_url/api/player-data/stats
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "totalPlaytimeSeconds": 60
+  }
+body_type: json

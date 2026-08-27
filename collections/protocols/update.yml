@@ -1,0 +1,22 @@
+name: Update Protocol
+method: PUT
+url: $base_url/api/protocols/:id
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+path_params:
+  - name: id
+    value: $protocol_id
+body: |-
+  {
+    "protocol": {
+      "title": "Updated Resource"
+    },
+    "files": [
+      {
+        "filePath": "data/file.ext",
+        "fileType": "file"
+      }
+    ]
+  }
+body_type: json

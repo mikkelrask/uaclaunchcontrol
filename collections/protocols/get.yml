@@ -1,0 +1,10 @@
+name: Get Protocol
+method: GET
+url: $base_url/api/protocols/:id
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+path_params:
+  - name: id
+    value: $protocol_id
+body_type: none

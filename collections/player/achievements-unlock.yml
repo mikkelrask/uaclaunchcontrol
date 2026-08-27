@@ -1,0 +1,12 @@
+name: Unlock Achievement
+method: POST
+url: $base_url/api/player-data/achievements/unlock
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "id": "achievement-id",
+    "state": true
+  }
+body_type: json

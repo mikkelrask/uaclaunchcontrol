@@ -1,0 +1,13 @@
+name: Add File to Catalog
+method: POST
+url: $base_url/api/mod-files/catalog
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "filePath": "mods/file.ext",
+    "fileName": "file.ext",
+    "fileType": "file"
+  }
+body_type: json

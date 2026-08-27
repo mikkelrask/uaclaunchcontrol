@@ -1,0 +1,11 @@
+name: Update Settings
+method: PUT
+url: $base_url/api/settings
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "key": "value"
+  }
+body_type: json

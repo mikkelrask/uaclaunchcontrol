@@ -1,0 +1,11 @@
+name: Hash Mod File
+method: POST
+url: $base_url/api/mod-files/hash
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "filePath": "/path/to/file"
+  }
+body_type: json

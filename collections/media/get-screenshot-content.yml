@@ -1,0 +1,10 @@
+name: Get Screenshot Content
+method: GET
+url: $base_url/api/screenshots/:fileName/content
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+path_params:
+  - name: fileName
+    value: $image_filename
+body_type: none

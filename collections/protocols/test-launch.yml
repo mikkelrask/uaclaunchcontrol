@@ -1,0 +1,14 @@
+name: Test-Launch Protocol
+method: POST
+url: $base_url/api/protocols/test-launch
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "protocol": {
+      "title": "Test Resource"
+    },
+    "files": []
+  }
+body_type: json

@@ -1,0 +1,14 @@
+name: Record Playtime
+method: POST
+url: $base_url/api/protocols/:id/playtime
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+path_params:
+  - name: id
+    value: $protocol_id
+body: |-
+  {
+    "sessionSeconds": 60
+  }
+body_type: json

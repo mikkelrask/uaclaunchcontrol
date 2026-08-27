@@ -1,0 +1,15 @@
+name: Update Catalog Entry
+method: PUT
+url: $base_url/api/mod-files/catalog/:id
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+path_params:
+  - name: id
+    value: $catalog_file_id
+body: |-
+  {
+    "fileType": "file",
+    "fileOrder": 1
+  }
+body_type: json

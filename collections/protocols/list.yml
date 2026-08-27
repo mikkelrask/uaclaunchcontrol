@@ -1,0 +1,12 @@
+name: List Protocols
+method: GET
+url: $base_url/api/protocols
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+params:
+  - name: version
+    value: $version_slug
+  - name: search
+    value: ''
+body_type: none

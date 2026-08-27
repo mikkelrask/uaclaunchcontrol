@@ -1,0 +1,11 @@
+name: Download FreeDoom Bundle
+method: POST
+url: $base_url/api/freedoom/download
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "bundle": "phase12"
+  }
+body_type: json

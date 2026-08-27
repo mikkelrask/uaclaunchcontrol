@@ -1,0 +1,10 @@
+name: Search Catalog
+method: GET
+url: $base_url/api/mod-files/catalog/search
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+params:
+  - name: q
+    value: ''
+body_type: none

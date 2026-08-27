@@ -1,0 +1,10 @@
+name: Get Media
+method: GET
+url: $base_url/api/media
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+params:
+  - name: path
+    value: /home/user/media.png
+body_type: none

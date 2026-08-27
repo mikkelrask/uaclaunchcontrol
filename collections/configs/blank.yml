@@ -1,0 +1,12 @@
+name: Create Blank Config
+method: POST
+url: $base_url/api/configs/blank
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "protocolId": "$protocol_id",
+    "ext": ".cfg"
+  }
+body_type: json

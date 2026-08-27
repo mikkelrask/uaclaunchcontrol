@@ -1,0 +1,17 @@
+name: Unzip Import
+method: POST
+url: $base_url/api/mod-files/unzip-import
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "tempDir": "/tmp/uac-unzip",
+    "filesToImport": [
+      {
+        "filePath": "/tmp/uac-unzip/file.pk3",
+        "fileName": "file.pk3"
+      }
+    ]
+  }
+body_type: json

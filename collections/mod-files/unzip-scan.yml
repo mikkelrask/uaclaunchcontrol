@@ -1,0 +1,11 @@
+name: Unzip Scan
+method: POST
+url: $base_url/api/mod-files/unzip-scan
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "zipFilePath": "/path/to/archive.zip"
+  }
+body_type: json

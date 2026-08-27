@@ -1,0 +1,10 @@
+name: Get Config
+method: GET
+url: $base_url/api/configs/:key
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+path_params:
+  - name: key
+    value: $config_key
+body_type: none

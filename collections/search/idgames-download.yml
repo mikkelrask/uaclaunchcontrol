@@ -1,0 +1,12 @@
+name: Download idgames File
+method: POST
+url: $base_url/api/search/idgames/download
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "downloadUrl": "https://example.com/file.pk3",
+    "title": "File"
+  }
+body_type: json

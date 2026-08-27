@@ -1,0 +1,13 @@
+name: Delete Catalog Entry
+method: DELETE
+url: $base_url/api/mod-files/catalog/:id
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+params:
+  - name: deleteFile
+    value: 'false'
+path_params:
+  - name: id
+    value: $catalog_file_id
+body_type: none

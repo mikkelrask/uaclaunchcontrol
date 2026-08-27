@@ -1,0 +1,7 @@
+name: Dismiss First-Run
+method: POST
+url: $base_url/api/first-run/dismiss
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body_type: none

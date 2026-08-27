@@ -1,0 +1,12 @@
+name: Copy Config for Protocol
+method: POST
+url: $base_url/api/configs/copy-for-protocol
+timeout: 0
+followRedirects: true
+maxRedirects: 5
+body: |-
+  {
+    "templateHash": "<hash>",
+    "protocolId": "$protocol_id"
+  }
+body_type: json
