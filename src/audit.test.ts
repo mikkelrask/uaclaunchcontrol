@@ -20,10 +20,19 @@ interface AuditVuln {
 
 describe('npm audit', () => {
   it('no high-severity vulnerabilities in dependencies (except accepted unpatched advisories)', () => {
-    // On Windows npm is npm.cmd; spawnSync('npm') fails to launch (EINVAL)
-    // because Node cannot execute a bare .cmd without the extension.
-    const npmExecutable = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-    const result = spawnSync(npmExecutable, ['audit', '--json', '--omit=dev'], {
+    // Spawning npm's own npm-cli.js through the running Node binary avoids
+    // .cmd shim resolution entirely. Plain spawnSync('npm.cmd') works on a
+    // local Windows shell but fails with EINVAL on GitHub Actions windows
+    // runners (broken npm.cmd PATH shims). npm sets npm_execpath whenever a
+    // script runs under npm/npx; fall back to npm/npm.cmd for direct
+    // invocations (e.g. vitest without npm).
+    const npmCli = process.env.npm_execpath
+    const [cmd, args] = npmCli
+      ? [process.execPath, [npmCli, 'audit', '--json', '--omit=dev']]
+      : process.platform === 'win32'
+        ? ['npm.cmd', ['audit', '--json', '--omit=dev']]
+        : ['npm', ['audit', '--json', '--omit=dev']]
+    const result = spawnSync(cmd, args, {
       encoding: 'utf8',
       timeout: 30_000
     })
