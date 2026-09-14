@@ -192,7 +192,12 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                       const reqFileName = reqFile.fileName || reqFile.name || ''
                       const reqExt = reqFileName.split('.').pop()?.toUpperCase() || ''
                       let reqFileType = 'WAD'
-                      if (reqExt === 'PK3' || reqExt === 'IPK3' || reqExt === 'ZIP') {
+                      if (
+                        reqExt === 'PK3' ||
+                        reqExt === 'IPK3' ||
+                        reqExt === 'ZIP' ||
+                        reqExt === '7Z'
+                      ) {
                         reqFileType = 'PK3'
                       } else if (reqExt === 'DEH' || reqExt === 'BEX') {
                         reqFileType = 'DEH'
@@ -215,7 +220,12 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                   const fileName = catalogFile.fileName || catalogFile.name || ''
                   const extension = fileName.split('.').pop()?.toUpperCase() || ''
                   let fileType = 'WAD'
-                  if (extension === 'PK3' || extension === 'IPK3' || extension === 'ZIP') {
+                  if (
+                    extension === 'PK3' ||
+                    extension === 'IPK3' ||
+                    extension === 'ZIP' ||
+                    extension === '7Z'
+                  ) {
                     fileType = 'PK3'
                   } else if (extension === 'DEH' || extension === 'BEX') {
                     fileType = 'DEH'

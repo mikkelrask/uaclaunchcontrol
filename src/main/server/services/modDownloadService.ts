@@ -20,6 +20,7 @@ import { computeFileHashOrThrow, getSettings } from '../storage/core'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import type { ModDownloadEvent, ModDownloadRegistryMeta } from '@shared/modDownload'
 import { isGithubArchiveUrl, isGithubReleaseAsset, isModdbStartPage } from '@shared/mod-download-url'
+import { getArchiveExtension } from '@shared/archive'
 import { debug } from '@shared/debug'
 import { createLogger } from '@shared/logger'
 
@@ -307,8 +308,8 @@ async function finalizeDownload(task: DownloadTask): Promise<void> {
     if (!destPath) throw new Error('Download completed without a destination path')
     const ext = path.extname(destPath).toLowerCase()
 
-    if (ext === '.zip' || ext === '.rar') {
-      // Archives go through the existing ZipImportModal flow — the file stays
+    if (getArchiveExtension(destPath)) {
+      // Archives go through the existing ArchiveImportModal flow — the file stays
       // in the downloads dir until the user imports (or cancels) it. Look up
       // the archive's registry entry so the import UI can carry the mod's
       // metadata (name/version/url/category) instead of showing raw files.
@@ -347,7 +348,7 @@ async function finalizeDownload(task: DownloadTask): Promise<void> {
     }
 
     // Enrich from the registry (display name, version, category, preferred
-    // url) — same enrichment the ZipImportModal applies on archive imports.
+    // url) — same enrichment the ArchiveImportModal applies on archive imports.
     // Falls back to filename-derived values when the hash isn't registered.
     const registryMod = await lookupRegistryMod(hashValue, task.url)
     const catalogEntry = await addModFileToCatalog({

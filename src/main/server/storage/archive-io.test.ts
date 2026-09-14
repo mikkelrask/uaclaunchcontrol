@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import fs from 'fs-extra'
 import os from 'os'
 import path from 'path'
-import { extractZipSafe } from './archive-io'
+import { extractZipSafe, extract7zSafe, scanArchiveFile, sevenZipAndScan } from './archive-io'
 
 interface ZipEntry {
   name: string
@@ -135,5 +135,92 @@ describe('extractZipSafe', () => {
     } finally {
       await cleanup()
     }
+  })
+})
+
+// ── 7z extraction ──────────────────────────────────────────────────────────
+//
+// Fixtures live in ./__fixtures__ and were produced with:
+//   * archive.7z       — py7zr writes `mods/readme.txt` + `mods/nested/map.wad`
+//   * archive-hostile.7z — same, plus two symlink entries (`mods/inside.link` →
+//     `readme.txt`, `mods/outside.link` → `/etc/passwd`) and two entries whose
+//     names escape the extraction root (`../escape.txt`, `/tmp/…`) — py7zr's
+//     internal `_writestr` skips the path check its public API applies.
+
+describe('extract7zSafe', () => {
+  const FIXTURES = path.join(__dirname, '__fixtures__')
+
+  /** Temp host layout: `<dir>/in` holds the archive, `<dir>/out` is extracted into. */
+  async function extractToTemp(archive: string): Promise<{
+    dir: string
+    outDir: string
+    cleanup: () => Promise<void>
+  }> {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'uac-7ztest-'))
+    const inDir = path.join(dir, 'in')
+    const outDir = path.join(dir, 'out')
+    await fs.ensureDir(inDir)
+    await fs.ensureDir(outDir)
+    await fs.copy(path.join(FIXTURES, archive), path.join(inDir, archive))
+    return { dir, outDir, cleanup: () => fs.remove(dir) }
+  }
+
+  it('extracts nested files and directories', async () => {
+    const { dir, outDir, cleanup } = await extractToTemp('archive.7z')
+    try {
+      await extract7zSafe(path.join(dir, 'in/archive.7z'), outDir)
+      expect(await fs.readFile(path.join(outDir, 'mods/readme.txt'), 'utf8')).toContain(
+        'UAC archive fixture'
+      )
+      expect(await fs.readFile(path.join(outDir, 'mods/nested/map.wad'))).toEqual(
+        Buffer.from('WAD\x00fixture')
+      )
+    } finally {
+      await cleanup()
+    }
+  })
+
+  it('never recreates symlinks and keeps escaping entries inside the destination', async () => {
+    const { dir, outDir, cleanup } = await extractToTemp('archive-hostile.7z')
+    try {
+      await extract7zSafe(path.join(dir, 'in/archive-hostile.7z'), outDir)
+
+      // 7-Zip was told not to restore links — neither the benign nor the
+      // /etc/passwd-pointing entry may exist afterwards.
+      expect(await fs.pathExists(path.join(outDir, 'mods/inside.link'))).toBe(false)
+      expect(await fs.pathExists(path.join(outDir, 'mods/outside.link'))).toBe(false)
+
+      // `../escape.txt` and `/tmp/…` are rewritten relative to the destination
+      // instead of resolving to their literal (outside) locations.
+      expect(await fs.pathExists(path.join(outDir, 'escape.txt'))).toBe(true)
+      expect(await fs.pathExists(path.join(outDir, 'tmp/7ztest-escaped.txt'))).toBe(true)
+
+      // Nothing landed next to the archive/extraction dirs.
+      expect((await fs.readdir(dir)).sort()).toEqual(['in', 'out'])
+      expect(await fs.pathExists(path.join(dir, 'escape.txt'))).toBe(false)
+    } finally {
+      await cleanup()
+    }
+  })
+
+  it('reports a readable error for a file that is not a 7z archive', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'uac-7ztest-'))
+    try {
+      const bogus = path.join(dir, 'bogus.7z')
+      await fs.writeFile(bogus, Buffer.from('definitely not a 7z archive'))
+      await expect(sevenZipAndScan(bogus)).rejects.toThrow(
+        /Failed to extract 7Z archive: .*(not archive|Cannot open)/i
+      )
+    } finally {
+      await fs.remove(dir)
+    }
+  })
+})
+
+describe('scanArchiveFile', () => {
+  it('rejects paths that are not a supported archive', async () => {
+    await expect(scanArchiveFile('/tmp/definitely-not-an-archive.wad')).rejects.toThrow(
+      /Unsupported archive type/
+    )
   })
 })

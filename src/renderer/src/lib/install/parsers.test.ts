@@ -104,6 +104,11 @@ describe('deriveFileType', () => {
     expect(deriveFileType('ipk3')).toBe('PK3')
   })
 
+  it('returns PK3 for 7z archives (same container as pk7)', () => {
+    expect(deriveFileType('7z')).toBe('PK3')
+    expect(deriveFileType('.7Z')).toBe('PK3')
+  })
+
   it('returns DEH for deh', () => {
     expect(deriveFileType('deh')).toBe('DEH')
   })

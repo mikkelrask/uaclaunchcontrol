@@ -5,23 +5,22 @@ import type { UseModDownloadsReturn } from '@/hooks/useModDownloads'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import type { ModDownloadEvent, ModDownloadRegistryMeta } from '@shared/modDownload'
-import type { ZipScanResult } from '@/types/zipImport'
-import { ZipImportModal } from '@/components/ZipImportModal'
+import type { ArchiveScanResult } from '@/types/archiveImport'
+import { ArchiveImportModal } from '@/components/ArchiveImportModal'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 
 import { createLogger } from '@shared/logger'
+import { getArchiveExtension } from '@shared/archive'
 
 const log = createLogger('ModDownloadManager')
 
-interface ZipImportState {
-  scanResult: ZipScanResult
+interface ArchiveImportState {
+  scanResult: ArchiveScanResult
   filePath: string
   registryMeta?: ModDownloadRegistryMeta
 }
-
-const ARCHIVE_EXT_RE = /\.(zip|rar)$/i
 
 interface ModDownloadManagerProps {
   /** Shared download state — the card stack renders inside the toast
@@ -30,8 +29,8 @@ interface ModDownloadManagerProps {
 }
 
 /**
- * Owns the in-app mod download lifecycle: .zip/.rar completions hand off to
- * the ZipImportModal, catalog additions invalidate catalog/protocol queries.
+ * Owns the in-app mod download lifecycle: zip/rar/7z completions hand off to
+ * the ArchiveImportModal, catalog additions invalidate catalog/protocol queries.
  * The download cards themselves render in the Toaster, stacked with the
  * regular toast notifications in one bottom-right column.
  */
@@ -41,21 +40,21 @@ export function ModDownloadManager({
   const { downloads, dismiss } = modDownloads
   const queryClient = useQueryClient()
   const { toast } = useToast()
-  const [zipImport, setZipImport] = useState<ZipImportState | null>(null)
-  const scannedZipIds = useRef<Set<string>>(new Set())
+  const [archiveImport, setArchiveImport] = useState<ArchiveImportState | null>(null)
+  const scannedArchiveIds = useRef<Set<string>>(new Set())
   const invalidatedIds = useRef<Set<string>>(new Set())
 
-  // Hand off completed .zip/.rar downloads to the ZipImportModal. The card is
+  // Hand off completed archive downloads to the ArchiveImportModal. The card is
   // dismissed since the modal takes over; a cancelled modal leaves the file in
   // the downloads dir (same as an OS downloads folder).
   useEffect(() => {
     for (const event of Object.values(downloads)) {
       if (event.state !== 'completed' || !event.filePath) continue
-      if (!ARCHIVE_EXT_RE.test(event.filePath)) continue
-      if (scannedZipIds.current.has(event.id)) continue
-      scannedZipIds.current.add(event.id)
+      if (!getArchiveExtension(event.filePath)) continue
+      if (scannedArchiveIds.current.has(event.id)) continue
+      scannedArchiveIds.current.add(event.id)
       dismiss(event.id)
-      void openZipImport(event.filePath, event.registry)
+      void openArchiveImport(event.filePath, event.registry)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [downloads, dismiss])
@@ -79,45 +78,42 @@ export function ModDownloadManager({
     }
   }, [downloads, queryClient])
 
-  const openZipImport = async (
+  const openArchiveImport = async (
     filePath: string,
     registryMeta?: ModDownloadRegistryMeta
   ): Promise<void> => {
-    const isRar = filePath.toLowerCase().endsWith('.rar')
     try {
       toast({ title: 'SYSTEM: decompressing', description: 'Analyzing archive contents.' })
-      const scan = (
-        isRar ? await api.unrarScan(filePath) : await api.unzipScan(filePath)
-      ) as ZipScanResult
-      setZipImport({ scanResult: scan, filePath, registryMeta })
+      const scan = (await api.archiveScan(filePath)) as ArchiveScanResult
+      setArchiveImport({ scanResult: scan, filePath, registryMeta })
     } catch (error: unknown) {
       log.error(error)
       toast({
-        title: isRar ? 'FATAL: decompress_failed' : 'FATAL: zip_scan_failed',
+        title: 'FATAL: archive_scan_failed',
         description: error instanceof Error ? error.message : 'Failed to scan archive',
         variant: 'destructive'
       })
     }
   }
 
-  const handleZipImportComplete = async (): Promise<void> => {
+  const handleArchiveImportComplete = async (): Promise<void> => {
     await queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog'] })
     await queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
-    setZipImport(null)
+    setArchiveImport(null)
   }
 
   return (
     <>
-      {zipImport && (
-        <ZipImportModal
+      {archiveImport && (
+        <ArchiveImportModal
           open
-          scanResult={zipImport.scanResult}
-          zipFilePath={zipImport.filePath}
-          registryMeta={zipImport.registryMeta}
+          scanResult={archiveImport.scanResult}
+          archiveFilePath={archiveImport.filePath}
+          registryMeta={archiveImport.registryMeta}
           onOpenChange={(open) => {
-            if (!open) setZipImport(null)
+            if (!open) setArchiveImport(null)
           }}
-          onImportComplete={() => void handleZipImportComplete()}
+          onImportComplete={() => void handleArchiveImportComplete()}
         />
       )}
     </>

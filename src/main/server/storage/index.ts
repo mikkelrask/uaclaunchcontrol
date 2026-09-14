@@ -64,5 +64,5 @@ export {
 } from './protocols'
 
 // Archive I/O
-export { unzipAndScan, unrarAndScan, importUnzippedFiles } from './archive-io'
-export type { IUnzipScanResult, IZipImportFile } from './archive-io'
+export { scanArchiveFile, importArchiveFiles } from './archive-io'
+export type { IArchiveScanResult, IArchiveImportFile } from './archive-io'

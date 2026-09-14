@@ -104,7 +104,9 @@ export function parseBatContent(content: string): BatParseResult {
 export function deriveFileType(ext: string): string {
   const upper = ext.replace(/^\./, '').toUpperCase()
   if (upper === 'ZIP') return 'ZIP'
-  if (upper === 'PK3' || upper === 'PK7' || upper === 'IPK3') return 'PK3'
+  // `.pk7` and `.7z` are both 7-Zip containers the source ports load as
+  // archives, so they carry the PK3 label this app uses for .pk7.
+  if (upper === 'PK3' || upper === 'PK7' || upper === 'IPK3' || upper === '7Z') return 'PK3'
   if (upper === 'DEH' || upper === 'BEX') return 'DEH'
   return 'WAD'
 }

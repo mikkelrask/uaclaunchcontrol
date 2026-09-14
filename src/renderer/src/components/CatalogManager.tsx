@@ -14,8 +14,9 @@ import { Upload } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import { CATEGORIES } from '@shared/categories'
+import { ARCHIVE_EXTENSIONS, getArchiveExtension } from '@shared/archive'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ZipImportModal } from '@/components/ZipImportModal'
+import { ArchiveImportModal } from '@/components/ArchiveImportModal'
 import { useFileImport } from '@/hooks/useFileImport'
 import { useCatalogAdd } from '@/hooks/useCatalogAdd'
 import { useCatalogEdit } from '@/hooks/useCatalogEdit'
@@ -46,12 +47,12 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   const availableRequiredFiles = catalogFiles.filter((f) => !f.sidecarOnly && f.hashValue)
 
   const {
-    isZipModalOpen,
-    setIsZipModalOpen,
-    zipScanResult,
-    zipFilePath,
-    tryZipImport,
-    handleZipImportComplete
+    isArchiveModalOpen,
+    setIsArchiveModalOpen,
+    archiveScanResult,
+    archiveFilePath,
+    tryArchiveImport,
+    handleArchiveImportComplete
   } = useFileImport({ onChange })
 
   const {
@@ -68,7 +69,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     handleBrowseConfigFile,
     handleClearConfigFile,
     resetLookupState
-  } = useCatalogAdd({ files, onChange, catalogFiles, availableRequiredFiles, tryZipImport })
+  } = useCatalogAdd({ files, onChange, catalogFiles, availableRequiredFiles, tryArchiveImport })
 
   const {
     editForm,
@@ -100,21 +101,23 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     const droppedPath = processDrop(e)
     if (!droppedPath) return
 
-    const ext = droppedPath.split('.').pop()?.toUpperCase()
-    const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'ZIP', 'RAR', 'BAT']
-    if (!ext || !validExtensions.includes(ext)) {
-      toast({
-        title: 'FATAL: type_unknow',
-        description:
-          'Please only use supported files: wad, pk3, pk7, ipk3, deh, bex, zip, rar, bat',
-        variant: 'destructive'
-      })
+    if (getArchiveExtension(droppedPath)) {
+      await tryArchiveImport(droppedPath)
       return
     }
 
-    if (ext === 'ZIP' || ext === 'RAR') {
-      const handled = await tryZipImport(droppedPath, ext)
-      if (handled) return
+    const ext = droppedPath.split('.').pop()?.toUpperCase()
+    const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'BAT']
+    if (!ext || !validExtensions.includes(ext)) {
+      toast({
+        title: 'FATAL: type_unknow',
+        description: `Please only use supported files: ${[
+          ...validExtensions.map((supported) => supported.toLowerCase()),
+          ...ARCHIVE_EXTENSIONS
+        ].join(', ')}`,
+        variant: 'destructive'
+      })
+      return
     }
 
     if (ext === 'BAT') {
@@ -355,12 +358,12 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         onConfirm={confirmDelete}
       />
 
-      <ZipImportModal
-        open={isZipModalOpen}
-        onOpenChange={setIsZipModalOpen}
-        scanResult={zipScanResult}
-        zipFilePath={zipFilePath || undefined}
-        onImportComplete={handleZipImportComplete}
+      <ArchiveImportModal
+        open={isArchiveModalOpen}
+        onOpenChange={setIsArchiveModalOpen}
+        scanResult={archiveScanResult}
+        archiveFilePath={archiveFilePath || undefined}
+        onImportComplete={handleArchiveImportComplete}
       />
     </div>
   )

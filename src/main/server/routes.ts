@@ -431,39 +431,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   )
 
   app.post(
-    '/api/mod-files/unzip-scan',
+    '/api/mod-files/archive-scan',
     wrapRoute(async (req, res) => {
-      const { zipFilePath } = req.body
-      if (!zipFilePath) {
-        return res.status(400).json({ message: 'Missing zipFilePath' })
+      const { archiveFilePath } = req.body
+      if (!archiveFilePath) {
+        return res.status(400).json({ message: 'Missing archiveFilePath' })
       }
-      const result = await storage.unzipAndScan(zipFilePath)
+      const result = await storage.scanArchiveFile(archiveFilePath)
       return res.json(result)
-    }, '/api/mod-files/unzip-scan')
+    }, '/api/mod-files/archive-scan')
   )
 
   app.post(
-    '/api/mod-files/unzip-import',
+    '/api/mod-files/archive-import',
     wrapRoute(async (req, res) => {
       const { tempDir, filesToImport } = req.body
       if (!tempDir || !Array.isArray(filesToImport)) {
         return res.status(400).json({ message: 'Missing tempDir or filesToImport' })
       }
-      const result = await storage.importUnzippedFiles(tempDir, filesToImport)
+      const result = await storage.importArchiveFiles(tempDir, filesToImport)
       return res.json(result)
-    }, '/api/mod-files/unzip-import')
-  )
-
-  app.post(
-    '/api/mod-files/unrar-scan',
-    wrapRoute(async (req, res) => {
-      const { rarFilePath } = req.body
-      if (!rarFilePath) {
-        return res.status(400).json({ message: 'Missing rarFilePath' })
-      }
-      const result = await storage.unrarAndScan(rarFilePath)
-      return res.json(result)
-    }, '/api/mod-files/unrar-scan')
+    }, '/api/mod-files/archive-import')
   )
 
   // === Config File API ===

@@ -19,8 +19,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ZipImportModal } from '@/components/ZipImportModal'
-import type { ZipScanResult } from '@/types/zipImport'
+import { ArchiveImportModal } from '@/components/ArchiveImportModal'
+import type { ArchiveScanResult } from '@/types/archiveImport'
+import { getArchiveExtension } from '@shared/archive'
 // import { useLocation } from 'wouter';
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
@@ -88,8 +89,9 @@ export const GamesPage: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
 
   // idgames download state
-  const [isZipModalOpen, setIsZipModalOpen] = useState(false)
-  const [zipScanResult, setZipScanResult] = useState<ZipScanResult | null>(null)
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false)
+  const [archiveScanResult, setArchiveScanResult] = useState<ArchiveScanResult | null>(null)
+  const [archiveFilePath, setArchiveFilePath] = useState('')
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [importFile, setImportFile] = useState<{
     downloadPath: string
@@ -161,16 +163,11 @@ export const GamesPage: React.FC = () => {
         description: `${result.fileName} — processing…`
       })
 
-      const ext = result.fileName.split('.').pop()?.toLowerCase()
-
-      if (ext === 'zip') {
-        const scan = (await api.unzipScan(result.downloadPath)) as ZipScanResult
-        setZipScanResult(scan)
-        setIsZipModalOpen(true)
-      } else if (ext === 'rar') {
-        const scan = (await api.unrarScan(result.downloadPath)) as ZipScanResult
-        setZipScanResult(scan)
-        setIsZipModalOpen(true)
+      if (getArchiveExtension(result.fileName)) {
+        const scan = (await api.archiveScan(result.downloadPath)) as ArchiveScanResult
+        setArchiveScanResult(scan)
+        setArchiveFilePath(result.downloadPath)
+        setIsArchiveModalOpen(true)
       } else {
         setImportFile(result)
         setIsImportModalOpen(true)
@@ -615,14 +612,16 @@ export const GamesPage: React.FC = () => {
           doomVersions={versions.filter((v) => !v.ignored)}
         />
 
-        {/* idgames Zip import modal */}
-        <ZipImportModal
-          open={isZipModalOpen}
-          onOpenChange={setIsZipModalOpen}
-          scanResult={zipScanResult}
+        {/* idgames archive import modal */}
+        <ArchiveImportModal
+          open={isArchiveModalOpen}
+          onOpenChange={setIsArchiveModalOpen}
+          scanResult={archiveScanResult}
+          archiveFilePath={archiveFilePath || undefined}
           onImportComplete={() => {
-            setIsZipModalOpen(false)
-            setZipScanResult(null)
+            setIsArchiveModalOpen(false)
+            setArchiveScanResult(null)
+            setArchiveFilePath('')
             queryClient.invalidateQueries()
           }}
         />

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, useRef } from 'react'
 import { Archive, Upload, GripVertical } from 'lucide-react'
-import type { ZipScanResult } from '@/types/zipImport'
+import type { ArchiveScanResult } from '@/types/archiveImport'
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { useFileReorder } from '@/hooks/useFileReorder'
+import { deriveFileType } from '@/lib/install/parsers'
+import { getArchiveExtension } from '@shared/archive'
 import { api, type IRegistryMod } from '@/api'
 import { formatRegistryName } from '@/lib/registryName'
 import { REGISTRY_API_URL } from '@shared/registry-config'
@@ -27,12 +29,12 @@ import { CATEGORIES } from '@shared/categories'
 import type { ModDownloadRegistryMeta } from '@shared/modDownload'
 import type { IModFile } from '@shared/schema'
 
-export interface ZipImportModalProps {
+export interface ArchiveImportModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  scanResult: ZipScanResult | null
+  scanResult: ArchiveScanResult | null
   onImportComplete: () => void
-  zipFilePath?: string
+  archiveFilePath?: string
   /** Registry metadata of the downloaded archive — pre-fills the import fields. */
   registryMeta?: ModDownloadRegistryMeta
 }
@@ -49,12 +51,12 @@ interface FileMeta {
 }
 
 /**
- * Build the load-order record shared by every file in this zip.
+ * Build the load-order record shared by every file in this archive.
  * Files get offsets 1, 2, 3, … in the order they appear.
  * Every imported file stores this identical record so that whichever
- * file a player picks from the catalog, all zip siblings auto-load.
+ * file a player picks from the catalog, all archive siblings auto-load.
  */
-function buildZipLoadOrder(fileMeta: FileMeta[]): Record<string, number> {
+function buildArchiveLoadOrder(fileMeta: FileMeta[]): Record<string, number> {
   const record: Record<string, number> = {}
   let offset = 1
   for (const m of fileMeta) {
@@ -65,23 +67,23 @@ function buildZipLoadOrder(fileMeta: FileMeta[]): Record<string, number> {
   return record
 }
 
-export function ZipImportModal({
+export function ArchiveImportModal({
   open,
   onOpenChange,
   scanResult,
   onImportComplete,
-  zipFilePath,
+  archiveFilePath,
   registryMeta
-}: ZipImportModalProps): React.ReactElement | null {
+}: ArchiveImportModalProps): React.ReactElement | null {
   const { toast } = useToast()
   const [fileMeta, setFileMeta] = useState<FileMeta[]>([])
   const [importing, setImporting] = useState(false)
-  const [importAsZip, setImportAsZip] = useState(false)
-  const [zipName, setZipName] = useState('')
-  const [zipVersion, setZipVersion] = useState('')
-  const [zipUrl, setZipUrl] = useState('')
-  const [zipHash, setZipHash] = useState('')
-  const [zipCategory, setZipCategory] = useState('')
+  const [importAsArchive, setImportAsArchive] = useState(false)
+  const [importName, setImportName] = useState('')
+  const [importVersion, setImportVersion] = useState('')
+  const [importUrl, setImportUrl] = useState('')
+  const [importHash, setImportHash] = useState('')
+  const [importCategory, setImportCategory] = useState('')
   const registryCache = useRef<Map<string, IRegistryMod | null>>(new Map())
 
   // ── Registry lookup helpers ──
@@ -232,44 +234,44 @@ export function ZipImportModal({
     }
   }, [scanResult, registryMeta])
 
-  // Reset zip-as-mod form when modal opens with a new scan
+  // Reset the as-is form when the modal opens with a new scan
   useEffect(() => {
     if (open && scanResult?.supported?.[0]) {
-      const pathParts = (zipFilePath || '').split(/[\\/]/)
+      const pathParts = (archiveFilePath || '').split(/[\\/]/)
       const lastPart = pathParts.pop() || ''
-      const defaultName = lastPart.replace(/\.zip$/i, '')
-      setZipName(registryMeta?.name ?? defaultName)
-      setZipVersion(registryMeta?.version ?? '')
-      setZipUrl(registryMeta?.url ?? '')
-      setZipHash('')
-      setZipCategory(registryMeta?.category ?? '')
-      setImportAsZip(false)
+      const defaultName = lastPart.replace(/\.[^.]+$/, '')
+      setImportName(registryMeta?.name ?? defaultName)
+      setImportVersion(registryMeta?.version ?? '')
+      setImportUrl(registryMeta?.url ?? '')
+      setImportHash('')
+      setImportCategory(registryMeta?.category ?? '')
+      setImportAsArchive(false)
     }
-  }, [open, scanResult, zipFilePath, registryMeta])
+  }, [open, scanResult, archiveFilePath, registryMeta])
 
-  // ── Registry lookup for zip-as-is when checkbox is toggled ──
+  // ── Registry lookup for the archive-as-is checkbox when it is toggled ──
   useEffect(() => {
-    if (!importAsZip || !zipFilePath) return
+    if (!importAsArchive || !archiveFilePath) return
 
     const doLookup = async (): Promise<void> => {
       try {
-        const hash = await api.computeHash(zipFilePath)
-        setZipHash(hash)
+        const hash = await api.computeHash(archiveFilePath)
+        setImportHash(hash)
         if (!hash) return
         const { data } = await doRegistryLookup(hash)
         if (data) {
-          if (data.family_name) setZipName(formatRegistryName(data.family_name, data.display_name))
-          if (data.version) setZipVersion(data.version)
-          if (data.category) setZipCategory(data.category)
+          if (data.family_name) setImportName(formatRegistryName(data.family_name, data.display_name))
+          if (data.version) setImportVersion(data.version)
+          if (data.category) setImportCategory(data.category)
           const url = pickBestUrl(data.urls)
-          if (url) setZipUrl(url)
+          if (url) setImportUrl(url)
         }
       } catch {
         // hash computation or lookup failed silently
       }
     }
     doLookup()
-  }, [importAsZip, zipFilePath])
+  }, [importAsArchive, archiveFilePath])
 
   const handleMetaChange = (
     index: number,
@@ -297,47 +299,48 @@ export function ZipImportModal({
     setImporting(true)
 
     try {
-      if (importAsZip && zipFilePath) {
-        // Import the zip file itself as a single mod
-        const fileName = zipFilePath.split(/[\\/]/).pop() || zipFilePath
-        const zipNameValue = zipName || fileName.replace(/\.zip$/i, '')
-        const fileType = 'ZIP'
+      if (importAsArchive && archiveFilePath) {
+        // Import the archive file itself as a single mod
+        const fileName = archiveFilePath.split(/[\\/]/).pop() || archiveFilePath
+        const importNameValue = importName || fileName.replace(/\.[^.]+$/, '')
+        // Server-side getFileType() derives the same label from the extension.
+        const fileType = deriveFileType(fileName.split('.').pop() ?? '')
 
         const created = await api.addToCatalog({
-          name: zipNameValue,
-          filePath: zipFilePath,
+          name: importNameValue,
+          filePath: archiveFilePath,
           fileType,
           fileName,
-          version: zipVersion || '',
-          url: zipUrl || '',
+          version: importVersion || '',
+          url: importUrl || '',
           hashValue: '', // will be computed server-side
           sidecarOnly: false,
-          category: zipCategory || undefined
+          category: importCategory || undefined
         })
 
         // Submit to pending registry if appropriate
-        const finalHash = created.hashValue || zipHash
-        if (finalHash && zipUrl) {
+        const finalHash = created.hashValue || importHash
+        if (finalHash && importUrl) {
           submitToRegistry(
             finalHash,
-            zipNameValue,
-            zipVersion,
-            zipUrl,
+            importNameValue,
+            importVersion,
+            importUrl,
             false,
-            zipCategory || undefined
+            importCategory || undefined
           )
         }
 
         toast({
           title: 'SYSTEM: archive_accepted',
-          description: `"${zipNameValue}" added to catalog.`
+          description: `"${importNameValue}" added to catalog.`
         })
       } else {
         // Import individual extracted files
         const activeMeta = fileMeta.filter((m) => m.enabled)
 
-        // Compute the shared load order — same for every file in the zip
-        const zipLoadOrder = buildZipLoadOrder(activeMeta)
+        // Compute the shared load order — same for every file in the archive
+        const archiveLoadOrder = buildArchiveLoadOrder(activeMeta)
 
         const filesToImport = activeMeta.map((m) => ({
           tempPath: m.tempPath,
@@ -346,10 +349,10 @@ export function ZipImportModal({
           url: m.url,
           sidecarOnly: m.sidecarOnly,
           category: m.category || undefined,
-          loadOrder: zipLoadOrder
+          loadOrder: archiveLoadOrder
         }))
 
-        const importedFiles = (await api.unzipImport(
+        const importedFiles = (await api.archiveImport(
           scanResult.tempDir,
           filesToImport
         )) as IModFile[]
@@ -367,7 +370,7 @@ export function ZipImportModal({
               meta.url,
               meta.sidecarOnly,
               meta.category || undefined,
-              zipLoadOrder
+              archiveLoadOrder
             )
           }
         }
@@ -394,8 +397,11 @@ export function ZipImportModal({
   const supportedCount = fileMeta.filter((m) => m.enabled).length
   const skippedCount = scanResult?.skipped?.length ?? 0
   const batName = scanResult?.batFiles?.fileName
-  const zipBaseName = (zipFilePath || '').split(/[\\/]/).pop() || ''
-  const isRar = zipBaseName.toLowerCase().endsWith('.rar')
+  const archiveBaseName = (archiveFilePath || '').split(/[\\/]/).pop() || ''
+  const archiveExt = getArchiveExtension(archiveFilePath || '')
+  // Source ports read .zip and .7z archives directly; .rar is not a loadable
+  // mod format, so those downloads can only be unpacked.
+  const canImportAsIs = archiveExt === 'zip' || archiveExt === '7z'
 
   // Guard against render with null scanResult (can happen during close transition)
   if (!scanResult) return null
@@ -411,14 +417,14 @@ export function ZipImportModal({
             </div>
             <div>
               <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                {isRar ? 'import rar archive' : 'import zip archive'}
+                {archiveExt ? `import ${archiveExt} archive` : 'import archive'}
               </DialogTitle>
               <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                {importAsZip
-                  ? 'Import zip as a single mod file'
+                {importAsArchive
+                  ? 'Import the archive as a single mod file'
                   : `${supportedCount} file${supportedCount !== 1 ? 's' : ''} to import`}
-                {!importAsZip && skippedCount > 0 ? ` · ${skippedCount} skipped` : ''}
-                {!importAsZip && batName ? ` · .bat detected: ${batName}` : ''}
+                {!importAsArchive && skippedCount > 0 ? ` · ${skippedCount} skipped` : ''}
+                {!importAsArchive && batName ? ` · .bat detected: ${batName}` : ''}
               </DialogDescription>
             </div>
           </div>
@@ -426,60 +432,60 @@ export function ZipImportModal({
 
         {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* ── Import-as-zip checkbox (hidden for .rar — source ports don't support .rar) ── */}
-          {zipFilePath && !isRar && (
+          {/* ── Import-as-is checkbox (hidden for .rar — source ports can't load .rar) ── */}
+          {archiveFilePath && canImportAsIs && (
             <label className="flex items-center gap-2 p-2 rounded border border-app bg-app-secondary/50 cursor-pointer hover:bg-app-secondary transition-colors">
               <input
                 type="checkbox"
-                checked={importAsZip}
-                onChange={(e) => setImportAsZip(e.target.checked)}
+                checked={importAsArchive}
+                onChange={(e) => setImportAsArchive(e.target.checked)}
                 className="w-4 h-4 accent-accent-highlight"
               />
               <span className="text-sm font-medium text-app-primary">
-                Import <span className="font-mono text-accent-highlight">{zipBaseName}</span> as is
+                Import <span className="font-mono text-accent-highlight">{archiveBaseName}</span> as is
               </span>
               <span className="text-xs text-app-muted ml-auto">
-                (source ports support .zip files as mods)
+                (source ports load .{archiveExt} files as mods)
               </span>
             </label>
           )}
 
-          {importAsZip ? (
-            /* ── Zip-as-mod form (matches add_mod_file modal style) ── */
+          {importAsArchive ? (
+            /* ── Archive-as-mod form (matches add_mod_file modal style) ── */
             <div className="space-y-4 p-2">
               <div className="space-y-2">
-                <Label htmlFor="zip-as-name">Name</Label>
+                <Label htmlFor="archive-as-name">Name</Label>
                 <Input
-                  id="zip-as-name"
-                  value={zipName}
-                  onChange={(e) => setZipName(e.target.value)}
+                  id="archive-as-name"
+                  value={importName}
+                  onChange={(e) => setImportName(e.target.value)}
                   placeholder="Pretty name for the mod"
                   className="bg-app-secondary border-app"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="zip-as-version">Version</Label>
+                <Label htmlFor="archive-as-version">Version</Label>
                 <Input
-                  id="zip-as-version"
-                  value={zipVersion}
-                  onChange={(e) => setZipVersion(e.target.value)}
+                  id="archive-as-version"
+                  value={importVersion}
+                  onChange={(e) => setImportVersion(e.target.value)}
                   placeholder="e.g., 1.0, v2.1"
                   className="bg-app-secondary border-app"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="zip-as-url">URL (ModDB, forum)</Label>
+                <Label htmlFor="archive-as-url">URL (ModDB, forum)</Label>
                 <Input
-                  id="zip-as-url"
-                  value={zipUrl}
-                  onChange={(e) => setZipUrl(e.target.value)}
+                  id="archive-as-url"
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
                   placeholder="https://www.moddb.com/mods/..."
                   className="bg-app-secondary border-app"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select value={zipCategory} onValueChange={setZipCategory}>
+                <Select value={importCategory} onValueChange={setImportCategory}>
                   <SelectTrigger className="bg-app-secondary border-app">
                     <SelectValue placeholder="Uncategorized" />
                   </SelectTrigger>
@@ -651,14 +657,14 @@ export function ZipImportModal({
             </Button>
             <Button
               onClick={handleImport}
-              disabled={importing || (importAsZip ? false : supportedCount === 0)}
+              disabled={importing || (importAsArchive ? false : supportedCount === 0)}
               className="bg-accent-highlight hover:opacity-90 text-white"
             >
               <Upload className="w-4 h-4 mr-2" />
               {importing
                 ? 'Importing…'
-                : importAsZip
-                  ? `Import ${zipBaseName}`
+                : importAsArchive
+                  ? `Import ${archiveBaseName}`
                   : `Import ${supportedCount} file${supportedCount !== 1 ? 's' : ''}`}
             </Button>
           </div>

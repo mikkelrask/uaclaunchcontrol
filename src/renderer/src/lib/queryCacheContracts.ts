@@ -93,10 +93,9 @@ export const NO_CACHE_CONTRACT: Record<string, string> = {
     'moves an icon file; the versions entry referencing it is persisted by the dialog save (updateDoomVersions, contracted)',
   moveToModFolder:
     'moves a file into the mods dir; the catalog entry is created by the caller via addToCatalog (contracted)',
-  unzipImport:
+  archiveImport:
     'extracts files into the mods dir; catalog entries are created by the caller via addToCatalog (contracted)',
-  unzipScan: 'read-only scan of an archive; no persistent state',
-  unrarScan: 'read-only scan of an archive; no persistent state',
+  archiveScan: 'read-only scan of an archive; no persistent state',
   computeHash: 'pure computation; no persistent state',
   testLaunch: 'server-side dry-run launch; no persistent state',
   submitToPending:
@@ -109,7 +108,7 @@ export const NO_CACHE_CONTRACT: Record<string, string> = {
  * real refresh at the call site over an exception.
  */
 export const CALL_SITE_EXCEPTIONS: Record<string, Record<string, string>> = {
-  'ZipImportModal.tsx': {
+  'ArchiveImportModal.tsx': {
     addToCatalog:
       'refresh delegated to onImportComplete — every caller invalidates the catalog (CatalogManager via useFileImport, ModDownloadManager, GamesPage)'
   }

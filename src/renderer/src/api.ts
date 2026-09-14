@@ -676,26 +676,17 @@ export const api = {
     return data.content
   },
 
-  unzipScan: async (zipFilePath: string): Promise<unknown> => {
-    const response = await fetch(`${API_BASE}/api/mod-files/unzip-scan`, {
+  archiveScan: async (archiveFilePath: string): Promise<unknown> => {
+    const response = await fetch(`${API_BASE}/api/mod-files/archive-scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ zipFilePath })
+      body: JSON.stringify({ archiveFilePath })
     })
     return handleApiResponse(response)
   },
 
-  unrarScan: async (rarFilePath: string): Promise<unknown> => {
-    const response = await fetch(`${API_BASE}/api/mod-files/unrar-scan`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rarFilePath })
-    })
-    return handleApiResponse(response)
-  },
-
-  unzipImport: async (tempDir: string, filesToImport: unknown[]): Promise<unknown[]> => {
-    const response = await fetch(`${API_BASE}/api/mod-files/unzip-import`, {
+  archiveImport: async (tempDir: string, filesToImport: unknown[]): Promise<unknown[]> => {
+    const response = await fetch(`${API_BASE}/api/mod-files/archive-import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tempDir, filesToImport })

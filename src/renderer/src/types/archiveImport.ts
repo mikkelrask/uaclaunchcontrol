@@ -23,7 +23,8 @@ export interface BatFile {
   extraParams: string[]
 }
 
-export interface ZipScanResult {
+/** Result of scanning a zip/rar/7z archive (`api.archiveScan`). */
+export interface ArchiveScanResult {
   tempDir: string
   supported: SupportedFile[]
   skipped: SkippedFile[]

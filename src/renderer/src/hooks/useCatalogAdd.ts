@@ -5,6 +5,7 @@ import { api, IRegistryMod } from '@/api'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { formatRegistryName } from '@/lib/registryName'
 import { REGISTRY_API_URL } from '@shared/registry-config'
+import { ARCHIVE_EXTENSIONS, getArchiveExtension } from '@shared/archive'
 import { debug } from '@shared/debug'
 import { parseBatContent, resolveRelativePaths, deriveFileType } from '@/lib/install/parsers'
 import { useRequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
@@ -19,7 +20,7 @@ interface UseCatalogAddOptions {
   onChange: (files: IModFile[]) => void
   catalogFiles: IModFile[]
   availableRequiredFiles: IModFile[]
-  tryZipImport: (filePath: string, ext: string) => Promise<boolean>
+  tryArchiveImport: (filePath: string) => Promise<boolean>
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -28,7 +29,7 @@ export function useCatalogAdd({
   onChange,
   catalogFiles,
   availableRequiredFiles,
-  tryZipImport
+  tryArchiveImport
 }: UseCatalogAddOptions) {
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -387,7 +388,7 @@ export function useCatalogAdd({
         filters: [
           {
             name: 'Mod stuff',
-            extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip', 'rar', 'bat']
+            extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'bat', ...ARCHIVE_EXTENSIONS]
           }
         ]
       })
@@ -395,12 +396,8 @@ export function useCatalogAdd({
       if (!result.canceled && result.filePaths.length > 0) {
         const selectedPath = result.filePaths[0]
 
-        if (
-          selectedPath.toLowerCase().endsWith('.zip') ||
-          selectedPath.toLowerCase().endsWith('.rar')
-        ) {
-          const ext = selectedPath.split('.').pop()?.toUpperCase() || ''
-          await tryZipImport(selectedPath, ext)
+        if (getArchiveExtension(selectedPath)) {
+          await tryArchiveImport(selectedPath)
           return
         }
 
