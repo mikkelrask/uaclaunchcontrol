@@ -15,8 +15,6 @@ export {
   getSettings,
   saveSettings,
   resolvePath,
-  stripMd5Suffix,
-  countMd5Suffixes,
   wadNamePriority,
   computeFileHash,
   computeFileHashOrThrow

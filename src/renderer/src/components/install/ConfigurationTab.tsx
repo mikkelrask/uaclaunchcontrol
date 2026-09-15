@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import type { UseMutationResult } from '@tanstack/react-query'
 import type { IModFile, IAppSettings, IDoomVersion, IProtocol } from '@shared/schema'
-import { slugify } from '@/lib/utils'
+import { deriveSaveDirectory } from '@/lib/install/saveDirectory'
 import { api } from '@/api'
 import {
   Form,
@@ -107,25 +107,15 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                         const currentTitle = e.target.value
                         field.onChange(currentTitle)
 
-                        const currentSaveDir = form.getValues('saveDirectory')
-                        const isSaveDirEmpty = !currentSaveDir
-
-                        const wasAutoFilled =
-                          settings.savegamesPath &&
-                          currentSaveDir &&
-                          currentSaveDir.startsWith(settings.savegamesPath + '/') &&
-                          currentSaveDir.length > settings.savegamesPath.length + 1
-
-                        if (isSaveDirEmpty || wasAutoFilled) {
-                          const sluggedTitle = slugify(currentTitle)
-                          const newSaveDir = settings.savegamesPath
-                            ? `${settings.savegamesPath}/${sluggedTitle}`
-                            : sluggedTitle
-                          form.setValue('saveDirectory', newSaveDir, {
-                            shouldValidate: true,
-                            shouldDirty: true
-                          })
-                        }
+                        form.setValue(
+                          'saveDirectory',
+                          deriveSaveDirectory(
+                            currentTitle,
+                            form.getValues('saveDirectory') || '',
+                            settings.savegamesPath
+                          ),
+                          { shouldValidate: true, shouldDirty: true }
+                        )
                       }}
                     />
                   </FormControl>

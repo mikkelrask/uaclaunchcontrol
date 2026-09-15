@@ -10,9 +10,9 @@ import {
   resolvePath,
   computeFileHash,
   computeFileHashOrThrow,
-  stripMd5Suffix,
   wadNamePriority
 } from './core'
+import { stripMd5Suffix } from '@shared/wad-names'
 import { syncDoomVersions } from './doom-versions'
 import { resizeImageIfNeeded } from './image-resize'
 

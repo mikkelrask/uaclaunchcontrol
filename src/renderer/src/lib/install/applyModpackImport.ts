@@ -9,6 +9,8 @@ import { api } from '@/api'
 import { createLogger } from '@shared/logger'
 import type { formSchema } from '@/lib/install/schema'
 import type { UacModpackImport } from '@/lib/install/types'
+import { deriveSaveDirectory } from '@/lib/install/saveDirectory'
+import { stripMd5Suffix } from '@shared/wad-names'
 
 const log = createLogger('install/applyModpackImport')
 
@@ -44,7 +46,21 @@ export function matchSourcePort(
 }
 
 /**
- * Try to match a doom version slug or IWAD filename against known versions.
+ * Reduces a version hint to the game it names. Imports come from other
+ * installs, so they carry whatever that install generated: an md5-suffixed
+ * download ('wad-freedoom2-<md5>'), a bare IWAD filename ('FREEDOOM2.WAD') or
+ * a path to one. All of those mean FreeDoom Phase 2.
+ */
+function gameKey(hint: string): string {
+  const base = hint.split(/[\\/]/).pop() || hint
+  return stripMd5Suffix(base.replace(/\.wad$/i, ''))
+    .replace(/^wad-/, '')
+    .toLowerCase()
+}
+
+/**
+ * Try to match an imported doom version slug or IWAD filename against the
+ * versions configured here.
  */
 export function matchDoomVersion(
   slugOrIwad: string | undefined,
@@ -56,9 +72,10 @@ export function matchDoomVersion(
   const bySlug = versions.find((v) => v.slug === slugOrIwad)
   if (bySlug) return bySlug
 
-  // Try IWAD filename (case-insensitive)
-  const iwadLower = slugOrIwad.toLowerCase()
-  return versions.find((v) => v.defaultIwad && v.defaultIwad.toLowerCase() === iwadLower)
+  // Then the game the hint names, however that install spelled it
+  const wanted = gameKey(slugOrIwad)
+  if (!wanted) return undefined
+  return versions.find((v) => gameKey(v.slug) === wanted || gameKey(v.defaultIwad || '') === wanted)
 }
 
 /**
@@ -143,6 +160,13 @@ export async function applyModpackImport(
   form.setValue('title', game.title || '')
   form.setValue('description', game.description || '')
   form.setValue('launchParameters', game.launchParameters || '')
+  // The export carries no save directory, so derive the same per-protocol one
+  // typing the title would have produced.
+  form.setValue(
+    'saveDirectory',
+    deriveSaveDirectory(game.title || '', form.getValues('saveDirectory') || '', settings?.savegamesPath),
+    { shouldValidate: true, shouldDirty: true }
+  )
 
   // Screenshot: an embedded base64 image gets written back to disk under a
   // fresh filename; a plain URL is already portable and just passes through
@@ -174,7 +198,17 @@ export async function applyModpackImport(
   if (matchedPort) form.setValue('sourcePortId', matchedPort.id)
 
   const matchedVersion = matchDoomVersion(game.doomVersionSlug, versions)
-  if (matchedVersion) form.setValue('doomVersionId', matchedVersion.id.toString())
+  if (matchedVersion) {
+    form.setValue('doomVersionId', matchedVersion.id.toString())
+  } else if (game.doomVersionSlug) {
+    // Never leave the form sitting on an unrelated default: the launch would
+    // quietly use the wrong IWAD.
+    toast({
+      title: 'SYSTEM: base_wad_unmatched',
+      description: `No local WAD matches "${game.doomVersionSlug}" — pick the base WAD by hand.`,
+      variant: 'destructive'
+    })
+  }
 
   // Match import files against catalog
   const catalogData = await api.getModFileCatalog()

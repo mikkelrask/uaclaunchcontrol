@@ -1,3 +1,4 @@
+import { stripMd5Suffix } from '@shared/wad-names'
 import type { BatParseResult } from './types'
 
 /**
@@ -132,7 +133,7 @@ export function buildHashFileName(fileName: string, hashValue: string): string {
   const extensionIndex = fileName.lastIndexOf('.')
   if (extensionIndex === -1) return `${fileName}-${hashValue}`
 
-  const baseName = fileName.slice(0, extensionIndex).replace(/(-[a-f0-9]{32})+$/i, '')
+  const baseName = stripMd5Suffix(fileName.slice(0, extensionIndex))
   const extension = fileName.slice(extensionIndex)
   return `${baseName}-${hashValue}${extension}`
 }

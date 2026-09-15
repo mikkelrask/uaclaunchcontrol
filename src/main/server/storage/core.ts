@@ -5,6 +5,7 @@ import os from 'os'
 import { IAppSettings, IDatabaseLink, IDoomVersion } from '@shared/schema'
 import { createLogger } from '@shared/logger'
 import { debug } from '@shared/debug'
+import { countMd5Suffixes } from '@shared/wad-names'
 import {
   CONFIG_DIR,
   DATA_DIR,
@@ -266,12 +267,6 @@ export function escapePathForCmd(filePath: string): string {
 }
 export function generateStableId(baseName: string): string {
   return `wad-${baseName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`
-}
-export function stripMd5Suffix(baseName: string): string {
-  return baseName.replace(/(-[a-f0-9]{32})+$/i, '')
-}
-export function countMd5Suffixes(baseName: string): number {
-  return baseName.match(/-[a-f0-9]{32}/gi)?.length ?? 0
 }
 
 export function wadNamePriority(fileName: string): number {

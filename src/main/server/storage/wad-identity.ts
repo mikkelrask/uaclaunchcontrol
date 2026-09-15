@@ -4,9 +4,9 @@ import { identifyWadByHash, isKnownWadName } from '@shared/iwad-hashes'
 import {
   DEFAULT_DOOM_VERSIONS,
   generateStableId,
-  stripMd5Suffix,
   wadNamePriority
 } from './core'
+import { stripMd5Suffix } from '@shared/wad-names'
 
 /** How a `.wad` file in the WAD directory should appear as a launch entry. */
 export interface IWadIdentity {

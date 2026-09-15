@@ -3,49 +3,11 @@ import path from 'path'
 import fs from 'fs-extra'
 import os from 'os'
 import {
-  stripMd5Suffix,
-  countMd5Suffixes,
   wadNamePriority,
   resolvePath,
   computeFileHash,
   sanitizeBaseName
 } from './storage'
-
-describe('stripMd5Suffix', () => {
-  it('strips a single MD5 suffix', () => {
-    expect(stripMd5Suffix('doom2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe('doom2')
-  })
-
-  it('strips multiple MD5 suffixes', () => {
-    expect(
-      stripMd5Suffix('file-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
-    ).toBe('file')
-  })
-
-  it('returns original if no MD5 pattern', () => {
-    expect(stripMd5Suffix('plain-file')).toBe('plain-file')
-  })
-
-  it('handles empty string', () => {
-    expect(stripMd5Suffix('')).toBe('')
-  })
-})
-
-describe('countMd5Suffixes', () => {
-  it('counts zero for plain names', () => {
-    expect(countMd5Suffixes('doom2')).toBe(0)
-  })
-
-  it('counts one for a hashed name', () => {
-    expect(countMd5Suffixes('doom2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBe(1)
-  })
-
-  it('counts two for double-hashed name', () => {
-    expect(
-      countMd5Suffixes('doom2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
-    ).toBe(2)
-  })
-})
 
 describe('wadNamePriority', () => {
   it('returns 0 for plain WAD names', () => {
