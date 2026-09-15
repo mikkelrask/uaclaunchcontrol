@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "oxlint",
+    "sync:iwad-hashes": "node tools/iwad-hashes/generate.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",

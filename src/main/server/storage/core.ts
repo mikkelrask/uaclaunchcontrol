@@ -175,10 +175,12 @@ export function initStorage(): boolean {
       fs.writeJSONSync(DOOM_VERSIONS_FILE, DEFAULT_DOOM_VERSIONS, { spaces: 2 })
     if (!fs.existsSync(MOD_FILE_CATALOG)) fs.writeJSONSync(MOD_FILE_CATALOG, [], { spaces: 2 })
     if (!fs.existsSync(FIRST_RUN_SENTINEL)) _isFirstRun = true
-    // Deferred WAD bootstrap — avoids circular import with doom-versions
+    // Deferred WAD bootstrap — avoids circular import with doom-versions.
+    // WADs are identified by content hash, so the first sync has to read them
+    // all; the delta notification lets the renderer correct itself once done.
     setImmediate(() => {
       import('./doom-versions').then((m) => {
-        m.syncDoomVersions({ skipHash: true }).then(() => m.startWadWatcher())
+        m.syncDoomVersions({ notifyDelta: true }).then(() => m.startWadWatcher())
       })
     })
     return true

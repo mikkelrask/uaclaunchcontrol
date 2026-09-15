@@ -118,9 +118,9 @@ async function listFilesRecursive(dir: string): Promise<{ name: string; path: st
 /**
  * Downloads a FreeDoom bundle (Phase 1+2, or FreeDM), verifies each
  * extracted WAD's sha256 against the manifest, and writes it into
- * `wadFilesDirectory` under its exact literal manifest-key filename —
- * required for storage.ts's syncDoomVersions() to auto-activate the
- * matching DEFAULT_DOOM_VERSIONS entry (it matches by exact filename).
+ * `wadFilesDirectory` under its exact literal manifest-key filename — FreeDoom
+ * builds are not in the MD5 table, so storage.ts's syncDoomVersions() still
+ * has to match them by exact filename to activate the seeded default entry.
  */
 export async function downloadFreedoomBundle(
   wadFilesDirectory: string,

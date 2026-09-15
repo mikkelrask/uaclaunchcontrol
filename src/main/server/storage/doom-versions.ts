@@ -12,15 +12,22 @@ import {
   getSettings,
   resolvePath,
   escapePathForCmd,
-  generateStableId,
-  stripMd5Suffix,
   wadNamePriority,
-  computeFileHash,
-  DEFAULT_DOOM_VERSIONS
+  computeFileHash
 } from './core'
+import { isBetterRepresentative, isGeneratedVersionName, resolveWadIdentity } from './wad-identity'
+import type { IWadIdentity } from './wad-identity'
 import { createLogger } from '@shared/logger'
 
 const log = createLogger('storage/doom-versions')
+
+/** A `.wad` in the WAD directory, with what it turned out to contain. */
+interface IScannedWad {
+  fileName: string
+  filePath: string
+  md5: string
+  identity: IWadIdentity
+}
 
 let wadSyncTimer: ReturnType<typeof setTimeout> | null = null
 let wadWatcher: FSWatcher | null = null
@@ -89,7 +96,7 @@ export async function startWadWatcher(): Promise<void> {
 
 // Sync Doom versions by scanning the WAD directory
 export async function syncDoomVersions(
-  options: { notifyDelta?: boolean; skipHash?: boolean } = {}
+  options: { notifyDelta?: boolean } = {}
 ): Promise<IDoomVersion[]> {
   try {
     initStorage()
@@ -102,99 +109,77 @@ export async function syncDoomVersions(
 
     await fs.ensureDir(wadDir)
     const files = await fs.readdir(wadDir)
+    // Cleanest names first: the order lists the entries, and breaks ties between
+    // equally named copies of the same content.
     const wadFiles = files
       .filter((f) => f.toLowerCase().endsWith('.wad'))
       .sort((a, b) => {
         return wadNamePriority(a) - wadNamePriority(b) || a.localeCompare(b)
       })
 
-    // Create a map of lowercase wad names to full paths
-    const wadFileMap = new Map<string, string>()
+    // Identical files are one WAD to the user, so one entry stands for them —
+    // the copy named the way the table names it, or the cleanest name otherwise.
+    const scanned: IScannedWad[] = []
+    const winnerByHash = new Map<string, IScannedWad>()
+
     for (const wadFile of wadFiles) {
-      wadFileMap.set(wadFile.toLowerCase(), path.join(wadDir, wadFile))
+      const wadPath = path.join(wadDir, wadFile)
+      // The hash identifies the build; the filename only says what the user (or
+      // the installer it came from) happens to call it.
+      const md5 = await computeFileHash(wadPath)
+      const identity = resolveWadIdentity(wadFile, md5)
+
+      if (!identity.usable) {
+        debug(`syncDoomVersions: Skipping add-on WAD, it needs a base game: ${wadPath}`)
+        continue
+      }
+
+      const file: IScannedWad = { fileName: wadFile, filePath: wadPath, md5, identity }
+      scanned.push(file)
+
+      if (!md5) continue
+      const winner = winnerByHash.get(md5)
+      if (winner && !isBetterRepresentative(wadFile, winner.fileName, identity.fileName)) continue
+      winnerByHash.set(md5, file)
     }
 
     const updatedVersions: IDoomVersion[] = []
-    const seenWadHashes = new Set<string>()
 
-    // 1. Check default versions
-    for (const def of DEFAULT_DOOM_VERSIONS) {
-      const lowerWadName = def.defaultIwad.toLowerCase()
-      if (wadFileMap.has(lowerWadName)) {
-        const fullPath = wadFileMap.get(lowerWadName)!
-        // Only hash on non-initial runs — dedup is a nice-to-have, not a startup blocker
-        let hashValue = ''
-        if (!options.skipHash) {
-          hashValue = await computeFileHash(fullPath)
-          if (hashValue) {
-            seenWadHashes.add(hashValue)
-          }
-        }
-        // Find existing to preserve custom settings like name/icon overrides if any
-        // Note: traditionally defaults use their own defaults, but we should check
-        const existing = oldVersions.find((v) => v.id === def.id)
-
-        if (existing) {
-          updatedVersions.push({
-            ...existing,
-            defaultIwad: fullPath, // Update actual path
-            args: existing.args.includes('-iwad')
-              ? existing.args.replace(
-                  /-iwad\s+"[^"]+"|-iwad\s+[^\s]+/,
-                  `-iwad ${escapePathForCmd(fullPath)}`
-                )
-              : `-iwad ${escapePathForCmd(fullPath)} ${existing.args}`.trim()
-          })
-        } else {
-          updatedVersions.push({
-            ...def,
-            args: `-iwad ${escapePathForCmd(fullPath)}`,
-            defaultIwad: fullPath
-          })
-        }
-        wadFileMap.delete(lowerWadName) // Mark as handled
-      }
-    }
-
-    // 2. Add remaining WADs from disk
-    for (const [wadName, wadPath] of wadFileMap) {
-      let hashValue = ''
-      if (!options.skipHash) {
-        hashValue = await computeFileHash(wadPath)
-        if (hashValue && seenWadHashes.has(hashValue)) {
-          debug(`syncDoomVersions: Skipping duplicate WAD content: ${wadPath}`)
-          continue
-        }
-        if (hashValue) {
-          seenWadHashes.add(hashValue)
-        }
+    for (const { fileName: wadFile, filePath: wadPath, md5, identity } of scanned) {
+      // A copy of a WAD that is already represented doesn't get its own entry.
+      if (md5 && winnerByHash.get(md5)?.filePath !== wadPath) {
+        debug(`syncDoomVersions: Skipping duplicate WAD content: ${wadPath}`)
+        continue
       }
 
-      const baseName = wadName.replace(/\.wad$/i, '')
-      const displayName = stripMd5Suffix(baseName)
-      const id = generateStableId(baseName)
+      const iwadArg = escapePathForCmd(wadPath)
 
       // Check if this wad was already in the list
-      const existing = oldVersions.find((v) => v.id === id || v.defaultIwad === wadPath)
+      const existing = oldVersions.find((v) => v.id === identity.id || v.defaultIwad === wadPath)
 
       if (existing) {
+        // A name the user typed stays; one the app generated is replaced, so
+        // better identification reaches configs that already exist.
+        const name = isGeneratedVersionName(existing.name, wadFile) ? identity.name : existing.name
+        const customIcon = existing.icon.includes('/') || existing.icon.includes('\\')
+
         updatedVersions.push({
           ...existing,
+          name,
+          slug: identity.slug,
+          icon: customIcon ? existing.icon : identity.icon,
           args: existing.args.includes('-iwad')
-            ? existing.args.replace(
-                /-iwad\s+"[^"]+"|-iwad\s+[^\s]+/,
-                `-iwad ${escapePathForCmd(wadPath)}`
-              )
-            : `-iwad ${escapePathForCmd(wadPath)} ${existing.args}`.trim(),
+            ? existing.args.replace(/-iwad\s+"[^"]+"|-iwad\s+[^\s]+/, `-iwad ${iwadArg}`)
+            : `-iwad ${iwadArg} ${existing.args}`.trim(),
           defaultIwad: wadPath
         })
       } else {
         updatedVersions.push({
-          id,
-          name: displayName,
-          slug: id,
-          args: `-iwad ${escapePathForCmd(wadPath)}`,
-          icon: '',
+          id: identity.id,
+          name: identity.name,
+          slug: identity.slug,
+          args: `-iwad ${iwadArg}`,
+          icon: identity.icon,
           parameters: '',
           defaultIwad: wadPath
         })
