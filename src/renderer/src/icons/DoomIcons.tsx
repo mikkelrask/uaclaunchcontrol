@@ -10,6 +10,9 @@ import hexen from './hexen.png'
 import hexdd from './hexdd.png'
 import heretic from './heretic.png'
 import strife from './strife1.png'
+import chex from './chex.png'
+import chex2 from './chex2.png'
+import chex3 from './chex3.png'
 import defaultIcon from './default.png'
 import { toFileUrl } from '@/lib/utils'
 
@@ -125,6 +128,33 @@ export const DefaultWadIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' 
   />
 )
 
+export const ChexIcon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
+  <img
+    src={chex}
+    alt="Chex Quest Icon"
+    title="CHEX QUEST"
+    className={`${className} object-contain aspect-square`}
+  />
+)
+
+export const Chex2Icon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
+  <img
+    src={chex2}
+    alt="Chex Quest 2 Icon"
+    title="CHEX QUEST 2"
+    className={`${className} object-contain aspect-square`}
+  />
+)
+
+export const Chex3Icon: React.FC<DoomIconProps> = ({ className = 'w-8 h-8' }) => (
+  <img
+    src={chex3}
+    alt="Chex Quest 3 Icon"
+    title="CHEX QUEST 3"
+    className={`${className} object-contain aspect-square`}
+  />
+)
+
 interface DoomVersionIconProps {
   version: string
   customIcon?: string
@@ -177,6 +207,12 @@ export const DoomVersionIcon: React.FC<DoomVersionIconProps> = ({
     case 'strife':
     case 'strife1':
       return <StrifeIcon className={className} />
+    case 'chex':
+      return <ChexIcon className={className} />
+    case 'chex2':
+      return <Chex2Icon className={className} />
+    case 'chex3':
+      return <Chex3Icon className={className} />
     default:
       return <DefaultWadIcon className={className} />
   }
