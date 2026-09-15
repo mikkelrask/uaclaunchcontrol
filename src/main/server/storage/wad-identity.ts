@@ -26,6 +26,38 @@ export interface IWadIdentity {
   fileName: string
   /** Icon set by the seeded defaults; '' when the slug alone picks the icon. */
   icon: string
+  /** Where this game sits in the app's lists — see WAD_ORDER. */
+  order: number
+}
+
+/**
+ * The order base WADs are listed in: the games a player is here for first, led
+ * by Doom and Doom II, then everything else by name. Games that are not listed
+ * (Chex Quest, and anything else that turns up in the folder) sort after all of
+ * them — WAD_ORDER_OTHERS is just "past the last one".
+ */
+const WAD_ORDER: Record<string, number> = {
+  'doom': 0, // Doom, Ultimate Doom, Doom Pocket PC, Doom (Legacy of Rust)
+  'doom2': 1,
+  'freedoom1': 2,
+  'freedoom2': 3,
+  'freedm': 4,
+  'tnt': 5,
+  'plutonia': 6,
+  'heretic': 7,
+  'hexen': 8,
+  'hexen-deathkings': 9
+}
+
+const WAD_ORDER_OTHERS = 100
+
+/**
+ * The order entries are listed in: by game (see WAD_ORDER), then by name, so
+ * the list is stable no matter what the files are called or in what order the
+ * directory hands them over.
+ */
+export function compareWadOrder(a: IWadIdentity, b: IWadIdentity): number {
+  return a.order - b.order || a.name.localeCompare(b.name)
 }
 
 /**
@@ -46,7 +78,15 @@ export function resolveWadIdentity(fileName: string, md5: string): IWadIdentity 
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')}`
-    return { usable: !known.addon, id, name: known.name, slug: known.slug, fileName: known.fileName, icon: '' }
+    return {
+      usable: !known.addon,
+      id,
+      name: known.name,
+      slug: known.slug,
+      fileName: known.fileName,
+      icon: '',
+      order: WAD_ORDER[known.slug] ?? WAD_ORDER_OTHERS
+    }
   }
 
   const seeded = findSeededDefault(fileName)
@@ -57,7 +97,8 @@ export function resolveWadIdentity(fileName: string, md5: string): IWadIdentity 
       name: seeded.name,
       slug: seeded.slug,
       fileName: path.basename(seeded.defaultIwad),
-      icon: seeded.icon
+      icon: seeded.icon,
+      order: WAD_ORDER[seeded.slug] ?? WAD_ORDER_OTHERS
     }
   }
 
@@ -69,7 +110,8 @@ export function resolveWadIdentity(fileName: string, md5: string): IWadIdentity 
     name: stripMd5Suffix(baseName),
     slug: id,
     fileName,
-    icon: ''
+    icon: '',
+    order: WAD_ORDER_OTHERS
   }
 }
 

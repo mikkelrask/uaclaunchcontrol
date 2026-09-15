@@ -15,7 +15,12 @@ import {
   wadNamePriority,
   computeFileHash
 } from './core'
-import { isBetterRepresentative, isGeneratedVersionName, resolveWadIdentity } from './wad-identity'
+import {
+  compareWadOrder,
+  isBetterRepresentative,
+  isGeneratedVersionName,
+  resolveWadIdentity
+} from './wad-identity'
 import type { IWadIdentity } from './wad-identity'
 import { createLogger } from '@shared/logger'
 
@@ -145,7 +150,13 @@ export async function syncDoomVersions(
 
     const updatedVersions: IDoomVersion[] = []
 
-    for (const { fileName: wadFile, filePath: wadPath, md5, identity } of scanned) {
+    // List the games a player is here for first, in the order the app has
+    // always shown them, instead of in whatever order the files sit on disk.
+    // Everything the identity table doesn't place (Chex Quest, and whatever
+    // else turns up in the folder) follows, by name.
+    const orderedByGame = [...scanned].sort((a, b) => compareWadOrder(a.identity, b.identity))
+
+    for (const { fileName: wadFile, filePath: wadPath, md5, identity } of orderedByGame) {
       // A copy of a WAD that is already represented doesn't get its own entry.
       if (md5 && winnerByHash.get(md5)?.filePath !== wadPath) {
         debug(`syncDoomVersions: Skipping duplicate WAD content: ${wadPath}`)
