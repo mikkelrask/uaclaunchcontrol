@@ -306,14 +306,14 @@ export function ArchiveImportModal({
         // Server-side getFileType() derives the same label from the extension.
         const fileType = deriveFileType(fileName.split('.').pop() ?? '')
 
-        const created = await api.addToCatalog({
+        const { file: created, existing } = await api.addToCatalog({
           name: importNameValue,
           filePath: archiveFilePath,
           fileType,
           fileName,
           version: importVersion || '',
           url: importUrl || '',
-          hashValue: '', // will be computed server-side
+          hashValue: '', // computed from the archive by the server
           sidecarOnly: false,
           category: importCategory || undefined
         })
@@ -331,10 +331,18 @@ export function ArchiveImportModal({
           )
         }
 
-        toast({
-          title: 'SYSTEM: archive_accepted',
-          description: `"${importNameValue}" added to catalog.`
-        })
+        toast(
+          existing
+            ? {
+                title: 'SYSTEM: already_in_catalog',
+                description: `"${created.name || created.fileName}" is already in your catalog — nothing was added.`,
+                variant: 'default'
+              }
+            : {
+                title: 'SYSTEM: archive_accepted',
+                description: `"${importNameValue}" added to catalog.`
+              }
+        )
       } else {
         // Import individual extracted files
         const activeMeta = fileMeta.filter((m) => m.enabled)

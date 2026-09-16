@@ -103,7 +103,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     handleBrowseConfigFile,
     handleClearConfigFile,
     resetLookupState
-  } = useCatalogAdd({ files, onChange, catalogFiles, availableRequiredFiles, tryArchiveImport })
+  } = useCatalogAdd({ onChange, catalogFiles, availableRequiredFiles, tryArchiveImport })
 
   const {
     editForm,

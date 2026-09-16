@@ -91,8 +91,6 @@ export const NO_CACHE_CONTRACT: Record<string, string> = {
     'writes a config file during modpack import; protocol data refreshed by the create/import flow',
   moveFile:
     'moves an icon file; the versions entry referencing it is persisted by the dialog save (updateDoomVersions, contracted)',
-  moveToModFolder:
-    'moves a file into the mods dir; the catalog entry is created by the caller via addToCatalog (contracted)',
   archiveImport:
     'extracts files into the mods dir; catalog entries are created by the caller via addToCatalog (contracted)',
   archiveScan: 'read-only scan of an archive; no persistent state',

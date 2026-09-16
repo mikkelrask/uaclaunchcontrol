@@ -333,28 +333,21 @@ async function finalizeDownload(task: DownloadTask): Promise<void> {
     }
 
     const hashValue = await computeFileHashOrThrow(destPath)
-    const catalog = await getModFileCatalog()
-    const existing = catalog.find((entry) => entry.hashValue === hashValue)
-    if (existing) {
-      await fs.remove(destPath).catch(() => {})
-      sendStatus({
-        state: 'completed',
-        id: task.id,
-        filePath: '',
-        catalogEntry: existing,
-        alreadyInCatalog: true
-      })
-      return
-    }
+    // Registry lookup is a network round-trip — skip it for content the
+    // catalogue already owns; addModFileToCatalog returns that entry instead.
+    const alreadyCatalogued = (await getModFileCatalog()).some(
+      (entry) => entry.hashValue === hashValue
+    )
 
     // Enrich from the registry (display name, version, category, preferred
     // url) — same enrichment the ArchiveImportModal applies on archive imports.
     // Falls back to filename-derived values when the hash isn't registered.
-    const registryMod = await lookupRegistryMod(hashValue, task.url)
-    const catalogEntry = await addModFileToCatalog({
+    const registryMod = alreadyCatalogued ? null : await lookupRegistryMod(hashValue, task.url)
+    const { file: catalogEntry, existing } = await addModFileToCatalog({
       filePath: destPath,
       fileName: path.basename(destPath),
       fileType: getFileType(destPath),
+      hashValue,
       url: registryMod ? pickBestUrl(registryMod.urls) || task.url : task.url,
       name: registryMod
         ? formatRegistryName(registryMod.family_name, registryMod.display_name)
@@ -364,10 +357,17 @@ async function finalizeDownload(task: DownloadTask): Promise<void> {
       loadOrder: {},
       sidecarOnly: false
     })
-    // addModFileToCatalog copied the file into mods/files — the downloads-dir
-    // copy is redundant.
+    // addModFileToCatalog copied the file into mods/files — unless its content
+    // was already catalogued, in which case nothing was copied. The
+    // downloads-dir copy is redundant either way.
     await fs.remove(destPath).catch(() => {})
-    sendStatus({ state: 'completed', id: task.id, filePath: '', catalogEntry })
+    sendStatus({
+      state: 'completed',
+      id: task.id,
+      filePath: '',
+      catalogEntry,
+      alreadyInCatalog: existing
+    })
   } catch (err: unknown) {
     log.error('finalizeDownload failed:', err)
     sendStatus({

@@ -200,16 +200,23 @@ export const GamesPage: React.FC = () => {
     if (!importFile) return
     setImporting(true)
     try {
-      await api.importIdgamesSingleFile({
+      const { existing } = await api.importIdgamesSingleFile({
         tempPath: importFile.downloadPath,
         fileName: importFile.fileName,
         name: importFile.name,
         hashValue: importFile.hash
       })
-      toast({
-        title: 'SYSTEM: import_success',
-        description: `${importFile.fileName} added to mods folder`
-      })
+      toast(
+        existing
+          ? {
+              title: 'SYSTEM: already_in_catalog',
+              description: `${importFile.fileName} is already in your catalog — nothing was added.`
+            }
+          : {
+              title: 'SYSTEM: import_success',
+              description: `${importFile.fileName} added to mods folder`
+            }
+      )
       setIsImportModalOpen(false)
       setImportFile(null)
       queryClient.invalidateQueries()

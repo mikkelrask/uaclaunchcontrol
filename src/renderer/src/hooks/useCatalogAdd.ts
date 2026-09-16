@@ -16,16 +16,26 @@ import { createLogger } from '@shared/logger'
 
 const log = createLogger('useCatalogAdd')
 interface UseCatalogAddOptions {
-  files: IModFile[]
   onChange: (files: IModFile[]) => void
   catalogFiles: IModFile[]
   availableRequiredFiles: IModFile[]
   tryArchiveImport: (filePath: string) => Promise<boolean>
 }
 
+const EMPTY_ADD_FORM: AddFormState = {
+  name: '',
+  filePath: '',
+  fileType: 'PK3',
+  version: '',
+  url: '',
+  loadOrder: [],
+  sidecarOnly: false,
+  category: '',
+  configTemplate: null
+}
+
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useCatalogAdd({
-  files,
   onChange,
   catalogFiles,
   availableRequiredFiles,
@@ -37,17 +47,7 @@ export function useCatalogAdd({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isAddingFile, setIsAddingFile] = useState(false)
 
-  const [addForm, setAddForm] = useState<AddFormState>({
-    name: '',
-    filePath: '',
-    fileType: 'PK3',
-    version: '',
-    url: '',
-    loadOrder: [],
-    sidecarOnly: false,
-    category: '',
-    configTemplate: null
-  })
+  const [addForm, setAddForm] = useState<AddFormState>(EMPTY_ADD_FORM)
 
   const [lastLookupHash, setLastLookupHash] = useState<string | null>(null)
   const [lastLookupFound, setLastLookupFound] = useState<boolean>(false)
@@ -89,8 +89,9 @@ export function useCatalogAdd({
       }
 
       if (req.isNew && req.filePath) {
-        const moveResult = await api.moveToModFolder(req.filePath)
-        const hash = moveResult.hashValue
+        // Hash the source; addToCatalog copies it into the mods dir only when
+        // this content isn't catalogued yet.
+        const hash = await api.computeHash(req.filePath)
         if (!hash) continue
 
         const fileName = req.filePath.split(/[\\/]/).pop() || req.filePath
@@ -98,7 +99,7 @@ export function useCatalogAdd({
 
         await api.addToCatalog({
           name: req.name,
-          filePath: moveResult.relativePath,
+          filePath: req.filePath,
           fileType: reqFileType,
           fileName: fileName,
           hashValue: hash,
@@ -123,15 +124,16 @@ export function useCatalogAdd({
 
     setIsAddingFile(true)
     try {
-      const moveResult = await api.moveToModFolder(addForm.filePath)
-      const hashValue = moveResult.hashValue
+      // Hash the source instead of copying it first: content that is already
+      // catalogued must never be copied into the mods dir a second time.
+      const hashValue = await api.computeHash(addForm.filePath)
 
-      const exists = files.some((f) => f.hashValue === hashValue)
-      if (exists) {
+      const duplicate = catalogFiles.find((f) => f.hashValue === hashValue)
+      if (duplicate) {
         toast({
-          title: 'SYSTEM: dupe_hash',
-          description: 'This file is already in your catalog',
-          variant: 'destructive'
+          title: 'SYSTEM: already_in_catalog',
+          description: `"${duplicate.name || duplicate.fileName}" is already in your catalog — nothing was added.`,
+          variant: 'default'
         })
         return
       }
@@ -150,9 +152,11 @@ export function useCatalogAdd({
 
       const processedLoadOrder = await processRequiredMods(addForm.loadOrder, hashValue)
 
-      await api.addToCatalog({
+      // The server copies the source into the mods dir, and answers with the
+      // entry that owns this hash — the new one, or one added concurrently.
+      const { file: savedFile, existing } = await api.addToCatalog({
         name: prettyName,
-        filePath: moveResult.relativePath,
+        filePath: addForm.filePath,
         fileType,
         fileName,
         version: addForm.version,
@@ -168,6 +172,22 @@ export function useCatalogAdd({
             }
           : undefined
       })
+
+      if (existing) {
+        toast({
+          title: 'SYSTEM: already_in_catalog',
+          description: `"${savedFile.name || savedFile.fileName}" is already in your catalog — nothing was added.`,
+          variant: 'default'
+        })
+        resetLookupState()
+        setIsAddModalOpen(false)
+        setAddForm(EMPTY_ADD_FORM)
+        const freshCatalog = await api.getModFileCatalog()
+        queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)
+        queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
+        onChange(freshCatalog)
+        return
+      }
 
       if (lastLookupHash === hashValue) {
         let shouldSubmit = false
@@ -242,17 +262,7 @@ export function useCatalogAdd({
 
       resetLookupState()
       setIsAddModalOpen(false)
-      setAddForm({
-        name: '',
-        filePath: '',
-        fileType: 'PK3',
-        version: '',
-        url: '',
-        loadOrder: [],
-        sidecarOnly: false,
-        category: '',
-        configTemplate: null
-      })
+      setAddForm(EMPTY_ADD_FORM)
 
       const freshCatalog = await api.getModFileCatalog()
       queryClient.setQueryData(['/api/mod-files/catalog'], freshCatalog)

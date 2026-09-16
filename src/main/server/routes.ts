@@ -373,21 +373,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       debug('Adding file to catalog:', fileData)
-      const savedFile = await storage.addModFileToCatalog(fileData)
-      debug('File added to catalog successfully:', savedFile)
+      const result = await storage.addModFileToCatalog(fileData)
+      debug('File added to catalog successfully:', result)
 
-      return res.status(201).json(savedFile)
+      return res.status(201).json(result)
     }, '/api/mod-files/catalog')
-  )
-
-  app.post(
-    '/api/mod-files/move',
-    wrapRoute(async (req, res) => {
-      const { sourcePath } = req.body
-      if (!sourcePath) return res.status(400).json({ message: 'Missing sourcePath' })
-      const result = await storage.moveToModFolder(sourcePath)
-      return res.json(result)
-    }, '/api/mod-files/move')
   )
 
   app.post(
@@ -754,17 +744,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!tempPath || typeof tempPath !== 'string') {
         return res.status(400).json({ message: 'Missing tempPath' })
       }
-      const moved = await storage.moveToModFolder(tempPath)
-      const catalogEntry = await storage.addModFileToCatalog({
+      // addModFileToCatalog hashes the source first and only copies it into the
+      // mods folder when the content isn't catalogued yet.
+      const result = await storage.addModFileToCatalog({
         fileName: fileName || path.basename(tempPath),
-        filePath: moved.relativePath,
-        hashValue: hashValue || moved.hashValue,
+        filePath: tempPath,
+        hashValue: hashValue || undefined,
         name: name || '',
         fileType: fileType || ''
       })
       // Clean up the temp file
       await fs.remove(tempPath).catch(() => {})
-      return res.json({ file: catalogEntry })
+      return res.json(result)
     }, '/api/search/idgames/import-single')
   )
 

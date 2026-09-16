@@ -7,6 +7,7 @@ import {
   IUpdateInfo,
   IPlayerData,
   IPlayerStats,
+  AddModFileResult,
   DeleteModFileResult
 } from '@shared/schema'
 import { createLogger } from '@shared/logger'
@@ -226,13 +227,13 @@ export const api = {
     return handleApiResponse<IModFile[]>(response)
   },
 
-  addToCatalog: async (file: Omit<IModFile, 'id'>): Promise<IModFile> => {
+  addToCatalog: async (file: Omit<IModFile, 'id'>): Promise<AddModFileResult> => {
     const response = await fetch(`${API_BASE}/api/mod-files/catalog`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(file)
     })
-    return handleApiResponse<IModFile>(response)
+    return handleApiResponse<AddModFileResult>(response)
   },
 
   computeHash: async (filePath: string): Promise<string> => {
@@ -390,7 +391,7 @@ export const api = {
     name?: string
     hashValue?: string
     fileType?: string
-  }): Promise<{ file: IModFile }> => {
+  }): Promise<AddModFileResult> => {
     const response = await fetch(`${API_BASE}/api/search/idgames/import-single`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -486,17 +487,6 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filePath, newPath })
-    })
-    return handleApiResponse(response)
-  },
-
-  moveToModFolder: async (
-    sourcePath: string
-  ): Promise<{ fullPath: string; relativePath: string; hashValue: string }> => {
-    const response = await fetch(`${API_BASE}/api/mod-files/move`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sourcePath })
     })
     return handleApiResponse(response)
   },

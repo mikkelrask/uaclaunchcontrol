@@ -71,8 +71,9 @@ export function useCatalogEdit({
       }
 
       if (req.isNew && req.filePath) {
-        const moveResult = await api.moveToModFolder(req.filePath)
-        const hash = moveResult.hashValue
+        // Hash the source; addToCatalog copies it into the mods dir only when
+        // this content isn't catalogued yet.
+        const hash = await api.computeHash(req.filePath)
         if (!hash) continue
 
         const fileName = req.filePath.split(/[\\/]/).pop() || req.filePath
@@ -80,7 +81,7 @@ export function useCatalogEdit({
 
         await api.addToCatalog({
           name: req.name,
-          filePath: moveResult.relativePath,
+          filePath: req.filePath,
           fileType: reqFileType,
           fileName: fileName,
           hashValue: hash,

@@ -4,6 +4,7 @@ import path from 'path'
 import type {
   IModFile,
   ModProtocolConfig,
+  AddModFileResult,
   DeleteModFileResult,
   CatalogFileDeleteOutcome
 } from '@shared/schema'
@@ -126,22 +127,31 @@ export async function moveFile(filePath: string, newPath: string): Promise<strin
 
 // Special helper to move a file into the mods/files folder and return the relative path
 export async function moveToModFolder(
-  sourcePath: string
+  sourcePath: string,
+  /** Hash of `sourcePath` when the caller already computed it — spares a second read. */
+  knownHash?: string
 ): Promise<{ fullPath: string; relativePath: string; hashValue: string }> {
   try {
     const settings = await getSettings()
     const modsDir = resolvePath(settings.modsDirectory || path.join(CONFIG_DIR, 'mods'))
     const resolvedSource = resolvePath(sourcePath)
     const originalFileName = path.basename(resolvedSource)
-    const hashValue = await computeFileHashOrThrow(resolvedSource)
+    const hashValue = knownHash || (await computeFileHashOrThrow(resolvedSource))
     const ext = path.extname(originalFileName)
-    const baseName = path.basename(originalFileName, ext)
+    // A file that came in through the catalogue already carries its hash in the
+    // name — strip it first, or re-importing stacks `<name>-<md5>-<md5>.ext`.
+    const baseName = stripMd5Suffix(path.basename(originalFileName, ext))
     const newFileName = `${baseName}-${hashValue}${ext}`
     const relativePath = path.join('files', newFileName)
     const fullPath = path.join(modsDir, relativePath)
 
     await fs.ensureDir(path.join(modsDir, 'files'))
-    await fs.copy(resolvedSource, fullPath, { overwrite: true })
+    // A file that already lives in the mods folder under this exact name is
+    // its own destination — fs.copy would remove it as the overwrite step and
+    // then fail to read it back.
+    if (path.resolve(resolvedSource) !== path.resolve(fullPath)) {
+      await fs.copy(resolvedSource, fullPath, { overwrite: true })
+    }
 
     debug(`Moved file to mod folder: ${fullPath} (relative: ${relativePath}, hash: ${hashValue})`)
     return { fullPath, relativePath, hashValue }
@@ -457,10 +467,16 @@ export async function writeConfigFileContent(key: string, content: string): Prom
   }
 }
 
-export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<IModFile> {
+export async function addModFileToCatalog(
+  file: Omit<IModFile, 'id'>
+): Promise<AddModFileResult> {
   try {
     debug('addModFileToCatalog called with:', file)
     initStorage() // Ensure directories and files exist
+
+    if (!file.filePath) {
+      throw new Error('Invalid file: filePath is required')
+    }
 
     // Read existing catalog
     debug(`Reading catalog from ${MOD_FILE_CATALOG}`)
@@ -472,62 +488,73 @@ export async function addModFileToCatalog(file: Omit<IModFile, 'id'>): Promise<I
       debug(`Catalog file doesn't exist, creating new one`)
     }
 
-    if (file.filePath) {
-      let relativePath: string
-      let hashValue: string
-      let originalFileName: string
+    // A file already sitting in the mods folder is addressed by its relative
+    // path; anything else is a source outside it that still has to be copied in.
+    const alreadyStored =
+      file.filePath.startsWith('files/') || file.filePath.startsWith('files\\')
 
-      // Check if file is already in mods folder (relative path starting with 'files/' or 'files\')
-      if (file.filePath.startsWith('files/') || file.filePath.startsWith('files\\')) {
-        // File already moved, use as-is
-        relativePath = file.filePath
-        hashValue = file.hashValue || (await computeFileHash(relativePath))
-        originalFileName = file.fileName || path.basename(relativePath)
-      } else {
-        // Move file to mod folder with hash-based filename
-        const moved = await moveToModFolder(file.filePath)
-        relativePath = moved.relativePath
-        hashValue = moved.hashValue
-        originalFileName = file.filePath.split(/[\\/]/).pop() || file.filePath
-      }
-
-      // Check for duplicate by hash — if an entry with this hash already exists, return it
-      if (hashValue) {
-        const existing = catalog.find((entry) => entry.hashValue === hashValue)
-        if (existing) {
-          debug(`Duplicate file detected by hash ${hashValue}, returning existing entry`)
-          return existing
-        }
-      }
-
-      // Set fileName to the new filename in the mod folder
-      const fileName = path.basename(relativePath)
-      // Always set name (pretty name), default to original file name if missing
-      const name = file.name && file.name.trim() ? file.name : originalFileName
-      // Create new catalog entry with an ID
-      const createdFile: IModFile = {
-        ...file,
-        name,
-        fileName,
-        id: Date.now(),
-        hashValue,
-        filePath: relativePath, // Use the relative path in mods folder
-        loadOrder: file.loadOrder ?? {},
-        requiredBy: file.requiredBy ?? [],
-        sidecarOnly: file.sidecarOnly ?? false,
-        url: file.url ?? '',
-        version: file.version ?? ''
-      }
-      debug('Created new catalog entry:', createdFile)
-      // Add to catalog
-      catalog.push(createdFile)
-      // Save updated catalog
-      debug(`Writing updated catalog with ${catalog.length} entries to ${MOD_FILE_CATALOG}`)
-      await fs.writeJSON(MOD_FILE_CATALOG, catalog, { spaces: 2 })
-      debug(`Catalog file saved successfully`)
-      return createdFile
+    // Hash BEFORE copying. A file whose content is already catalogued must not
+    // be copied in a second time under a second name.
+    let hashValue: string
+    if (alreadyStored) {
+      // A `files/` path addresses a file inside the mods dir; computeFileHash
+      // maps it there (it never resolves relative paths against the CWD).
+      hashValue = file.hashValue || (await computeFileHash(file.filePath))
+    } else {
+      hashValue = file.hashValue || (await computeFileHashOrThrow(file.filePath))
     }
-    throw new Error('Invalid file: filePath is required')
+
+    // Duplicate content: hand back the entry that already owns this hash rather
+    // than appending a second entry (and a second copy on disk).
+    if (hashValue) {
+      const existing = catalog.find((entry) => entry.hashValue === hashValue)
+      if (existing) {
+        debug(`Duplicate file detected by hash ${hashValue}, returning existing entry ${existing.id}`)
+        return { file: existing, existing: true }
+      }
+    }
+
+    let relativePath: string
+    let originalFileName: string
+
+    if (alreadyStored) {
+      // File already moved, use as-is
+      relativePath = file.filePath
+      originalFileName = file.fileName || path.basename(relativePath)
+    } else {
+      // Copy into the mods folder with a hash-based filename
+      const moved = await moveToModFolder(file.filePath, hashValue || undefined)
+      relativePath = moved.relativePath
+      hashValue = moved.hashValue
+      originalFileName = file.filePath.split(/[\\/]/).pop() || file.filePath
+    }
+
+    // Set fileName to the new filename in the mod folder
+    const fileName = path.basename(relativePath)
+    // Always set name (pretty name), default to original file name if missing
+    const name = file.name && file.name.trim() ? file.name : originalFileName
+    // Create new catalog entry with an ID
+    const createdFile: IModFile = {
+      ...file,
+      name,
+      fileName,
+      id: Date.now(),
+      hashValue,
+      filePath: relativePath, // Use the relative path in mods folder
+      loadOrder: file.loadOrder ?? {},
+      requiredBy: file.requiredBy ?? [],
+      sidecarOnly: file.sidecarOnly ?? false,
+      url: file.url ?? '',
+      version: file.version ?? ''
+    }
+    debug('Created new catalog entry:', createdFile)
+    // Add to catalog
+    catalog.push(createdFile)
+    // Save updated catalog
+    debug(`Writing updated catalog with ${catalog.length} entries to ${MOD_FILE_CATALOG}`)
+    await fs.writeJSON(MOD_FILE_CATALOG, catalog, { spaces: 2 })
+    debug(`Catalog file saved successfully`)
+    return { file: createdFile, existing: false }
   } catch (error: unknown) {
     log.error('Error adding mod file to catalog:', error)
     throw new Error(

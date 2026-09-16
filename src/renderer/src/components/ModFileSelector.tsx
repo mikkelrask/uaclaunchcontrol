@@ -107,27 +107,6 @@ export function ModFileSelector({
     onChange([...value, newFile])
   }
 
-  const handleMoveFileToModFolder = async (
-    sourcePath: string
-  ): Promise<{ fullPath: string; relativePath: string; hashValue: string }> => {
-    try {
-      const result = await api.moveToModFolder(sourcePath)
-      debug('[DEBUG] File moved successfully:', result)
-      return result
-    } catch (error: unknown) {
-      log.error('Failed to move file:', error)
-      toast({
-        title: 'FATAL: copy.fail',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Could not copy file to mods directory - check settings and mod, and try again.',
-        variant: 'destructive'
-      })
-      return { fullPath: sourcePath, relativePath: '', hashValue: '' }
-    }
-  }
-
   const handleRemoveFile = (index: number): void => {
     const newFiles = [...value]
     newFiles.splice(index, 1)
@@ -276,45 +255,40 @@ export function ModFileSelector({
           detectedType = 'WAD'
         }
 
-        const moveResult = await handleMoveFileToModFolder(selectedFilePath)
-        const newFullPath = moveResult.fullPath
-        const relativePath = moveResult.relativePath
-        const fileHashValue = moveResult.hashValue
+        // Hash the source first: content that is already catalogued is reused
+        // as-is, and never copied into the mods dir a second time.
+        const fileHashValue = await api.computeHash(selectedFilePath)
 
         let fileToUse: IModFile = {
           id: ++_nextTempId,
-          filePath: relativePath,
+          filePath: '',
           fileName: fileName,
           fileType: detectedType,
           hashValue: fileHashValue,
           name: fileName,
           isRequired: true
         }
-        let isDuplicate = false
 
-        // Check for existing entry by hash — reuse it if found
-        if (fileHashValue) {
-          const existingEntry = catalogFiles.find((f) => f.hashValue === fileHashValue)
-          if (existingEntry) {
-            debug(
-              `[DEBUG] Duplicate file detected by hash ${fileHashValue}, using existing catalog entry ${existingEntry.id}`
-            )
-            toast({
-              title: 'SYSTEM: already_in_catalog',
-              description: `"${existingEntry.name}" exists in catalog. Using existing entry.`,
-              variant: 'default'
-            })
-            fileToUse = existingEntry
-            isDuplicate = true
-          }
-        }
+        const existingEntry = fileHashValue
+          ? catalogFiles.find((f) => f.hashValue === fileHashValue)
+          : undefined
 
-        if (!isDuplicate) {
-          // Not a duplicate — save to catalog
+        if (existingEntry) {
+          debug(
+            `[DEBUG] Duplicate file detected by hash ${fileHashValue}, using existing catalog entry ${existingEntry.id}`
+          )
+          toast({
+            title: 'SYSTEM: already_in_catalog',
+            description: `"${existingEntry.name}" exists in catalog. Using existing entry.`,
+            variant: 'default'
+          })
+          fileToUse = existingEntry
+        } else {
+          // Not a duplicate — save to catalog (the server copies the file in)
           try {
-            const savedCatalogFile = await api.addToCatalog({
+            const { file: savedCatalogFile } = await api.addToCatalog({
               name: fileName,
-              filePath: relativePath,
+              filePath: selectedFilePath,
               fileType: detectedType,
               fileName: fileName,
               hashValue: fileHashValue
@@ -332,11 +306,10 @@ export function ModFileSelector({
         }
 
         debug('Selected file:', selectedFilePath)
-        debug('New file path:', newFullPath)
         debug('File name:', fileName)
         debug('Detected type:', detectedType)
 
-        const resolvedPath = fileToUse.filePath || relativePath
+        const resolvedPath = fileToUse.filePath || selectedFilePath
         const resolvedHash = fileToUse.hashValue || fileHashValue
 
         if (isDuplicateFile(value, index, { hashValue: resolvedHash, filePath: resolvedPath })) {

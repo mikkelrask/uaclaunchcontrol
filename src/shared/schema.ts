@@ -48,6 +48,14 @@ export interface IModFile {
 
 export type InsertModFile = Omit<IModFile, 'id'>
 
+/** Response of `POST /api/mod-files/catalog`. */
+export interface AddModFileResult {
+  /** The catalogue entry that owns the file — the new one, or the pre-existing match. */
+  file: IModFile
+  /** True when a catalogue entry with the same content hash already existed: nothing was copied or written. */
+  existing: boolean
+}
+
 /** What happened to an entry's file on disk when it was deleted from the catalogue. */
 export type CatalogFileDeleteOutcome =
   /** The file was on disk and is gone now. */
