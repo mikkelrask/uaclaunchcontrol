@@ -48,6 +48,24 @@ export interface IModFile {
 
 export type InsertModFile = Omit<IModFile, 'id'>
 
+/** What happened to an entry's file on disk when it was deleted from the catalogue. */
+export type CatalogFileDeleteOutcome =
+  /** The file was on disk and is gone now. */
+  | 'deleted'
+  /** The entry had no path, or nothing was on disk — the requested end state already held. */
+  | 'already-absent'
+  /** The file is still on disk (permissions, locks, read-only volume). */
+  | 'failed'
+  /** The caller did not ask for a disk deletion. */
+  | 'not-requested'
+
+/** Response of `DELETE /api/mod-files/catalog/:id`. */
+export interface DeleteModFileResult {
+  fileOutcome: CatalogFileDeleteOutcome
+  /** Absolute path the deletion targeted, resolved against the mods directory. */
+  filePath?: string
+}
+
 export interface IDoomVersion {
   id: string
   name: string

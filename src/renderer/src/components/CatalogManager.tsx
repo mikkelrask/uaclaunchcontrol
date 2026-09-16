@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/select'
 import { DataTable } from '@/components/ui/data-table'
 import { getCatalogColumns } from '@/components/catalog-columns'
-import { IModFile } from '@shared/schema'
+import type { IModFile, CatalogFileDeleteOutcome } from '@shared/schema'
 import { Upload } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
@@ -31,6 +31,40 @@ import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { createLogger } from '@shared/logger'
 
 const log = createLogger('CatalogManagerx')
+
+/**
+ * Toast for a catalog deletion, worded from what actually happened to the file
+ * on disk — a failed disk deletion still removed the catalog entry.
+ */
+function deleteOutcomeToast(
+  fileOutcome: CatalogFileDeleteOutcome,
+  label: string
+): { title: string; description: string; variant: 'default' | 'destructive' } {
+  const removed = `Removed "${label}" from your mod file catalog`
+  if (fileOutcome === 'deleted') {
+    return {
+      title: 'SYSTEM: remove_success',
+      description: `${removed} and deleted its file from disk.`,
+      variant: 'default'
+    }
+  }
+  if (fileOutcome === 'already-absent') {
+    return {
+      title: 'SYSTEM: remove_success',
+      description: `${removed}. Its file was already gone from disk.`,
+      variant: 'default'
+    }
+  }
+  if (fileOutcome === 'failed') {
+    return {
+      title: 'SYSTEM: file_delete_failed',
+      description: `${removed}, but its file could not be deleted from disk — remove it manually.`,
+      variant: 'destructive'
+    }
+  }
+  return { title: 'SYSTEM: remove_success', description: `${removed}.`, variant: 'default' }
+}
+
 interface CatalogManagerProps {
   files: IModFile[]
   onChange: (files: IModFile[]) => void
@@ -182,18 +216,15 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     if (!file) return
     setDeleteTarget(null)
     try {
-      await api.deleteFromCatalog(file.id, deleteFromDisk)
+      const { fileOutcome } = await api.deleteFromCatalog(file.id, deleteFromDisk)
       handleRemoveFile(file.id)
       // The catalog query caches with staleTime: Infinity — without
       // invalidating, other views (install page, file lists, re-hydration)
       // keep seeing the deleted entry until a full reload.
       void queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog'] })
       void queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
-      const extra = deleteFromDisk ? ' and its file from disk' : ''
-      toast({
-        title: 'SYSTEM: remove_success',
-        description: `Removed "${file.name || file.fileName}" from your mod file catalog${extra}.`
-      })
+      const label = file.name || file.fileName || 'this file'
+      toast(deleteOutcomeToast(fileOutcome, label))
     } catch {
       handleRemoveFile(file.id)
       toast({

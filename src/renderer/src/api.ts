@@ -6,7 +6,8 @@ import {
   IDoomVersion,
   IUpdateInfo,
   IPlayerData,
-  IPlayerStats
+  IPlayerStats,
+  DeleteModFileResult
 } from '@shared/schema'
 import { createLogger } from '@shared/logger'
 
@@ -294,13 +295,13 @@ export const api = {
     return handleApiResponse<IModFile>(response)
   },
 
-  deleteFromCatalog: async (id: number, deleteFile?: boolean): Promise<{ success: boolean }> => {
+  deleteFromCatalog: async (id: number, deleteFile?: boolean): Promise<DeleteModFileResult> => {
     const params = deleteFile ? '?deleteFile=true' : ''
     const response = await fetch(`${API_BASE}/api/mod-files/catalog/${id}${params}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     })
-    return handleApiResponse<{ success: boolean }>(response)
+    return handleApiResponse<DeleteModFileResult>(response)
   },
 
   // Protocol operations

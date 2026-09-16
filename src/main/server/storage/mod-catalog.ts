@@ -1,13 +1,19 @@
 // Mod file catalog management
 import fs from 'fs-extra'
 import path from 'path'
-import type { IModFile, ModProtocolConfig } from '@shared/schema'
+import type {
+  IModFile,
+  ModProtocolConfig,
+  DeleteModFileResult,
+  CatalogFileDeleteOutcome
+} from '@shared/schema'
 import { debug } from '@shared/debug'
 import { MOD_FILE_CATALOG, IMAGES_DIR, CFGS_DIR, CONFIG_DIR } from './paths'
 import {
   initStorage,
   getSettings,
   resolvePath,
+  resolveModFilePath,
   computeFileHash,
   computeFileHashOrThrow,
   wadNamePriority
@@ -565,7 +571,7 @@ export async function updateModFileInCatalog(
 export async function deleteModFileFromCatalog(
   fileId: number,
   deleteFile?: boolean
-): Promise<boolean> {
+): Promise<DeleteModFileResult> {
   try {
     const catalog = await getModFileCatalog()
     const index = catalog.findIndex((f) => f.id === fileId)
@@ -574,20 +580,39 @@ export async function deleteModFileFromCatalog(
     }
 
     const file = catalog[index]
+    let fileOutcome: CatalogFileDeleteOutcome = 'not-requested'
+    let filePath: string | undefined
 
-    if (deleteFile && file.filePath) {
-      const resolved = resolvePath(file.filePath)
-      try {
-        await fs.remove(resolved)
-        debug(`[storage] Deleted file from disk: ${resolved}`)
-      } catch (err: unknown) {
-        log.warn(`[storage] Failed to delete file from disk: ${resolved}`, err)
+    if (deleteFile) {
+      if (!file.filePath) {
+        fileOutcome = 'already-absent'
+      } else {
+        // Catalogue paths are `files/<name>.pk3`, relative to the mods dir —
+        // resolving against the process CWD would silently delete nothing.
+        filePath = await resolveModFilePath(file.filePath)
+        if (!(await fs.pathExists(filePath))) {
+          log.warn(`[storage] Nothing to delete, file already absent: ${filePath}`)
+          fileOutcome = 'already-absent'
+        } else {
+          try {
+            await fs.remove(filePath)
+          } catch (err: unknown) {
+            log.warn(`[storage] Failed to delete file from disk: ${filePath}`, err)
+          }
+          if (await fs.pathExists(filePath)) {
+            log.error(`[storage] File still on disk after delete: ${filePath}`)
+            fileOutcome = 'failed'
+          } else {
+            debug(`[storage] Deleted file from disk: ${filePath}`)
+            fileOutcome = 'deleted'
+          }
+        }
       }
     }
 
     catalog.splice(index, 1)
     await fs.writeJSON(MOD_FILE_CATALOG, catalog, { spaces: 2 })
-    return true
+    return { fileOutcome, filePath }
   } catch (error: unknown) {
     log.error('Error deleting file from catalog:', error)
     throw new Error(

@@ -278,7 +278,7 @@ export function wadNamePriority(fileName: string): number {
 
 export async function computeFileHash(filePath: string): Promise<string> {
   try {
-    const resolvedPath = await resolveFileHashPath(filePath)
+    const resolvedPath = await resolveModFilePath(filePath)
     const hash = await hashFileStream(resolvedPath)
     debug(`Computed MD5 hash for ${resolvedPath}: ${hash}`)
     return hash
@@ -289,23 +289,28 @@ export async function computeFileHash(filePath: string): Promise<string> {
 }
 
 export async function computeFileHashOrThrow(filePath: string): Promise<string> {
-  const resolvedPath = await resolveFileHashPath(filePath)
+  const resolvedPath = await resolveModFilePath(filePath)
   const hash = await hashFileStream(resolvedPath)
   debug(`Computed MD5 hash for ${resolvedPath}: ${hash}`)
   return hash
 }
 
-async function resolveFileHashPath(filePath: string): Promise<string> {
-  let resolvedPath = resolvePath(filePath)
+/**
+ * Resolve a mod file path to an absolute path on disk. `~` expands to the home
+ * directory and absolute paths pass through; relative paths — the
+ * `files/<name>-<md5>.pk3` form the catalogue stores — resolve against the
+ * configured mods directory, never the process working directory.
+ */
+export async function resolveModFilePath(filePath: string): Promise<string> {
+  const resolvedPath = resolvePath(filePath)
 
-  // If path is relative (not absolute and not starting with ~), resolve against mods directory
-  if (!path.isAbsolute(filePath) && !filePath.startsWith('~')) {
-    const settings = await getSettings()
-    const modsDir = resolvePath(settings.modsDirectory || path.join(CONFIG_DIR, 'mods'))
-    resolvedPath = path.join(modsDir, filePath)
+  if (path.isAbsolute(filePath) || filePath.startsWith('~')) {
+    return resolvedPath
   }
 
-  return resolvedPath
+  const settings = await getSettings()
+  const modsDir = resolvePath(settings.modsDirectory || path.join(CONFIG_DIR, 'mods'))
+  return path.join(modsDir, resolvedPath)
 }
 
 function hashFileStream(resolvedPath: string): Promise<string> {

@@ -15,6 +15,7 @@ export {
   getSettings,
   saveSettings,
   resolvePath,
+  resolveModFilePath,
   wadNamePriority,
   computeFileHash,
   computeFileHashOrThrow

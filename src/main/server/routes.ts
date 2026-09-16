@@ -425,8 +425,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid file ID' })
       }
       const deleteFile = req.query.deleteFile === 'true'
-      await storage.deleteModFileFromCatalog(fileId, deleteFile)
-      return res.json({ success: true })
+      const result = await storage.deleteModFileFromCatalog(fileId, deleteFile)
+      return res.json(result)
     }, '/api/mod-files/catalog/:id')
   )
 
