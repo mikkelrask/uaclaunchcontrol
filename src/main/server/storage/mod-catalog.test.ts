@@ -49,7 +49,7 @@ describe('addModFileToCatalog', () => {
 
     expect(existing).toBe(false)
     expect(file.hashValue).toBe(md5(content))
-    expect(file.filePath).toBe(`files/Fresh-${md5(content)}.pk3`)
+    expect(file.filePath).toBe(path.join('files', `Fresh-${md5(content)}.pk3`))
     expect(await fs.pathExists(path.join(MODS_DIR, file.filePath!))).toBe(true)
   })
 
@@ -89,7 +89,7 @@ describe('addModFileToCatalog', () => {
     })
 
     expect(existing).toBe(false)
-    expect(file.filePath).toBe(`files/Pre-Suffixed-${hash}.pk3`)
+    expect(file.filePath).toBe(path.join('files', `Pre-Suffixed-${hash}.pk3`))
     expect(await storedFiles()).not.toContain(`Pre-Suffixed-${hash}-${hash}.pk3`)
     expect(await fs.readFile(path.join(MODS_DIR, file.filePath!), 'utf-8')).toBe(content)
   })
