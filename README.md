@@ -1,6 +1,6 @@
 # UAC Launch Control
 
-A desktop app for managing and launching Doom mods, built with Electron, React, and TypeScript. Still a work in progress and very early stage.
+A desktop app for managing and launching Doom mods, built with Electron, React, and TypeScript.
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/mikkelrask/uaclaunchcontrol)
 ![Electron](https://img.shields.io/badge/Electron-Latest-47848F?logo=electron)
