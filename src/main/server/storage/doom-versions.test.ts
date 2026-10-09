@@ -67,6 +67,7 @@ beforeAll(async () => {
   // bootstrap from launching a second scan and watcher during assertions.
   vi.useFakeTimers({ toFake: ['setImmediate'] })
   vi.stubEnv('HOME', HOME)
+  vi.stubEnv('USERPROFILE', HOME)
   fs.ensureDirSync(WADS)
   fs.writeJSONSync(path.join(CONFIG, 'settings.json'), { wadFilesDirectory: WADS })
 
