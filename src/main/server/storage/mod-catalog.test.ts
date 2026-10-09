@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import crypto from 'node:crypto'
 import fs from 'fs-extra'
 import os from 'os'
@@ -29,10 +29,13 @@ async function writeSource(name: string, content: string): Promise<string> {
 const storedFiles = (): Promise<string[]> => fs.readdir(FILES_DIR)
 
 beforeAll(async () => {
-  process.env.HOME = HOME
+  vi.stubEnv('HOME', HOME)
+  vi.stubEnv('USERPROFILE', HOME)
   storage = await import('../storage')
   storage.initStorage()
 })
+
+afterAll(() => vi.unstubAllEnvs())
 
 describe('addModFileToCatalog', () => {
   it('copies a new file into the mods dir under its content hash', async () => {
