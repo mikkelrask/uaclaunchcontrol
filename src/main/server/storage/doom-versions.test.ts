@@ -63,6 +63,9 @@ vi.mock('@shared/iwad-hashes', () => {
 let syncDoomVersions: typeof SyncDoomVersions
 
 beforeAll(async () => {
+  // This suite invokes the scan explicitly. Keep initStorage's deferred
+  // bootstrap from launching a second scan and watcher during assertions.
+  vi.useFakeTimers({ toFake: ['setImmediate'] })
   vi.stubEnv('HOME', HOME)
   fs.ensureDirSync(WADS)
   fs.writeJSONSync(path.join(CONFIG, 'settings.json'), { wadFilesDirectory: WADS })
@@ -88,6 +91,7 @@ beforeAll(async () => {
 })
 
 afterAll(() => {
+  vi.useRealTimers()
   vi.unstubAllEnvs()
   fs.removeSync(HOME)
 })
