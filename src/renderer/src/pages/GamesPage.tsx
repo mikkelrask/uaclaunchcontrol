@@ -653,7 +653,9 @@ export const GamesPage: React.FC = () => {
             {importFile && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>File Name</Label>
+                  <div>
+                    <Label>File Name</Label>
+                  </div>
                   <Input
                     value={importFile.fileName}
                     readOnly
@@ -661,7 +663,9 @@ export const GamesPage: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Name</Label>
+                  <div>
+                    <Label>Name</Label>
+                  </div>
                   <Input
                     value={importFile.name}
                     onChange={(e) =>
@@ -673,7 +677,9 @@ export const GamesPage: React.FC = () => {
                 </div>
                 {importFile.hash && (
                   <div className="space-y-2">
-                    <Label>MD5 Hash</Label>
+                    <div>
+                      <Label>MD5 Hash</Label>
+                    </div>
                     <Input
                       value={importFile.hash}
                       readOnly

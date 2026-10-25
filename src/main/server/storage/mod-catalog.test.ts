@@ -4,6 +4,10 @@ import fs from 'fs-extra'
 import os from 'os'
 import path from 'path'
 
+// The storage barrel also imports WAD notifications. Keep that Electron
+// boundary out of these Node filesystem tests (and its binary installer).
+vi.mock('electron', () => ({ BrowserWindow: { getAllWindows: () => [] } }))
+
 // The catalogue resolves its directories once, at import time, from the home
 // directory — so this file builds a throwaway home, points HOME at it, and only
 // then pulls the storage modules in (see beforeAll). Everything runs on real

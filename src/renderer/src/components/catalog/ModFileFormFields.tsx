@@ -75,7 +75,9 @@ export function ModFileFormFields<T extends ModFileFormFieldsState>({
   return (
     <>
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-name`}>Name</Label>
+        <div>
+          <Label htmlFor={`${idPrefix}-name`}>Name</Label>
+        </div>
         <Input
           id={`${idPrefix}-name`}
           value={form.name}
@@ -86,7 +88,9 @@ export function ModFileFormFields<T extends ModFileFormFieldsState>({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-version`}>Version</Label>
+        <div>
+          <Label htmlFor={`${idPrefix}-version`}>Version</Label>
+        </div>
         <Input
           id={`${idPrefix}-version`}
           value={form.version}
@@ -97,7 +101,9 @@ export function ModFileFormFields<T extends ModFileFormFieldsState>({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-url`}>{urlLabel}</Label>
+        <div>
+          <Label htmlFor={`${idPrefix}-url`}>{urlLabel}</Label>
+        </div>
         <Input
           id={`${idPrefix}-url`}
           value={form.url}
@@ -108,7 +114,9 @@ export function ModFileFormFields<T extends ModFileFormFieldsState>({
       </div>
 
       <div className="space-y-2">
-        <Label>Category</Label>
+        <div>
+          <Label>Category</Label>
+        </div>
         <Select
           value={form.category}
           onValueChange={(val) => setForm((prev) => ({ ...prev, category: val }))}
@@ -128,7 +136,9 @@ export function ModFileFormFields<T extends ModFileFormFieldsState>({
 
       {/* Config Template Section */}
       <div className="space-y-2">
-        <Label>Config Template (optional)</Label>
+        <div>
+          <Label>Config Template (optional)</Label>
+        </div>
         <p className="text-xs text-app-muted">{configTemplateHelpText}</p>
         <div className="flex gap-2">
           <Input

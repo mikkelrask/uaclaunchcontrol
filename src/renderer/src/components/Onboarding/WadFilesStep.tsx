@@ -105,9 +105,11 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
-          UAC-7 // Data Repositories
-        </span>
+        <div>
+          <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
+            UAC-7 // Data Repositories
+          </span>
+        </div>
         <h2 className="text-2xl font-bold tracking-tight text-app-primary">WAD Files</h2>
         <p className="text-sm text-app-secondary max-w-lg mx-auto">
           Point at a folder with your Doom WAD files, or drop them into the folder below.
@@ -125,10 +127,12 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
         </p>
       </div>
 
-      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3">
-        <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-          WAD Files Directory
-        </Label>
+      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
+        <div>
+          <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
+            WAD Files Directory
+          </Label>
+        </div>
         <div className="flex gap-2">
           <Input
             value={settings.wadFilesDirectory ?? ''}
@@ -149,10 +153,12 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
         </div>
       </div>
 
-      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3">
-        <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-          FreeDoom
-        </Label>
+      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
+        <div>
+          <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+            FreeDoom
+          </Label>
+        </div>
         <p className="text-xs text-app-muted leading-tight">
           Free, legally redistributable IWADs — no commercial Doom purchase required.
         </p>
@@ -189,10 +195,12 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
         {freedoomError && <p className="text-xs text-red-400">{freedoomError}</p>}
       </div>
 
-      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3">
-        <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-          Detected IWADs
-        </Label>
+      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
+        <div>
+          <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
+            Detected IWADs
+          </Label>
+        </div>
         {isLoadingVersions ? (
           <p className="text-xs text-app-muted italic py-2">Scanning…</p>
         ) : !hasAnyIwad ? (

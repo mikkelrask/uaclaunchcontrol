@@ -19,9 +19,11 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
       </div>
 
       <div className="space-y-2">
-        <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
-          UAC-7 // Personnel Terminal
-        </span>
+        <div>
+          <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
+            UAC-7 // Personnel Terminal
+          </span>
+        </div>
         <h1 className="text-3xl font-bold tracking-tight text-app-primary">
           Welcome to Mars, Cadet
         </h1>

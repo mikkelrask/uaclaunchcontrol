@@ -84,10 +84,12 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Protocol Identity — what makes this protocol recognizable */}
-        <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-4">
-          <span className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-            Protocol Identity
-          </span>
+        <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-4">
+          <div>
+            <span className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+              Protocol Identity
+            </span>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
@@ -95,9 +97,11 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                    Label
-                  </FormLabel>
+                  <div>
+                    <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                      Label
+                    </FormLabel>
+                  </div>
                   <FormControl>
                     <Input
                       placeholder="I.e. 'Brutal Doom'"
@@ -129,9 +133,11 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
               name="screenshotPath"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                    Screenshot/Cover (Optional)
-                  </FormLabel>
+                  <div>
+                    <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                      Screenshot/Cover (Optional)
+                    </FormLabel>
+                  </div>
                   <FormControl>
                     <div className="flex gap-2">
                       <Input
@@ -188,9 +194,11 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                  Description (Optional)
-                </FormLabel>
+                <div>
+                  <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                    Description (Optional)
+                  </FormLabel>
+                </div>
                 <FormControl>
                   <Textarea
                     placeholder="Enter a fitting description"
@@ -225,9 +233,11 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                   name="doomVersionId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                        Base WAD
-                      </FormLabel>
+                      <div>
+                        <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                          Base WAD
+                        </FormLabel>
+                      </div>
                       {/* key forces a fresh mount the instant a value is first
                           set programmatically (our default-fill effect in
                           InstallPage) — without it, Radix Select's onValueChange
@@ -264,9 +274,11 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                   name="sourcePortId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                        Source Port
-                      </FormLabel>
+                      <div>
+                        <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                          Source Port
+                        </FormLabel>
+                      </div>
                       <FormControl>
                         <Combobox
                           value={field.value}
@@ -294,9 +306,11 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                   name="saveDirectory"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                        Save Directory (Optional)
-                      </FormLabel>
+                      <div>
+                        <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                          Save Directory (Optional)
+                        </FormLabel>
+                      </div>
                       <FormControl>
                         <Input
                           placeholder={settings?.savegamesPath || ''}
@@ -315,9 +329,11 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                   name="launchParameters"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                        Launch Parameters (Optional)
-                      </FormLabel>
+                      <div>
+                        <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                          Launch Parameters (Optional)
+                        </FormLabel>
+                      </div>
                       <FormControl>
                         <Input
                           placeholder="-skill 4 -warp 01"
@@ -344,9 +360,11 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel className="text-sm font-normal text-app-primary cursor-pointer">
-                        Create an isolated config for this protocol
-                      </FormLabel>
+                      <div>
+                        <FormLabel className="text-sm font-normal text-app-primary cursor-pointer">
+                          Create an isolated config for this protocol
+                        </FormLabel>
+                      </div>
                       <p className="text-xs text-app-muted">
                         A private copy of the source port&apos;s current settings, so changes here
                         won&apos;t affect other protocols. Created automatically when you save.
@@ -366,7 +384,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
           )}
         </div>
 
-        <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm">
+        <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs">
           <ModFileSelector value={files} onChange={handleFilesChange} fileReorder={fileReorder} />
         </div>
 

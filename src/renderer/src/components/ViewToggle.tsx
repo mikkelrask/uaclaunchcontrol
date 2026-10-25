@@ -70,7 +70,7 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
               key={mode}
               className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
                 active
-                  ? 'text-accent-highlight bg-app-primary shadow-sm'
+                  ? 'text-accent-highlight bg-app-primary shadow-xs'
                   : 'text-app-muted hover:text-app-primary hover:bg-app-hover'
               }`}
               onClick={() => onViewModeChange(mode)}
@@ -88,7 +88,7 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
         <button
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${
             showSortDropdown
-              ? 'text-accent-highlight bg-app-primary shadow-sm'
+              ? 'text-accent-highlight bg-app-primary shadow-xs'
               : 'text-app-muted hover:text-app-primary hover:bg-app-hover'
           }`}
           onClick={() => setShowSortDropdown(!showSortDropdown)}

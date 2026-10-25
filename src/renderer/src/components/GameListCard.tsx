@@ -58,7 +58,7 @@ export const GameListCard: React.FC<GameListCardProps> = ({
             e.currentTarget.src = placeholder
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-black/30 to-transparent" />
       </div>
 
       {/* ── Content ── */}

@@ -72,8 +72,8 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
         />
 
         {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--bg-card))] via-[hsl(var(--bg-card)/0.3)] to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-[hsl(var(--bg-card))] via-[hsl(var(--bg-card)/0.3)] to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-black/50 to-transparent" />
 
         {/* Title + badge overlay at bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-6 flex items-end justify-between gap-4">

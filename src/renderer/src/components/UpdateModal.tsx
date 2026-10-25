@@ -1,4 +1,5 @@
 import React from 'react'
+import { ReleaseNotes } from './ReleaseNotes'
 import {
   Dialog,
   DialogContent,
@@ -78,35 +79,13 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
 
           {updateInfo.releaseNotes && (
             <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                Release Notes
-              </Label>
+              <div>
+                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                  Release Notes
+                </Label>
+              </div>
               <ScrollArea className="h-96 rounded-md border border-app bg-app-primary p-4">
-                <div
-                  className="text-sm text-app-muted prose prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{
-                    __html: updateInfo.releaseNotes
-                      .replace(
-                        /^### (.+)$/gm,
-                        '<h4 class="font-bold text-app-primary mt-4 mb-2">$1</h4>'
-                      )
-                      .replace(
-                        /^## (.+)$/gm,
-                        '<h3 class="font-bold text-app-primary mt-4 mb-2">$1</h3>'
-                      )
-                      .replace(
-                        /^# (.+)$/gm,
-                        '<h2 class="font-bold text-app-primary mt-4 mb-2">$1</h2>'
-                      )
-                      .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
-                      .replace(/^\* (.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
-                      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                      .replace(/_(.+?)_/g, '<em>$1</em>')
-                      .replace(/`([^`]+)`/g, '<code class="bg-black/30 px-1 rounded">$1</code>')
-                      .replace(/\n/g, '<br/>')
-                  }}
-                />
+                <ReleaseNotes markdown={updateInfo.releaseNotes} />
               </ScrollArea>
             </div>
           )}

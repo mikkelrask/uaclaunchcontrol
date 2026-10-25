@@ -36,9 +36,11 @@ export const CompleteStep: React.FC<CompleteStepProps> = ({ onFinish, onBack }) 
       </div>
 
       <div className="space-y-2">
-        <span className="font-mono text-xs uppercase tracking-[0.3em] text-green-500/70">
-          UAC-7 // Systems Nominal
-        </span>
+        <div>
+          <span className="font-mono text-xs uppercase tracking-[0.3em] text-green-500/70">
+            UAC-7 // Systems Nominal
+          </span>
+        </div>
         <h1 className="text-3xl font-bold tracking-tight text-app-primary">All set!</h1>
       </div>
 

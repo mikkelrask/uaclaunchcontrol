@@ -435,10 +435,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
           <div className="flex-1 overflow-y-auto">
             <TabsContent value="general" className="space-y-4 mt-0 p-6">
-              <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-5">
-                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                  INTERFACE
-                </Label>
+              <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-5">
+                <div>
+                  <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                    INTERFACE
+                  </Label>
+                </div>
 
                 <div className="flex items-start justify-between gap-6">
                   <div className="min-w-0">
@@ -723,14 +725,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 ].map((field) => (
                   <div
                     key={field.id}
-                    className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3"
+                    className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3"
                   >
-                    <Label
-                      htmlFor={`${id}-${field.id}`}
-                      className="text-xs text-app-muted font-bold uppercase tracking-wider"
-                    >
-                      {field.label}
-                    </Label>
+                    <div>
+                      <Label
+                        htmlFor={`${id}-${field.id}`}
+                        className="text-xs text-app-muted font-bold uppercase tracking-wider"
+                      >
+                        {field.label}
+                      </Label>
+                    </div>
                     <div className="flex gap-2">
                       <Input
                         id={`${id}-${field.id}`}
@@ -765,10 +769,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               value="wad-config"
               className="flex-1 min-h-0 p-6 flex flex-col gap-4 overflow-hidden"
             >
-              <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3 shrink-0">
-                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                  FreeDoom
-                </Label>
+              <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3 shrink-0">
+                <div>
+                  <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                    FreeDoom
+                  </Label>
+                </div>
                 <p className="text-[0.625rem] text-app-muted leading-tight">
                   Free, legally redistributable IWADs — no commercial Doom purchase required.
                 </p>
@@ -813,7 +819,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 {freedoomError && <p className="text-xs text-red-400">{freedoomError}</p>}
               </div>
 
-              <div className="flex-1 min-h-0 bg-app-secondary rounded-xl border border-app shadow-sm overflow-hidden flex flex-col">
+              <div className="flex-1 min-h-0 bg-app-secondary rounded-xl border border-app shadow-xs overflow-hidden flex flex-col">
                 {isLoadingVersions ? (
                   <div className="flex items-center justify-center h-full gap-3 text-app-secondary font-mono italic">
                     <div className="w-2 h-2 rounded-full bg-accent-highlight animate-pulse" />
@@ -826,7 +832,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-[240px,1fr] h-full overflow-hidden">
+                  <div className="grid grid-cols-[240px_1fr] h-full overflow-hidden">
                     {/* Master: WAD List Sidebar */}
                     <div className="flex flex-col overflow-y-auto border-r border-app bg-app-primary/20 scrollbar-thin scrollbar-thumb-app-hover">
                       <div className="p-2 space-y-1">
@@ -836,7 +842,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                             onClick={() => setSelectedWadIndex(index)}
                             className={`flex items-center gap-2.5 p-3 rounded-lg transition-all text-left group shrink-0 border border-transparent cursor-pointer ${
                               selectedWadIndex === index
-                                ? 'bg-app-primary border-app shadow-sm outline-accent-highlight/30 outline-1'
+                                ? 'bg-app-primary border-app shadow-xs outline-accent-highlight/30 outline-1'
                                 : 'hover:bg-app-primary/40'
                             }`}
                           >
@@ -898,9 +904,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                             </div>
                             <div className="flex-1 space-y-6 min-w-0">
                               <div className="space-y-2">
-                                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                                  WAD Identity
-                                </Label>
+                                <div>
+                                  <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                                    WAD Identity
+                                  </Label>
+                                </div>
                                 <Input
                                   value={doomVersions[selectedWadIndex].name}
                                   onChange={(e) =>
@@ -1018,7 +1026,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   </p>
                 </div>
                 <textarea
-                  className="w-full h-64 bg-app-primary border border-app rounded-md p-3 font-mono text-xs text-app-primary resize-none focus:outline-none focus:ring-1 focus:ring-accent-highlight/40"
+                  className="w-full h-64 bg-app-primary border border-app rounded-md p-3 font-mono text-xs text-app-primary resize-none focus:outline-hidden focus:ring-1 focus:ring-accent-highlight/40"
                   value={settings.customThemeCss || ''}
                   onChange={(e) => setSettings((s) => ({ ...s, customThemeCss: e.target.value }))}
                   placeholder={`--bg-primary: 220 18% 5%;\n--text-primary: 210 20% 92%;\n--accent-highlight: 0 84% 60%;`}

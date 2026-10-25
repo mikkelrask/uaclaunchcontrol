@@ -64,7 +64,9 @@ export function AddFileDialog({
 
         <div className="space-y-4 p-4 overflow-y-auto">
           <div className="space-y-2">
-            <Label htmlFor="add-file-select">Select File</Label>
+            <div>
+              <Label htmlFor="add-file-select">Select File</Label>
+            </div>
             <div className="flex gap-2">
               <Input
                 id="add-file-select"
