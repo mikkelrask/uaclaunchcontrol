@@ -25,6 +25,7 @@ import { OnboardingWizard } from '@/components/Onboarding'
 import { CrashLogDialog, type CrashLogData } from '@/components/CrashLogDialog'
 import { ToastAction } from '@/components/ui/toast'
 import { inferCrashHint } from '@/lib/crashHints'
+import { applyLanguage } from '@/lib/i18n'
 
 import { createLogger } from '@shared/logger'
 
@@ -79,6 +80,10 @@ const App: React.FC = () => {
     queryKey: ['/api/settings'],
     queryFn: api.getSettings
   })
+
+  useEffect(() => {
+    if (settings) applyLanguage(settings.language).catch((error: unknown) => log.error(error))
+  }, [settings])
 
   // Open modal when "View" is clicked on update toast
   useEffect(() => {

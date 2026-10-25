@@ -1,3 +1,4 @@
+import { T, useTranslate } from '@tolgee/react'
 import React, { useState, useEffect, useId, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,8 @@ import {
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
+import { isLanguagePreference } from '@shared/locales'
+import { applyLanguage } from '@/lib/i18n'
 import uacLogo from '@/assets/UAC Logo.svg'
 
 import { createLogger } from '@shared/logger'
@@ -32,9 +35,11 @@ interface SettingsDialogProps {
 }
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslate('desktop')
   const { toast } = useToast()
   const id = useId()
   const [settings, setSettings] = useState<IAppSettings>({
+    language: 'system',
     sourcePorts: [],
     defaultSourcePortId: undefined,
     defaultDoomVersionId: undefined,
@@ -120,7 +125,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       .catch(() => {
         toast({
           title: 'FATAL: cfg_load_err',
-          description: 'Failed to load settings',
+          description: t('settings.load.failed', 'Failed to load settings'),
           variant: 'destructive'
         })
       })
@@ -135,7 +140,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         log.error('[settings] Failed to load doom versions')
         toast({
           title: 'FATAL: version_load_err',
-          description: 'Failed to load doom versions',
+          description: t('settings.versions.failed', 'Failed to load doom versions'),
           variant: 'destructive'
         })
       } finally {
@@ -144,7 +149,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
 
     fetchVersions()
-  }, [isOpen, toast])
+  }, [isOpen, toast, t])
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -190,7 +195,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         try {
           await api.moveFile(selectedIconPath, destPath)
           handleVersionChange(index, 'icon', destPath)
-          toast({ title: 'SYSTEM: icon_relocated', description: `Icon moved to ${destPath}` })
+          toast({
+            title: 'SYSTEM: icon_relocated',
+            description: t('settings.icon.moved', 'Icon moved to {path}', { path: destPath })
+          })
         } catch {
           // If move fails, just use the selected path
           handleVersionChange(index, 'icon', selectedIconPath)
@@ -213,7 +221,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
       toast({
         title: 'SYSTEM: freedoom_installed',
-        description: `Installed: ${result.installed.join(', ')}`
+        description: t('settings.freedoom.installed', 'Installed: {names}', {
+          names: result.installed.join(', ')
+        })
       })
     } catch (e: unknown) {
       setFreedoomError(e instanceof Error ? e.message : 'Download failed')
@@ -276,6 +286,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const handleSave = async (): Promise<void> => {
     try {
       const payload = {
+        language: settings.language ?? 'system',
         sourcePorts: settings.sourcePorts,
         defaultSourcePortId: settings.defaultSourcePortId,
         defaultDoomVersionId: settings.defaultDoomVersionId,
@@ -320,7 +331,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         }
       }
 
-      await api.updateSettings(payload)
+      const savedSettings = await api.updateSettings(payload)
+      await applyLanguage(savedSettings.language)
 
       // Re-fetch versions from the server (it re-scanned if wad dir changed)
       const freshVersions = await api.getDoomVersions()
@@ -349,13 +361,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
       toast({
         title: 'SYSTEM: core_settings',
-        description: 'Your changes have been approved.'
+        description: t('settings.save.success', 'Your changes have been approved.')
       })
       onClose()
     } catch {
       toast({
         title: 'SYSTEM: core_settings',
-        description: 'No changes have been applied. Could not save settings.',
+        description: t(
+          'settings.save.failed',
+          'No changes have been applied. Could not save settings.'
+        ),
         variant: 'destructive'
       })
     }
@@ -388,10 +403,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             </div>
             <div>
               <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                core_settings
+                {t('settings.title', 'core_settings')}
               </DialogTitle>
               <p className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                UAC Launch Control // System Configuration
+                {t('settings.subtitle', 'UAC Launch Control // System Configuration')}
               </p>
             </div>
           </div>
@@ -404,31 +419,31 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 value="general"
                 className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
-                General
+                {t('settings.tabs.general', 'General')}
               </TabsTrigger>
               <TabsTrigger
                 value="paths"
                 className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
-                Paths
+                {t('settings.tabs.paths', 'Paths')}
               </TabsTrigger>
               <TabsTrigger
                 value="source-ports"
                 className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
-                Source Ports
+                {t('settings.tabs.sourcePorts', 'Source Ports')}
               </TabsTrigger>
               <TabsTrigger
                 value="wad-config"
                 className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
-                WAD Config
+                {t('settings.tabs.wads', 'WAD Config')}
               </TabsTrigger>
               <TabsTrigger
                 value="advanced"
                 className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
-                Advanced
+                {t('settings.tabs.advanced', 'Advanced')}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -437,14 +452,54 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             <TabsContent value="general" className="space-y-4 mt-0 p-6">
               <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-5">
                 <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                  INTERFACE
+                  {t('settings.interface', 'INTERFACE')}
                 </Label>
 
                 <div className="flex items-start justify-between gap-6">
                   <div className="min-w-0">
-                    <Label className="text-sm font-medium text-app-primary">App Theme</Label>
+                    <Label
+                      htmlFor={`${id}-language`}
+                      className="text-sm font-medium text-app-primary"
+                    >
+                      {t('settings.language.label', 'Language')}
+                    </Label>
                     <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
-                      Visual colour profile for the terminal.
+                      {t(
+                        'settings.language.description',
+                        'Choose the interface language. Untranslated text is shown in English.'
+                      )}
+                    </p>
+                  </div>
+                  <Select
+                    value={settings.language ?? 'system'}
+                    onValueChange={(language) => {
+                      if (isLanguagePreference(language)) setSettings((s) => ({ ...s, language }))
+                    }}
+                  >
+                    <SelectTrigger
+                      id={`${id}-language`}
+                      className="bg-app-primary border-app text-app-primary w-[260px] shrink-0"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-app-secondary border-app text-app-primary">
+                      <SelectItem value="system">
+                        {t('settings.language.system', 'System language')}
+                      </SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="da-DK">Dansk</SelectItem>
+                      <SelectItem value="es-ES">Español</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-start justify-between gap-6">
+                  <div className="min-w-0">
+                    <Label className="text-sm font-medium text-app-primary">
+                      {t('settings.theme.label', 'App Theme')}
+                    </Label>
+                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
+                      {t('settings.theme.description', 'Visual colour profile for the terminal.')}
                     </p>
                   </div>
                   <Select
@@ -457,14 +512,26 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     }
                   >
                     <SelectTrigger className="bg-app-primary border-app text-app-primary w-[260px] shrink-0">
-                      <SelectValue placeholder="Select theme" />
+                      <SelectValue placeholder={t('settings.theme.placeholder', 'Select theme')} />
                     </SelectTrigger>
                     <SelectContent className="bg-app-secondary border-app text-app-primary">
                       {[
-                        { value: 'dark', label: 'UAC PHOBOS — Default, dark/red' },
-                        { value: 'light', label: 'MAYKR — Bright argent energy' },
-                        { value: 'terminal', label: 'PLUTONIA TERMINAL — Green phosphor' },
-                        { value: 'custom', label: 'CUSTOM — User-defined palette' }
+                        {
+                          value: 'dark',
+                          label: t('settings.theme.dark', 'UAC PHOBOS — Default, dark/red')
+                        },
+                        {
+                          value: 'light',
+                          label: t('settings.theme.light', 'MAYKR — Bright argent energy')
+                        },
+                        {
+                          value: 'terminal',
+                          label: t('settings.theme.terminal', 'PLUTONIA TERMINAL — Green phosphor')
+                        },
+                        {
+                          value: 'custom',
+                          label: t('settings.theme.custom', 'CUSTOM — User-defined palette')
+                        }
                       ].map(({ value, label }) => (
                         <SelectItem
                           key={value}
@@ -480,9 +547,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
                 <div className="flex items-start justify-between gap-6">
                   <div className="min-w-0">
-                    <Label className="text-sm font-medium text-app-primary">Database Link</Label>
+                    <Label className="text-sm font-medium text-app-primary">
+                      {t('settings.database.label', 'Database Link')}
+                    </Label>
                     <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
-                      Changes the shortcut link shown in the header next to LAUNCH/INSTALL.
+                      {t(
+                        'settings.database.description',
+                        'Changes the shortcut link shown in the header next to LAUNCH/INSTALL.'
+                      )}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
@@ -496,7 +568,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       }
                     >
                       <SelectTrigger className="bg-app-primary border-app text-app-primary w-[260px] shrink-0">
-                        <SelectValue placeholder="Select a database" />
+                        <SelectValue
+                          placeholder={t('settings.database.placeholder', 'Select a database')}
+                        />
                       </SelectTrigger>
                       <SelectContent className="bg-app-secondary border-app text-app-primary">
                         {settings.databaseLinkPresets.map((preset, index) => (
@@ -521,16 +595,33 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
                 <div className="flex items-center justify-between gap-6">
                   <div className="min-w-0">
-                    <Label className="text-sm font-medium text-app-primary">Default View</Label>
+                    <Label className="text-sm font-medium text-app-primary">
+                      {t('settings.view.label', 'Default View')}
+                    </Label>
                     <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
-                      Starting view mode when opening the games page.
+                      {t(
+                        'settings.view.description',
+                        'Starting view mode when opening the games page.'
+                      )}
                     </p>
                   </div>
                   <div className="flex rounded-lg border border-app overflow-hidden shrink-0">
                     {[
-                      { value: 'grid' as const, icon: LayoutGrid, label: 'Grid' },
-                      { value: 'list' as const, icon: List, label: 'List' },
-                      { value: 'detail' as const, icon: BookOpen, label: 'Detail' }
+                      {
+                        value: 'grid' as const,
+                        icon: LayoutGrid,
+                        label: t('settings.view.grid', 'Grid')
+                      },
+                      {
+                        value: 'list' as const,
+                        icon: List,
+                        label: t('settings.view.list', 'List')
+                      },
+                      {
+                        value: 'detail' as const,
+                        icon: BookOpen,
+                        label: t('settings.view.detail', 'Detail')
+                      }
                     ].map(({ value, icon: Icon, label }) => (
                       <button
                         key={value}
@@ -550,13 +641,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
                 <div className="flex items-center justify-between gap-6">
                   <div className="min-w-0">
-                    <Label className="text-sm font-medium text-app-primary">UI Scale</Label>
+                    <Label className="text-sm font-medium text-app-primary">
+                      {t('settings.scale.label', 'UI Scale')}
+                    </Label>
                     <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
-                      Text and spacing size, independent of window zoom (Ctrl +/-).
+                      {t(
+                        'settings.scale.description',
+                        'Text and spacing size, independent of window zoom (Ctrl +/-).'
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 w-[260px] shrink-0">
                     <Slider
+                      aria-label={t('settings.scale.label', 'UI Scale')}
                       value={[settings.uiScale ?? 100]}
                       onValueChange={([value]) => setSettings((s) => ({ ...s, uiScale: value }))}
                       onValueCommit={([value]) => api.setZoomFactor(value / 100)}
@@ -573,12 +670,18 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
                 <div className="flex items-center justify-between gap-6">
                   <div className="min-w-0">
-                    <Label className="text-sm font-medium text-app-primary">Launch Preview</Label>
+                    <Label className="text-sm font-medium text-app-primary">
+                      {t('settings.preview.label', 'Launch Preview')}
+                    </Label>
                     <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
-                      Show the generated launch command in settings and install page.
+                      {t(
+                        'settings.preview.description',
+                        'Show the generated launch command in settings and install page.'
+                      )}
                     </p>
                   </div>
                   <Switch
+                    aria-label={t('settings.preview.label', 'Launch Preview')}
                     checked={settings.showLaunchPreview ?? true}
                     onCheckedChange={(checked) =>
                       setSettings((s) => ({ ...s, showLaunchPreview: checked }))
@@ -592,7 +695,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   <>
                     <div className="flex items-center justify-between pt-2">
                       <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                        LIVE SYSTEM
+                        {t('settings.liveSystem', 'LIVE SYSTEM')}
                       </Label>
                       <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted border border-app">
                         E1M{appVersion}
@@ -601,15 +704,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label className="text-xs text-app-primary font-medium">
-                          Check for updates on Startup
+                          {t('settings.updates.label', 'Check for updates on Startup')}
                         </Label>
                         <p className="text-[0.625rem] text-app-muted leading-tight">
-                          Automatically notify about application updates. <br />
-                          Updating is always optional - new updates will never be downloaded/applied
-                          without interaction.
+                          <T
+                            keyName="settings.updates.description"
+                            ns="desktop"
+                            defaultValue="Automatically notify about application updates. {br}Updating is always optional - new updates will never be downloaded/applied without interaction."
+                            params={{ br: <br /> }}
+                          />
                         </p>
                       </div>
                       <Switch
+                        aria-label={t('settings.updates.label', 'Check for updates on Startup')}
                         checked={settings.autoUpdateEnabled ?? true}
                         onCheckedChange={(checked) =>
                           setSettings((s) => ({ ...s, autoUpdateEnabled: checked }))
@@ -619,15 +726,19 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label className="text-xs text-app-primary font-medium">
-                          Registry Lookup
+                          {t('settings.registry.label', 'Registry Lookup')}
                         </Label>
                         <p className="text-[0.625rem] text-app-muted leading-tight">
-                          Look up mod files in the online registry when adding to catalog.
-                          <br />
-                          Requires an active connection to the UAC Registry.
+                          <T
+                            keyName="settings.registry.description"
+                            ns="desktop"
+                            defaultValue="Look up mod files in the online registry when adding to catalog.{br}Requires an active connection to the UAC Registry."
+                            params={{ br: <br /> }}
+                          />
                         </p>
                       </div>
                       <Switch
+                        aria-label={t('settings.registry.label', 'Registry Lookup')}
                         checked={settings.registryLookupEnabled ?? false}
                         onCheckedChange={(checked) => {
                           if (checked && !settings.registryUuid) {
@@ -645,7 +756,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-app-primary font-medium">
-                        Manually check for app updates
+                        {t('settings.updates.manual', 'Manually check for app updates')}
                       </p>
                       <Button
                         variant="outline"
@@ -653,17 +764,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         onClick={() => api.checkForUpdates()}
                         className="text-xs h-7 bg-app-primary hover:bg-app-hover text-app-primary border-app"
                       >
-                        Check
+                        {t('settings.updates.check', 'Check')}
                       </Button>
                     </div>
                   </>
                 )}
                 <div className="flex items-center justify-between border-t pt-6 border-app/30">
                   <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                    Application Ini
+                    {t('settings.config.label', 'Application Ini')}
                   </Label>
                   <span className="text-xs px-2 py-0.5 rounded bg-accent-highlight/10 text-accent-highlight/60 font-mono border border-accent-highlight/25">
-                    RESTRICTED AREA
+                    {t('settings.config.restricted', 'RESTRICTED AREA')}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -672,7 +783,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   </div>
                 </div>
                 <p className="text-xs text-app-muted italic opacity-70">
-                  Internal master directory for settings, telemetry catalogues, and system state.
+                  {t(
+                    'settings.config.description',
+                    'Internal master directory for settings, telemetry catalogues, and system state.'
+                  )}
                 </p>
               </div>
               <div className="flex-col items-center pt-8 border-t border-dashed">
@@ -682,11 +796,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   className="w-12 opacity-30 hover:opacity-60 mx-auto animate-pulse color-accent-highlight"
                 />
                 <p className="text-xs text-app-muted text-center transition-opacity opacity-30 italic uppercase mt-2">
-                  This software is developed by The Union Aerospace Corporation, UAC.
-                  <br />
-                  Unauthorized access or usage outside Phobos facility is strictly prohibited
-                  <br />
-                  Any violations will result in termination.
+                  <T
+                    keyName="settings.legal"
+                    ns="desktop"
+                    defaultValue="This software is developed by The Union Aerospace Corporation, UAC.{br}Unauthorized access or usage outside Phobos facility is strictly prohibited{br}Any violations will result in termination."
+                    params={{ br: <br /> }}
+                  />
                 </p>
               </div>
             </TabsContent>
@@ -771,6 +886,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 </Label>
                 <p className="text-[0.625rem] text-app-muted leading-tight">
                   Free, legally redistributable IWADs — no commercial Doom purchase required.
+                </p>
+                <p className="text-xs text-app-muted">
+                  {t(
+                    'settings.wads.detected',
+                    '{count, plural, =0 {No WADs detected} one {# WAD detected} other {# WADs detected}}',
+                    { count: doomVersions.length }
+                  )}
                 </p>
                 <div className="flex flex-col gap-2">
                   {(
@@ -1086,13 +1208,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             onClick={handleClose}
             className="text-xs uppercase bg-transparent border-app hover:bg-app-hover text-app-muted hover:text-app-primary h-9 px-6"
           >
-            Abort
+            {t('settings.abort', 'Abort')}
           </Button>
           <Button
             onClick={handleSave}
             className="text-xs font-bold uppercase bg-accent-highlight text-white hover:bg-accent-highlight/90 h-9 px-4 shadow-lg shadow-accent-highlight/20"
           >
-            Apply Changes
+            {t('settings.apply', 'Apply Changes')}
           </Button>
         </div>
       </DialogContent>

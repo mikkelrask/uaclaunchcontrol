@@ -1,3 +1,5 @@
+import type { LanguagePreference } from './locales'
+
 // Shared interfaces between main and renderer processes
 
 export interface IProtocol {
@@ -155,6 +157,8 @@ export interface ModProtocolConfig {
 }
 
 export interface IAppSettings {
+  /** Absent in older settings: follow the supported system language. */
+  language?: LanguagePreference
   sourcePorts: ISourcePort[]
   defaultSourcePortId?: string
   defaultDoomVersionId?: string

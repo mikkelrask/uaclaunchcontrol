@@ -1,0 +1,140 @@
+# Localisation: first desktop pilot (issue #78)
+
+The desktop renderer uses Tolgee React with ICU messages and **eager, committed JSON
+catalogs**. Normal builds and released applications need no Tolgee account, API key
+or translation network connection. The Electron sandbox and production CSP stay
+unchanged. This is the first desktop pilot, not the completion of issue #78.
+
+## What is translated
+
+The General settings tab, settings tabs/footer, header/navigation/drawer, sidebar
+loading/accessibility text, and several settings confirmations/errors. The WAD tab
+also has a real ICU plural message for the detected WAD count. There are 65 English
+source keys. Danish is a draft for native-speaker review; Spanish deliberately falls
+back to English until the community supplies translations.
+
+Other settings tabs, source-port management, onboarding, library/install flows,
+achievements/ranks, other notifications, native dialogs and the public/embedded
+registry still need migration. The app does not yet pass its language to the registry
+iframe. Registry descriptions are separate database content, as described in #78.
+
+Technical toast titles used by notification classification are unchanged. Migrated
+settings error toasts still use the destructive variant, and their history stores the
+rendered message. Decouple history eligibility from English titles before migrating
+other notifications; preserve old saved history.
+
+## Language behaviour
+
+Settings → General → Language offers System language, English, Dansk and Español.
+Apply Changes saves the choice in `settings.json` and switches the interface without
+a restart; Abort does not change the active/saved language. The settings query is
+invalidated so other consumers refresh as well. Startup chooses the saved language,
+then the first supported browser/system preference, then English. Missing strings
+also fall back to English. Old settings files need no migration; invalid saved values
+are treated as System language, and invalid writes are rejected.
+
+Canonical tags match the existing Tolgee project: `en`, `da-DK`, `es-ES`. Regional
+system preferences such as `da`, `da-DK`, or `es-MX` resolve to the supported catalog.
+The HTML document language follows the selected language.
+
+## Translator workflow
+
+[UAC Launch Control in Tolgee](https://app.tolgee.io/projects/36113/translations)
+uses the `desktop` namespace. Namespaces must be enabled in project settings. The
+future registry repository owns a separate `registry` namespace in the same project.
+English is the base language; the initial Danish text is a draft, not reviewed copy.
+Each pilot key has a translator description in Tolgee, including placeholder context.
+
+For contributors who synchronise catalogs, copy `.env.example` to `.env` and supply
+a **project API key**. `TOLGEE_API_KEY` is standard; `TOLGEE_API_TOKEN` is accepted as
+an alias. Neither belongs in a Vite-prefixed variable. `.env` is ignored, and the
+Node tooling passes the credential to the CLI through its environment, not argv.
+Node 22 or newer matches the release workflow.
+
+```sh
+npm run i18n:extract   # print marked messages and their source locations; offline
+npm run i18n:check     # extraction warnings; offline
+npm run i18n:compare   # compare source key inventory to Tolgee; read-only
+npm run i18n:push      # upload only English desktop strings; no deletion or forced conflicts
+npm run i18n:pull      # export desktop en/da-DK/es-ES catalogs for review in Git
+npm test              # source defaults, ICU syntax/placeholders, fallback and storage tests
+npm run build         # typecheck and bundle committed translations; no Tolgee access
+npm run i18n:smoke    # isolated built-renderer Electron test; needs a display
+```
+
+Push is deliberately `NO_FORCE`: conflicting English edits fail instead of silently
+overwriting translators' work. Resolve those conflicts deliberately in Tolgee, then
+export and review. Pull includes translated and reviewed entries (the CLI default);
+it does not machine-translate or approve translations. Empty Spanish data is valid.
+Review the catalog diff and run tests before committing an export. The normal build
+never pulls from the service, so a server-side edit cannot change an existing release.
+
+The CLI has an upstream empty-project edge case in `compare` (it expects an embedded
+key list); the initial additive import works, and comparison works after that import.
+Do not add deletion flags such as `sync --remove-unused` or `push --remove-other-keys`.
+One repository is not a complete inventory of the shared Tolgee project.
+
+## Adding messages
+
+Use stable semantic keys with complete English defaults, e.g.
+`const { t } = useTranslate('desktop')`, then
+`t('settings.icon.moved', 'Icon moved to {path}', { path })`.
+Use `<T ns="desktop" keyName="..." defaultValue="..." />` for React rich text.
+A `{br}` parameter is a React line break; preserve it, but move it when natural.
+Translate full sentences; keep placeholders such as `{path}`, `{names}` and ICU
+plural variables intact. `#` inside a plural is the locale-formatted number.
+
+Add the English entry to `src/renderer/src/lib/i18n/locales/desktop/en.json`, and add
+reviewed translations to the matching language catalogs. Missing translations can
+be omitted. The source-catalog test checks the migrated components' marked defaults
+against English; extend its migration boundary as new screens are converted. The
+CLI extracts marked SDK calls, not arbitrary hardcoded English: migrating a new
+screen requires reviewing and replacing its text, accessibility labels and states.
+
+Keep mod names, user content, IDs, hashes, paths, source-port slugs, CLI arguments,
+URLs and import/export fields unchanged. Resolve module-level achievement/rank/crash
+text at display time in the later migration so language changes do not leave stale
+labels. Do not translate crash-log matching expressions.
+
+## Short glossary and voice
+
+- **Protocol**: a named launch configuration (base WAD, source port and mod load order),
+  not a network protocol. Danish draft term: _protokol_.
+- **Source port**: a Doom-compatible engine executable. Danish draft: _spilmotor_.
+- **IWAD / WAD / PK3**: keep these file-format names and extensions.
+- **Mod family**: versions of the same mod grouped in the registry.
+- **Registry**: the public UAC mod/protocol catalog; Danish draft: _register_.
+- **UAC voice**: concise fictional terminal/corporate language. Preserve proper names
+  such as UAC, Phobos, MAYKR, FreeDoom and Plutonia; translate surrounding explanation.
+
+## Remaining pilot checks
+
+A full registry detail-page pilot, in-context browser translator preview and a
+complete screen/layout migration remain separate steps. No editing tools or
+credentials are shipped in this foundation. Use the Tolgee platform editor and
+reviewed local exports as the initial translator workflow.
+
+The dependency-audit test currently fails on high-severity advisories already present
+in the original checkout (including Electron/Jimp dependency chains). Keep that gate
+visible; this change does not exempt or suppress advisories.
+
+## Compatibility verification
+
+The Electron smoke fixture uses the production renderer/preload, sandbox and strict
+CSP, a disposable profile, and intercepted localhost API responses. External HTTP(S)
+is blocked. It checks Danish startup/settings/rich text, English, and untranslated
+Spanish fallback. It does not start the backend or touch real application data.
+
+On Linux/Xwayland, run `npm run i18n:smoke -- --ozone-platform=x11` if needed. To test
+the renderer inside a Linux directory package, run `npx electron-builder --dir
+--publish never`, then set `UAC_I18N_RENDERER` to the absolute
+`dist/linux-unpacked/resources/app.asar/out/renderer/index.html` path when running
+the smoke test. `UAC_I18N_SCREENSHOT` optionally selects a Danish settings PNG path.
+
+Verified for this pilot: build and Linux directory packaging, actual asar renderer
+loading in all three languages under file:// with no external requests/CSP errors,
+and no API key or Tolgee editing-tools chunk in the renderer output. Unit tests
+cover saved settings round trips, invalid preferences, browser language detection,
+fallback, ICU/plural validation and escaping, and React line-break placeholders.
+235 tests pass; the existing dependency-audit test fails as described above. Windows
+and macOS packaging and a full translated layout pass remain follow-up QA.

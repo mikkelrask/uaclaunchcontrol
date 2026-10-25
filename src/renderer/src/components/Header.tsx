@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React, { useState, useRef, useEffect } from 'react'
 import { useLocation, Link } from 'wouter'
 import { useQuery } from '@tanstack/react-query'
@@ -34,6 +35,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) => {
+  const { t } = useTranslate('desktop')
   const [location, setLocation] = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -161,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
           <Input
             ref={searchInputRef}
             type="text"
-            placeholder="DATABASE QUERY /"
+            placeholder={t('navigation.search', 'DATABASE QUERY /')}
             className="bg-app-primary text-app-primary"
             value={searchQuery}
             onChange={(e) => {
@@ -178,7 +180,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
       <nav className="flex space-x-12 text-xl font-bold">
         <Link href="/">
           <span className={`nav-tab ${location === '/' ? 'active' : ''} cursor-pointer`}>
-            LAUNCH
+            {t('navigation.launch', 'LAUNCH')}
           </span>
         </Link>
         <a
@@ -193,12 +195,12 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
           <span
             className={`nav-tab ${location.split('?')[0] === '/install' ? 'active' : ''} cursor-pointer`}
           >
-            INSTALL
+            {t('navigation.install', 'INSTALL')}
           </span>
         </Link>
         <Link href="/registry">
           <span className={`nav-tab ${location === '/registry' ? 'active' : ''} cursor-pointer`}>
-            REGISTRY
+            {t('navigation.registry', 'REGISTRY')}
           </span>
         </Link>
       </nav>
@@ -210,7 +212,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
             <div className="w-8 h-8 rounded bg-accent-highlight flex items-center justify-center text-white">
               <img
                 src={rankImage(playerData?.rank ?? settings?.rank)}
-                alt="Guy, Doom - Space Marine"
+                alt={t('navigation.avatar', 'Guy, Doom - Space Marine')}
                 className="w-8 h-8 rounded"
               />
             </div>
@@ -223,7 +225,10 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
           </button>
         </AchievementsPopover>
         <NotificationsPopover>
-          <button className="relative w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover">
+          <button
+            aria-label={t('navigation.notifications', 'Notifications')}
+            className="relative w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover"
+          >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-destructive rounded-full border-2 border-app-primary" />
@@ -232,12 +237,14 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
         </NotificationsPopover>
         <button
           className="w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover"
+          aria-label={t('navigation.settings', 'Settings')}
           onClick={openSettings}
         >
           <Settings className="h-5 w-5" />
         </button>
         <button
           className="w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover cursor-pointer"
+          aria-label={t('navigation.menu', 'Open menu')}
           onClick={() => setIsDrawerOpen(true)}
         >
           <Menu className="h-5 w-5" />
@@ -255,7 +262,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
         <SheetContent side="left" className="bg-app-secondary border-app text-app-primary w-80">
           <SheetHeader className="mb-6">
             <SheetTitle className="text-app-primary tracking-widest text-sm lowercase">
-              command_center
+              {t('navigation.commandCenter', 'command_center')}
             </SheetTitle>
           </SheetHeader>
 
@@ -270,7 +277,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
                 }}
               >
                 <Keyboard className="h-5 w-5 text-app-muted" />
-                <span>Keyboard Shortcuts</span>
+                <span>{t('navigation.shortcuts', 'Keyboard Shortcuts')}</span>
               </Button>
             </SheetClose>
 
@@ -284,7 +291,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
                 }}
               >
                 <FileText className="h-5 w-5 text-app-muted" />
-                <span>Release Notes</span>
+                <span>{t('navigation.releaseNotes', 'Release Notes')}</span>
               </Button>
             </SheetClose>
 
@@ -302,7 +309,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
                 }}
               >
                 <GraduationCap className="h-5 w-5 text-app-muted" />
-                <span>Guided Tour</span>
+                <span>{t('navigation.tour', 'Guided Tour')}</span>
               </Button>
             </SheetClose>
 
@@ -311,7 +318,9 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
             <div className="px-4 py-3">
               <div className="flex items-center gap-3 mb-3">
                 <Info className="h-5 w-5 text-app-muted" />
-                <span className="text-sm font-semibold text-app-primary">About</span>
+                <span className="text-sm font-semibold text-app-primary">
+                  {t('navigation.about', 'About')}
+                </span>
               </div>
               <div className="space-y-2 text-xs text-app-muted ml-8">
                 <p>UAC Launch Control</p>
