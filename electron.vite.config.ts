@@ -1,6 +1,7 @@
 import { resolve } from 'path'
 import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import type { Plugin } from 'vite'
 
 // The registry browse frontend is embedded as an iframe; its origin must be
@@ -74,6 +75,6 @@ export default defineConfig({
         process.env.UAC_REGISTRY_FRONTEND_URL ?? ''
       )
     },
-    plugins: [react(), cspPlugin()]
+    plugins: [react(), tailwindcss(), cspPlugin()]
   }
 })

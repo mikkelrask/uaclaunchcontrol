@@ -43,16 +43,16 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
         <img
           src={displayImagePath}
           alt={protocol.title}
-          className="w-full h-full object-cover  group-hover:zoom-125 group-hover:blur-sm ease-in duration-250"
+          className="w-full h-full object-cover  group-hover:zoom-125 group-hover:blur-xs ease-in duration-250"
           onError={(e) => {
             e.currentTarget.src = imagePlaceholder
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
+        <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent pointer-events-none"></div>
 
         <div
           className="absolute inset-x-0 bottom-0 px-4 py-4 flex justify-between items-end
-                      transform transition-transform duration-300 group-hover:translate-y-[-8rem] z-10"
+                      transform transition-transform duration-300 group-hover:-translate-y-32 z-10"
         >
           <h3 className="text-white lg:text-lg font-bold ">{protocol.title}</h3>
 

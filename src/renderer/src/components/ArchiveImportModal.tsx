@@ -260,7 +260,8 @@ export function ArchiveImportModal({
         if (!hash) return
         const { data } = await doRegistryLookup(hash)
         if (data) {
-          if (data.family_name) setImportName(formatRegistryName(data.family_name, data.display_name))
+          if (data.family_name)
+            setImportName(formatRegistryName(data.family_name, data.display_name))
           if (data.version) setImportVersion(data.version)
           if (data.category) setImportCategory(data.category)
           const url = pickBestUrl(data.urls)
@@ -450,7 +451,8 @@ export function ArchiveImportModal({
                 className="w-4 h-4 accent-accent-highlight"
               />
               <span className="text-sm font-medium text-app-primary">
-                Import <span className="font-mono text-accent-highlight">{archiveBaseName}</span> as is
+                Import <span className="font-mono text-accent-highlight">{archiveBaseName}</span> as
+                is
               </span>
               <span className="text-xs text-app-muted ml-auto">
                 (source ports load .{archiveExt} files as mods)
@@ -462,7 +464,9 @@ export function ArchiveImportModal({
             /* ── Archive-as-mod form (matches add_mod_file modal style) ── */
             <div className="space-y-4 p-2">
               <div className="space-y-2">
-                <Label htmlFor="archive-as-name">Name</Label>
+                <div>
+                  <Label htmlFor="archive-as-name">Name</Label>
+                </div>
                 <Input
                   id="archive-as-name"
                   value={importName}
@@ -472,7 +476,9 @@ export function ArchiveImportModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="archive-as-version">Version</Label>
+                <div>
+                  <Label htmlFor="archive-as-version">Version</Label>
+                </div>
                 <Input
                   id="archive-as-version"
                   value={importVersion}
@@ -482,7 +488,9 @@ export function ArchiveImportModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="archive-as-url">URL (ModDB, forum)</Label>
+                <div>
+                  <Label htmlFor="archive-as-url">URL (ModDB, forum)</Label>
+                </div>
                 <Input
                   id="archive-as-url"
                   value={importUrl}
@@ -492,7 +500,9 @@ export function ArchiveImportModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Category</Label>
+                <div>
+                  <Label>Category</Label>
+                </div>
                 <Select value={importCategory} onValueChange={setImportCategory}>
                   <SelectTrigger className="bg-app-secondary border-app">
                     <SelectValue placeholder="Uncategorized" />

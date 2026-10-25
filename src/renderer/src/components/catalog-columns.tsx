@@ -1,4 +1,4 @@
-import { ColumnDef } from '@tanstack/react-table'
+import type { DataTableColumn } from '@/components/ui/data-table'
 import { IModFile } from '@shared/schema'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,7 +18,7 @@ export interface CatalogColumnCallbacks {
   onOpenUrl: (url: string) => void
 }
 
-export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<IModFile>[] {
+export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableColumn<IModFile>[] {
   const { catalogFiles, onEdit, onDelete, onOpenUrl } = callbacks
 
   function SortableHeader({

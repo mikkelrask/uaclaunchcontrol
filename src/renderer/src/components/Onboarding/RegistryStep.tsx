@@ -41,9 +41,11 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
-          UAC-7 // Data Uplink
-        </span>
+        <div>
+          <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
+            UAC-7 // Data Uplink
+          </span>
+        </div>
         <h2 className="text-2xl font-bold tracking-tight text-app-primary">UAC Registry</h2>
         <p className="text-sm text-app-secondary max-w-lg mx-auto">
           A community database of mod metadata — names, versions, categories and load orders —
@@ -51,15 +53,17 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
         </p>
       </div>
 
-      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3">
+      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-accent-highlight/10 rounded-md shrink-0">
             <Database className="w-4 h-4 text-accent-highlight" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-              What enabling does
-            </Label>
+            <div>
+              <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
+                What enabling does
+              </Label>
+            </div>
             <ul className="text-xs text-app-secondary space-y-1.5 leading-relaxed">
               <li>
                 <span className="text-app-primary font-semibold">Look up</span> — mods you add or

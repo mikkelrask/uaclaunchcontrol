@@ -28,7 +28,14 @@ import { consumePendingProtocolImport } from '@/lib/install/pendingProtocolImpor
 import { useWadImport } from '@/lib/install/useWadImport'
 import { ConfigurationTab } from '@/components/install/ConfigurationTab'
 import { WadImportTab } from '@/components/install/WadImportTab'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Download, ExternalLink } from 'lucide-react'
 import { createLogger } from '@shared/logger'
@@ -493,19 +500,19 @@ export const InstallPage: React.FC = () => {
                 <TabsList className="mb-4 bg-app-primary border-app p-1">
                   <TabsTrigger
                     value="install"
-                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
+                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-xs rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
                   >
                     Configuration
                   </TabsTrigger>
                   <TabsTrigger
                     value="files"
-                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
+                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-xs rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
                   >
                     Mod Files
                   </TabsTrigger>
                   <TabsTrigger
                     value="wads"
-                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
+                    className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-xs rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
                   >
                     WAD Files
                   </TabsTrigger>

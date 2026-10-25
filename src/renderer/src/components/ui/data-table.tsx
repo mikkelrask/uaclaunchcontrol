@@ -1,15 +1,25 @@
 import { useState } from 'react'
 import {
   ColumnDef,
+  RowData,
   ColumnFiltersState,
   SortingState,
-  VisibilityState,
+  ColumnVisibilityState,
+  createFilteredRowModel,
+  createPaginatedRowModel,
+  createSortedRowModel,
+  columnFilteringFeature,
+  columnSizingFeature,
+  columnVisibilityFeature,
+  filterFns,
   flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable
+  globalFilteringFeature,
+  rowPaginationFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+  sortFns,
+  tableFeatures,
+  useTable
 } from '@tanstack/react-table'
 import {
   Table,
@@ -49,8 +59,25 @@ import {
   PaginationLink
 } from '@/components/ui/pagination'
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
+const features = tableFeatures({
+  columnFilteringFeature,
+  columnSizingFeature,
+  columnVisibilityFeature,
+  globalFilteringFeature,
+  rowPaginationFeature,
+  rowSelectionFeature,
+  rowSortingFeature,
+  filteredRowModel: createFilteredRowModel(),
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  filterFns,
+  sortFns
+})
+
+export type DataTableColumn<TData extends RowData> = ColumnDef<typeof features, TData>
+
+interface DataTableProps<TData extends RowData> {
+  columns: DataTableColumn<TData>[]
   data: TData[]
   searchKey?: string
   searchPlaceholder?: string
@@ -58,26 +85,23 @@ interface DataTableProps<TData, TValue> {
   toolbar?: React.ReactNode
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends RowData>({
   columns,
   data,
   searchKey,
   searchPlaceholder = 'Search...',
   pageSize = 40,
   toolbar
-}: DataTableProps<TData, TValue>): React.ReactElement {
+}: DataTableProps<TData>): React.ReactElement {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({})
   const [globalFilter, setGlobalFilter] = useState('')
 
-  const table = useReactTable({
+  const table = useTable({
+    features,
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -91,6 +115,7 @@ export function DataTable<TData, TValue>({
     },
     initialState: {
       pagination: {
+        pageIndex: 0,
         pageSize
       }
     }
@@ -196,18 +221,18 @@ export function DataTable<TData, TValue>({
           </span>
           {table.getPageCount() > 1 && (
             <span className="text-app-muted/60">
-              · Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+              · Page {table.state.pagination.pageIndex + 1} of {table.getPageCount()}
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-2">
           <Select
-            value={`${table.getState().pagination.pageSize}`}
+            value={`${table.state.pagination.pageSize}`}
             onValueChange={(value) => table.setPageSize(Number(value))}
           >
             <SelectTrigger className="h-8 w-[70px] bg-app-primary border-app text-xs">
-              <SelectValue placeholder={table.getState().pagination.pageSize} />
+              <SelectValue placeholder={table.state.pagination.pageSize} />
             </SelectTrigger>
             <SelectContent className="bg-app-secondary border-app text-app-primary">
               {[10, 20, 50, 100].map((size) => (

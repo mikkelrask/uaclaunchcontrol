@@ -1,22 +1,307 @@
-@font-face {
-  font-family: 'Aldrich';
-  src: url('./assets/fonts/Aldrich-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: Aldrich, NerdFont, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-accent-highlight: hsl(var(--accent-highlight));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
 }
 
-@font-face {
-  font-family: 'NerdFont';
-  src: url('./assets/AtkynsonMonoNerdFont-Regular.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
 }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility aspect-w-16 {
+  /* Aspect ratio utilities */
+  position: relative;
+  padding-bottom: calc(9 / 16 * 100%);
+
+  & > * {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+}
+
+@utility bg-app-primary {
+  /* Semantic utility classes */
+  background: hsl(var(--bg-primary));
+}
+
+@utility bg-app-secondary {
+  background: hsl(var(--bg-secondary));
+}
+
+@utility bg-app-card {
+  background: hsl(var(--bg-card));
+}
+
+@utility bg-app-popover {
+  background: hsl(var(--bg-popover));
+}
+
+@utility bg-app-muted {
+  background: hsl(var(--bg-muted));
+}
+
+@utility bg-app-hover {
+  background: hsl(var(--bg-hover));
+}
+
+@utility text-app-primary {
+  color: hsl(var(--text-primary));
+}
+
+@utility text-app-secondary {
+  color: hsl(var(--text-secondary));
+}
+
+@utility text-app-muted {
+  color: hsl(var(--text-muted));
+}
+
+@utility border-app {
+  border-color: hsl(var(--border));
+}
+
+@utility border-app-input {
+  border-color: hsl(var(--border-input));
+}
+
+@utility bg-accent-highlight {
+  background: hsl(var(--accent-highlight));
+}
+
+@utility ring-accent {
+  --tw-ring-color: hsl(var(--ring));
+}
+
+@utility game-card {
+  @apply rounded-lg overflow-hidden shadow-lg transition-all duration-200 ease-in-out relative;
+  background: hsl(var(--bg-card));
+  z-index: 0;
+
+  &:hover {
+    @apply shadow-2xl;
+  }
+
+  &:hover .card-actions {
+    @apply opacity-100 bottom-0;
+  }
+  transition: all 180ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--accent-highlight-border));
+    box-shadow: 0 0 0 1px var(--border-sidebar);
+    border-radius: 0;
+  }
+}
+
+@utility card-actions {
+  @apply absolute bottom-0 left-0 w-full opacity-0 transition-all duration-300 ease-in-out flex items-center justify-between p-2;
+  background: hsl(var(--bg-popover) / 0.85);
+  bottom: -60px;
+
+  .game-card:hover & {
+    @apply opacity-100 bottom-0;
+  }
+}
+
+@utility nav-tab {
+  @apply relative transition-all duration-200 px-2;
+
+  &.active {
+    @apply font-bold;
+    color: hsl(var(--text-primary));
+  }
+
+  &.active::after {
+    content: '';
+    @apply absolute bottom-[-10px] left-0 w-full h-1;
+    background: hsl(var(--accent-highlight));
+  }
+
+  &:not(.active) {
+    color: hsl(var(--text-secondary));
+  }
+
+  &:not(.active):hover {
+    color: hsl(var(--text-primary));
+  }
+}
+
+@utility sidebar-icon {
+  @apply w-12 h-12 rounded-md flex items-center justify-center cursor-pointer transition-all duration-200 opacity-60;
+
+  &.active {
+    @apply opacity-80;
+    position: relative;
+  }
+
+  &.active::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: hsl(var(--accent-destructive));
+    border-radius: 1px;
+  }
+  &:hover {
+    @apply opacity-100;
+    background: hsl(var(--sidebar-icon-bg));
+    border: 1px solid hsl(var(--accent-hightlight-border));
+  }
+}
+
+@utility uac-scanlines {
+  /* ─── ONBOARDING FX ──────────────────────────────────────── */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    hsl(var(--text-primary) / 0.05) 0px,
+    hsl(var(--text-primary) / 0.05) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  animation: uac-scanline-flicker 7s ease-in-out infinite;
+}
+
+@utility uac-log-track {
+  animation: uac-log-scroll 26s linear infinite;
+}
+
+@utility uac-log-fade-mask {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
+}
+
+@utility uac-step-enter {
+  animation: uac-glitch-cut 150ms steps(1, end) both;
+
+  /* Reduced motion suppresses the jarring glitch step transition only. The
+     ambient HUD texture — the scrolling terminal-log feed and scanline
+     flicker — is slow, decorative backdrop (26s / 7s loops) and keeps
+     running; it's the themed life of the onboarding screen. */
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@layer base {
+  @font-face {
+    font-family: 'Aldrich';
+    src: url('./assets/fonts/Aldrich-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'NerdFont';
+    src: url('./assets/AtkynsonMonoNerdFont-Regular.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+}
 
 @layer base {
   :root {
@@ -229,7 +514,7 @@
 
   /* ─── CUSTOM THEME ──────────────────────────────────────── */
   .custom {
-    /* All values come from injected <style> tag via customThemeCss */
+    /* All values come from injected \3c style> tag via customThemeCss */
     /* Fallback to dark theme values if custom CSS hasn't been set */
     --background: 220 18% 5%;
     --foreground: 210 20% 92%;
@@ -327,195 +612,7 @@
   }
 }
 
-@layer utilities {
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-}
-
 @layer components {
-  /* Aspect ratio utilities */
-  .aspect-w-16 {
-    position: relative;
-    padding-bottom: calc(9 / 16 * 100%);
-  }
-
-  .aspect-w-16 > * {
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-  }
-
-  /* Semantic utility classes */
-  .bg-app-primary {
-    background: hsl(var(--bg-primary));
-  }
-
-  .bg-app-secondary {
-    background: hsl(var(--bg-secondary));
-  }
-
-  .bg-app-card {
-    background: hsl(var(--bg-card));
-  }
-
-  .bg-app-popover {
-    background: hsl(var(--bg-popover));
-  }
-
-  .bg-app-muted {
-    background: hsl(var(--bg-muted));
-  }
-
-  .bg-app-hover {
-    background: hsl(var(--bg-hover));
-  }
-
-  .text-app-primary {
-    color: hsl(var(--text-primary));
-  }
-
-  .text-app-secondary {
-    color: hsl(var(--text-secondary));
-  }
-
-  .text-app-muted {
-    color: hsl(var(--text-muted));
-  }
-
-  .border-app {
-    border-color: hsl(var(--border));
-  }
-
-  .border-app-input {
-    border-color: hsl(var(--border-input));
-  }
-
-  .bg-accent-highlight {
-    background: hsl(var(--accent-highlight));
-  }
-
-  .hover\:bg-accent-highlight:hover {
-    background: hsl(var(--accent-highlight));
-  }
-
-  .ring-accent {
-    --tw-ring-color: hsl(var(--ring));
-  }
-
-  .game-card {
-    @apply rounded-lg overflow-hidden shadow-lg transition-all duration-200 ease-in-out relative;
-    background: hsl(var(--bg-card));
-    z-index: 0;
-  }
-
-  .game-card:hover {
-    @apply -translate-y-1 shadow-2xl;
-  }
-
-  .card-actions {
-    @apply absolute bottom-0 left-0 w-full opacity-0 transition-all duration-300 ease-in-out flex items-center justify-between p-2;
-    background: hsl(var(--bg-popover) / 0.85);
-    bottom: -60px;
-  }
-
-  .game-card:hover .card-actions {
-    @apply opacity-100 bottom-0;
-  }
-
-  .nav-tab {
-    @apply relative transition-all duration-200 px-2;
-  }
-
-  .nav-tab.active {
-    @apply font-bold;
-    color: hsl(var(--text-primary));
-  }
-
-  .nav-tab.active::after {
-    content: '';
-    @apply absolute -bottom-[10px] left-0 w-full h-1;
-    background: hsl(var(--accent-highlight));
-  }
-
-  .nav-tab:not(.active) {
-    color: hsl(var(--text-secondary));
-  }
-
-  .nav-tab:not(.active):hover {
-    color: hsl(var(--text-primary));
-  }
-
-  .sidebar-icon {
-    @apply w-12 h-12 rounded-md flex items-center justify-center cursor-pointer transition-all duration-200 opacity-60;
-  }
-
-  .sidebar-icon.active {
-    @apply opacity-80;
-    position: relative;
-  }
-
-  .sidebar-icon.active::before {
-    content: '';
-    position: absolute;
-    left: -6px;
-    top: 8px;
-    bottom: 8px;
-    width: 2px;
-    background: hsl(var(--accent-destructive));
-    border-radius: 1px;
-  }
-  .sidebar-icon:hover {
-    @apply opacity-100;
-    background: hsl(var(--sidebar-icon-bg));
-    border: 1px solid hsl(var(--accent-hightlight-border));
-  }
-
-  .game-card {
-    transition: all 180ms ease;
-  }
-
-  .game-card:hover {
-    transform: translateY(-2px);
-    border-color: hsl(var(--accent-highlight-border));
-    box-shadow: 0 0 0 1px var(--border-sidebar);
-    border-radius: 0;
-  }
-
-  /* ─── ONBOARDING FX ──────────────────────────────────────── */
-
-  .uac-scanlines {
-    background-image: repeating-linear-gradient(
-      to bottom,
-      hsl(var(--text-primary) / 0.05) 0px,
-      hsl(var(--text-primary) / 0.05) 1px,
-      transparent 1px,
-      transparent 2px
-    );
-    animation: uac-scanline-flicker 7s ease-in-out infinite;
-  }
-
-  .uac-log-track {
-    animation: uac-log-scroll 26s linear infinite;
-  }
-
-  .uac-log-fade-mask {
-    -webkit-mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
-    mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
-  }
-
-  .uac-step-enter {
-    animation: uac-glitch-cut 150ms steps(1, end) both;
-  }
-
   @keyframes uac-scanline-flicker {
     0%,
     96%,
@@ -569,16 +666,6 @@
       clip-path: inset(0 0 0 0);
       transform: translateX(0);
       opacity: 1;
-    }
-  }
-
-  /* Reduced motion suppresses the jarring glitch step transition only. The
-     ambient HUD texture — the scrolling terminal-log feed and scanline
-     flicker — is slow, decorative backdrop (26s / 7s loops) and keeps
-     running; it's the themed life of the onboarding screen. */
-  @media (prefers-reduced-motion: reduce) {
-    .uac-step-enter {
-      animation: none;
     }
   }
 }

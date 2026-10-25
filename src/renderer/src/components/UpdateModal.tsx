@@ -79,9 +79,11 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
 
           {updateInfo.releaseNotes && (
             <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                Release Notes
-              </Label>
+              <div>
+                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+                  Release Notes
+                </Label>
+              </div>
               <ScrollArea className="h-96 rounded-md border border-app bg-app-primary p-4">
                 <ReleaseNotes markdown={updateInfo.releaseNotes} />
               </ScrollArea>

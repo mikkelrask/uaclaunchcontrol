@@ -22,9 +22,11 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
-          UAC-7 // Runtime Engine
-        </span>
+        <div>
+          <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
+            UAC-7 // Runtime Engine
+          </span>
+        </div>
         <h2 className="text-2xl font-bold tracking-tight text-app-primary">Source Ports</h2>
         <p className="text-sm text-app-secondary max-w-lg mx-auto">
           Your terminal have been scanned for any already installed source ports{' '}

@@ -5,7 +5,7 @@ import rehypeSanitize from 'rehype-sanitize'
 
 export function ReleaseNotes({ markdown }: { markdown: string }): React.ReactElement {
   return (
-    <div className="text-sm text-app-muted space-y-4 break-words">
+    <div className="text-sm text-app-muted space-y-4 wrap-break-word">
       <Markdown
         rehypePlugins={[rehypeRaw, rehypeSanitize]}
         urlTransform={(url) => (/^https?:\/\//i.test(url) ? url : '')}

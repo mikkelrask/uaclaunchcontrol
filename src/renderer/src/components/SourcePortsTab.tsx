@@ -171,7 +171,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
       </Label>
 
       {/* Source Ports List */}
-      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3">
+      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
         <div className="flex items-center justify-between">
           <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
             Source Ports
@@ -402,14 +402,18 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
   const [executablePath, setExecutablePath] = useState(port.executablePath)
 
   return (
-    <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3 animate-in slide-in-from-top-2 duration-200">
-      <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-        {port.id ? 'Edit Source Port' : 'New Source Port'}
-      </Label>
+    <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3 animate-in slide-in-from-top-2 duration-200">
+      <div>
+        <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+          {port.id ? 'Edit Source Port' : 'New Source Port'}
+        </Label>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-xs text-app-muted">Name</Label>
+          <div>
+            <Label className="text-xs text-app-muted">Name</Label>
+          </div>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -418,7 +422,9 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-app-muted">Version (optional)</Label>
+          <div>
+            <Label className="text-xs text-app-muted">Version (optional)</Label>
+          </div>
           <Input
             value={version}
             onChange={(e) => setVersion(e.target.value)}
@@ -429,7 +435,9 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs text-app-muted">Executable Path</Label>
+        <div>
+          <Label className="text-xs text-app-muted">Executable Path</Label>
+        </div>
         <div className="flex gap-2">
           <Input
             value={executablePath}
@@ -456,7 +464,9 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs text-app-muted">Family</Label>
+        <div>
+          <Label className="text-xs text-app-muted">Family</Label>
+        </div>
         <Select value={family} onValueChange={(v) => setFamily(v as SourcePortFamily)}>
           <SelectTrigger className="bg-app-primary border-app h-9">
             <SelectValue />
