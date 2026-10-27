@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import {
   Dialog,
   DialogContent,
@@ -24,21 +25,26 @@ export function DiscardChangesDialog({
   onSaveAndClose,
   isSaving
 }: DiscardChangesDialogProps): React.ReactElement {
+  const { t } = useTranslate('desktop')
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Discard changes?</DialogTitle>
+          <DialogTitle>{t('library.discard.discardChanges', 'Discard changes?')}</DialogTitle>
           <DialogDescription>
-            This protocol has unsaved changes. Do you want to discard them?
+            {t(
+              'library.discard.thisProtocolHasUnsavedChangesDoYouWantTo',
+              'This protocol has unsaved changes. Do you want to discard them?'
+            )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Keep Editing
+            {t('library.discard.keepEditing', 'Keep Editing')}
           </Button>
           <Button variant="destructive" onClick={onDiscard}>
-            Discard
+            {t('library.discard.discard', 'Discard')}
           </Button>
           <Button
             onClick={onSaveAndClose}
@@ -46,7 +52,7 @@ export function DiscardChangesDialog({
             disabled={isSaving}
           >
             <Save className="w-4 h-4 mr-2" />
-            Save & Close
+            {t('library.discard.saveClose', 'Save & Close')}
           </Button>
         </DialogFooter>
       </DialogContent>

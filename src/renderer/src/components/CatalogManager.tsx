@@ -1,3 +1,7 @@
+import { getCatalogColumnLabel } from '@/lib/i18n/catalog-labels'
+import { getCategoryLabel } from '@/lib/i18n/catalog-labels'
+import { useTranslate } from '@tolgee/react'
+import { getTranslate } from '@/lib/i18n'
 import { useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -25,7 +29,6 @@ import { useFileDrop } from '@/lib/catalog/useFileDrop'
 import { AddFileDialog } from '@/components/catalog/AddFileDialog'
 import { EditFileDialog } from '@/components/catalog/EditFileDialog'
 import { DeleteConfirmDialog } from '@/components/catalog/DeleteConfirmDialog'
-import { SIDECAR_EXPLANATION } from '@/lib/catalog/types'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 import { createLogger } from '@shared/logger'
@@ -40,29 +43,48 @@ function deleteOutcomeToast(
   fileOutcome: CatalogFileDeleteOutcome,
   label: string
 ): { title: string; description: string; variant: 'default' | 'destructive' } {
-  const removed = `Removed "${label}" from your mod file catalog`
+  const { t } = getTranslate('desktop')
+
   if (fileOutcome === 'deleted') {
     return {
       title: 'SYSTEM: remove_success',
-      description: `${removed} and deleted its file from disk.`,
+      description: t(
+        'catalog.deletion.deleted',
+        'Removed "{name}" from your mod file catalog and deleted its file from disk.',
+        { name: label }
+      ),
       variant: 'default'
     }
   }
   if (fileOutcome === 'already-absent') {
     return {
       title: 'SYSTEM: remove_success',
-      description: `${removed}. Its file was already gone from disk.`,
+      description: t(
+        'catalog.deletion.alreadyAbsent',
+        'Removed "{name}" from your mod file catalog. Its file was already gone from disk.',
+        { name: label }
+      ),
       variant: 'default'
     }
   }
   if (fileOutcome === 'failed') {
     return {
       title: 'SYSTEM: file_delete_failed',
-      description: `${removed}, but its file could not be deleted from disk — remove it manually.`,
+      description: t(
+        'catalog.deletion.failed',
+        'Removed "{name}" from your mod file catalog, but its file could not be deleted from disk — remove it manually.',
+        { name: label }
+      ),
       variant: 'destructive'
     }
   }
-  return { title: 'SYSTEM: remove_success', description: `${removed}.`, variant: 'default' }
+  return {
+    title: 'SYSTEM: remove_success',
+    description: t('catalog.deletion.removed', 'Removed "{name}" from your mod file catalog.', {
+      name: label
+    }),
+    variant: 'default'
+  }
 }
 
 interface CatalogManagerProps {
@@ -71,6 +93,8 @@ interface CatalogManagerProps {
 }
 
 export function CatalogManager({ files, onChange }: CatalogManagerProps): React.ReactElement {
+  const { t } = useTranslate('desktop')
+
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const { data: catalogFiles = [] } = useQuery({
@@ -132,6 +156,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   }
 
   const handleFileDrop = async (e: React.DragEvent): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     const droppedPath = processDrop(e)
     if (!droppedPath) return
 
@@ -145,10 +171,18 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     if (!ext || !validExtensions.includes(ext)) {
       toast({
         title: 'FATAL: type_unknow',
-        description: `Please only use supported files: ${[
-          ...validExtensions.map((supported) => supported.toLowerCase()),
-          ...ARCHIVE_EXTENSIONS
-        ].join(', ')}`,
+        description: t(
+          'catalog.manager.pleaseOnlyUseSupportedFiles',
+          'Please only use supported files: {extensions}',
+          {
+            extensions: String(
+              [
+                ...validExtensions.map((supported) => supported.toLowerCase()),
+                ...ARCHIVE_EXTENSIONS
+              ].join(', ')
+            )
+          }
+        ),
         variant: 'destructive'
       })
       return
@@ -163,7 +197,10 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         if (resolvedFiles.length === 0) {
           toast({
             title: 'FATAL: bat_no_files',
-            description: 'No -file entries found in .bat file',
+            description: t(
+              'catalog.manager.noFileEntriesFoundInBatFile',
+              'No -file entries found in .bat file'
+            ),
             variant: 'destructive'
           })
           return
@@ -192,7 +229,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         log.error('Failed to parse .bat:', error)
         toast({
           title: 'FATAL: bat_parse_failed',
-          description: 'Failed to parse .bat file',
+          description: t('catalog.manager.failedToParseBatFile', 'Failed to parse .bat file'),
           variant: 'destructive'
         })
       }
@@ -212,6 +249,8 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
   }
 
   const confirmDelete = async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     const file = deleteTarget
     if (!file) return
     setDeleteTarget(null)
@@ -223,13 +262,17 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       // keep seeing the deleted entry until a full reload.
       void queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog'] })
       void queryClient.invalidateQueries({ queryKey: ['/api/mod-files/catalog/search'] })
-      const label = file.name || file.fileName || 'this file'
+      const label = file.name || file.fileName || t('catalog.manager.thisFile', 'this file')
       toast(deleteOutcomeToast(fileOutcome, label))
     } catch {
       handleRemoveFile(file.id)
       toast({
         title: 'SYSTEM: Warning!',
-        description: `File "${file.name || file.fileName}" removed from view (may need manual deletion from catalog)`
+        description: t(
+          'catalog.manager.fileRemovedFromViewMayNeedManualDeletionFrom',
+          'File "{fileName}" removed from view (may need manual deletion from catalog)',
+          { fileName: String(file.name || file.fileName) }
+        )
       })
     }
   }
@@ -255,7 +298,12 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       >
         <div className="flex items-center justify-center gap-2 text-app-muted">
           <Upload className="h-5 w-5" />
-          <span className="text-sm">Drag/drop file here, or click to select</span>
+          <span className="text-sm">
+            {t(
+              'catalog.manager.dragDropFileHereOrClickToSelect',
+              'Drag/drop file here, or click to select'
+            )}
+          </span>
         </div>
       </div>
 
@@ -280,27 +328,31 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
         if (files.length === 0) {
           return (
             <div className="text-center text-app-secondary py-8">
-              No files in catalog yet. Add files using the dropzone above.
+              {t(
+                'catalog.manager.noFilesInCatalogYetAddFilesUsingThe',
+                'No files in catalog yet. Add files using the dropzone above.'
+              )}
             </div>
           )
         }
 
         return (
           <DataTable
+            columnLabel={getCatalogColumnLabel}
             columns={columns}
             data={filteredByCategory}
             searchKey="name"
-            searchPlaceholder="Search catalog..."
+            searchPlaceholder={t('catalog.manager.searchCatalog', 'Search catalog...')}
             pageSize={20}
             toolbar={
               <>
                 <Select value={fileTypeFilter} onValueChange={setFileTypeFilter}>
                   <SelectTrigger className="w-[100px] h-9 bg-app-primary border-app text-xs">
-                    <SelectValue placeholder="Type" />
+                    <SelectValue placeholder={t('catalog.manager.type', 'Type')} />
                   </SelectTrigger>
                   <SelectContent className="bg-app-secondary border-app text-app-primary">
                     <SelectItem value="all" className="text-xs">
-                      All types
+                      {t('catalog.manager.allTypes', 'All types')}
                     </SelectItem>
                     <SelectItem value="WAD" className="text-xs">
                       WAD
@@ -319,15 +371,15 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger className="w-[130px] h-9 bg-app-primary border-app text-xs">
-                    <SelectValue placeholder="Category" />
+                    <SelectValue placeholder={t('catalog.manager.category', 'Category')} />
                   </SelectTrigger>
                   <SelectContent className="bg-app-secondary border-app text-app-primary">
                     <SelectItem value="all" className="text-xs">
-                      All categories
+                      {t('catalog.manager.allCategories', 'All categories')}
                     </SelectItem>
                     {CATEGORIES.map((cat) => (
                       <SelectItem key={cat} value={cat} className="text-xs">
-                        {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                        {getCategoryLabel(cat)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -339,8 +391,13 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
                       checked={showSidecarOnly}
                       onCheckedChange={(checked) => setShowSidecarOnly(checked === true)}
                     />
-                    Sidecars
-                    <InfoTooltip text={SIDECAR_EXPLANATION} />
+                    {t('catalog.manager.sidecars', 'Sidecars')}
+                    <InfoTooltip
+                      text={t(
+                        'catalog.sidecar.explanation',
+                        "A sidecar file only makes sense alongside another mod - it won't do anything if loaded by itself (e.g. a compatibility patch or add-on)."
+                      )}
+                    />
                   </label>
                 )}
               </>

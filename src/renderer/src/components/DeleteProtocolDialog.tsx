@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import {
   Dialog,
   DialogContent,
@@ -27,22 +28,31 @@ export function DeleteProtocolDialog({
   onConfirm,
   isDeleting
 }: DeleteProtocolDialogProps): React.ReactElement {
+  const { t } = useTranslate('desktop')
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Delete this protocol?</DialogTitle>
+          <DialogTitle>
+            {t('library.delete.deleteThisProtocol', 'Delete this protocol?')}
+          </DialogTitle>
           <DialogDescription>
-            This removes the launch protocol from your library. This cannot be undone.
+            {t(
+              'library.delete.thisRemovesTheLaunchProtocolFromYourLibraryThis',
+              'This removes the launch protocol from your library. This cannot be undone.'
+            )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('library.delete.cancel', 'Cancel')}
           </Button>
           <Button variant="destructive" onClick={onConfirm} disabled={isDeleting}>
             <Trash2 className="w-4 h-4 mr-2" />
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting
+              ? t('library.delete.deleting', 'Deleting...')
+              : t('library.delete.delete', 'Delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

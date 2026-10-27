@@ -1,3 +1,5 @@
+import { T, useTranslate } from '@tolgee/react'
+import { getTranslate } from '@/lib/i18n'
 import React, { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
@@ -28,7 +30,14 @@ import { consumePendingProtocolImport } from '@/lib/install/pendingProtocolImpor
 import { useWadImport } from '@/lib/install/useWadImport'
 import { ConfigurationTab } from '@/components/install/ConfigurationTab'
 import { WadImportTab } from '@/components/install/WadImportTab'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Download, ExternalLink } from 'lucide-react'
 import { createLogger } from '@shared/logger'
@@ -36,6 +45,8 @@ import { createLogger } from '@shared/logger'
 const log = createLogger('InstallPage')
 
 export const InstallPage: React.FC = () => {
+  const { t } = useTranslate('desktop')
+
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const [location, setLocation] = useLocation()
@@ -116,6 +127,10 @@ export const InstallPage: React.FC = () => {
     }
   })
 
+  useEffect(() => {
+    if (Object.keys(form.formState.errors).length > 0) void form.trigger()
+  }, [t, form])
+
   // Update sourcePortId default when settings load
   useEffect(() => {
     const ports = (settings as IAppSettings)?.sourcePorts
@@ -157,7 +172,11 @@ export const InstallPage: React.FC = () => {
       .then(async () => {
         toast({
           title: 'SYSTEM: registry_import',
-          description: `Imported "${pending.game.title}" from the registry — review, then create.`
+          description: t(
+            'install.page.importedFromTheRegistryReviewThenCreate',
+            'Imported "{title}" from the registry — review, then create.',
+            { title: String(pending.game.title) }
+          )
         })
 
         // Offer to auto-download the missing files the app can fetch itself
@@ -178,11 +197,14 @@ export const InstallPage: React.FC = () => {
         log.error('Failed to apply registry import:', err)
         toast({
           title: 'FATAL: registry_import_failed',
-          description: 'Failed to apply the registry protocol.',
+          description: t(
+            'install.page.failedToApplyTheRegistryProtocol',
+            'Failed to apply the registry protocol.'
+          ),
           variant: 'destructive'
         })
       })
-  }, [versions, settings, form, toast, setFiles])
+  }, [versions, settings, form, toast, setFiles, t])
 
   // Compute launch command preview
   const watchedSourcePortId = form.watch('sourcePortId')
@@ -223,7 +245,10 @@ export const InstallPage: React.FC = () => {
     onSuccess: async () => {
       toast({
         title: 'SYSTEM: params_accepted',
-        description: 'Successfully added new launch configuration.'
+        description: t(
+          'install.page.successfullyAddedNewLaunchConfiguration',
+          'Successfully added new launch configuration.'
+        )
       })
 
       // Dispatch achievement event for PROTOCOL_CREATED
@@ -261,7 +286,9 @@ export const InstallPage: React.FC = () => {
     onError: (error) => {
       toast({
         title: 'FATAL: install_failed',
-        description: `Failed to install mod: ${error}`,
+        description: t('install.page.failedToInstallMod', 'Failed to install mod: {error}', {
+          error: String(error)
+        }),
         variant: 'destructive'
       })
     }
@@ -290,22 +317,36 @@ export const InstallPage: React.FC = () => {
   // it overrides this auto-seed (see onSubmit).
   const templateFile = files.find((f) => f.configTemplate)
   const templateSeedName = templateFile
-    ? templateFile.name || templateFile.fileName || 'a mod file'
+    ? templateFile.name || templateFile.fileName || t('install.page.aModFile', 'a mod file')
     : null
 
   // Copy for the post-import download prompt (registry handoff).
   const missingDownloadCopy = useMemo(() => {
+    const { t } = getTranslate('desktop')
+
     if (!missingDownloadPrompt) return ''
     const { inApp, browserOnly } = missingDownloadPrompt
     const total = inApp.length + browserOnly.length
     if (inApp.length > 0 && browserOnly.length > 0) {
-      return `${inApp.length} of ${total} missing files can be downloaded automatically — the other ${browserOnly.length} can only be fetched in your browser. Start the downloads?`
+      return t(
+        'install.downloads.mixed',
+        '{automatic, number} of {total, number} missing files can be downloaded automatically — the other {manual, number} can only be fetched in your browser. Start the downloads?',
+        { automatic: inApp.length, total, manual: browserOnly.length }
+      )
     }
     if (inApp.length > 0) {
-      return `${inApp.length} missing file${inApp.length > 1 ? 's' : ''} can be downloaded automatically. Start now?`
+      return t(
+        'install.downloads.automatic',
+        '{count, plural, one {# missing file can be downloaded automatically. Start now?} other {# missing files can be downloaded automatically. Start now?}}',
+        { count: inApp.length }
+      )
     }
-    return `${browserOnly.length} missing file${browserOnly.length > 1 ? 's' : ''} can only be fetched in your browser — open the link${browserOnly.length > 1 ? 's' : ''} to download them manually.`
-  }, [missingDownloadPrompt])
+    return t(
+      'install.downloads.browser',
+      '{count, plural, one {# missing file can only be fetched in your browser — open the link to download it manually.} other {# missing files can only be fetched in your browser — open the links to download them manually.}}',
+      { count: browserOnly.length }
+    )
+  }, [missingDownloadPrompt, t])
 
   // Each action starts its links and keeps the prompt open so the user can
   // do both (in-app downloads + browser links); a used action disables its
@@ -341,6 +382,8 @@ export const InstallPage: React.FC = () => {
   }, [missingDownloadPrompt, downloadsStarted, browserLinksOpened])
 
   const onSubmit = async (data: z.infer<typeof formSchema>): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     const fileData: IModFile[] = files.map((file) => {
       // Strip directory from filePath and saveDirectory for shareability
       const pathValue = file.filePath || ''
@@ -428,7 +471,11 @@ export const InstallPage: React.FC = () => {
       } catch (error: unknown) {
         toast({
           title: 'FATAL: config_create_failed',
-          description: `Failed to create isolated config: ${error}`,
+          description: t(
+            'install.page.failedToCreateIsolatedConfig',
+            'Failed to create isolated config: {error}',
+            { error: String(error) }
+          ),
           variant: 'destructive'
         })
         return
@@ -442,7 +489,9 @@ export const InstallPage: React.FC = () => {
         protocol.protocolConfig = protocolConfig
         toast({
           title: 'SYSTEM: config_seeded',
-          description: `Seeded config from "${templateFile.name || templateFile.fileName || 'unknown'}"`
+          description: t('install.page.seededConfigFrom', 'Seeded config from "{name}"', {
+            name: String(templateFile.name || templateFile.fileName || 'unknown')
+          })
         })
       } catch (err: unknown) {
         log.warn('[DEBUG] Failed to seed config for protocol:', err)
@@ -486,7 +535,7 @@ export const InstallPage: React.FC = () => {
             onDragLeave={jsonDrop.handleJsonDragLeave}
           >
             <CardHeader>
-              <CardTitle>New Launch Protocol</CardTitle>
+              <CardTitle>{t('install.page.newLaunchProtocol', 'New Launch Protocol')}</CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -495,19 +544,19 @@ export const InstallPage: React.FC = () => {
                     value="install"
                     className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
                   >
-                    Configuration
+                    {t('install.page.configuration', 'Configuration')}
                   </TabsTrigger>
                   <TabsTrigger
                     value="files"
                     className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
                   >
-                    Mod Files
+                    {t('install.page.modFiles', 'Mod Files')}
                   </TabsTrigger>
                   <TabsTrigger
                     value="wads"
                     className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
                   >
-                    WAD Files
+                    {t('install.page.wadFiles', 'WAD Files')}
                   </TabsTrigger>
                 </TabsList>
 
@@ -537,8 +586,10 @@ export const InstallPage: React.FC = () => {
                 <TabsContent value="files">
                   <div className="space-y-4">
                     <p className="text-sm text-app-secondary">
-                      Manage your file catalog. Add new files or remove existing ones from the
-                      catalog.
+                      {t(
+                        'install.page.manageYourFileCatalogAddNewFilesOrRemove',
+                        'Manage your file catalog. Add new files or remove existing ones from the catalog.'
+                      )}
                     </p>
                     <CatalogManager
                       files={catalogFiles}
@@ -569,12 +620,14 @@ export const InstallPage: React.FC = () => {
       >
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Download missing mod files?</DialogTitle>
+            <DialogTitle>
+              {t('install.page.downloadMissingModFiles', 'Download missing mod files?')}
+            </DialogTitle>
             <DialogDescription>{missingDownloadCopy}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={closeDownloadPrompt}>
-              Cancel
+              {t('install.page.cancel', 'Cancel')}
             </Button>
             {missingDownloadPrompt && missingDownloadPrompt.browserOnly.length > 0 && (
               <Button
@@ -583,13 +636,23 @@ export const InstallPage: React.FC = () => {
                 disabled={browserLinksOpened}
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
-                Open {missingDownloadPrompt.browserOnly.length} in browser
+                <T
+                  ns="desktop"
+                  keyName="install.page.openInBrowser"
+                  defaultValue={'Open {count} in browser'}
+                  params={{ count: missingDownloadPrompt.browserOnly.length }}
+                />
               </Button>
             )}
             {missingDownloadPrompt && missingDownloadPrompt.inApp.length > 0 && (
               <Button onClick={handleStartInAppDownloads} disabled={downloadsStarted}>
                 <Download className="w-4 h-4 mr-2" />
-                Download {missingDownloadPrompt.inApp.length} in-app
+                <T
+                  ns="desktop"
+                  keyName="install.page.downloadInApp"
+                  defaultValue={'Download {count} in-app'}
+                  params={{ count: missingDownloadPrompt.inApp.length }}
+                />
               </Button>
             )}
           </DialogFooter>

@@ -1,9 +1,10 @@
+import { useTranslate } from '@tolgee/react'
 import React from 'react'
 import { IProtocol, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Button } from '@/components/ui/button'
 import { useLaunchProtocol } from '@/hooks/useLaunchProtocol'
-import { formatPlaytime, formatDate } from '@/lib/utils'
+import { useLibraryFormatters } from '@/lib/i18n/library-formatters'
 import { Play, Settings, Clock, Hourglass } from 'lucide-react'
 import placeholder from '@renderer/assets/placeholder.png'
 
@@ -14,6 +15,9 @@ interface GameCardProps {
 }
 
 export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSettingsClick }) => {
+  const { t } = useTranslate('desktop')
+  const { formatDate, formatPlaytime } = useLibraryFormatters()
+
   const { handleLaunch, isPending } = useLaunchProtocol(protocol)
 
   const handleSettings = (): void => {
@@ -27,7 +31,7 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
     ? protocol.description.length > 120
       ? protocol.description.substring(0, 120) + '...'
       : protocol.description
-    : 'No description available'
+    : t('library.card.noDescriptionAvailable', 'No description available')
 
   const displayImagePath = protocol.screenshotPath
     ? protocol.screenshotPath.startsWith('http') ||
@@ -101,11 +105,11 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
           className="bg-accent-highlight hover:opacity-90 text-white"
         >
           {isPending ? (
-            'LAUNCHING...'
+            t('library.card.launching', 'LAUNCHING...')
           ) : (
             <>
               <Play className="w-4 h-4 mr-1.5 fill-current" />
-              LAUNCH
+              {t('library.card.launch', 'LAUNCH')}
             </>
           )}
         </Button>
@@ -117,7 +121,7 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
         >
           <>
             <Settings className="w-4 h-4 mr-1.5" />
-            ADJUST
+            {t('library.card.adjust', 'ADJUST')}
           </>
         </Button>
       </div>

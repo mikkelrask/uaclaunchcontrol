@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -37,6 +38,8 @@ export function EditFileDialog({
   onBrowseConfigFile,
   onClearConfigFile
 }: EditFileDialogProps): React.ReactElement {
+  const { t } = useTranslate('desktop')
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-app-primary shadow-2xl border-app max-w-md max-h-[80vh] flex flex-col p-0 overflow-hidden">
@@ -47,10 +50,13 @@ export function EditFileDialog({
             </div>
             <div>
               <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                edit_mod_file
+                {t('catalog.edit.editModFile', 'edit_mod_file')}
               </DialogTitle>
               <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                UAC Launch Control // Catalog Management
+                {t(
+                  'catalog.edit.uacLaunchControlCatalogManagement',
+                  'UAC Launch Control // Catalog Management'
+                )}
               </DialogDescription>
             </div>
           </div>
@@ -65,13 +71,17 @@ export function EditFileDialog({
             requiredModsActions={requiredModsActions}
             onBrowseConfigFile={onBrowseConfigFile}
             onClearConfigFile={onClearConfigFile}
-            configTemplateHelpText="This config will seed new protocols that include this mod file."
-            configTemplatePlaceholder="No config linked"
+            configTemplateHelpText={t(
+              'catalog.edit.thisConfigWillSeedNewProtocolsThatIncludeThis',
+              'This config will seed new protocols that include this mod file.'
+            )}
+            configTemplatePlaceholder={t('catalog.edit.noConfigLinked', 'No config linked')}
           />
 
           {selectedFile?.hashValue && (
             <div className="text-xs text-app-muted">
-              <span className="font-semibold">Hash:</span> {selectedFile.hashValue}
+              <span className="font-semibold">{t('catalog.edit.hash', 'Hash:')}</span>{' '}
+              {selectedFile.hashValue}
             </div>
           )}
         </div>
@@ -82,11 +92,11 @@ export function EditFileDialog({
             onClick={() => onOpenChange(false)}
             className="bg-app-secondary"
           >
-            Cancel
+            {t('catalog.edit.cancel', 'Cancel')}
           </Button>
           <Button onClick={onSaveEdit} className="bg-accent-highlight">
             <Check className="h-4 w-4 mr-1" />
-            Save Changes
+            {t('catalog.edit.saveChanges', 'Save Changes')}
           </Button>
         </DialogFooter>
       </DialogContent>

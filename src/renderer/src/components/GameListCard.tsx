@@ -1,9 +1,10 @@
+import { useTranslate } from '@tolgee/react'
 import React from 'react'
 import { IProtocol, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Button } from '@/components/ui/button'
 import { useLaunchProtocol } from '@/hooks/useLaunchProtocol'
-import { formatPlaytime, formatDate } from '@/lib/utils'
+import { useLibraryFormatters } from '@/lib/i18n/library-formatters'
 import placeholder from '@renderer/assets/placeholder.png'
 import { Play, Settings, Clock, Hourglass, ExternalLink, FileCode } from 'lucide-react'
 
@@ -18,6 +19,9 @@ export const GameListCard: React.FC<GameListCardProps> = ({
   doomVersion,
   onSettingsClick
 }) => {
+  const { t } = useTranslate('desktop')
+  const { formatDate, formatPlaytime } = useLibraryFormatters()
+
   const { handleLaunch, isPending } = useLaunchProtocol(protocol)
 
   const handleSettings = (): void => {
@@ -90,7 +94,9 @@ export const GameListCard: React.FC<GameListCardProps> = ({
               {fileCount > 0 && (
                 <span className="text-xs text-app-muted flex items-center gap-1">
                   <FileCode className="w-3 h-3" />
-                  {fileCount} file{fileCount !== 1 ? 's' : ''}
+                  {t('library.list.fileCount', '{count, plural, one {# file} other {# files}}', {
+                    count: fileCount
+                  })}
                   {linkedFiles > 0 && (
                     <>
                       {' · '}
@@ -113,6 +119,7 @@ export const GameListCard: React.FC<GameListCardProps> = ({
         <div className="flex items-center gap-2 shrink-0">
           <Button
             size="sm"
+            aria-label={t('library.card.launch', 'LAUNCH')}
             onClick={handleLaunch}
             disabled={isPending}
             className="bg-accent-highlight hover:opacity-90 text-white px-3"
@@ -128,6 +135,7 @@ export const GameListCard: React.FC<GameListCardProps> = ({
           <Button
             variant="ghost"
             size="sm"
+            aria-label={t('library.card.adjust', 'ADJUST')}
             onClick={handleSettings}
             className="bg-app-secondary/60 hover:bg-app-hover text-app-primary border border-app/50 px-2"
           >

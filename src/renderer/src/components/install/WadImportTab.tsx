@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -27,6 +28,8 @@ export const WadImportTab: React.FC<WadImportTabProps> = ({
   },
   wadFilesDirectory
 }) => {
+  const { t } = useTranslate('desktop')
+
   return (
     <div className="space-y-6">
       <div
@@ -51,7 +54,12 @@ export const WadImportTab: React.FC<WadImportTabProps> = ({
         <div className="flex items-center justify-center gap-2 text-app-muted">
           <Upload className="h-5 w-5" />
           <span className="text-sm">
-            {isPreparingWad ? 'Scanning WAD...' : 'Drag/drop WAD here, or click to select'}
+            {isPreparingWad
+              ? t('install.wads.scanningWad', 'Scanning WAD...')
+              : t(
+                  'install.wads.dragDropWadHereOrClickToSelect',
+                  'Drag/drop WAD here, or click to select'
+                )}
           </span>
         </div>
       </div>
@@ -60,7 +68,7 @@ export const WadImportTab: React.FC<WadImportTabProps> = ({
         <div className="flex items-center justify-between gap-4">
           <div>
             <h4 className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-              Target Repository
+              {t('install.wads.targetRepository', 'Target Repository')}
             </h4>
             <p className="text-sm text-app-secondary break-all mt-1">
               {wadFilesDirectory || '~/.config/uac/wads'}
@@ -74,13 +82,13 @@ export const WadImportTab: React.FC<WadImportTabProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="block text-xs uppercase tracking-widest text-app-muted font-mono font-bold mb-1">
-                  Source File
+                  {t('install.wads.sourceFile', 'Source File')}
                 </span>
                 <span className="text-app-primary break-all">{selectedWad.fileName}</span>
               </div>
               <div>
                 <span className="block text-xs uppercase tracking-widest text-app-muted font-mono font-bold mb-1">
-                  Stored As
+                  {t('install.wads.storedAs', 'Stored As')}
                 </span>
                 <span className="text-app-primary break-all">{selectedWad.targetFileName}</span>
               </div>
@@ -99,7 +107,7 @@ export const WadImportTab: React.FC<WadImportTabProps> = ({
                 onClick={clearSelection}
                 disabled={importWadMutation.isPending}
               >
-                Clear
+                {t('install.wads.clear', 'Clear')}
               </Button>
               <Button
                 type="button"
@@ -111,13 +119,18 @@ export const WadImportTab: React.FC<WadImportTabProps> = ({
                 }}
                 disabled={importWadMutation.isPending}
               >
-                {importWadMutation.isPending ? 'Importing...' : 'Confirm Import'}
+                {importWadMutation.isPending
+                  ? t('install.wads.importing', 'Importing...')
+                  : t('install.wads.confirmImport', 'Confirm Import')}
               </Button>
             </div>
           </>
         ) : (
           <p className="text-sm text-app-muted">
-            Select a .wad file to review the MD5-based filename before importing.
+            {t(
+              'install.wads.selectAWadFileToReviewTheMd5Based',
+              'Select a .wad file to review the MD5-based filename before importing.'
+            )}
           </p>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Dialog,
@@ -69,6 +70,8 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
   showLaunchPreview = true,
   registerAttemptClose
 }) => {
+  const { t } = useTranslate('desktop')
+
   const [protocol, setProtocol] = useState<IProtocol>(initialProtocol)
   const [files, setFiles] = useState<InsertModFile[]>(initialFiles)
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
@@ -155,12 +158,18 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
   const configStatus = protocol.protocolConfig
     ? {
         hasConfig: true,
-        statusText: `Isolated config linked (${protocol.protocolConfig.configFile}).`
+        statusText: t(
+          'library.editor.isolatedConfigLinked',
+          'Isolated config linked ({configFile}).',
+          { configFile: String(protocol.protocolConfig.configFile) }
+        )
       }
     : {
         hasConfig: false,
-        statusText:
+        statusText: t(
+          'library.editor.noIsolatedConfigYetThisProtocolSharesTheSource',
           "No isolated config yet — this protocol shares the source port's global settings."
+        )
       }
 
   return (
@@ -180,7 +189,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
                 htmlFor="title"
                 className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
               >
-                Label
+                {t('library.editor.label', 'Label')}
               </Label>
               <Input
                 id="title"
@@ -195,7 +204,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
                 htmlFor="description"
                 className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
               >
-                Description
+                {t('library.editor.description', 'Description')}
               </Label>
               <Textarea
                 id="description"
@@ -211,21 +220,25 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <h3 className="text-lg mb-2">Base Configuration</h3>
+            <h3 className="text-lg mb-2">
+              {t('library.editor.baseConfiguration', 'Base Configuration')}
+            </h3>
             <div className="bg-app-primary p-3 rounded space-y-2">
               <div>
                 <Label
                   htmlFor="doomVersionId"
                   className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
                 >
-                  Base WAD
+                  {t('library.editor.baseWad', 'Base WAD')}
                 </Label>
                 <Select
                   value={protocol.doomVersionId?.toString() || ''}
                   onValueChange={(value) => handleSelectChange('doomVersionId', value)}
                 >
                   <SelectTrigger className="bg-app-secondary border-app">
-                    <SelectValue placeholder="Select Doom Version" />
+                    <SelectValue
+                      placeholder={t('library.editor.selectDoomVersion', 'Select Doom Version')}
+                    />
                   </SelectTrigger>
                   <SelectContent className="bg-app-secondary border-app text-app-primary">
                     {doomVersions?.map((version) => (
@@ -242,7 +255,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
                   htmlFor="sourcePortId"
                   className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
                 >
-                  Source Port
+                  {t('library.editor.sourcePort', 'Source Port')}
                 </Label>
                 <Combobox
                   value={protocol.sourcePortId || ''}
@@ -254,7 +267,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
                       label: p.name,
                       description: p.version
                     }))}
-                  placeholder="Select a source port"
+                  placeholder={t('library.editor.selectASourcePort', 'Select a source port')}
                   className="w-full bg-app-secondary border-app"
                 />
               </div>
@@ -264,13 +277,15 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
                   htmlFor="saveDirectory"
                   className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
                 >
-                  Save Directory
+                  {t('library.editor.saveDirectory', 'Save Directory')}
                 </Label>
                 <Input
                   id="saveDirectory"
                   name="saveDirectory"
                   value={protocol.saveDirectory || ''}
-                  placeholder={`e.g. ~/saves/${slugify(protocol.title || 'game')}`}
+                  placeholder={t('library.editor.savePathExample', 'e.g. {path}', {
+                    path: `~/saves/${slugify(protocol.title || 'game')}`
+                  })}
                   onChange={handleInputChange}
                   className="bg-app-secondary border-app"
                 />
@@ -279,7 +294,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
           </div>
 
           <div>
-            <h3 className="text-lg mb-2">Mod Files</h3>
+            <h3 className="text-lg mb-2">{t('library.editor.modFiles', 'Mod Files')}</h3>
             <ModFileList files={files} onChange={setFiles} />
           </div>
         </div>
@@ -296,7 +311,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             htmlFor="launchParameters"
             className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
           >
-            Launch Parameters
+            {t('library.editor.launchParameters', 'Launch Parameters')}
           </Label>
           <Input
             id="launchParameters"
@@ -312,7 +327,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
       {showLaunchPreview && launchCommand && (
         <div className="px-4 py-2 bg-app-primary border-t border-app shrink-0 group">
           <div className="text-[0.625rem] uppercase tracking-widest text-app-muted font-mono font-bold mb-0.5 opacity-60">
-            Launch Preview
+            {t('library.editor.launchPreview', 'Launch Preview')}
           </div>
           <div className="flex items-start gap-2">
             <code className="text-xs text-app-muted font-mono break-all opacity-70 flex-1 min-w-0">
@@ -331,7 +346,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             disabled={files.length === 0}
           >
             <Download className="w-4 h-4 mr-2" />
-            Export JSON
+            {t('library.editor.exportJson', 'Export JSON')}
           </Button>
           <Button
             variant="outline"
@@ -340,7 +355,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             disabled={isDeleting}
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete Instance
+            {t('library.editor.deleteInstance', 'Delete Instance')}
           </Button>
         </div>
 
@@ -352,7 +367,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             disabled={isSaving}
           >
             <Save className="w-4 h-4 mr-2" />
-            Save Changes
+            {t('library.editor.saveChanges', 'Save Changes')}
           </Button>
           <Button
             onClick={handleLaunch}
@@ -360,7 +375,9 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             disabled={isLaunching}
           >
             <Play className="w-4 h-4 mr-1.5 fill-current" />
-            {isLaunching ? 'LAUNCHING...' : 'LAUNCH'}
+            {isLaunching
+              ? t('library.editor.launching', 'LAUNCHING...')
+              : t('library.editor.launch', 'LAUNCH')}
           </Button>
         </div>
       </DialogFooter>
@@ -398,6 +415,8 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   onClose,
   doomVersions
 }) => {
+  const { t } = useTranslate('desktop')
+
   // Fetch protocol details
   const { data, isLoading } = useQuery({
     queryKey: [`/api/protocols/${protocolId}`],
@@ -471,17 +490,24 @@ export const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
             </div>
             <div>
               <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                {hydratedProtocol?.title || hydratedProtocol?.name || 'mod_settings'}
+                {hydratedProtocol?.title ||
+                  hydratedProtocol?.name ||
+                  t('library.editor.modSettings', 'mod_settings')}
               </DialogTitle>
               <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                UAC Launch Control // Mod Configuration
+                {t(
+                  'library.editor.uacLaunchControlModConfiguration',
+                  'UAC Launch Control // Mod Configuration'
+                )}
               </DialogDescription>
             </div>
           </div>
         </div>
 
         {isLoading || !hydratedProtocol ? (
-          <div className="p-4 text-center">Loading protocol details...</div>
+          <div className="p-4 text-center">
+            {t('library.editor.loadingProtocolDetails', 'Loading protocol details...')}
+          </div>
         ) : (
           <GameSettingsContent
             initialProtocol={hydratedProtocol}

@@ -1,3 +1,4 @@
+import { getTranslate } from '@/lib/i18n'
 import { useState, useCallback } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import type { z } from 'zod'
@@ -87,6 +88,8 @@ async function importFromBatFile(
   setFiles: React.Dispatch<React.SetStateAction<IModFile[]>>,
   toast: ToastLike
 ): Promise<void> {
+  const { t } = getTranslate('desktop')
+
   const text = await droppedFile.text()
   const parsed = parseBatContent(text)
 
@@ -117,12 +120,19 @@ async function importFromBatFile(
   if (parsed.modFiles.length === 0) {
     toast({
       title: 'SYSTEM: bat_parsed',
-      description: 'No -file entries found in .bat file.'
+      description: t(
+        'install.drop.noFileEntriesFoundInBatFile',
+        'No -file entries found in .bat file.'
+      )
     })
   } else {
     toast({
       title: 'SYSTEM: bat_parsed',
-      description: `Prepopulated from .bat: ${finalFiles.length} mod file(s).`
+      description: t(
+        'install.drop.prepopulatedFromBat',
+        '{count, plural, one {Prepopulated from .bat: # mod file.} other {Prepopulated from .bat: # mod files.}}',
+        { count: finalFiles.length }
+      )
     })
   }
 }
@@ -137,13 +147,18 @@ async function importFromJsonFile(
   setFiles: React.Dispatch<React.SetStateAction<IModFile[]>>,
   toast: ToastLike
 ): Promise<void> {
+  const { t } = getTranslate('desktop')
+
   const text = await droppedFile.text()
   const importData: UacModpackImport = JSON.parse(text)
 
   if (importData.format !== 'uac-modpack') {
     toast({
       title: 'FATAL: format_unknown',
-      description: 'Provided file is not a UAC Export JSON',
+      description: t(
+        'install.drop.providedFileIsNotAUacExportJson',
+        'Provided file is not a UAC Export JSON'
+      ),
       variant: 'destructive'
     })
     return
@@ -172,6 +187,8 @@ export function useJsonDrop({
 
   const handleJsonDrop = useCallback(
     async (e: DragEvent): Promise<void> => {
+      const { t } = getTranslate('desktop')
+
       if (!isExternalFileDrop(e)) return
 
       e.preventDefault()
@@ -191,7 +208,10 @@ export function useJsonDrop({
         if (!fileName.endsWith('.json')) {
           toast({
             title: 'FATAL: corrupt_file',
-            description: 'Please drop a valid JSON or .bat file',
+            description: t(
+              'install.drop.pleaseDropAValidJsonOrBatFile',
+              'Please drop a valid JSON or .bat file'
+            ),
             variant: 'destructive'
           })
           return
@@ -204,8 +224,11 @@ export function useJsonDrop({
         toast({
           title: isJson ? 'FATAL: import_failed' : 'FATAL: bat_parse_failed',
           description: isJson
-            ? 'Invalid JSON format — please check for errors.'
-            : 'Failed to parse .bat file.',
+            ? t(
+                'install.drop.invalidJsonFormatPleaseCheckForErrors',
+                'Invalid JSON format — please check for errors.'
+              )
+            : t('install.drop.failedToParseBatFile', 'Failed to parse .bat file.'),
           variant: 'destructive'
         })
       }

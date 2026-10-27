@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -8,7 +9,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { ChevronUp, ChevronDown, FolderOpen, Trash2 } from 'lucide-react'
 import type { IModFile } from '@shared/schema'
-import { SIDECAR_EXPLANATION } from '@/lib/catalog/types'
 import type { RequiredModEntry } from '@/lib/catalog/types'
 
 export interface RequiredModsEditorProps {
@@ -51,11 +51,18 @@ export const RequiredModsEditor: React.FC<RequiredModsEditorProps> = ({
   onToggleSidecar,
   onNameChange
 }) => {
+  const { t } = useTranslate('desktop')
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1.5">
-        <Label>Load Order</Label>
-        <InfoTooltip text="Files load top to bottom - later files override earlier ones for conflicting resources. Use the arrows to reorder." />
+        <Label>{t('catalog.required.loadOrder', 'Load Order')}</Label>
+        <InfoTooltip
+          text={t(
+            'catalog.required.filesLoadTopToBottomLaterFilesOverrideEarlier',
+            'Files load top to bottom - later files override earlier ones for conflicting resources. Use the arrows to reorder.'
+          )}
+        />
       </div>
       <div className="space-y-2">
         {loadOrder.length > 1 &&
@@ -96,7 +103,10 @@ export const RequiredModsEditor: React.FC<RequiredModsEditorProps> = ({
                     />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs text-xs">
-                    {SIDECAR_EXPLANATION}
+                    {t(
+                      'catalog.sidecar.explanation',
+                      "A sidecar file only makes sense alongside another mod - it won't do anything if loaded by itself (e.g. a compatibility patch or add-on)."
+                    )}
                   </TooltipContent>
                 </Tooltip>
                 <Button
@@ -111,7 +121,10 @@ export const RequiredModsEditor: React.FC<RequiredModsEditorProps> = ({
               </div>
               {req.isMain && (
                 <p className="text-[0.625rem] text-app-muted pl-14">
-                  This is the mod itself - its requirements go below.
+                  {t(
+                    'catalog.required.thisIsTheModItselfItsRequirementsGoBelow',
+                    'This is the mod itself - its requirements go below.'
+                  )}
                 </p>
               )}
             </div>
@@ -125,9 +138,9 @@ export const RequiredModsEditor: React.FC<RequiredModsEditorProps> = ({
             }}
             options={selectableFiles.map((f) => ({
               value: f.id.toString(),
-              label: f.name || 'Unnamed'
+              label: f.name || t('catalog.required.unnamed', 'Unnamed')
             }))}
-            placeholder="Add from catalog..."
+            placeholder={t('catalog.required.addFromCatalog', 'Add from catalog...')}
             className="bg-app-secondary border-app flex-1"
             disabled={selectableFiles.length === 0}
           />

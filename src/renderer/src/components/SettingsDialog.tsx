@@ -739,7 +739,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                           <T
                             keyName="settings.registry.description"
                             ns="desktop"
-                            defaultValue="Look up mod files in the online registry when adding to catalog.{br}Requires an active connection to the UAC Registry."
+                            defaultValue="Look up mod file metadata in the UAC Registry when adding to catalog.{br}Requires an active internet connection."
                             params={{ br: <br /> }}
                           />
                         </p>

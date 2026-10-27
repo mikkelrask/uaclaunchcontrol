@@ -21,6 +21,9 @@ export function createI18n(language = 'en') {
 
 export const i18n = createI18n()
 
+/** Imperative helpers resolve the active language at call time, outside React. */
+export const getTranslate = (_namespace: 'desktop') => ({ t: i18n.t })
+
 export async function applyLanguage(preference: unknown): Promise<void> {
   const language = resolveLanguage(preference, navigator.languages)
   await i18n.changeLanguage(language)

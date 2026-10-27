@@ -1,3 +1,4 @@
+import { T, useTranslate } from '@tolgee/react'
 import { useState } from 'react'
 import {
   ColumnDef,
@@ -51,6 +52,7 @@ import {
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
+  columnLabel?: (id: string) => string
   data: TData[]
   searchKey?: string
   searchPlaceholder?: string
@@ -60,12 +62,15 @@ interface DataTableProps<TData, TValue> {
 
 export function DataTable<TData, TValue>({
   columns,
+  columnLabel,
   data,
   searchKey,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder,
   pageSize = 40,
   toolbar
 }: DataTableProps<TData, TValue>): React.ReactElement {
+  const { t } = useTranslate('desktop')
+
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
@@ -104,7 +109,7 @@ export function DataTable<TData, TValue>({
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-app-muted" />
             <Input
-              placeholder={searchPlaceholder}
+              placeholder={searchPlaceholder ?? t('catalog.table.search', 'Search...')}
               value={globalFilter ?? ''}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="pl-8 bg-app-primary border-app h-9"
@@ -118,7 +123,7 @@ export function DataTable<TData, TValue>({
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="ml-auto bg-app-primary border-app h-9">
               <Settings2 className="h-4 w-4 mr-1" />
-              Columns
+              {t('catalog.table.columns', 'Columns')}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-app-secondary border-app text-app-primary">
@@ -132,7 +137,7 @@ export function DataTable<TData, TValue>({
                   checked={column.getIsVisible()}
                   onCheckedChange={(value) => column.toggleVisibility(!!value)}
                 >
-                  {column.id}
+                  {columnLabel?.(column.id) ?? column.id}
                 </DropdownMenuCheckboxItem>
               ))}
           </DropdownMenuContent>
@@ -179,7 +184,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center text-app-secondary">
-                  No results.
+                  {t('catalog.table.noResults', 'No results.')}
                 </TableCell>
               </TableRow>
             )}
@@ -191,12 +196,21 @@ export function DataTable<TData, TValue>({
       <div className="flex items-center justify-between text-sm text-app-muted">
         <div className="flex items-center gap-2">
           <span>
-            {table.getFilteredRowModel().rows.length} file
-            {table.getFilteredRowModel().rows.length !== 1 ? 's' : ''}
+            {t('catalog.table.fileCount', '{count, plural, one {# file} other {# files}}', {
+              count: table.getFilteredRowModel().rows.length
+            })}
           </span>
           {table.getPageCount() > 1 && (
             <span className="text-app-muted/60">
-              · Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+              <T
+                ns="desktop"
+                keyName="catalog.table.pageOf"
+                defaultValue={'· Page {page} of {pages}'}
+                params={{
+                  page: table.getState().pagination.pageIndex + 1,
+                  pages: table.getPageCount()
+                }}
+              />
             </span>
           )}
         </div>
@@ -218,10 +232,11 @@ export function DataTable<TData, TValue>({
             </SelectContent>
           </Select>
 
-          <Pagination className="w-auto">
+          <Pagination className="w-auto" aria-label={t('catalog.table.pagination', 'Pagination')}>
             <PaginationContent>
               <PaginationItem>
                 <PaginationLink
+                  aria-label={t('catalog.table.firstPage', 'Go to first page')}
                   onClick={() => table.setPageIndex(0)}
                   className={!table.getCanPreviousPage() ? 'pointer-events-none opacity-40' : ''}
                 >
@@ -230,6 +245,7 @@ export function DataTable<TData, TValue>({
               </PaginationItem>
               <PaginationItem>
                 <PaginationLink
+                  aria-label={t('catalog.table.previousPage', 'Go to previous page')}
                   onClick={() => table.previousPage()}
                   className={!table.getCanPreviousPage() ? 'pointer-events-none opacity-40' : ''}
                 >
@@ -238,6 +254,7 @@ export function DataTable<TData, TValue>({
               </PaginationItem>
               <PaginationItem>
                 <PaginationLink
+                  aria-label={t('catalog.table.nextPage', 'Go to next page')}
                   onClick={() => table.nextPage()}
                   className={!table.getCanNextPage() ? 'pointer-events-none opacity-40' : ''}
                 >
@@ -246,6 +263,7 @@ export function DataTable<TData, TValue>({
               </PaginationItem>
               <PaginationItem>
                 <PaginationLink
+                  aria-label={t('catalog.table.lastPage', 'Go to last page')}
                   onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                   className={!table.getCanNextPage() ? 'pointer-events-none opacity-40' : ''}
                 >

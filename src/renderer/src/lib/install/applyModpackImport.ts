@@ -1,3 +1,4 @@
+import { getTranslate } from '@/lib/i18n'
 // Shared "apply a uac-modpack JSON to the install form" logic — used both by
 // the install page's JSON drop (useJsonDrop) and by the registry handoff
 // (registryInstall), so a registry "Install Protocol" click behaves exactly
@@ -136,6 +137,8 @@ export async function applyModpackImport(
   importData: UacModpackImport,
   { form, versions, settings, setFiles, toast }: ApplyModpackImportOptions
 ): Promise<void> {
+  const { t } = getTranslate('desktop')
+
   const { game, files: importFiles, configs: importConfigs } = importData
 
   // Write embedded config files to disk
@@ -151,7 +154,11 @@ export async function applyModpackImport(
     if (entries.length > 0) {
       toast({
         title: 'SYSTEM: configs_imported',
-        description: `${entries.length} config file(s) written.`
+        description: t(
+          'install.modpack.configsWritten',
+          '{count, plural, one {# config file written.} other {# config files written.}}',
+          { count: entries.length }
+        )
       })
     }
   }
@@ -164,7 +171,11 @@ export async function applyModpackImport(
   // typing the title would have produced.
   form.setValue(
     'saveDirectory',
-    deriveSaveDirectory(game.title || '', form.getValues('saveDirectory') || '', settings?.savegamesPath),
+    deriveSaveDirectory(
+      game.title || '',
+      form.getValues('saveDirectory') || '',
+      settings?.savegamesPath
+    ),
     { shouldValidate: true, shouldDirty: true }
   )
 
@@ -186,7 +197,11 @@ export async function applyModpackImport(
       log.warn('Failed to import screenshot:', err)
       toast({
         title: 'SYSTEM: screenshot_import_failed',
-        description: `Screenshot could not be saved: ${err instanceof Error ? err.message : String(err)}`
+        description: t(
+          'install.modpack.screenshotCouldNotBeSaved',
+          'Screenshot could not be saved: {error}',
+          { error: String(err instanceof Error ? err.message : String(err)) }
+        )
       })
     }
   } else if (game.screenshotPath) {
@@ -205,7 +220,11 @@ export async function applyModpackImport(
     // quietly use the wrong IWAD.
     toast({
       title: 'SYSTEM: base_wad_unmatched',
-      description: `No local WAD matches "${game.doomVersionSlug}" — pick the base WAD by hand.`,
+      description: t(
+        'install.modpack.noLocalWadMatchesPickTheBaseWadBy',
+        'No local WAD matches "{doomVersionSlug}" — pick the base WAD by hand.',
+        { doomVersionSlug: String(game.doomVersionSlug) }
+      ),
       variant: 'destructive'
     })
   }
@@ -223,12 +242,16 @@ export async function applyModpackImport(
   if (missingCount > 0) {
     toast({
       title: 'SYSTEM: failed_successfully',
-      description: `${orderedFiles.length - missingCount} files matched, ${missingCount} missing (shown in red)`
+      description: t(
+        'install.modpack.filesMatchedMissingShownInRed',
+        '{matchedCount, plural, one {# file matched, {missingCount, number} missing (shown in red)} other {# files matched, {missingCount, number} missing (shown in red)}}',
+        { matchedCount: orderedFiles.length - missingCount, missingCount }
+      )
     })
   } else {
     toast({
       title: 'SYSTEM: import_success',
-      description: 'All files matched from catalog'
+      description: t('install.modpack.allFilesMatchedFromCatalog', 'All files matched from catalog')
     })
   }
 }

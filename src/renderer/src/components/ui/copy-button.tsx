@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React, { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -9,6 +10,8 @@ interface CopyButtonProps {
 
 /** Icon button that copies `text` to the clipboard, meant to appear on hover of a `group` ancestor. */
 export const CopyButton: React.FC<CopyButtonProps> = ({ text, className }) => {
+  const { t } = useTranslate('desktop')
+
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async (e: React.MouseEvent): Promise<void> => {
@@ -22,7 +25,9 @@ export const CopyButton: React.FC<CopyButtonProps> = ({ text, className }) => {
     <button
       type="button"
       onClick={handleCopy}
-      title={copied ? 'Copied!' : 'Copy to clipboard'}
+      title={
+        copied ? t('ui.copy.copied', 'Copied!') : t('ui.copy.copyToClipboard', 'Copy to clipboard')
+      }
       className={cn(
         'opacity-0 group-hover:opacity-100 transition-opacity text-app-muted hover:text-app-primary shrink-0',
         className

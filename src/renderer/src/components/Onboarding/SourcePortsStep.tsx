@@ -1,3 +1,4 @@
+import { T, useTranslate } from '@tolgee/react'
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -17,24 +18,35 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
   onNext,
   onBack
 }) => {
+  const { t } = useTranslate('desktop')
   const hasPort = settings.sourcePorts.length > 0
 
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
         <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
-          UAC-7 // Runtime Engine
+          {t('onboarding.sourcePorts.terminal', 'UAC-7 // Runtime Engine')}
         </span>
-        <h2 className="text-2xl font-bold tracking-tight text-app-primary">Source Ports</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-app-primary">
+          {t('sourcePorts.title', 'Source Ports')}
+        </h2>
         <p className="text-sm text-app-secondary max-w-lg mx-auto">
-          Your terminal have been scanned for any already installed source ports{' '}
-          <em>(GZDoom, UZDoom, Zandronum, Helium and others)</em> - if any are found you can add
-          all, some or add one at a specific location manually. <br />
-          <br />
-          You can also download one of your choosing directly with the <strong>
-            Get Port
-          </strong>{' '}
-          button — no need to leave the app.
+          <T
+            ns="desktop"
+            keyName="onboarding.sourcePorts.description"
+            defaultValue="Your terminal has been scanned for already installed source ports {engines} — if any are found, you can add all, some, or add one at a specific location manually. {br}{br}You can also download one of your choosing directly with the {getPort} button — no need to leave the app."
+            params={{
+              engines: (
+                <em>
+                  {t('onboarding.sourcePorts.engineExamples', '({engines} and others)', {
+                    engines: 'GZDoom, UZDoom, Zandronum, Helion'
+                  })}
+                </em>
+              ),
+              getPort: <strong>{t('sourcePorts.get', 'Get Port')}</strong>,
+              br: <br />
+            }}
+          />
         </p>
       </div>
 
@@ -42,12 +54,17 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
 
       {hasPort ? (
         <p className="text-xs text-app-muted italic text-center opacity-70">
-          Click the dot next to a port to make it your default — it&apos;ll be pre-selected when you
-          create a new protocol.
+          {t(
+            'onboarding.sourcePorts.defaultHint',
+            "Click the dot next to a port to make it your default — it'll be pre-selected when you create a new protocol."
+          )}
         </p>
       ) : (
         <p className="text-sm text-app-muted italic text-center">
-          You can also do this later in Settings — this step isn&apos;t required to continue.
+          {t(
+            'onboarding.optional',
+            "You can also do this later in Settings — this step isn't required to continue."
+          )}
         </p>
       )}
 
@@ -58,13 +75,13 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
           className="text-app-muted hover:text-app-primary gap-1"
         >
           <ChevronLeft className="w-4 h-4" />
-          Back
+          {t('onboarding.back', 'Back')}
         </Button>
         <Button
           onClick={onNext}
           className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
         >
-          Next
+          {t('onboarding.next', 'Next')}
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>

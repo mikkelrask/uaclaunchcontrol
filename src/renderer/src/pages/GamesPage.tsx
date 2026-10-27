@@ -1,3 +1,5 @@
+import { T, useTranslate } from '@tolgee/react'
+import { getTranslate } from '@/lib/i18n'
 import React, { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'wouter'
@@ -40,6 +42,8 @@ import { REGISTRY_API_URL } from '@shared/registry-config'
 type ViewMode = 'grid' | 'list' | 'detail'
 
 export const GamesPage: React.FC = () => {
+  const { t } = useTranslate('desktop')
+
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -143,6 +147,8 @@ export const GamesPage: React.FC = () => {
   }
 
   const handleIdgamesDownload = async (url: string, mod: IIdgamesMod): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     const link = mod.urls.find((u) => u.url === url)
     if (!link) return
 
@@ -153,14 +159,19 @@ export const GamesPage: React.FC = () => {
 
     toast({
       title: 'SYSTEM: transfer_started',
-      description: `${mod.title} — downloading from ${link.domain}`
+      description: t('library.games.downloadingFrom', '{title} — downloading from {domain}', {
+        title: String(mod.title),
+        domain: String(link.domain)
+      })
     })
 
     try {
       const result = await api.downloadIdgamesFile(url, mod.title)
       toast({
         title: 'SYSTEM: transfer_complete',
-        description: `${result.fileName} — processing…`
+        description: t('library.games.processing', '{fileName} — processing…', {
+          fileName: String(result.fileName)
+        })
       })
 
       if (getArchiveExtension(result.fileName)) {
@@ -190,13 +201,18 @@ export const GamesPage: React.FC = () => {
     } catch {
       toast({
         title: 'FATAL: transfer_failed',
-        description: 'Could not download from idgames',
+        description: t(
+          'library.games.couldNotDownloadFromIdgames',
+          'Could not download from idgames'
+        ),
         variant: 'destructive'
       })
     }
   }
 
   const handleImportSingleFile = async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     if (!importFile) return
     setImporting(true)
     try {
@@ -210,11 +226,17 @@ export const GamesPage: React.FC = () => {
         existing
           ? {
               title: 'SYSTEM: already_in_catalog',
-              description: `${importFile.fileName} is already in your catalog — nothing was added.`
+              description: t(
+                'library.games.isAlreadyInYourCatalogNothingWasAdded',
+                '{fileName} is already in your catalog — nothing was added.',
+                { fileName: String(importFile.fileName) }
+              )
             }
           : {
               title: 'SYSTEM: import_success',
-              description: `${importFile.fileName} added to mods folder`
+              description: t('library.games.addedToModsFolder', '{fileName} added to mods folder', {
+                fileName: String(importFile.fileName)
+              })
             }
       )
       setIsImportModalOpen(false)
@@ -223,7 +245,7 @@ export const GamesPage: React.FC = () => {
     } catch {
       toast({
         title: 'FATAL: import_failed',
-        description: 'Could not import the file',
+        description: t('library.games.couldNotImportTheFile', 'Could not import the file'),
         variant: 'destructive'
       })
     } finally {
@@ -236,9 +258,14 @@ export const GamesPage: React.FC = () => {
   }
 
   const handleManageGames = (): void => {
+    const { t } = getTranslate('desktop')
+
     toast({
       title: 'SYSTEM: access_denied',
-      description: 'Blue keycard required. Report to your commanding officer.'
+      description: t(
+        'library.games.blueKeycardRequiredReportToYourCommandingOfficer',
+        'Blue keycard required. Report to your commanding officer.'
+      )
     })
   }
 
@@ -326,8 +353,8 @@ export const GamesPage: React.FC = () => {
               <h1 className="text-2xl font-bold text-app-primary tracking-tight">
                 {activeVersion
                   ? versions.find((v) => v.id === activeVersion)?.name.toUpperCase() ||
-                    'Unknown Version'
-                  : '// PROTOCOLS'}
+                    t('library.games.unknownVersion', 'Unknown Version')
+                  : t('library.games.protocols', '// PROTOCOLS')}
               </h1>
               <div className="h-1 w-20 bg-accent-highlight mt-2 rounded-full shadow-[0_0_10px_hsl(var(--accent-highlight)/0.5)]"></div>
             </div>
@@ -344,8 +371,11 @@ export const GamesPage: React.FC = () => {
                 {/* Protocols section */}
                 <section>
                   <h2 className="text-lg font-semibold text-app-primary mb-4">
-                    Protocols ({filteredProtocols.length} match
-                    {filteredProtocols.length !== 1 ? 'es' : ''})
+                    {t(
+                      'library.search.protocols',
+                      '{count, plural, one {Protocols (# match)} other {Protocols (# matches)}}',
+                      { count: filteredProtocols.length }
+                    )}
                   </h2>
                   {filteredProtocols.length > 0 ? (
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">
@@ -364,7 +394,9 @@ export const GamesPage: React.FC = () => {
                       })}
                     </div>
                   ) : (
-                    <p className="text-app-muted text-sm">No matching protocols</p>
+                    <p className="text-app-muted text-sm">
+                      {t('library.games.noMatchingProtocols', 'No matching protocols')}
+                    </p>
                   )}
                 </section>
 
@@ -372,8 +404,11 @@ export const GamesPage: React.FC = () => {
                 {registryHits.length > 0 && (
                   <section>
                     <h2 className="text-lg font-semibold text-app-primary mb-4">
-                      UAC Registry ({registryHits.length} match
-                      {registryHits.length !== 1 ? 'es' : ''})
+                      {t(
+                        'library.search.registry',
+                        '{count, plural, one {UAC Registry (# match)} other {UAC Registry (# matches)}}',
+                        { count: registryHits.length }
+                      )}
                     </h2>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-4">
                       {registryHits.map((mod, i) => (
@@ -399,18 +434,20 @@ export const GamesPage: React.FC = () => {
                                   className="inline-flex items-center gap-1.5 text-xs text-accent-highlight hover:underline"
                                 >
                                   <ExternalLink className="w-3 h-3" />
-                                  {mod.urls[0].domain || 'Download'}
+                                  {mod.urls[0].domain || t('library.games.download', 'Download')}
                                 </a>
                               ) : (
                                 <Select onValueChange={(url) => window.open(url, '_blank')}>
                                   <SelectTrigger className="h-7 bg-app-secondary border-app text-xs gap-1">
                                     <ExternalLink className="w-3 h-3 text-accent-highlight shrink-0" />
-                                    <SelectValue placeholder="Downloads" />
+                                    <SelectValue
+                                      placeholder={t('library.games.downloads', 'Downloads')}
+                                    />
                                   </SelectTrigger>
                                   <SelectContent className="bg-app-secondary border-app text-app-primary">
                                     {mod.urls.map((u, j) => (
                                       <SelectItem key={j} value={u.url} className="text-xs">
-                                        {u.domain || 'Download'}
+                                        {u.domain || t('library.games.download', 'Download')}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
@@ -428,8 +465,11 @@ export const GamesPage: React.FC = () => {
                 {idgamesHits.length > 0 && (
                   <section>
                     <h2 className="text-lg font-semibold text-app-primary mb-4">
-                      idgames Archive ({idgamesHits.length} match
-                      {idgamesHits.length !== 1 ? 'es' : ''})
+                      {t(
+                        'library.search.idgames',
+                        '{count, plural, one {idgames Archive (# match)} other {idgames Archive (# matches)}}',
+                        { count: idgamesHits.length }
+                      )}
                     </h2>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-4">
                       {idgamesHits.map((mod) => (
@@ -438,7 +478,16 @@ export const GamesPage: React.FC = () => {
                             {mod.title}
                           </p>
                           <p className="text-xs text-app-muted mt-1">
-                            {mod.author && <span>by {mod.author}</span>}
+                            {mod.author && (
+                              <span>
+                                <T
+                                  ns="desktop"
+                                  keyName="library.games.by"
+                                  defaultValue={'by {author}'}
+                                  params={{ author: mod.author }}
+                                />
+                              </span>
+                            )}
                             {mod.size > 0 && (
                               <span className="ml-2 text-app-muted">
                                 {(mod.size / 1024).toFixed(0)} KB
@@ -464,18 +513,20 @@ export const GamesPage: React.FC = () => {
                                 className="inline-flex items-center gap-1.5 text-xs text-accent-highlight hover:underline"
                               >
                                 <ExternalLink className="w-3 h-3" />
-                                {mod.urls[0].domain || 'Download'}
+                                {mod.urls[0].domain || t('library.games.download', 'Download')}
                               </a>
                             ) : (
                               <Select onValueChange={(url) => handleIdgamesDownload(url, mod)}>
                                 <SelectTrigger className="h-7 bg-app-secondary border-app text-xs gap-1">
                                   <ExternalLink className="w-3 h-3 text-accent-highlight shrink-0" />
-                                  <SelectValue placeholder="Downloads" />
+                                  <SelectValue
+                                    placeholder={t('library.games.downloads', 'Downloads')}
+                                  />
                                 </SelectTrigger>
                                 <SelectContent className="bg-app-secondary border-app text-app-primary">
                                   {mod.urls.map((u, j) => (
                                     <SelectItem key={j} value={u.url} className="text-xs">
-                                      {u.domain || 'Download'}
+                                      {u.domain || t('library.games.download', 'Download')}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -492,8 +543,11 @@ export const GamesPage: React.FC = () => {
                 {catalogueHits.length > 0 && (
                   <section>
                     <h2 className="text-lg font-semibold text-app-primary mb-4">
-                      Mod Files in Catalogue ({catalogueHits.length} match
-                      {catalogueHits.length !== 1 ? 'es' : ''})
+                      {t(
+                        'library.search.catalog',
+                        '{count, plural, one {Mod Files in Catalogue (# match)} other {Mod Files in Catalogue (# matches)}}',
+                        { count: catalogueHits.length }
+                      )}
                     </h2>
                     <div className="grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-4">
                       {catalogueHits.map((file) => (
@@ -503,7 +557,7 @@ export const GamesPage: React.FC = () => {
                         >
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-app-primary truncate">
-                              {file.name || file.fileName || 'Unnamed'}
+                              {file.name || file.fileName || t('library.games.unnamed', 'Unnamed')}
                             </p>
                             <p className="text-xs text-app-muted mt-0.5">
                               {file.fileType && (
@@ -527,11 +581,16 @@ export const GamesPage: React.FC = () => {
                   <div className="text-center py-10">
                     <h3 className="text-2xl mb-2">
                       <span className="animate-pulse text-accent-highlight font-bold">
-                        NO MATCHES
+                        {t('library.games.noMatches', 'NO MATCHES')}
                       </span>
                     </h3>
                     <p className="text-app-muted">
-                      No protocols or mod files found for &quot;{searchQuery}&quot;
+                      <T
+                        ns="desktop"
+                        keyName="library.games.noProtocolsOrModFilesFoundFor"
+                        defaultValue={'No protocols or mod files found for "{searchQuery}"'}
+                        params={{ searchQuery: searchQuery }}
+                      />
                     </p>
                   </div>
                 )}
@@ -539,22 +598,44 @@ export const GamesPage: React.FC = () => {
             ) : filteredProtocols?.length === 0 ? (
               <div className="text-center py-10">
                 <h3 className="text-2xl mb-2">
-                  <span className="animate-pulse text-accent-highlight font-bold">FAILURE:</span>{' '}
-                  Configuration incomplete
+                  <T
+                    ns="desktop"
+                    keyName="library.games.configurationIncomplete"
+                    defaultValue={'{span} Configuration incomplete'}
+                    params={{
+                      span: (
+                        <span className="animate-pulse text-accent-highlight font-bold">
+                          {t('library.games.failure', 'FAILURE:')}
+                        </span>
+                      )
+                    }}
+                  />
                 </h3>
                 <p className="text-app-secondary">
                   {activeVersion ? (
-                    `No mods installed for this base game.`
+                    t(
+                      'library.games.noModsInstalledForThisBaseGame',
+                      'No mods installed for this base game.'
+                    )
                   ) : (
                     <>
-                      Create launch protocol to start. Click{' '}
-                      <Link
-                        href="/install"
-                        className="text-accent-highlight font-bold hover:underline"
-                      >
-                        INSTALL
-                      </Link>{' '}
-                      to get started.
+                      <T
+                        ns="desktop"
+                        keyName="library.games.createLaunchProtocolToStartClickToGetStarted"
+                        defaultValue={
+                          'Create launch protocol to start. Click {link} to get started.'
+                        }
+                        params={{
+                          link: (
+                            <Link
+                              href="/install"
+                              className="text-accent-highlight font-bold hover:underline"
+                            >
+                              {t('library.games.install', 'INSTALL')}
+                            </Link>
+                          )
+                        }}
+                      />
                     </>
                   )}
                 </p>
@@ -642,10 +723,10 @@ export const GamesPage: React.FC = () => {
               </div>
               <div>
                 <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                  import_mod_file
+                  {t('library.games.importModFile', 'import_mod_file')}
                 </DialogTitle>
                 <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                  idgames Archive
+                  {t('library.games.idgamesArchive', 'idgames Archive')}
                 </DialogDescription>
               </div>
             </div>
@@ -653,7 +734,7 @@ export const GamesPage: React.FC = () => {
             {importFile && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>File Name</Label>
+                  <Label>{t('library.games.fileName', 'File Name')}</Label>
                   <Input
                     value={importFile.fileName}
                     readOnly
@@ -661,19 +742,19 @@ export const GamesPage: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Name</Label>
+                  <Label>{t('library.games.name', 'Name')}</Label>
                   <Input
                     value={importFile.name}
                     onChange={(e) =>
                       setImportFile((prev) => (prev ? { ...prev, name: e.target.value } : prev))
                     }
-                    placeholder="Pretty name for the mod"
+                    placeholder={t('library.games.prettyNameForTheMod', 'Pretty name for the mod')}
                     className="bg-app-secondary border-app"
                   />
                 </div>
                 {importFile.hash && (
                   <div className="space-y-2">
-                    <Label>MD5 Hash</Label>
+                    <Label>{t('library.games.md5Hash', 'MD5 Hash')}</Label>
                     <Input
                       value={importFile.hash}
                       readOnly
@@ -693,7 +774,7 @@ export const GamesPage: React.FC = () => {
                 }}
                 className="bg-app-secondary"
               >
-                Cancel
+                {t('library.games.cancel', 'Cancel')}
               </Button>
               <Button
                 onClick={handleImportSingleFile}
@@ -703,12 +784,12 @@ export const GamesPage: React.FC = () => {
                 {importing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Importing…
+                    {t('library.games.importing', 'Importing…')}
                   </>
                 ) : (
                   <>
                     <Download className="h-4 w-4 mr-1" />
-                    Import to Mods
+                    {t('library.games.importToMods', 'Import to Mods')}
                   </>
                 )}
               </Button>

@@ -4,15 +4,21 @@ import path from 'node:path'
 import ts from 'typescript'
 import en from './locales/desktop/en.json'
 
-// The migrated component boundary. Add screens here as their strings are marked.
-const MIGRATED_FILES = [
-  'SettingsDialog.tsx',
-  'Header.tsx',
-  'Sidebar.tsx',
-  'SourcePortsTab.tsx',
-  'PortDownloadModal.tsx',
-  'KeyboardShortcutsModal.tsx'
-]
+// Scan every marked renderer message so new screens cannot bypass catalog validation.
+const RENDERER_ROOT = path.resolve(__dirname, '../..')
+function sourceFiles(directory: string): string[] {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const file = path.join(directory, entry.name)
+    if (entry.isDirectory()) return sourceFiles(file)
+    return /\.tsx?$/.test(file) && !/\.test\.tsx?$|\.d\.ts$/.test(file) ? [file] : []
+  })
+}
+function literal(node: ts.Node | undefined): string | undefined {
+  if (!node) return undefined
+  if (ts.isStringLiteral(node)) return node.text
+  if (ts.isJsxExpression(node)) return literal(node.expression)
+  return undefined
+}
 
 describe('English source catalog', () => {
   it('matches every marked message, including messages outside hooks', () => {
@@ -22,14 +28,14 @@ describe('English source catalog', () => {
         expect(messages.get(key), `Conflicting defaults for ${key}`).toBe(value)
       messages.set(key, value)
     }
-    for (const file of MIGRATED_FILES) {
-      const location = path.resolve(__dirname, '../../components', file)
+    for (const location of sourceFiles(RENDERER_ROOT)) {
+      const file = path.relative(RENDERER_ROOT, location)
       const source = ts.createSourceFile(
         file,
         fs.readFileSync(location, 'utf8'),
         ts.ScriptTarget.Latest,
         true,
-        ts.ScriptKind.TSX
+        file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
       )
       const visit = (node: ts.Node): void => {
         if (
@@ -56,10 +62,11 @@ describe('English source catalog', () => {
           )
           const key = props.get('keyName')
           const value = props.get('defaultValue')
-          expect(key && ts.isStringLiteral(key), `Dynamic T key in ${file}`).toBe(true)
-          expect(value && ts.isStringLiteral(value), `Missing T default in ${file}`).toBe(true)
-          if (key && value && ts.isStringLiteral(key) && ts.isStringLiteral(value))
-            record(key.text, value.text)
+          const keyText = literal(key)
+          const defaultText = literal(value)
+          expect(keyText, `Dynamic T key in ${file}`).toBeDefined()
+          expect(defaultText, `Missing T default in ${file}`).toBeDefined()
+          if (keyText !== undefined && defaultText !== undefined) record(keyText, defaultText)
         }
         ts.forEachChild(node, visit)
       }

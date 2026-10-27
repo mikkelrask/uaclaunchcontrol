@@ -1,3 +1,5 @@
+import { useTranslate } from '@tolgee/react'
+import { getTranslate } from '@/lib/i18n'
 import { useState, useCallback } from 'react'
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query'
 import type { IAppSettings } from '@shared/schema'
@@ -36,6 +38,8 @@ interface ToastLike {
  * hash computation, MD5-rename preview, and the actual import mutation.
  */
 export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImportHandlers {
+  const { t } = useTranslate('desktop')
+
   const queryClient = useQueryClient()
   const [selectedWad, setSelectedWad] = useState<WadImportSelection | null>(null)
   const [isWadDragging, setIsWadDragging] = useState(false)
@@ -43,12 +47,17 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
 
   const prepareWadImport = useCallback(
     async (sourcePath: string): Promise<void> => {
+      const { t } = getTranslate('desktop')
+
       const fileName = sourcePath.split(/[\\/]/).pop() || sourcePath
 
       if (!fileName.toLowerCase().endsWith('.wad')) {
         toast({
           title: 'WARNING: invalid_file',
-          description: 'Not a UAC supported file (.wad)',
+          description: t(
+            'install.wadImport.notAUacSupportedFileWad',
+            'Not a UAC supported file (.wad)'
+          ),
           variant: 'destructive'
         })
         return
@@ -58,7 +67,7 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
       try {
         const hashValue = await api.computeHash(sourcePath)
         if (!hashValue) {
-          throw new Error('Failed to compute MD5 hash')
+          throw new Error(t('install.wadImport.failedHash', 'Failed to compute MD5 hash'))
         }
 
         setSelectedWad({
@@ -70,7 +79,11 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
       } catch (error: unknown) {
         toast({
           title: 'FATAL: err_139',
-          description: `Failed to prepare WAD import: ${error}`,
+          description: t(
+            'install.wadImport.failedToPrepareWadImport',
+            'Failed to prepare WAD import: {error}',
+            { error: String(error) }
+          ),
           variant: 'destructive'
         })
       } finally {
@@ -81,10 +94,12 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
   )
 
   const handleBrowseWad = useCallback(async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     const result = await api.showOpenDialog({
-      title: 'Select WAD File',
+      title: t('install.wadImport.selectWadFile', 'Select WAD File'),
       properties: ['openFile'],
-      filters: [{ name: 'WAD Files', extensions: ['wad'] }],
+      filters: [{ name: t('install.wadImport.wadFiles', 'WAD Files'), extensions: ['wad'] }],
       defaultPath: settings?.wadFilesDirectory || undefined
     })
 
@@ -99,8 +114,16 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
       toast({
         title: result.alreadyExists ? 'SYSTEM: wad_exists' : 'SYSTEM: wad_imported',
         description: result.alreadyExists
-          ? `"${result.fileName}" is already in your WAD library. You can make changes in core_settings -> Wad Config.`
-          : `"${result.fileName}" was added. You can make changes in core_settings -> Wad Config.`
+          ? t(
+              'install.wadImport.isAlreadyInYourWadLibraryYouCanMake',
+              '"{fileName}" is already in your WAD library. You can make changes in core_settings -> Wad Config.',
+              { fileName: String(result.fileName) }
+            )
+          : t(
+              'install.wadImport.wasAddedYouCanMakeChangesInCoreSettings',
+              '"{fileName}" was added. You can make changes in core_settings -> Wad Config.',
+              { fileName: String(result.fileName) }
+            )
       })
       setSelectedWad(null)
       queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
@@ -129,7 +152,9 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
     onError: (error) => {
       toast({
         title: 'FATAL: err_482',
-        description: `Failed to import WAD: ${error}`,
+        description: t('install.wadImport.failedToImportWad', 'Failed to import WAD: {error}', {
+          error: String(error)
+        }),
         variant: 'destructive'
       })
     }

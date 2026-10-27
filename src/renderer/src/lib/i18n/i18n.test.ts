@@ -119,6 +119,41 @@ describe('bundled desktop translations', () => {
     tolgee.stop()
   })
 
+  it('formats both onboarding counts and preserves rich text during English fallback', async () => {
+    const tolgee = createI18n('es-ES')
+    await tolgee.run()
+    expect(tolgee.t('onboarding.complete.summary', { portCount: 0, wadCount: 2 })).toBe(
+      "0 source ports and 2 WAD files configured. Head to Install whenever you're ready to create your first protocol."
+    )
+    expect(tolgee.t('onboarding.complete.summary', { portCount: 1, wadCount: 1 })).toContain(
+      '1 source port and 1 WAD file configured.'
+    )
+    expect(tolgee.t('onboarding.complete.summary', { portCount: 2, wadCount: 0 })).toContain(
+      '2 source ports and 0 WAD files configured.'
+    )
+    const html = renderToStaticMarkup(
+      createElement(
+        TolgeeProvider,
+        { tolgee },
+        createElement(T, {
+          ns: 'desktop',
+          keyName: 'onboarding.welcome.description',
+          params: {
+            app: createElement('strong', null, 'UAC Launch Control'),
+            br: createElement('br')
+          }
+        })
+      )
+    )
+    expect(html).toContain('<strong>UAC Launch Control</strong>')
+    expect(html).toContain('<br/><br/>')
+    expect(html).not.toContain('{app}')
+    expect(tolgee.t('onboarding.sourcePorts.engineExamples', { engines: 'GZDoom, UZDoom' })).toBe(
+      '(GZDoom, UZDoom and others)'
+    )
+    tolgee.stop()
+  })
+
   it('validates every ICU catalog and preserves source placeholders in translations', () => {
     const source: Record<string, string> = en
     const catalogs: Record<string, string>[] = [en, da, es]

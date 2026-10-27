@@ -19,9 +19,9 @@ const translations = Tolgee()
 
 console.log('Starting isolated Electron renderer test')
 const deadline = setTimeout(() => {
-  console.error('Electron test exceeded 30 seconds')
+  console.error('Electron test exceeded 60 seconds')
   app.exit(1)
-}, 30000)
+}, 60000)
 const root = path.resolve(__dirname, '../..')
 const renderer = process.env.UAC_I18N_RENDERER || path.join(root, 'out/renderer/index.html')
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'uac-i18n-electron-'))
@@ -37,6 +37,17 @@ let settings = {
   configPath: '/fixture/uac',
   wadFilesDirectory: '/fixture/wads',
   uiScale: 100
+}
+const protocolFixture = {
+  id: 'localisation-fixture',
+  name: 'Fixture Protocol',
+  title: 'Fixture Protocol',
+  description: '',
+  doomVersionId: 'doom-fixture',
+  files: [],
+  playtimeSeconds: 5400,
+  lastLaunchedAt: '2026-10-24T12:00:00Z',
+  launchParameters: '-skill 4'
 }
 const network = []
 const errors = []
@@ -62,17 +73,33 @@ async function waitFor(window, expression) {
     if (await window.webContents.executeJavaScript(expression)) return
     await pause(50)
   }
+  fs.writeFileSync(
+    '/tmp/uac-i18n-smoke-dom.txt',
+    await window.webContents.executeJavaScript('document.body.innerHTML')
+  )
+  fs.writeFileSync(
+    '/tmp/uac-i18n-smoke-failure.png',
+    (await window.webContents.capturePage()).toPNG()
+  )
   throw new Error(`Timed out: ${expression}`)
 }
 
 // Native input targets are measured from the disposable renderer, never a live app.
-async function clickSelector(window, selector) {
-  const point = await window.webContents.executeJavaScript(`(() => {
-    const element = document.querySelector(${JSON.stringify(selector)})
+async function clickSelector(window, selector, text) {
+  const point = await window.webContents.executeJavaScript(`(async () => {
+    const element = [...document.querySelectorAll(${JSON.stringify(selector)})].find(el => ${JSON.stringify(text)} === undefined || el.textContent.trim() === ${JSON.stringify(text)})
     if (!element) throw new Error('Missing fixture control: ' + ${JSON.stringify(selector)})
+    const animations = []
+    for (let parent = element; parent; parent = parent.parentElement) {
+      animations.push(...parent.getAnimations().filter(animation => animation.effect?.getTiming().iterations !== Infinity))
+    }
+    await Promise.allSettled(animations.map(animation => animation.finished))
+    element.scrollIntoView({ block: 'center' })
     const rect = element.getBoundingClientRect()
-    return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) }
+    return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2), hoverCard: !!element.closest('.game-card') }
   })()`)
+  window.webContents.sendInputEvent({ type: 'mouseMove', x: point.x, y: point.y })
+  if (point.hoverCard) await pause(350)
   window.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, ...point })
   window.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, ...point })
 }
@@ -103,7 +130,22 @@ app
       if (url.pathname === '/api/settings') {
         if (request.method === 'PUT') settings = { ...settings, ...(await request.json()) }
         result = settings
-      } else if (url.pathname === '/api/versions')
+      } else if (url.pathname === '/api/protocols') result = [protocolFixture]
+      else if (url.pathname === '/api/protocols/localisation-fixture')
+        result = { protocol: protocolFixture, files: [] }
+      else if (url.pathname === '/api/mod-files/catalog')
+        result = [
+          {
+            id: 1,
+            name: 'Fixture Mod',
+            fileName: 'fixture.pk3',
+            fileType: 'PK3',
+            filePath: '/fixture/fixture.pk3',
+            hashValue: 'a'.repeat(32),
+            category: 'weapon'
+          }
+        ]
+      else if (url.pathname === '/api/versions')
         result = [
           {
             id: 'doom-fixture',
@@ -131,7 +173,12 @@ app
       else if (url.pathname === '/api/player-data') result = player
       else if (url.pathname.startsWith('/api/player-data/')) result = player
       return new Response(JSON.stringify(result), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
       })
     })
     const window = new BrowserWindow({
@@ -264,8 +311,137 @@ app
       )
       assert(keys.includes('Ctrl + .'))
       assert(keys.includes(message('shortcuts.moreInfo', { wiki: message('shortcuts.wiki') })))
+      window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await waitFor(window, `!document.querySelector('[role="dialog"]')`)
+      await clickSelector(
+        window,
+        `button[aria-label=${JSON.stringify(message('navigation.menu'))}]`
+      )
+      await waitFor(window, `!!document.querySelector('[role="dialog"]')`)
+      await clickSelector(window, 'button', message('navigation.tour'))
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('onboarding.welcome.title'))})`
+      )
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('onboarding.boot.access'))})`
+      )
+      await waitFor(window, `!document.querySelector('.fixed.inset-0.z-50')`)
+      await clickSelector(window, 'button', message('onboarding.welcome.initialize'))
+      await waitFor(
+        window,
+        `[...document.querySelectorAll('h2')].some(el => el.textContent === ${JSON.stringify(message('sourcePorts.title'))})`
+      )
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('sourcePorts.scan.found', { count: 1 }))})`
+      )
+      await clickSelector(window, 'button', message('onboarding.next'))
+      await waitFor(
+        window,
+        `[...document.querySelectorAll('h2')].some(el => el.textContent === ${JSON.stringify(message('onboarding.wads.title'))})`
+      )
+      const wadGuide = await window.webContents.executeJavaScript(
+        `document.querySelector('a[href="https://uac-soft.online/guides/acquiring-doom/"]')?.textContent`
+      )
+      assert.equal(wadGuide, message('onboarding.wads.acquireGuide'))
+      await clickSelector(window, 'button', message('onboarding.next'))
+      await waitFor(
+        window,
+        `[...document.querySelectorAll('h2')].some(el => el.textContent === ${JSON.stringify(message('onboarding.registry.title'))})`
+      )
+      const registryToggle = await window.webContents.executeJavaScript(
+        `document.querySelector('[role="switch"]')?.getAttribute('data-state')`
+      )
+      assert.equal(registryToggle, 'unchecked')
+      await clickSelector(window, 'button', message('onboarding.next'))
+      const summary = message('onboarding.complete.summary', { portCount: 0, wadCount: 1 })
+      await waitFor(window, `document.body.textContent.includes(${JSON.stringify(summary)})`)
+      await clickSelector(window, 'button', message('onboarding.complete.finish'))
+      await waitFor(
+        window,
+        `!document.body.textContent.includes(${JSON.stringify(message('onboarding.skip'))})`
+      )
+      assert(!settings.registryLookupEnabled)
+      assert.equal(settings.wadFilesDirectory, '/fixture/wads')
+      assert.equal(settings.sourcePorts.length, 0)
+      // Allow the fixture's final settings-save/cache refresh to settle before reloading.
+      await pause(200)
+      // Library and install forms use only the disposable API fixture above.
+      await waitFor(window, `document.body.textContent.includes('Fixture Protocol')`)
+      for (const mode of ['list', 'detail', 'grid']) {
+        await clickSelector(
+          window,
+          `button[title=${JSON.stringify(message('library.view.' + mode))}]`
+        )
+        await waitFor(
+          window,
+          `!!document.querySelector('button[title=' + ${JSON.stringify(JSON.stringify(message('library.view.' + mode)))} + '] span')`
+        )
+      }
+      await clickSelector(window, 'button', message('library.card.adjust'))
+      await waitFor(
+        window,
+        `document.querySelector('[role="dialog"]')?.textContent.includes(${JSON.stringify(message('library.editor.saveChanges'))})`
+      )
+      await clickSelector(window, 'button', message('library.editor.deleteInstance'))
+      await waitFor(
+        window,
+        `[...document.querySelectorAll('[role="dialog"]')].some(el => el.textContent.includes(${JSON.stringify(message('library.delete.deleteThisProtocol'))}))`
+      )
+      await clickSelector(window, '[role="dialog"] button', message('library.delete.cancel'))
+      await waitFor(window, `document.querySelectorAll('[role="dialog"]').length === 1`)
+      window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await waitFor(window, `!document.querySelector('[role="dialog"]')`)
+      await clickSelector(window, 'nav a[href$="/install?tab=install"]')
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('install.page.newLaunchProtocol'))})`
+      )
+      await window.webContents.executeJavaScript(
+        `document.querySelector('[role="tabpanel"] form').requestSubmit()`
+      )
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('install.validation.title'))})`
+      )
+      for (const [tab, expected] of [
+        ['files', message('install.page.manageYourFileCatalogAddNewFilesOrRemove')],
+        ['wads', message('install.wads.dragDropWadHereOrClickToSelect')],
+        ['install', message('install.configuration.protocolIdentity')]
+      ]) {
+        await clickSelector(window, `[role="tab"][id$="-trigger-${tab}"]`)
+        await waitFor(
+          window,
+          `document.querySelector('[role="tabpanel"][data-state="active"]').textContent.includes(${JSON.stringify(expected)})`
+        )
+        if (tab === 'files') {
+          await waitFor(
+            window,
+            `document.querySelector('table')?.textContent.includes('Fixture Mod')`
+          )
+          const content = await window.webContents.executeJavaScript(
+            `document.querySelector('table').textContent`
+          )
+          assert(content.includes(message('catalog.category.weapon')))
+          await clickSelector(
+            window,
+            `button[title=${JSON.stringify(message('catalog.columns.edit'))}]`
+          )
+          await waitFor(
+            window,
+            `document.querySelector('[role="dialog"]')?.textContent.includes(${JSON.stringify(message('catalog.fields.category'))})`
+          )
+          window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+          window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+          await waitFor(window, `!document.querySelector('[role="dialog"]')`)
+        }
+      }
       console.log(
-        `PASS file:// renderer: ${locale}; all settings tabs, scan/downloads, shortcuts, rich text, CSP, sandbox`
+        `PASS file:// renderer: ${locale}; settings, downloads, shortcuts, complete onboarding/boot, library views/editor/delete cancellation, install tabs/validation, CSP, sandbox`
       )
     }
     assert(

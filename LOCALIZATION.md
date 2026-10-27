@@ -8,12 +8,15 @@ unchanged. This is the first desktop pilot, not the completion of issue #78.
 ## What is translated
 
 The settings dialog (General, Paths, WAD configuration and custom-theme help),
-source-port management/downloads, keyboard shortcuts, header/navigation/drawer and
-sidebar loading/accessibility text now use **154 English source keys**. The second
-batch added 89 English keys. The maintainer has now supplied Danish translations in
-Tolgee for all 154 current keys, and the complete Danish catalog is bundled locally.
-Spanish is still untranslated and falls back to English; future missing translations
-in any language also fall back to English.
+source-port management/downloads, keyboard shortcuts, header/navigation/drawer,
+sidebar loading/accessibility text, complete guided setup, and the library and
+installation flows now use **600 English source keys**. The fourth batch adds 390
+messages covering all three library views, protocol settings/delete/discard dialogs,
+installation/configuration/WAD tabs, archive/JSON/batch imports, the shared mod
+catalog, file selectors, validation, status descriptions and shared controls.
+The maintainer's 154 Danish translations remain bundled locally. New English-only
+messages fall back to English until translations are explicitly exported from Tolgee;
+this batch does not generate Danish or Spanish translations.
 
 Source-port scan counts use ICU plurals; custom-theme instructions use named React
 placeholders so translators can move complete code examples and links without
@@ -21,15 +24,16 @@ changing their contents. Download dates and sizes follow the selected UI locale.
 Native file-picker filter labels are marked; paths, source-port family values,
 executable names, commands, CSS examples and shortcut bindings remain unchanged.
 
-Onboarding, library/install flows, achievements/ranks, other notifications, remaining
-native dialogs and the public/embedded registry still need migration. The app does
+Achievements/ranks, remaining notifications and native dialogs, and the
+public/embedded registry still need migration. The app does
 not yet pass its language to the registry iframe. Registry descriptions are separate
 database content, as described in #78.
 
 Technical toast titles used by notification classification are unchanged. Migrated
-settings error toasts still use the destructive variant, and their history stores the
-rendered message. Decouple history eligibility from English titles before migrating
-other notifications; preserve old saved history.
+error toasts retain their original variant and history eligibility, and their history
+stores the rendered message. Library/install status descriptions are marked, while
+their technical titles remain unchanged. Decouple history eligibility from English
+titles before migrating those titles; preserve old saved history.
 
 ## Language behaviour
 
@@ -56,8 +60,8 @@ The HTML document language follows the selected language.
 [UAC Launch Control in Tolgee](https://app.tolgee.io/projects/36113/translations)
 uses the `desktop` namespace. Namespaces must be enabled in project settings. The
 future registry repository owns a separate `registry` namespace in the same project.
-English is the base language. The Danish catalog now contains the maintainer's
-translations for all current messages; synchronization does not generate translations
+English is the base language. The Danish catalog contains the maintainer's
+translations for the first 154 messages; synchronization does not generate translations
 or change their review state.
 Each migrated key has a translator description in Tolgee, including placeholder context.
 
@@ -96,6 +100,11 @@ Use stable semantic keys with complete English defaults, e.g.
 `const { t } = useTranslate('desktop')`, then
 `t('settings.icon.moved', 'Icon moved to {path}', { path })`.
 Use `<T ns="desktop" keyName="..." defaultValue="..." />` for React rich text.
+Outside React, use `const { t } = getTranslate('desktop')` from `@/lib/i18n` at call
+time. Schema errors use lazy callbacks so switching languages does not freeze the
+validation text. Existing visible install errors are revalidated after a language change.
+Library dates and playtime follow the selected locale. Catalog category and column
+labels are translated only for display; canonical identifiers and custom tags stay intact.
 A `{br}` parameter is a React line break; preserve it, but move it when natural.
 Translate full sentences; keep placeholders such as `{path}`, `{names}` and ICU
 plural variables intact. `#` inside a plural is the locale-formatted number.
@@ -103,7 +112,7 @@ plural variables intact. `#` inside a plural is the locale-formatted number.
 Add the English entry to `src/renderer/src/lib/i18n/locales/desktop/en.json`, and add
 reviewed translations to the matching language catalogs. Missing translations can
 be omitted. The source-catalog test checks the migrated components' marked defaults
-against English; extend its migration boundary as new screens are converted. The
+against English across the whole renderer. The
 CLI extracts marked SDK calls, not arbitrary hardcoded English: migrating a new
 screen requires reviewing and replacing its text, accessibility labels and states.
 
@@ -139,8 +148,9 @@ visible; this change does not exempt or suppress advisories.
 The Electron smoke fixture uses the production renderer/preload, sandbox and strict
 CSP, a disposable profile, and intercepted localhost API responses. External HTTP(S)
 is blocked. It checks all settings tabs, source-port scan/release fixtures, keyboard shortcuts,
-rich text, the complete Danish catalog, and English fallback for untranslated Spanish
-messages. Expected translated labels come from the catalogs so wording edits do not
+rich text, all five onboarding screens and their boot sequence, all three library
+views, the protocol editor and cancellation of deletion, installation tabs/form
+validation, catalog editing, the Danish catalog, and English fallback for untranslated messages. Expected translated labels come from the catalogs so wording edits do not
 require rewriting the tests. It does not start the backend or touch real application data.
 
 On Linux/Xwayland, run `npm run i18n:smoke -- --ozone-platform=x11` if needed. To test
@@ -154,5 +164,19 @@ loading in all three languages under file:// with no external requests/CSP error
 and no API key or Tolgee editing-tools chunk in the renderer output. Unit tests
 cover saved settings round trips, invalid preferences, browser language detection,
 fallback, ICU/plural validation and escaping, and React line-break placeholders.
-236 tests pass; the existing dependency-audit test fails as described above. Windows
+241 tests pass; the existing dependency-audit test fails as described above. Windows
 and macOS packaging and a full translated layout pass remain follow-up QA.
+
+The third batch also validates a completion sentence with independent source-port
+and WAD counts. Tolgee exports it as nested ICU plurals; source defaults and the
+committed English catalog use that canonical form. Preserve both count variables,
+all plural branches and the scope of `#` while translating. Onboarding's registry
+opt-in, persistence, download URLs, file paths, engine slugs and animation timings
+are unchanged. Boot/HUD strings resolve during rendering so language changes do
+not leave English cached in module-level arrays.
+
+The fourth batch also checks runtime-language validation, category/column identifiers,
+unchanged launch commands and schema payloads, and locale-aware library dates/playtime.
+English uploads are additive, with translator descriptions for all new keys. The
+remote Danish catalog is compared before/after uploading; the local Danish and
+Spanish catalogs remain untouched. No new application-data migrations are needed.

@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React, { Fragment, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,8 @@ function generateFallbackId(): string {
 }
 
 export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => {
+  const { t } = useTranslate('desktop')
+
   const { data: catalogFiles = [] } = useQuery({
     queryKey: ['/api/mod-files/catalog'],
     queryFn: () => api.getModFileCatalog()
@@ -81,7 +84,9 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
       onDrop={handleDrop}
     >
       {files.length === 0 ? (
-        <div className="text-app-primary text-center py-2">No mod files added</div>
+        <div className="text-app-primary text-center py-2">
+          {t('install.files.noModFilesAdded', 'No mod files added')}
+        </div>
       ) : (
         files.map((file, index) => {
           const isDragged = draggedIndex === index
@@ -92,7 +97,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
               {showPlaceholderBefore && (
                 <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
                   <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
-                    drop here
+                    {t('install.files.dropHere', 'drop here')}
                   </span>
                 </div>
               )}
@@ -111,7 +116,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                     onDragEnd={handleDragEnd}
                     className="shrink-0 cursor-grab active:cursor-grabbing text-app-muted opacity-40 group-hover:opacity-100 transition-opacity"
                     tabIndex={-1}
-                    aria-label="Reorder"
+                    aria-label={t('install.files.reorder', 'Reorder')}
                   >
                     <GripVertical className="h-4 w-4" />
                   </button>
@@ -124,7 +129,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                   </span>
                   {!file.filePath && (
                     <span className="text-xs bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded">
-                      missing
+                      {t('install.files.missing', 'missing')}
                     </span>
                   )}
                   {file.url && (
@@ -147,6 +152,9 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                 </div>
                 <button
                   type="button"
+                  aria-label={t('install.files.remove', 'Remove {name} from this protocol', {
+                    name: file.name || file.fileName || ''
+                  })}
                   onClick={() => removeFile(file.hashValue || '')}
                   className="text-xs bg-app-primary p-1 rounded hover:bg-app-hover opacity-40 group-hover:opacity-100 transition-opacity"
                 >
@@ -161,7 +169,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
       {insertionIndex === files.length && draggedIndex !== files.length - 1 && (
         <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
           <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
-            new placement
+            {t('install.files.newPlacement', 'new placement')}
           </span>
         </div>
       )}
@@ -247,8 +255,14 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                     title: 'SYSTEM: dupe_skipped',
                     description:
                       updatedFiles.length === files.length
-                        ? 'That file is already in this protocol.'
-                        : 'Skipped one or more files already in this protocol.',
+                        ? t(
+                            'install.files.thatFileIsAlreadyInThisProtocol',
+                            'That file is already in this protocol.'
+                          )
+                        : t(
+                            'install.files.skippedOneOrMoreFilesAlreadyInThisProtocol',
+                            'Skipped one or more files already in this protocol.'
+                          ),
                     variant: 'default'
                   })
                 }
@@ -259,9 +273,11 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
           }}
           options={selectableFiles.map((f) => ({
             value: f.id?.toString() || '',
-            label: (f.name || f.fileName || 'Unnamed') + (f.version ? ` (${f.version})` : '')
+            label:
+              (f.name || f.fileName || t('install.files.unnamed', 'Unnamed')) +
+              (f.version ? ` (${f.version})` : '')
           }))}
-          placeholder="Select from catalog..."
+          placeholder={t('install.files.selectFromCatalog', 'Select from catalog...')}
           className="flex-1 bg-app-secondary border-app text-xs"
           disabled={selectableFiles.length === 0}
         />
