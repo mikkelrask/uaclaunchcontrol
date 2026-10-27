@@ -5,6 +5,17 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const assert = require('node:assert/strict')
+const { Tolgee } = require('@tolgee/react')
+const { FormatIcu } = require('@tolgee/format-icu')
+const catalogs = Object.fromEntries(
+  ['en', 'da-DK', 'es-ES'].map((locale) => [
+    locale,
+    require(`../../src/renderer/src/lib/i18n/locales/desktop/${locale}.json`)
+  ])
+)
+const translations = Tolgee()
+  .use(FormatIcu())
+  .init({ language: 'en', fallbackLanguage: 'en', staticData: catalogs })
 
 console.log('Starting isolated Electron renderer test')
 const deadline = setTimeout(() => {
@@ -54,6 +65,18 @@ async function waitFor(window, expression) {
   throw new Error(`Timed out: ${expression}`)
 }
 
+// Native input targets are measured from the disposable renderer, never a live app.
+async function clickSelector(window, selector) {
+  const point = await window.webContents.executeJavaScript(`(() => {
+    const element = document.querySelector(${JSON.stringify(selector)})
+    if (!element) throw new Error('Missing fixture control: ' + ${JSON.stringify(selector)})
+    const rect = element.getBoundingClientRect()
+    return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) }
+  })()`)
+  window.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', clickCount: 1, ...point })
+  window.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, ...point })
+}
+
 ipcMain.on('get-first-run', (event) => {
   event.returnValue = false
 })
@@ -80,7 +103,32 @@ app
       if (url.pathname === '/api/settings') {
         if (request.method === 'PUT') settings = { ...settings, ...(await request.json()) }
         result = settings
-      } else if (url.pathname === '/api/player-data') result = player
+      } else if (url.pathname === '/api/versions')
+        result = [
+          {
+            id: 'doom-fixture',
+            name: 'Doom II',
+            slug: 'doom2',
+            defaultIwad: '/fixture/DOOM2.WAD',
+            args: '-iwad DOOM2.WAD',
+            parameters: '-nomonsters',
+            icon: ''
+          }
+        ]
+      else if (url.pathname === '/api/settings/scan-ports')
+        result = [{ path: '/fixture/UZDoom.AppImage', name: 'UZDoom', family: 'uzdoom' }]
+      else if (url.pathname === '/api/ports/releases')
+        result = [
+          {
+            repo: 'UZDoom/UZDoom',
+            tag: 'v99',
+            version: '99.0.0',
+            prerelease: true,
+            publishedAt: '2026-10-01T12:00:00Z',
+            asset: { name: 'UZDoom.AppImage', url: 'https://example.invalid/engine', size: 1572864 }
+          }
+        ]
+      else if (url.pathname === '/api/player-data') result = player
       else if (url.pathname.startsWith('/api/player-data/')) result = player
       return new Response(JSON.stringify(result), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
@@ -107,11 +155,12 @@ app
       errors.push(JSON.stringify(details))
     )
 
-    for (const [locale, launch, label] of [
-      ['da-DK', 'START', 'Sprog'],
-      ['es-ES', 'LAUNCH', 'Language'],
-      ['en', 'LAUNCH', 'Language']
-    ]) {
+    await translations.run()
+    for (const locale of ['da-DK', 'es-ES', 'en']) {
+      await translations.changeLanguage(locale)
+      const message = (key, params) => translations.t(key, params)
+      const launch = message('navigation.launch')
+      const label = message('settings.language.label')
       language = locale
       settings.language = language
       console.log('Loading fixture language:', locale)
@@ -143,7 +192,81 @@ app
           (await window.webContents.capturePage()).toPNG()
         )
       }
-      console.log(`PASS packaged file:// renderer: ${locale}; settings, rich text, CSP, sandbox`)
+      for (const [tab, expected] of [
+        ['paths', message('settings.paths.title')],
+        ['wad-config', message('settings.wads.identity')],
+        ['source-ports', message('sourcePorts.infrastructure')],
+        ['advanced', message('settings.customTheme.title')]
+      ]) {
+        await clickSelector(window, `[role="tab"][id$="-trigger-${tab}"]`)
+        await waitFor(
+          window,
+          `document.querySelector('[role="tabpanel"][data-state="active"]').textContent.includes(${JSON.stringify(expected)})`
+        )
+        if (tab === 'advanced') {
+          const content = await window.webContents.executeJavaScript(
+            `document.querySelector('[role="tabpanel"][data-state="active"]').textContent`
+          )
+          assert(content.includes('--variable-name: hue saturation lightness;'))
+          assert(content.includes('.custom { ... }'))
+          assert(!content.includes('{wrapper}'))
+        }
+        if (tab === 'source-ports') {
+          // Scan only fixtures; check the active catalog or English fallback.
+          await clickSelector(window, '[role="tabpanel"][data-state="active"] button')
+          await waitFor(
+            window,
+            `document.querySelector('[role="tabpanel"][data-state="active"]').textContent.includes(${JSON.stringify(message('sourcePorts.scan.found', { count: 1 }))})`
+          )
+          await clickSelector(
+            window,
+            '[role="tabpanel"][data-state="active"] button:nth-of-type(2)'
+          )
+          await waitFor(
+            window,
+            `[...document.querySelectorAll('[role="dialog"]')].some(el => el.textContent.includes('99.0.0') && el.textContent.includes(${JSON.stringify(message('portDownload.preview'))}))`
+          )
+          const body = await window.webContents.executeJavaScript(`document.body.textContent`)
+          assert(body.includes('UZDoom.AppImage'))
+          assert(
+            body.includes(
+              new Intl.NumberFormat(locale, {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1
+              }).format(1.5) + ' MB'
+            )
+          )
+          assert(
+            body.includes(
+              new Intl.DateTimeFormat(locale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              }).format(new Date('2026-10-01T12:00:00Z'))
+            )
+          )
+          window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+          window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+          await waitFor(window, `document.querySelectorAll('[role="dialog"]').length === 1`)
+        }
+      }
+      window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await waitFor(window, `!document.querySelector('[role="dialog"]')`)
+      window.webContents.sendInputEvent({ type: 'keyDown', keyCode: '?', modifiers: ['shift'] })
+      window.webContents.sendInputEvent({ type: 'keyUp', keyCode: '?', modifiers: ['shift'] })
+      await waitFor(
+        window,
+        `!!document.querySelector('[role="dialog"]') && document.querySelector('[role="dialog"]').textContent.includes(${JSON.stringify(message('shortcuts.search'))})`
+      )
+      const keys = await window.webContents.executeJavaScript(
+        `document.querySelector('[role="dialog"]').textContent`
+      )
+      assert(keys.includes('Ctrl + .'))
+      assert(keys.includes(message('shortcuts.moreInfo', { wiki: message('shortcuts.wiki') })))
+      console.log(
+        `PASS file:// renderer: ${locale}; all settings tabs, scan/downloads, shortcuts, rich text, CSP, sandbox`
+      )
     }
     assert(
       network.every((url) => url.startsWith('http://localhost:7666/')),
@@ -151,6 +274,7 @@ app
     )
     assert.equal(errors.length, 0, errors.join('\n'))
     console.log('PASS no external requests, renderer errors or CSP violations')
+    translations.stop()
     clearTimeout(deadline)
     window.destroy()
     app.quit()

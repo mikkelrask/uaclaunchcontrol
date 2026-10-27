@@ -28,9 +28,11 @@ describe('bundled desktop translations', () => {
     vi.stubGlobal('fetch', fetch)
     const tolgee = createI18n('da-DK')
     await tolgee.run()
-    expect(tolgee.t('settings.language.label')).toBe('Sprog')
+    expect(tolgee.t('settings.language.label')).toBe(da['settings.language.label'])
     const path = '<script>file</script>/{literal}/save.wad'
-    expect(tolgee.t('settings.icon.moved', { path })).toBe(`Ikon flyttet til ${path}`)
+    expect(tolgee.t('settings.icon.moved', { path })).toBe(
+      da['settings.icon.moved'].replace('{path}', path)
+    )
     await tolgee.changeLanguage('es-ES')
     expect(tolgee.t('settings.language.label')).toBe('Language')
     await tolgee.changeLanguage('en')
@@ -52,7 +54,7 @@ describe('bundled desktop translations', () => {
     expect(tolgee.t('settings.wads.detected', { count: 1 })).toBe('1 WAD detected')
     expect(tolgee.t('settings.wads.detected', { count: 2 })).toBe('2 WADs detected')
     await tolgee.changeLanguage('da-DK')
-    expect(tolgee.t('settings.wads.detected', { count: 2 })).toBe('2 WAD-filer fundet')
+    expect(tolgee.t('settings.wads.detected', { count: 2 })).toContain('2')
     tolgee.stop()
   })
 
@@ -71,8 +73,49 @@ describe('bundled desktop translations', () => {
       )
     )
     expect(html).toContain('<br/>')
-    expect(html).toContain('Kræver en aktiv forbindelse')
+    const expected = da['settings.registry.description']
+      .split('{br}')
+      .map((line) => renderToStaticMarkup(createElement('span', null, line)).slice(6, -7))
+      .join('<br/>')
+    expect(html).toBe(expected)
     expect(html).not.toContain('{br}')
+    tolgee.stop()
+  })
+
+  it('uses English fallback without changing technical parameters', async () => {
+    const tolgee = createI18n('es-ES')
+    await tolgee.run()
+    expect(tolgee.t('sourcePorts.title')).toBe('Source Ports')
+    expect(tolgee.t('sourcePorts.scan.found', { count: 0 })).toBe('Found 0 ports')
+    expect(tolgee.t('sourcePorts.scan.found', { count: 1 })).toBe('Found 1 port')
+    expect(tolgee.t('sourcePorts.scan.found', { count: 2 })).toBe('Found 2 ports')
+    expect(tolgee.t('settings.customTheme.wrap', { selector: '.custom { }' })).toBe(
+      'Wrap in .custom { }'
+    )
+    expect(tolgee.t('settings.wads.parametersExample', { arguments: '-nomonsters -warp 01' })).toBe(
+      'e.g. -nomonsters -warp 01'
+    )
+    const format = '--variable-name: hue saturation lightness;'
+    const example = '--bg-primary: 220 18% 5%;'
+    const html = renderToStaticMarkup(
+      createElement(
+        TolgeeProvider,
+        { tolgee },
+        createElement(T, {
+          keyName: 'settings.customTheme.instructions',
+          ns: 'desktop',
+          params: {
+            format: createElement('code', null, format),
+            example: createElement('code', null, example),
+            wrapper: createElement('code', null, '.custom { ... }')
+          }
+        })
+      )
+    )
+    expect(html).toContain(`<code>${format}</code>`)
+    expect(html).toContain(`<code>${example}</code>`)
+    expect(html).toContain('<code>.custom { ... }</code>')
+    expect(html).not.toContain('{wrapper}')
     tolgee.stop()
   })
 

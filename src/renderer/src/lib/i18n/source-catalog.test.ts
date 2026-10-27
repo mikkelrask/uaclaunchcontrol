@@ -4,18 +4,25 @@ import path from 'node:path'
 import ts from 'typescript'
 import en from './locales/desktop/en.json'
 
-// The initial migration boundary. Add screens here when their strings are migrated.
-const PILOT_FILES = ['SettingsDialog.tsx', 'Header.tsx', 'Sidebar.tsx']
+// The migrated component boundary. Add screens here as their strings are marked.
+const MIGRATED_FILES = [
+  'SettingsDialog.tsx',
+  'Header.tsx',
+  'Sidebar.tsx',
+  'SourcePortsTab.tsx',
+  'PortDownloadModal.tsx',
+  'KeyboardShortcutsModal.tsx'
+]
 
 describe('English source catalog', () => {
-  it('matches every marked pilot message, including messages outside hooks', () => {
+  it('matches every marked message, including messages outside hooks', () => {
     const messages = new Map<string, string>()
     const record = (key: string, value: string): void => {
       if (messages.has(key))
         expect(messages.get(key), `Conflicting defaults for ${key}`).toBe(value)
       messages.set(key, value)
     }
-    for (const file of PILOT_FILES) {
+    for (const file of MIGRATED_FILES) {
       const location = path.resolve(__dirname, '../../components', file)
       const source = ts.createSourceFile(
         file,

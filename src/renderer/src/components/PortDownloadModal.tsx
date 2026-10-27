@@ -1,3 +1,4 @@
+import { useTolgee, useTranslate } from '@tolgee/react'
 import React, { useState, useEffect } from 'react'
 import { Download, Loader2, Check, AlertCircle } from 'lucide-react'
 import { api, type PortRelease, type PortDownloadResult } from '@/api'
@@ -23,6 +24,8 @@ export function PortDownloadModal({
   onPortDownloaded,
   existingPorts
 }: PortDownloadModalProps): React.ReactElement | null {
+  const { t } = useTranslate('desktop')
+  const tolgee = useTolgee(['language'])
   const [releases, setReleases] = useState<PortRelease[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -58,7 +61,7 @@ export function PortDownloadModal({
       onPortDownloaded(result)
       onOpenChange(false)
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Download failed')
+      setError(e instanceof Error ? e.message : t('portDownload.failed', 'Download failed'))
     } finally {
       setDownloadingTag(null)
     }
@@ -74,12 +77,13 @@ export function PortDownloadModal({
   }
 
   const formatSize = (bytes: number): string => {
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+    if (bytes < 1024 * 1024)
+      return `${new Intl.NumberFormat(tolgee.getLanguage(), { maximumFractionDigits: 0 }).format(bytes / 1024)} KB`
+    return `${new Intl.NumberFormat(tolgee.getLanguage(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(bytes / 1024 / 1024)} MB`
   }
 
   const formatDate = (iso: string): string => {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleDateString(tolgee.getLanguage(), {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -101,10 +105,10 @@ export function PortDownloadModal({
             </div>
             <div>
               <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                download source port
+                {t('portDownload.title', 'download source port')}
               </DialogTitle>
               <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                fetch releases from github
+                {t('portDownload.subtitle', 'fetch releases from github')}
               </DialogDescription>
             </div>
           </div>
@@ -114,7 +118,9 @@ export function PortDownloadModal({
           {loading && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-accent-highlight" />
-              <span className="ml-2 text-sm text-app-muted">Fetching releases…</span>
+              <span className="ml-2 text-sm text-app-muted">
+                {t('portDownload.loading', 'Fetching releases…')}
+              </span>
             </div>
           )}
 
@@ -127,7 +133,7 @@ export function PortDownloadModal({
 
           {!loading && !error && releases.length === 0 && (
             <p className="text-sm text-app-muted text-center py-8">
-              No releases available for your platform.
+              {t('portDownload.empty', 'No releases available for your platform.')}
             </p>
           )}
 
@@ -199,7 +205,7 @@ export function PortDownloadModal({
             disabled={!!downloadingTag}
             className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
           >
-            Close
+            {t('portDownload.close', 'Close')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -234,6 +240,7 @@ function ReleaseRow({
   formatSize,
   formatDate
 }: ReleaseRowProps): React.ReactElement {
+  const { t } = useTranslate('desktop')
   const formatLabel = getFormatLabel(release.asset.name)
   return (
     <div className="flex items-center gap-3 p-3 bg-app-secondary/50 rounded-lg border border-app group hover:border-accent-highlight/30 transition-colors">
@@ -242,7 +249,7 @@ function ReleaseRow({
           <span className="text-sm font-medium text-app-primary truncate">{release.version}</span>
           {release.prerelease && (
             <span className="text-[0.625rem] font-mono uppercase px-1 py-0.5 rounded bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">
-              preview
+              {t('portDownload.preview', 'preview')}
             </span>
           )}
           <span className="text-[0.625rem] font-mono uppercase px-1 py-0.5 rounded bg-app-primary border border-app/50 text-app-muted">
@@ -259,7 +266,7 @@ function ReleaseRow({
       {installed ? (
         <div className="flex items-center gap-1.5 text-green-500 text-xs shrink-0">
           <Check className="w-3.5 h-3.5" />
-          <span>installed</span>
+          <span>{t('portDownload.installed', 'installed')}</span>
         </div>
       ) : (
         <Button
@@ -271,12 +278,12 @@ function ReleaseRow({
           {downloading ? (
             <>
               <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-              Downloading…
+              {t('portDownload.downloading', 'Downloading…')}
             </>
           ) : (
             <>
               <Download className="w-3.5 h-3.5 mr-1" />
-              Install
+              {t('portDownload.install', 'Install')}
             </>
           )}
         </Button>

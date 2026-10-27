@@ -181,7 +181,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     const version = doomVersions[index]
     const result = await api.showOpenDialog({
       properties: ['openFile'],
-      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }],
+      filters: [
+        {
+          name: t('settings.dialog.images', 'Images'),
+          extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp']
+        }
+      ],
       defaultPath: version.icon || undefined
     })
 
@@ -226,7 +231,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
         })
       })
     } catch (e: unknown) {
-      setFreedoomError(e instanceof Error ? e.message : 'Download failed')
+      setFreedoomError(
+        e instanceof Error ? e.message : t('settings.wads.downloadFailed', 'Download failed')
+      )
     } finally {
       setFreedoomDownloading(null)
     }
@@ -811,29 +818,41 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
               className="space-y-6 mt-0 p-6 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-app-hover"
             >
               <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
-                DATA REPOSITORIES
+                {t('settings.paths.title', 'DATA REPOSITORIES')}
               </Label>
               <div className="grid grid-cols-1 gap-4">
                 {[
                   {
                     id: 'wadFilesDirectory',
-                    label: 'WAD Assets',
-                    desc: 'Central repository for .WAD and .PK3 data structures.'
+                    label: t('settings.paths.wads', 'WAD Assets'),
+                    desc: t(
+                      'settings.paths.wadsDescription',
+                      'Central repository for .WAD and .PK3 data structures.'
+                    )
                   },
                   {
                     id: 'modsDirectory',
-                    label: 'Mod Logic',
-                    desc: 'Localized storage for external mod modifications.'
+                    label: t('settings.paths.mods', 'Mod Logic'),
+                    desc: t(
+                      'settings.paths.modsDescription',
+                      'Localized storage for external mod modifications.'
+                    )
                   },
                   {
                     id: 'savegamesPath',
-                    label: 'Telemetry/Saves',
-                    desc: 'Secure sector for game state and progress backups.'
+                    label: t('settings.paths.saves', 'Telemetry/Saves'),
+                    desc: t(
+                      'settings.paths.savesDescription',
+                      'Secure sector for game state and progress backups.'
+                    )
                   },
                   {
                     id: 'screenshotsPath',
-                    label: 'Optical/Screens',
-                    desc: 'Visual capture repository for mission debriefings.'
+                    label: t('settings.paths.screenshots', 'Optical/Screens'),
+                    desc: t(
+                      'settings.paths.screenshotsDescription',
+                      'Visual capture repository for mission debriefings.'
+                    )
                   }
                 ].map((field) => (
                   <div
@@ -858,6 +877,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         size="icon"
                         variant="ghost"
                         className="h-10 w-10 shrink-0 hover:bg-app-primary/50 text-app-primary transition-colors border border-app/30 hover:border-app"
+                        aria-label={t('settings.paths.browse', 'Browse for {directory}', {
+                          directory: field.label
+                        })}
                         onClick={() => handleBrowse(field.id)}
                       >
                         <FolderOpen className="w-5 h-5" />
@@ -885,7 +907,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   FreeDoom
                 </Label>
                 <p className="text-[0.625rem] text-app-muted leading-tight">
-                  Free, legally redistributable IWADs — no commercial Doom purchase required.
+                  {t(
+                    'settings.wads.freedoomDescription',
+                    'Free, legally redistributable IWADs — no commercial Doom purchase required.'
+                  )}
                 </p>
                 <p className="text-xs text-app-muted">
                   {t(
@@ -897,7 +922,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 <div className="flex flex-col gap-2">
                   {(
                     [
-                      { bundle: 'phase12' as const, label: 'FreeDoom (Phase 1 + 2)' },
+                      {
+                        bundle: 'phase12' as const,
+                        label: t('settings.wads.freedoomBundle', 'FreeDoom (Phase 1 + 2)')
+                      },
                       { bundle: 'freedm' as const, label: 'FreeDM' }
                     ] as const
                   ).map(({ bundle, label }) => {
@@ -914,7 +942,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                         {installed ? (
                           <span className="flex items-center gap-1 text-xs text-green-500 shrink-0">
                             <Check className="w-3.5 h-3.5" />
-                            Installed
+                            {t('settings.wads.installed', 'Installed')}
                           </span>
                         ) : (
                           <Button
@@ -925,7 +953,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                             className="text-xs h-7 bg-app-secondary hover:bg-app-hover text-app-primary border-app shrink-0"
                           >
                             <Download className="w-3 h-3 mr-1" />
-                            {freedoomDownloading === bundle ? 'Downloading…' : 'Download'}
+                            {freedoomDownloading === bundle
+                              ? t('settings.wads.downloading', 'Downloading…')
+                              : t('settings.wads.download', 'Download')}
                           </Button>
                         )}
                       </div>
@@ -939,12 +969,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 {isLoadingVersions ? (
                   <div className="flex items-center justify-center h-full gap-3 text-app-secondary font-mono italic">
                     <div className="w-2 h-2 rounded-full bg-accent-highlight animate-pulse" />
-                    CALIBRATING REPOSITORIES ...
+                    {t('settings.wads.loading', 'CALIBRATING REPOSITORIES ...')}
                   </div>
                 ) : doomVersions.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <p className="text-app-secondary italic opacity-60">
-                      No WAD files detected in the secure sector.
+                      {t('settings.wads.empty', 'No WAD files detected in the secure sector.')}
                     </p>
                   </div>
                 ) : (
@@ -975,8 +1005,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                               }`}
                               title={
                                 settings.defaultDoomVersionId === version.id
-                                  ? 'Default WAD — pre-fills Base WAD on new protocols'
-                                  : 'Set as default WAD'
+                                  ? t(
+                                      'settings.wads.default',
+                                      'Default WAD — pre-fills Base WAD on new protocols'
+                                    )
+                                  : t('settings.wads.setDefault', 'Set as default WAD')
                               }
                             />
                             <div className="w-8 h-8 shrink-0 flex items-center justify-center overflow-hidden rounded bg-black/20 group-hover:bg-black/40 transition-colors">
@@ -1015,13 +1048,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                 onClick={() => handleIconBrowse(selectedWadIndex)}
                                 className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-bold text-white transition-opacity uppercase"
                               >
-                                Relocate Icon
+                                {t('settings.wads.relocateIcon', 'Relocate Icon')}
                               </button>
                             </div>
                             <div className="flex-1 space-y-6 min-w-0">
                               <div className="space-y-2">
                                 <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                                  WAD Identity
+                                  {t('settings.wads.identity', 'WAD Identity')}
                                 </Label>
                                 <Input
                                   value={doomVersions[selectedWadIndex].name}
@@ -1037,12 +1070,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
                           <div className="space-y-4 p-5 bg-app-primary border border-app rounded-xl shadow-lg">
                             <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block">
-                              Technical Parameters
+                              {t('settings.wads.technicalParameters', 'Technical Parameters')}
                             </Label>
                             <div className="space-y-4 pt-1">
                               <div className="flex flex-col gap-2">
                                 <span className="text-xs text-app-primary font-medium">
-                                  Launch Arguments
+                                  {t('settings.wads.arguments', 'Launch Arguments')}
                                 </span>
                                 <Input
                                   value={doomVersions[selectedWadIndex].args || ''}
@@ -1054,7 +1087,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                               </div>
                               <div className="flex flex-col gap-2">
                                 <span className="text-xs text-app-primary font-medium">
-                                  Additional Parameters
+                                  {t('settings.wads.additionalParameters', 'Additional Parameters')}
                                 </span>
                                 <Input
                                   value={doomVersions[selectedWadIndex].parameters || ''}
@@ -1066,21 +1099,28 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                                     )
                                   }
                                   className="bg-app-secondary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
-                                  placeholder="e.g. -nomonsters -warp 01"
+                                  placeholder={t(
+                                    'settings.wads.parametersExample',
+                                    'e.g. {arguments}',
+                                    { arguments: '-nomonsters -warp 01' }
+                                  )}
                                 />
                               </div>
                               <div className="pt-2">
                                 <div className="flex items-center justify-between pb-4">
                                   <div className="space-y-0.5">
                                     <Label className="text-xs text-app-primary font-medium">
-                                      Hide from Interface
+                                      {t('settings.wads.hide', 'Hide from Interface')}
                                     </Label>
                                     <p className="text-xs text-app-muted italic opacity-70">
-                                      Toggling will excluded this WAD from the sidebar and general
-                                      WAD selectors.
+                                      {t(
+                                        'settings.wads.hideDescription',
+                                        'Exclude this WAD from the sidebar and general WAD selectors.'
+                                      )}
                                     </p>
                                   </div>
                                   <Switch
+                                    aria-label={t('settings.wads.hide', 'Hide from Interface')}
                                     checked={doomVersions[selectedWadIndex].ignored || false}
                                     onCheckedChange={(checked) =>
                                       handleVersionChange(selectedWadIndex, 'ignored', checked)
@@ -1090,7 +1130,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                               </div>
                               <div className="flex flex-col gap-2 overflow-hidden">
                                 <span className="text-xs text-app-primary font-medium">
-                                  File Source
+                                  {t('settings.wads.fileSource', 'File Source')}
                                 </span>
                                 <code className="text-xs font-mono p-3 bg-black/30 rounded-lg border border-app/50 break-all text-app-muted leading-relaxed">
                                   {doomVersions[selectedWadIndex].defaultIwad}
@@ -1108,35 +1148,49 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
             <TabsContent value="advanced" className="space-y-4 mt-0 p-6">
               <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
-                CUSTOM THEME EDITOR
+                {t('settings.customTheme.title', 'CUSTOM THEME EDITOR')}
               </Label>
               <div className="bg-app-secondary p-4 rounded-xl border border-app space-y-4">
                 <div className="space-y-2">
                   <p className="text-xs text-app-muted leading-relaxed">
-                    Paste HSL variable overrides below. Each line should follow the format:
-                    <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50">
-                      --variable-name: hue saturation lightness;
-                    </code>
-                    Example:
-                    <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50 whitespace-pre">
-                      --bg-primary: 220 18% 5%; --text-primary: 210 20% 92%; --accent-highlight: 0
-                      84% 60%;
-                    </code>
-                    Wrap the overrides in{' '}
-                    <code className="font-mono text-xs">.custom &#123; ... &#125;</code> or just
-                    paste the variable lines — the app will wrap them automatically.
+                    <T
+                      ns="desktop"
+                      keyName="settings.customTheme.instructions"
+                      defaultValue="Paste HSL variable overrides below. Each line should follow the format: {format}Example: {example}Wrap the overrides in {wrapper} or just paste the variable lines — the app will wrap them automatically."
+                      params={{
+                        format: (
+                          <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50">
+                            --variable-name: hue saturation lightness;
+                          </code>
+                        ),
+                        example: (
+                          <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50 whitespace-pre">
+                            --bg-primary: 220 18% 5%; --text-primary: 210 20% 92%;
+                            --accent-highlight: 0 84% 60%;
+                          </code>
+                        ),
+                        wrapper: <code className="font-mono text-xs">{'.custom { ... }'}</code>
+                      }}
+                    />
                   </p>
                   <p className="text-xs text-app-muted leading-relaxed">
-                    See the{' '}
-                    <a
-                      href="https://github.com/mikkelrask/uaclaunchcontrol/wiki/Theming#custom-theme"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline underline-offset-2 hover:text-accent-highlight transition-colors"
-                    >
-                      Theming guide on GitHub
-                    </a>{' '}
-                    for the full variable reference and examples.
+                    <T
+                      ns="desktop"
+                      keyName="settings.customTheme.guideDescription"
+                      defaultValue="See the {guide} for the full variable reference and examples."
+                      params={{
+                        guide: (
+                          <a
+                            href="https://github.com/mikkelrask/uaclaunchcontrol/wiki/Theming#custom-theme"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline underline-offset-2 hover:text-accent-highlight transition-colors"
+                          >
+                            {t('settings.customTheme.guide', 'Theming guide on GitHub')}
+                          </a>
+                        )
+                      }}
+                    />
                   </p>
                 </div>
                 <textarea
@@ -1144,6 +1198,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                   value={settings.customThemeCss || ''}
                   onChange={(e) => setSettings((s) => ({ ...s, customThemeCss: e.target.value }))}
                   placeholder={`--bg-primary: 220 18% 5%;\n--text-primary: 210 20% 92%;\n--accent-highlight: 0 84% 60%;`}
+                  aria-label={t('settings.customTheme.title', 'CUSTOM THEME EDITOR')}
                   spellCheck={false}
                 />
                 <div className="flex gap-2">
@@ -1158,7 +1213,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     }}
                     className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
                   >
-                    Wrap in .custom &#123; &#125;
+                    {t('settings.customTheme.wrap', 'Wrap in {selector}', {
+                      selector: '.custom { }'
+                    })}
                   </Button>
                   <Button
                     variant="outline"
@@ -1194,7 +1251,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     }}
                     className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
                   >
-                    Reset to defaults
+                    {t('settings.customTheme.reset', 'Reset to defaults')}
                   </Button>
                 </div>
               </div>

@@ -7,16 +7,24 @@ unchanged. This is the first desktop pilot, not the completion of issue #78.
 
 ## What is translated
 
-The General settings tab, settings tabs/footer, header/navigation/drawer, sidebar
-loading/accessibility text, and several settings confirmations/errors. The WAD tab
-also has a real ICU plural message for the detected WAD count. There are 65 English
-source keys. Danish is a draft for native-speaker review; Spanish deliberately falls
-back to English until the community supplies translations.
+The settings dialog (General, Paths, WAD configuration and custom-theme help),
+source-port management/downloads, keyboard shortcuts, header/navigation/drawer and
+sidebar loading/accessibility text now use **154 English source keys**. The second
+batch added 89 English keys. The maintainer has now supplied Danish translations in
+Tolgee for all 154 current keys, and the complete Danish catalog is bundled locally.
+Spanish is still untranslated and falls back to English; future missing translations
+in any language also fall back to English.
 
-Other settings tabs, source-port management, onboarding, library/install flows,
-achievements/ranks, other notifications, native dialogs and the public/embedded
-registry still need migration. The app does not yet pass its language to the registry
-iframe. Registry descriptions are separate database content, as described in #78.
+Source-port scan counts use ICU plurals; custom-theme instructions use named React
+placeholders so translators can move complete code examples and links without
+changing their contents. Download dates and sizes follow the selected UI locale.
+Native file-picker filter labels are marked; paths, source-port family values,
+executable names, commands, CSS examples and shortcut bindings remain unchanged.
+
+Onboarding, library/install flows, achievements/ranks, other notifications, remaining
+native dialogs and the public/embedded registry still need migration. The app does
+not yet pass its language to the registry iframe. Registry descriptions are separate
+database content, as described in #78.
 
 Technical toast titles used by notification classification are unchanged. Migrated
 settings error toasts still use the destructive variant, and their history stores the
@@ -33,6 +41,12 @@ then the first supported browser/system preference, then English. Missing string
 also fall back to English. Old settings files need no migration; invalid saved values
 are treated as System language, and invalid writes are rejected.
 
+Before publication, issue #78 requires a startup language-choice modal when the
+persisted configuration has no language preference: keep English until a user
+explicitly chooses English, System language, or an available translation. This is a
+pending requirement; the current pilot's automatic system-language default still
+needs to be replaced for that case.
+
 Canonical tags match the existing Tolgee project: `en`, `da-DK`, `es-ES`. Regional
 system preferences such as `da`, `da-DK`, or `es-MX` resolve to the supported catalog.
 The HTML document language follows the selected language.
@@ -42,8 +56,10 @@ The HTML document language follows the selected language.
 [UAC Launch Control in Tolgee](https://app.tolgee.io/projects/36113/translations)
 uses the `desktop` namespace. Namespaces must be enabled in project settings. The
 future registry repository owns a separate `registry` namespace in the same project.
-English is the base language; the initial Danish text is a draft, not reviewed copy.
-Each pilot key has a translator description in Tolgee, including placeholder context.
+English is the base language. The Danish catalog now contains the maintainer's
+translations for all current messages; synchronization does not generate translations
+or change their review state.
+Each migrated key has a translator description in Tolgee, including placeholder context.
 
 For contributors who synchronise catalogs, copy `.env.example` to `.env` and supply
 a **project API key**. `TOLGEE_API_KEY` is standard; `TOLGEE_API_TOKEN` is accepted as
@@ -58,7 +74,7 @@ npm run i18n:compare   # compare source key inventory to Tolgee; read-only
 npm run i18n:push      # upload only English desktop strings; no deletion or forced conflicts
 npm run i18n:pull      # export desktop en/da-DK/es-ES catalogs for review in Git
 npm test              # source defaults, ICU syntax/placeholders, fallback and storage tests
-npm run build         # typecheck and bundle committed translations; no Tolgee access
+npm run build         # typecheck and bundle local translations; does not pull Tolgee edits
 npm run i18n:smoke    # isolated built-renderer Electron test; needs a display
 ```
 
@@ -122,8 +138,10 @@ visible; this change does not exempt or suppress advisories.
 
 The Electron smoke fixture uses the production renderer/preload, sandbox and strict
 CSP, a disposable profile, and intercepted localhost API responses. External HTTP(S)
-is blocked. It checks Danish startup/settings/rich text, English, and untranslated
-Spanish fallback. It does not start the backend or touch real application data.
+is blocked. It checks all settings tabs, source-port scan/release fixtures, keyboard shortcuts,
+rich text, the complete Danish catalog, and English fallback for untranslated Spanish
+messages. Expected translated labels come from the catalogs so wording edits do not
+require rewriting the tests. It does not start the backend or touch real application data.
 
 On Linux/Xwayland, run `npm run i18n:smoke -- --ozone-platform=x11` if needed. To test
 the renderer inside a Linux directory package, run `npx electron-builder --dir
@@ -136,5 +154,5 @@ loading in all three languages under file:// with no external requests/CSP error
 and no API key or Tolgee editing-tools chunk in the renderer output. Unit tests
 cover saved settings round trips, invalid preferences, browser language detection,
 fallback, ICU/plural validation and escaping, and React line-break placeholders.
-235 tests pass; the existing dependency-audit test fails as described above. Windows
+236 tests pass; the existing dependency-audit test fails as described above. Windows
 and macOS packaging and a full translated layout pass remain follow-up QA.
