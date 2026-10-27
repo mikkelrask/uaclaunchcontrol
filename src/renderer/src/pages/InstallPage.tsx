@@ -22,6 +22,7 @@ import { applyModpackImport, matchImportFiles } from '@/lib/install/applyModpack
 import {
   classifyMissingDownloads,
   openDownloadLinks,
+  trackRegistryDownloads,
   type MissingDownloadClassification
 } from '@/lib/install/classifyMissingDownloads'
 import { consumePendingProtocolImport } from '@/lib/install/pendingProtocolImport'
@@ -174,7 +175,11 @@ export const InstallPage: React.FC = () => {
         // deterministic, so this matches exactly what's in the form.
         const catalog = await api.getModFileCatalog()
         const { files: orderedFiles } = matchImportFiles(pending.files, catalog, pending.configs)
-        const classification = classifyMissingDownloads(orderedFiles)
+        const registryFiles = orderedFiles.map((file) => ({
+          ...file,
+          registryHash: file.hashValue
+        }))
+        const classification = classifyMissingDownloads(registryFiles)
         if (classification.inApp.length > 0 || classification.browserOnly.length > 0) {
           setDownloadsStarted(false)
           setBrowserLinksOpened(false)
@@ -320,12 +325,14 @@ export const InstallPage: React.FC = () => {
   // once every available action has been taken.
   const handleStartInAppDownloads = (): void => {
     if (!missingDownloadPrompt || downloadsStarted) return
+    trackRegistryDownloads(missingDownloadPrompt.inApp)
     openDownloadLinks(missingDownloadPrompt.inApp.map((f) => f.url as string))
     setDownloadsStarted(true)
   }
 
   const handleOpenBrowserLinks = (): void => {
     if (!missingDownloadPrompt || browserLinksOpened) return
+    trackRegistryDownloads(missingDownloadPrompt.browserOnly)
     openDownloadLinks(missingDownloadPrompt.browserOnly.map((f) => f.url as string))
     setBrowserLinksOpened(true)
   }

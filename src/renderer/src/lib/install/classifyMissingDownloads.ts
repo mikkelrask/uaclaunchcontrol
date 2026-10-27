@@ -12,10 +12,13 @@
  */
 
 import { isInAppDownloadUrl } from '@shared/mod-download-url'
+import { REGISTRY_API_URL } from '@shared/registry-config'
 
 export interface MissingFile {
   filePath?: string | null
   url?: string | null
+  /** MD5 from a registry protocol; absent for ordinary imports. */
+  registryHash?: string
 }
 
 export interface MissingDownloadClassification {
@@ -48,5 +51,23 @@ export function classifyMissingDownloads(
 export function openDownloadLinks(urls: string[]): void {
   for (const url of new Set(urls)) {
     window.open(url, '_blank', 'noopener')
+  }
+}
+
+/** Record registry protocol downloads before opening their original URLs. */
+export function trackRegistryDownloads(files: ReadonlyArray<MissingFile>): void {
+  const hashes = new Set(
+    files
+      .map((file) => file.registryHash?.toLowerCase())
+      .filter((hash): hash is string => !!hash && /^[a-f0-9]{32}$/.test(hash))
+  )
+
+  for (const hash of hashes) {
+    void fetch(`${REGISTRY_API_URL}/api/downloads/mods/${hash}`, {
+      method: 'POST',
+      keepalive: true
+    }).catch(() => {
+      // Analytics must never prevent the user from downloading the file.
+    })
   }
 }
