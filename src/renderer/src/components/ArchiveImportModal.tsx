@@ -527,120 +527,135 @@ export function ArchiveImportModal({
                     the shared load order (shown in the # column). When a player adds any of these
                     files to a protocol, all of them auto-load in this order.
                   </p>
-                  <div className="grid grid-cols-[auto_auto_auto_1fr_1fr_auto_auto_auto] gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono px-1">
-                    <span></span>
-                    <span>#</span>
-                    <span></span>
-                    <span>File</span>
-                    <span>Display Name</span>
-                    <span>Version</span>
-                    <span>Cat</span>
-                    <span>URL</span>
-                  </div>
-                  <div onDragOver={handleDragOver} onDrop={handleDrop}>
-                    {fileMeta.map((meta, idx) => {
-                      const f = scanResult.supported.find((sf) => sf.tempPath === meta.tempPath)
-                      if (!f) return null
-                      const loadIdx = fileMeta.filter((m) => m.enabled).indexOf(meta)
-                      const isDragged = draggedIndex === idx
-                      const showPlaceholderBefore = insertionIndex === idx && draggedIndex !== idx
+                  <div className="overflow-x-auto">
+                    {/* Header and rows inherit the same column tracks, including the drag controls. */}
+                    <div className="grid min-w-[48rem] grid-cols-[auto_auto_auto_minmax(0,1fr)_minmax(0,1fr)_5rem_auto_10rem] gap-2">
+                      <div className="col-span-full grid grid-cols-subgrid gap-2 text-xs font-semibold uppercase text-app-muted tracking-widest font-mono">
+                        <span></span>
+                        <span className="text-center">#</span>
+                        <span></span>
+                        <span>File</span>
+                        <span>Display Name</span>
+                        <span>Version</span>
+                        <span>Cat</span>
+                        <span>URL</span>
+                      </div>
+                      <div
+                        className="col-span-full grid grid-cols-subgrid gap-x-2"
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                      >
+                        {fileMeta.map((meta, idx) => {
+                          const f = scanResult.supported.find((sf) => sf.tempPath === meta.tempPath)
+                          if (!f) return null
+                          const loadIdx = fileMeta.filter((m) => m.enabled).indexOf(meta)
+                          const isDragged = draggedIndex === idx
+                          const showPlaceholderBefore =
+                            insertionIndex === idx && draggedIndex !== idx
 
-                      return (
-                        <Fragment key={meta.tempPath}>
-                          {showPlaceholderBefore && (
-                            <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+                          return (
+                            <Fragment key={meta.tempPath}>
+                              {showPlaceholderBefore && (
+                                <div className="col-span-full h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
+                                  <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
+                                    drop here
+                                  </span>
+                                </div>
+                              )}
+                              <div
+                                data-drag-index={idx}
+                                className={`col-span-full grid grid-cols-subgrid gap-2 items-center mb-2 ${
+                                  isDragged ? 'hidden' : meta?.enabled ? '' : 'opacity-50'
+                                }`}
+                              >
+                                <button
+                                  type="button"
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, idx)}
+                                  onDragEnd={handleDragEnd}
+                                  className="cursor-grab active:cursor-grabbing text-app-muted hover:text-app-primary opacity-40 hover:opacity-100 transition-opacity p-0.5"
+                                  tabIndex={-1}
+                                  aria-label="Reorder"
+                                >
+                                  <GripVertical className="w-3.5 h-3.5" />
+                                </button>
+
+                                <span className="text-xs font-mono text-app-muted w-5 text-center">
+                                  {meta?.enabled ? loadIdx + 1 : '-'}
+                                </span>
+
+                                <input
+                                  type="checkbox"
+                                  checked={meta?.enabled ?? true}
+                                  onChange={(e) =>
+                                    setFileMeta((prev) => {
+                                      const copy = [...prev]
+                                      copy[idx] = { ...copy[idx], enabled: e.target.checked }
+                                      return copy
+                                    })
+                                  }
+                                  className="w-4 h-4 accent-accent-highlight"
+                                />
+
+                                <div className="text-sm truncate" title={f.fileName}>
+                                  <span className="font-mono text-xs text-app-muted mr-1">
+                                    [{f.fileType}]
+                                  </span>
+                                  {f.fileName}
+                                  {f.isReferencedByBat && (
+                                    <span className="ml-1 text-xs text-yellow-500">.bat</span>
+                                  )}
+                                </div>
+
+                                <input
+                                  className="border border-app rounded p-1 text-sm bg-app-primary min-w-0 w-full"
+                                  placeholder="Display name"
+                                  value={meta?.name ?? ''}
+                                  onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
+                                />
+                                <input
+                                  className="border border-app rounded p-1 text-sm bg-app-primary w-20"
+                                  placeholder="Version"
+                                  value={meta?.version ?? ''}
+                                  onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
+                                />
+                                <select
+                                  className="border border-app rounded p-1 text-sm bg-app-primary"
+                                  value={meta?.category ?? ''}
+                                  onChange={(e) =>
+                                    handleMetaChange(idx, 'category', e.target.value)
+                                  }
+                                >
+                                  <option value="">—</option>
+                                  {CATEGORIES.map((cat) => (
+                                    <option key={cat} value={cat}>
+                                      {cat
+                                        .replace(/_/g, ' ')
+                                        .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                    </option>
+                                  ))}
+                                </select>
+                                <input
+                                  className="border border-app rounded p-1 text-sm bg-app-primary w-40"
+                                  placeholder="URL"
+                                  value={meta?.url ?? ''}
+                                  onChange={(e) => handleMetaChange(idx, 'url', e.target.value)}
+                                />
+                              </div>
+                            </Fragment>
+                          )
+                        })}
+
+                        {insertionIndex === fileMeta.length &&
+                          draggedIndex !== fileMeta.length - 1 && (
+                            <div className="col-span-full h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
                               <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
-                                drop here
+                                new placement
                               </span>
                             </div>
                           )}
-                          <div
-                            data-drag-index={idx}
-                            className={`grid grid-cols-[auto_auto_auto_1fr_1fr_auto_auto_auto] gap-2 items-center mb-2 ${
-                              isDragged ? 'hidden' : meta?.enabled ? '' : 'opacity-50'
-                            }`}
-                          >
-                            <button
-                              type="button"
-                              draggable
-                              onDragStart={(e) => handleDragStart(e, idx)}
-                              onDragEnd={handleDragEnd}
-                              className="cursor-grab active:cursor-grabbing text-app-muted hover:text-app-primary opacity-40 hover:opacity-100 transition-opacity p-0.5"
-                              tabIndex={-1}
-                              aria-label="Reorder"
-                            >
-                              <GripVertical className="w-3.5 h-3.5" />
-                            </button>
-
-                            <span className="text-xs font-mono text-app-muted w-5 text-center">
-                              {meta?.enabled ? loadIdx + 1 : '-'}
-                            </span>
-
-                            <input
-                              type="checkbox"
-                              checked={meta?.enabled ?? true}
-                              onChange={(e) =>
-                                setFileMeta((prev) => {
-                                  const copy = [...prev]
-                                  copy[idx] = { ...copy[idx], enabled: e.target.checked }
-                                  return copy
-                                })
-                              }
-                              className="w-4 h-4 accent-accent-highlight"
-                            />
-
-                            <div className="text-sm truncate" title={f.fileName}>
-                              <span className="font-mono text-xs text-app-muted mr-1">
-                                [{f.fileType}]
-                              </span>
-                              {f.fileName}
-                              {f.isReferencedByBat && (
-                                <span className="ml-1 text-xs text-yellow-500">.bat</span>
-                              )}
-                            </div>
-
-                            <input
-                              className="border border-app rounded p-1 text-sm bg-app-primary"
-                              placeholder="Display name"
-                              value={meta?.name ?? ''}
-                              onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
-                            />
-                            <input
-                              className="border border-app rounded p-1 text-sm bg-app-primary w-20"
-                              placeholder="Version"
-                              value={meta?.version ?? ''}
-                              onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
-                            />
-                            <select
-                              className="border border-app rounded p-1 text-sm bg-app-primary"
-                              value={meta?.category ?? ''}
-                              onChange={(e) => handleMetaChange(idx, 'category', e.target.value)}
-                            >
-                              <option value="">—</option>
-                              {CATEGORIES.map((cat) => (
-                                <option key={cat} value={cat}>
-                                  {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-                                </option>
-                              ))}
-                            </select>
-                            <input
-                              className="border border-app rounded p-1 text-sm bg-app-primary w-40"
-                              placeholder="URL"
-                              value={meta?.url ?? ''}
-                              onChange={(e) => handleMetaChange(idx, 'url', e.target.value)}
-                            />
-                          </div>
-                        </Fragment>
-                      )
-                    })}
-
-                    {insertionIndex === fileMeta.length && draggedIndex !== fileMeta.length - 1 && (
-                      <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
-                        <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
-                          new placement
-                        </span>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               )}
