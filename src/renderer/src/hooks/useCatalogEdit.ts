@@ -6,6 +6,7 @@ import { REGISTRY_API_URL } from '@shared/registry-config'
 import { debug } from '@shared/debug'
 import { deriveFileType } from '@/lib/install/parsers'
 import { useRequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
+import { sortRequiredModOrder } from '@/lib/catalog/requiredModOrder'
 import type { RequiredModEntry, EditFormState } from '@/lib/catalog/types'
 import type { IModFile } from '@shared/schema'
 
@@ -127,14 +128,14 @@ export function useCatalogEdit({
       }
     }
 
-    existingLoadOrder.sort((a, b) => a.offset - b.offset)
+    const orderedLoadOrder = sortRequiredModOrder(existingLoadOrder)
 
     setSelectedFile(file)
     setEditForm({
       name: file.name || '',
       version: file.version || '',
       url: file.url || '',
-      loadOrder: existingLoadOrder,
+      loadOrder: orderedLoadOrder,
       sidecarOnly: file.sidecarOnly || false,
       category: file.category || '',
       configTemplate: file.configTemplate

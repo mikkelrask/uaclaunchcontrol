@@ -9,6 +9,7 @@ import { ARCHIVE_EXTENSIONS, getArchiveExtension } from '@shared/archive'
 import { debug } from '@shared/debug'
 import { parseBatContent, resolveRelativePaths, deriveFileType } from '@/lib/install/parsers'
 import { useRequiredModsActions } from '@/lib/catalog/useRequiredModsActions'
+import { sortRequiredModOrder } from '@/lib/catalog/requiredModOrder'
 import type { RequiredModEntry, AddFormState } from '@/lib/catalog/types'
 import type { IModFile, IAppSettings } from '@shared/schema'
 
@@ -332,7 +333,7 @@ export function useCatalogAdd({
       name,
       filePath,
       isNew: true,
-      offset: 1,
+      offset: registryData?.load_order?.[hash] ?? 1,
       sidecarOnly: false,
       isMain: true
     }
@@ -383,7 +384,7 @@ export function useCatalogAdd({
           offset: offset as number,
           sidecarOnly: false
         }))
-      updatedForm.loadOrder = [mainEntry, ...loadOrderEntries]
+      updatedForm.loadOrder = sortRequiredModOrder([mainEntry, ...loadOrderEntries])
     }
 
     debug('[Registry] Setting form with:', updatedForm)

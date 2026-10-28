@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { api } from '@/api'
 import type { IModFile } from '@shared/schema'
 import type { RequiredModEntry } from '@/lib/catalog/types'
+import { moveRequiredMod, normalizeRequiredModOrder } from '@/lib/catalog/requiredModOrder'
 
 import { createLogger } from '@shared/logger'
 
@@ -85,35 +86,21 @@ export function useRequiredModsActions(
 
   const handleRemove = useCallback(
     (index: number): void => {
-      setLoadOrder((prev) => prev.filter((_, i) => i !== index))
+      setLoadOrder((prev) => normalizeRequiredModOrder(prev.filter((_, i) => i !== index)))
     },
     [setLoadOrder]
   )
 
   const handleMoveUp = useCallback(
     (index: number): void => {
-      if (index === 0) return
-      setLoadOrder((prev) => {
-        const next = [...prev]
-        const temp = next[index]
-        next[index] = next[index - 1]
-        next[index - 1] = temp
-        return next
-      })
+      setLoadOrder((prev) => moveRequiredMod(prev, index, -1))
     },
     [setLoadOrder]
   )
 
   const handleMoveDown = useCallback(
     (index: number): void => {
-      setLoadOrder((prev) => {
-        if (index >= prev.length - 1) return prev
-        const next = [...prev]
-        const temp = next[index]
-        next[index] = next[index + 1]
-        next[index + 1] = temp
-        return next
-      })
+      setLoadOrder((prev) => moveRequiredMod(prev, index, 1))
     },
     [setLoadOrder]
   )

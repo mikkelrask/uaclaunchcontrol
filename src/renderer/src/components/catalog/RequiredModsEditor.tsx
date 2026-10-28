@@ -111,7 +111,7 @@ export const RequiredModsEditor: React.FC<RequiredModsEditorProps> = ({
               </div>
               {req.isMain && (
                 <p className="text-[0.625rem] text-app-muted pl-14">
-                  This is the mod itself - its requirements go below.
+                  This is the mod itself.
                 </p>
               )}
             </div>
