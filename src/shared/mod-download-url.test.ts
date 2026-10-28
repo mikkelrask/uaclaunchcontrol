@@ -3,8 +3,32 @@ import {
   isGithubReleaseAsset,
   isGithubArchiveUrl,
   isModdbStartPage,
-  isInAppDownloadUrl
+  isInAppDownloadUrl,
+  getTrackedRegistryDownload
 } from './mod-download-url'
+
+describe('getTrackedRegistryDownload', () => {
+  const registryApi = 'https://db.uac-soft.online'
+
+  it('extracts the source URL and hash from a tracked file link', () => {
+    expect(
+      getTrackedRegistryDownload(
+        `${registryApi}/api/downloads/mods/ABCDEF0123456789ABCDEF0123456789?url=${encodeURIComponent('https://github.com/owner/repo/releases/download/v1/mod.pk3')}`,
+        registryApi
+      )
+    ).toEqual({
+      hash: 'abcdef0123456789abcdef0123456789',
+      sourceUrl: 'https://github.com/owner/repo/releases/download/v1/mod.pk3'
+    })
+  })
+
+  it('rejects links from another origin or with malformed registry data', () => {
+    const tracked = `${registryApi}/api/downloads/mods/abcdef0123456789abcdef0123456789?url=https%3A%2F%2Fgithub.com%2Fa%2Fb%2Freleases%2Fdownload%2Fv1%2Fm.pk3`
+    expect(getTrackedRegistryDownload(tracked.replace('db.uac-soft.online', 'attacker.test'), registryApi)).toBeNull()
+    expect(getTrackedRegistryDownload(`${registryApi}/api/downloads/mods/not-a-hash?url=https%3A%2F%2Fgithub.com`, registryApi)).toBeNull()
+    expect(getTrackedRegistryDownload(`${registryApi}/api/downloads/mods/abcdef0123456789abcdef0123456789`, registryApi)).toBeNull()
+  })
+})
 
 describe('isGithubReleaseAsset', () => {
   it('accepts github.com release download asset URLs', () => {

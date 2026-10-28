@@ -9,6 +9,26 @@
 const GITHUB_RELEASE_RE = /^\/[^/]+\/[^/]+\/releases\/download\//
 const MODDB_START_RE = /^\/(?:downloads|addons)\/start\//
 const GITHUB_ARCHIVE_RE = /^\/[^/]+\/[^/]+\/archive\/.+\.zip$/i
+const MOD_HASH_RE = /^[a-f0-9]{32}$/i
+
+/** Resolve a tracked registry redirect back to its source URL for Electron routing. */
+export function getTrackedRegistryDownload(
+  rawUrl: string,
+  registryApiUrl: string
+): { hash: string; sourceUrl: string } | null {
+  try {
+    const url = new URL(rawUrl)
+    const registry = new URL(registryApiUrl)
+    if (url.origin !== registry.origin) return null
+    const match = url.pathname.match(/^\/api\/downloads\/mods\/([^/]+)$/)
+    const hash = match?.[1]
+    const sourceUrl = url.searchParams.get('url')
+    if (!hash || !MOD_HASH_RE.test(hash) || !sourceUrl) return null
+    return { hash: hash.toLowerCase(), sourceUrl }
+  } catch {
+    return null
+  }
+}
 
 /** GitHub release-asset URLs: github.com/<owner>/<repo>/releases/download/<tag>/<asset> */
 export function isGithubReleaseAsset(url: URL): boolean {

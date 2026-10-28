@@ -6,9 +6,16 @@ import { startServer } from './server'
 import { autoUpdater } from 'electron-updater'
 import { getIsFirstRun, getSettings } from './server/storage'
 import { registerModDownloadSession, startModDownload } from './server/services/modDownloadService'
-import { isGithubArchiveUrl, isGithubReleaseAsset, isModdbStartPage } from '@shared/mod-download-url'
+import {
+  getTrackedRegistryDownload,
+  isGithubArchiveUrl,
+  isGithubReleaseAsset,
+  isInAppDownloadUrl,
+  isModdbStartPage
+} from '@shared/mod-download-url'
 import { IInstallType } from '@shared/schema'
 import { debug } from '@shared/debug'
+import { REGISTRY_API_URL } from '@shared/registry-config'
 
 import { createLogger } from '@shared/logger'
 const log = createLogger('main')
@@ -112,6 +119,21 @@ function createWindow(): void {
   mainWindow.webContents.setWindowOpenHandler((details) => {
     try {
       const url = new URL(details.url)
+      const trackedDownload = getTrackedRegistryDownload(details.url, REGISTRY_API_URL)
+      if (trackedDownload && isInAppDownloadUrl(trackedDownload.sourceUrl)) {
+        // The registry's tracked link points at its redirect endpoint, which
+        // hides the original host from the normal GitHub/ModDB download router.
+        // Count it explicitly, then hand the source URL to the existing flow.
+        void fetch(`${REGISTRY_API_URL}/api/downloads/mods/${trackedDownload.hash}`, {
+          method: 'POST',
+          keepalive: true
+        }).catch(() => {})
+        void startModDownload(trackedDownload.sourceUrl).catch((error: unknown) => {
+          log.error('Registry mod download failed to start:', error)
+          shell.openExternal(details.url)
+        })
+        return { action: 'deny' }
+      }
       if (isGithubReleaseAsset(url) || isGithubArchiveUrl(url) || isModdbStartPage(url)) {
         void startModDownload(details.url)
       } else {
