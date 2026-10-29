@@ -1,36 +1,33 @@
 # UAC settings design study
 
-Three throwaway visual proposals for the existing settings modal. The question is how to give preferences, engine inventory and base-game editing a coherent layout while retaining the UAC industrial identity. No direction has been approved for implementation.
+Current direction: **revised Maintenance workbench**, incorporating the user's review of the initial three variants. This remains a throwaway visual prototype. No production settings implementation has changed.
 
-Start with `node preview.mjs`, then open http://127.0.0.1:8347. Use the bottom picker to compare Control console, Terminal refit and Maintenance workbench. All five sections work in each direction. Inputs, default selection, draft Apply/Cancel, and the restricted-access gag are local demonstrations. No launcher API or settings files are accessed.
+Run `node preview.mjs`, then open http://127.0.0.1:8347. The preview begins on Source ports so the inventory/editor behaviour can be inspected immediately. All five sections work with in-memory sample state; no launcher API, real downloads, file pickers, or settings writes are used.
 
-## Recommendation
+## Revision decisions
 
-Start from **Control console**: a quiet left navigation rail, a single content surface, aligned preference rows, and matching list/detail editors for Source ports and Base games. The restrained Terminal refit is the smaller change; Maintenance workbench is better suited to a wider, dedicated configuration window.
+- Remove all coloured left-edge selection and information markers. Selected records use a neutral background; keyboard focus retains an accessible full outline.
+- Use the same bounded list/editor layout for Source ports and Base games. Both have matching pane headers, selected-record heading, default control, fields and fixed outer footer. The inventory and editor scroll independently; adding records never pushes the editor below the list.
+- At widths below 621px, selecting a record replaces the list with its editor. Back to list restores the selection and scroll position. The editor is never stacked after the inventory.
+- Remove the General theme-preview panel. General uses the full content width. Choosing an example theme recolours the mockup, and Cancel restores the saved palette. The real app should retain its existing whole-app live theme preview.
+- Restore consistent Lucide icon + label treatments for Scan PATH, Get port and Add port.
+- Make paths Browse-first: selectable/copyable path text, Default location or Custom location status, and a visible Edit path action. Manual editing supports Enter to stage, Escape to cancel, and Use default for changed paths. No claim is made about how often real users use either input method.
+- Keep the same fixed 139px × 36px default control in both states. Default is current-state feedback and cannot be unset by clicking it. Every list row reserves badge space, avoiding text reflow when the default changes.
+- Preserve the established UAC identity, bundled Aldrich headings, game icons and restricted-access gag. The original three variants remain in study.html and Git history.
 
-- Use Aldrich for identity and section headings; offer the all-Aldrich treatment for comparison. Use a readable body face and monospace for paths/commands.
-- Carbon `#171b1e`, panel `#20262a`, structure `#374149`, text `#edf0eb`, secondary `#a4afb6`, cyan `#48c9e9`; amber `#efb556` is reserved for pending changes and caution.
-- Keep one control height/radius and aligned label/control tracks. Group ordinary settings with whitespace and separators. Use panels for editors and previews rather than every individual field.
-- Call the WAD section Base games, with IWAD terminology in its description. Highlight the selected record; show the default as a labelled badge and a separate Make default action.
-- Rename Advanced to Theme lab and link it directly from App theme. A later implementation could nest it under Appearance instead.
-- Collapse installed FreeDoom into a secondary strip. A not-installed or downloading state would need visible acquisition/progress actions.
-- Preserve core_settings, UAC branding, technical status feedback and the BLUE KEYCARD REQUIRED easter egg. Use plain names for consequential controls.
+## Files
 
-## Prototype scope and limitations
-
-`study.html` is the editable inline source. `index.html` is the self-contained browser preview generated from it. The prototype is deliberately isolated from the Electron route and backend so all data writes, downloads and launches are inert. This is a design study, not an implementation of the settings modal or a complete accessibility audit.
-
-The sample contains five engines and six games, rather than every entry from the screenshots. Theme CSS preview is illustrative; changing the textarea stages text but does not evaluate CSS. Browse, scan, download and add actions describe the intended next step. The records' family/version and destructive-action flows are not fleshed out. General, Paths and editor layouts are the deliverable.
-
-Before implementing:
-
-1. Retain Radix/shadcn Dialog and its focus trap, Escape handling and focus return. Retain accessible tab/section navigation semantics. WAI references: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/ and https://www.w3.org/WAI/ARIA/apg/patterns/tabs/.
-2. Make draft changes distinct from immediate operations. Current downloads, update checks and WAD icon relocation happen immediately; Cancel must not promise to undo those operations.
-3. Resolve or explicitly disclose the existing interaction where changing WAD folder rescans on Apply and supersedes draft WAD metadata edits.
-4. Use the current theme tokens and bundled fonts, not hardcoded production colours from this exploration. Keep live theme/scale preview and revert-on-close behaviour.
-5. Support a bounded dialog with a fixed footer and one content scroll region in the actual Electron viewport. The conversation preview grows naturally so every section can be inspected.
-6. Check the largest supported UI scale, keyboard operation, contrast, long paths/names and translations before shipping. This branch does not alter the app's translation setup.
+- `revised.html`: editable source for the current preview.
+- `index.html`: self-contained rendered browser preview of revised.html.
+- `study.html`: original three-variant exploration, retained as a design reference.
+- `preview.mjs`: local-only server that serves index.html.
 
 ## Validation
 
-Checked all 15 variant/section combinations at 1140, 736, 390 and 320px viewport widths in Chromium, with no detected horizontal overflow or JavaScript errors. Verified draft state, Apply enabled state, Cancel reset and independent default selection. Visually inspected the desktop layouts. No production sources changed; the app's build/test suite was not required for this standalone prototype.
+Checked all five sections at viewport widths 1120, 736, 621, 620, 390 and 320px with no horizontal overflow or JavaScript errors. Visually inspected the General, Paths, Source ports and Base games sections. Tested long inventories (including 20 extra rows), verified both editor bounds remain unchanged during list scrolling, and measured zero geometry change in default controls and subsequent fields when changing defaults. Checked narrow detail/back scroll restoration and draft retention, manual path editing/reset, a 620px-high dialog, and live sample-theme preview/cancel.
+
+## Implementation boundaries
+
+This is a layout and interaction study, not production code or a complete accessibility audit. The sample has 12 engines and 14 base games, combining screenshot entries and illustrative local entries. Add, download, browse, hide and remove actions explain the intended operation but do not execute it. The CSS textarea stages text without executing arbitrary custom CSS. The scale slider stages its value without resizing the preview.
+
+Production implementation should retain the existing shadcn/Radix Dialog focus trap, keyboard handling and focus return; integrate the current theme tokens and translations; preserve real draft/apply/cancel semantics; and distinguish immediate downloads and file operations from reversible drafts. Existing WAD-folder rescanning and its interaction with draft WAD metadata must be addressed during implementation. No direction is promoted to main by this study.
