@@ -3,7 +3,7 @@
   container: settings / inline-size;
   width: min(68rem, calc(100vw - 2rem));
   max-width: none;
-  height: min(54rem, 90dvh);
+  height: 90dvh;
   min-height: 0;
   gap: 0;
   padding: 0;
