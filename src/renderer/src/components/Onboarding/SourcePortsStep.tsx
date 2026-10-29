@@ -1,5 +1,5 @@
 import { useTranslate } from '@tolgee/react'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { IAppSettings } from '@shared/schema'
@@ -20,32 +20,6 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
   onBack
 }) => {
   const { t } = useTranslate('desktop')
-  // Keep incomplete editor drafts out of the wizard's automatic persistence.
-  // The parent retains the last valid configuration if this step is skipped.
-  const [portSettings, setPortSettings] = useState(settings)
-  const ports = portSettings.sourcePorts
-  const defaultPortId = portSettings.defaultSourcePortId
-  const hasIncompletePort = ports.some((port) => !port.name.trim() || !port.executablePath.trim())
-
-  useEffect(() => {
-    if (hasIncompletePort) return
-    setSettings((previous) => {
-      if (previous.sourcePorts === ports && previous.defaultSourcePortId === defaultPortId)
-        return previous
-      return { ...previous, sourcePorts: ports, defaultSourcePortId: defaultPortId }
-    })
-  }, [ports, defaultPortId, hasIncompletePort, setSettings])
-
-  const next = (): void => {
-    if (hasIncompletePort) return
-    // Flush the latest complete edit before moving to the next step.
-    setSettings((previous) => ({
-      ...previous,
-      sourcePorts: ports,
-      defaultSourcePortId: defaultPortId
-    }))
-    onNext()
-  }
 
   return (
     <OnboardingStepLayout
@@ -53,10 +27,9 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
       title={t('sourcePorts.title', 'Source Ports')}
       kicker={t('onboarding.sourcePorts.terminal', 'UAC-7 // Runtime Engine')}
       description={t(
-        'onboarding.sourcePorts.workbenchDescription',
-        'Choose an engine to run your games. Review the detected ports, download one, or add an executable.'
+        'onboarding.sourcePorts.discoveryDescription',
+        'Source ports are the engines that run your games. We’ve checked your computer for you — add the ones you want to use.'
       )}
-      scroll={false}
       footer={
         <>
           <Button
@@ -69,13 +42,7 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
             <ChevronLeft className="w-4 h-4" aria-hidden="true" />
             {t('onboarding.back', 'Back')}
           </Button>
-          <Button
-            type="button"
-            onClick={next}
-            disabled={hasIncompletePort}
-            data-onboarding-next
-            className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
-          >
+          <Button type="button" onClick={onNext} data-onboarding-next className="gap-1 px-6">
             {t('onboarding.next', 'Next')}
             <ChevronRight className="w-4 h-4" aria-hidden="true" />
           </Button>
@@ -83,27 +50,15 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
       }
     >
       <SourcePortsTab
-        settings={portSettings}
-        setSettings={setPortSettings}
+        settings={settings}
+        setSettings={setSettings}
         autoScan
-        layout="workbench"
+        layout="setup"
         showHeading={false}
-        footerHint={
-          hasIncompletePort
-            ? t(
-                'settings.state.portIncomplete',
-                'Each source port needs a name and executable path.'
-              )
-            : ports.length > 0
-              ? t(
-                  'onboarding.sourcePorts.autosaveHint',
-                  'Complete entries are saved automatically. Set a default to preselect it for new protocols.'
-                )
-              : t(
-                  'onboarding.optional',
-                  "You can also do this later in Settings — this step isn't required to continue."
-                )
-        }
+        footerHint={t(
+          'onboarding.optional',
+          "You can also do this later in Settings — this step isn't required to continue."
+        )}
       />
     </OnboardingStepLayout>
   )

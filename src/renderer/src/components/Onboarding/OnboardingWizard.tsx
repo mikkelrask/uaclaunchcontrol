@@ -45,6 +45,18 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
   const [isFinishing, setIsFinishing] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [directoryBusy, setDirectoryBusy] = useState(false)
+  const tourActiveRef = useRef(false)
+  const pendingUnlocksRef = useRef<ReturnType<typeof buildUnlockToasts>>([])
+  const showUnlockToast = useCallback(
+    (unlock: ReturnType<typeof buildUnlockToasts>[number]): void => {
+      toast({
+        title: unlock.title,
+        description: unlock.description,
+        duration: unlock.duration as 6000 | 8000
+      })
+    },
+    [toast]
+  )
 
   // Folder changes, autosaves and Finish share one queue so no older
   // read/merge/write can overwrite a newer setup choice.
@@ -76,6 +88,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
 
   const activate = useCallback(async () => {
     isSeedingRef.current = true
+    tourActiveRef.current = true
     setSaveError('')
     // Activate + boot sequence FIRST so the settings fetch below is covered
     // by themed UI — never a blank frame or a flash of the app behind it.
@@ -90,6 +103,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
       setStep(0)
     } catch {
       // Onboarding is non-essential — fail silently, user can still use Settings directly.
+      tourActiveRef.current = false
       setIsActive(false)
     } finally {
       isSeedingRef.current = false
@@ -143,12 +157,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
         knownFamiliesRef.current.add(family)
         dispatchAchievementEvent({ type: 'SOURCE_PORT_ADDED', count: 1, family })
           .then((result) => {
-            for (const t of buildUnlockToasts(result)) {
-              toast({
-                title: t.title,
-                description: t.description,
-                duration: t.duration as 6000 | 8000
-              })
+            for (const unlock of buildUnlockToasts(result)) {
+              // Celebrate after setup so notifications cannot cover Next.
+              // Late results still show if Finish has already closed the tour.
+              if (tourActiveRef.current) pendingUnlocksRef.current.push(unlock)
+              else showUnlockToast(unlock)
             }
           })
           .catch((err: unknown) => log.error(err))
@@ -156,7 +169,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
     }, 400)
 
     return () => clearTimeout(timer)
-  }, [draft, isActive, toast, persistDraft])
+  }, [draft, isActive, showUnlockToast, persistDraft])
 
   const finish = useCallback(async (): Promise<void> => {
     if (finishingRef.current || directoryBusy) return
@@ -167,8 +180,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
       // Queue the final snapshot after any in-flight autosave, then dismiss.
       if (draft) await persistDraft(draft)
       await api.dismissFirstRun()
+      tourActiveRef.current = false
       setIsActive(false)
       setDraft(null)
+      for (const unlock of pendingUnlocksRef.current.splice(0)) showUnlockToast(unlock)
       onFinished?.()
     } catch (error: unknown) {
       log.error(error)
@@ -182,7 +197,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
       finishingRef.current = false
       setIsFinishing(false)
     }
-  }, [draft, onFinished, persistDraft, directoryBusy, t])
+  }, [draft, onFinished, persistDraft, directoryBusy, showUnlockToast, t])
 
   useEffect(() => {
     if (!isActive) return

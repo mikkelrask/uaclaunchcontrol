@@ -29,13 +29,15 @@
   flex: 1;
   min-height: 0;
   justify-content: center;
+  align-items: center;
   /* Keep the decorative clock and REC strip clear of navigation. */
   padding: 1.5rem 2rem 2.5rem;
   overflow: hidden;
 }
 .onboarding-stage-inner {
   width: 100%;
-  max-width: 68rem;
+  max-width: 48rem;
+  height: min(42rem, 100%);
   min-height: 0;
   display: flex;
   container: settings / inline-size;
@@ -50,14 +52,15 @@
 }
 .onboarding-step-heading {
   flex: none;
-  padding-bottom: 1.25rem;
+  padding: 0.5rem 0 1.75rem;
+  text-align: center;
 }
 .onboarding-kicker {
   display: block;
   font: 0.65rem/1.5 var(--font-mono);
   letter-spacing: 0.08em;
-  color: hsl(var(--text-muted));
-  margin-bottom: 0.45rem;
+  color: hsl(var(--accent-highlight));
+  margin-bottom: 0.6rem;
 }
 .onboarding-step-heading h2 {
   font-size: 1.5rem;
@@ -65,8 +68,8 @@
   color: hsl(var(--text-primary));
 }
 .onboarding-description {
-  max-width: 76ch;
-  margin-top: 0.6rem;
+  max-width: 60ch;
+  margin: 0.7rem auto 0;
   color: hsl(var(--text-muted));
   font-size: 0.8rem;
   line-height: 1.6;
@@ -79,7 +82,8 @@
   min-height: 0;
   min-width: 0;
   overflow-y: auto;
-  padding-right: 0.25rem;
+  scrollbar-gutter: stable;
+  padding-inline: 0.25rem 0.65rem;
   padding-bottom: 1rem;
 }
 .onboarding-step-body-workbench {
@@ -121,44 +125,56 @@
 .onboarding-intro p {
   max-width: 52ch;
 }
-.onboarding-registry-panel {
-  max-width: 52rem;
-  padding: 1.5rem;
+.onboarding-registry-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 1.25rem;
   border: 1px solid hsl(var(--border));
-  border-radius: 0.35rem;
+  border-radius: 0.4rem;
   background: hsl(var(--bg-secondary));
 }
-.onboarding-wad-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 1.5rem;
-  margin-top: 1.5rem;
+.onboarding-registry-choice label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+.onboarding-registry-choice p {
+  color: hsl(var(--text-muted));
+}
+.onboarding-registry-details {
+  padding: 1.25rem;
+  color: hsl(var(--text-muted));
+}
+.onboarding-registry-details p + p {
+  margin-top: 0.75rem;
+}
+.onboarding-registry-details strong {
+  color: hsl(var(--text-primary));
+  font-weight: 500;
 }
 .onboarding-wad-panel {
   min-width: 0;
 }
 .onboarding-wad-panel h3 {
-  font-size: 1rem;
-  margin-bottom: 0.75rem;
+  font-family: inherit;
+  font-size: 0.9rem;
 }
 .onboarding-wad-list {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
 }
 .onboarding-wad-list .settings-resource-row {
   border: 1px solid transparent;
+  padding: 0.6rem 0.75rem;
+  min-height: 3rem;
 }
 .onboarding-wad-list .settings-resource-row[aria-pressed='true'] {
   border-color: hsl(var(--border));
-}
-@container settings (max-width: 42rem) {
-  .onboarding-wad-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .onboarding-step-heading {
-    padding-bottom: 1rem;
-  }
 }
 @media (max-width: 700px) {
   .onboarding-header {
@@ -182,7 +198,8 @@
     min-height: 3.5rem;
     padding-top: 0.6rem;
   }
-  .onboarding-registry-panel {
+  .onboarding-registry-choice,
+  .onboarding-registry-details {
     padding: 1rem;
   }
 }
@@ -234,4 +251,38 @@
   .onboarding-header > div:last-child {
     margin-left: auto;
   }
+}
+
+.onboarding-freegames {
+  margin-top: 1.25rem;
+  border-block: 1px solid hsl(var(--border));
+}
+.onboarding-freegames-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 3rem;
+  padding: 0.75rem 0;
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.onboarding-freegames-summary::-webkit-details-marker {
+  display: none;
+}
+.onboarding-freegames-summary:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+.onboarding-freegames-content {
+  padding: 0 0 1rem;
+}
+
+.onboarding-freegames[open] > .onboarding-freegames-summary > svg {
+  transform: rotate(180deg);
+}
+.onboarding-games {
+  margin-top: 1.25rem;
 }

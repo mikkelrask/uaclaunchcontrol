@@ -358,17 +358,18 @@ app
       )
       await waitFor(
         window,
-        `document.body.textContent.includes(${JSON.stringify(message('sourcePorts.scan.found', { count: 1 }))})`
+        `document.body.textContent.includes(${JSON.stringify(message('onboarding.sourcePorts.foundForYou', { count: 1 }))})`
       )
       await clickSelector(window, 'button', message('onboarding.next'))
       await waitFor(
         window,
-        `[...document.querySelectorAll('h2')].some(el => el.textContent === ${JSON.stringify(message('onboarding.wads.title'))})`
+        `[...document.querySelectorAll('h2')].some(el => el.textContent === ${JSON.stringify(message('onboarding.wads.setupTitle'))})`
       )
+      await clickSelector(window, '[data-onboarding-freegames-trigger]')
       const wadGuide = await window.webContents.executeJavaScript(
         `document.querySelector('a[href="https://uac-soft.online/guides/acquiring-doom/"]')?.textContent`
       )
-      assert.equal(wadGuide, message('onboarding.wads.acquireGuide'))
+      assert.equal(wadGuide, message('onboarding.wads.acquireDoom'))
       await clickSelector(window, 'button', message('onboarding.next'))
       await waitFor(
         window,

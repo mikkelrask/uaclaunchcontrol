@@ -1,9 +1,9 @@
-import { T, useTranslate } from '@tolgee/react'
-import React from 'react'
+import { useTranslate } from '@tolgee/react'
+import React, { useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { ChevronLeft, ChevronRight, Database } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { OnboardingStepLayout } from './OnboardingStepLayout'
 import type { IAppSettings } from '@shared/schema'
 
@@ -28,6 +28,7 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
   onBack
 }) => {
   const { t } = useTranslate('desktop')
+  const toggleId = useId()
   const handleToggle = (checked: boolean): void => {
     setSettings((prev) => {
       if (checked && !prev.registryUuid) {
@@ -47,12 +48,11 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
       title={t('onboarding.registry.title', 'UAC Registry')}
       kicker={t('onboarding.registry.terminal', 'UAC-7 // Data Uplink')}
       description={t(
-        'onboarding.registry.description',
-        'A community database of mod metadata — names, versions, categories and load orders — maintained by players like you.'
+        'onboarding.registry.simpleDescription',
+        'Let the community database help identify the mods you add.'
       )}
       footer={
         <>
-          {' '}
           <Button
             data-onboarding-back
             variant="ghost"
@@ -73,74 +73,36 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
         </>
       }
     >
-      <div className="onboarding-registry-panel space-y-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-accent-highlight/10 rounded-md shrink-0">
-            <Database className="w-4 h-4 text-accent-highlight" />
-          </div>
-          <div className="space-y-1.5">
-            <div>
-              <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                {t('onboarding.registry.whatEnablingDoes', 'What enabling does')}
-              </Label>
-            </div>
-            <ul className="text-xs text-app-secondary space-y-1.5 leading-relaxed">
-              <li>
-                <T
-                  ns="desktop"
-                  keyName="onboarding.registry.lookupDescription"
-                  defaultValue="{lookUp} — mods you add or download get their name, version, category and load order filled in automatically."
-                  params={{
-                    lookUp: (
-                      <span className="text-app-primary font-semibold">
-                        {t('onboarding.registry.lookup', 'Look up')}
-                      </span>
-                    )
-                  }}
-                />
-              </li>
-              <li>
-                <T
-                  ns="desktop"
-                  keyName="onboarding.registry.contributeDescription"
-                  defaultValue="{contribute} — files the registry doesn't recognize yet have their metadata (hashes and names only) offered to the shared database for others."
-                  params={{
-                    contribute: (
-                      <span className="text-app-primary font-semibold">
-                        {t('onboarding.registry.contribute', 'Contribute')}
-                      </span>
-                    )
-                  }}
-                />
-              </li>
-            </ul>
-            <p className="text-[0.625rem] text-app-muted italic leading-tight">
-              {t(
-                'onboarding.registry.privacy',
-                'Your mod files, folders and game data are never uploaded — only metadata. You can change this anytime in Settings.'
-              )}
-            </p>
-          </div>
+      <div className="onboarding-registry-choice">
+        <div>
+          <Label htmlFor={toggleId}>{t('onboarding.registry.enable', 'Enable registry')}</Label>
+          <p>
+            {t(
+              'onboarding.registry.simpleBenefit',
+              'Fill in mod names, versions, categories and load order automatically.'
+            )}
+          </p>
         </div>
-
-        <div className="flex items-center justify-between border-t border-app/50 pt-3">
-          <div className="space-y-0.5">
-            <Label className="text-xs text-app-primary font-medium">
-              {t('onboarding.registry.enable', 'Enable registry')}
-            </Label>
-            <p className="text-[0.625rem] text-app-muted leading-tight">
-              {t(
-                'onboarding.registry.connection',
-                'Off by default — requires an active connection to the UAC Registry.'
-              )}
-            </p>
-          </div>
-          <Switch
-            aria-label={t('onboarding.registry.enable', 'Enable registry')}
-            checked={enabled}
-            onCheckedChange={handleToggle}
-          />
-        </div>
+        <Switch
+          id={toggleId}
+          aria-label={t('onboarding.registry.enable', 'Enable registry')}
+          checked={enabled}
+          onCheckedChange={handleToggle}
+        />
+      </div>
+      <div className="onboarding-registry-details">
+        <p>
+          {t(
+            'onboarding.registry.simpleContribution',
+            'Enabling this also shares the names and file hashes of unrecognized mods to help other players. Your files, folders and game data are never uploaded.'
+          )}
+        </p>
+        <p>
+          {t(
+            'onboarding.registry.simpleOptional',
+            'Optional and off by default. Requires an internet connection. You can change this in Settings anytime.'
+          )}
+        </p>
       </div>
     </OnboardingStepLayout>
   )

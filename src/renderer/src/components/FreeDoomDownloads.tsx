@@ -25,6 +25,7 @@ interface FreeDoomDownloadsProps {
   disabled?: boolean
   showError?: boolean
   titleId?: string
+  compact?: boolean
 }
 
 /** Shared acquisition rows: inline during setup, inside the settings popover later. */
@@ -36,6 +37,7 @@ export function FreeDoomDownloads({
   onDownload,
   disabled = false,
   showError = true,
+  compact = false,
   titleId
 }: FreeDoomDownloadsProps): React.JSX.Element {
   const { t } = useTranslate('desktop')
@@ -49,17 +51,25 @@ export function FreeDoomDownloads({
   }
 
   return (
-    <section aria-labelledby={headingId} aria-busy={downloading !== null}>
-      <h3 id={headingId} className="text-sm font-medium">
-        {t('settings.wads.workbench.freeGames', 'FreeDoom / FreeDM')}
-      </h3>
-      <p className="mt-2 text-xs leading-relaxed text-app-muted">
-        {t(
-          'settings.wads.freedoomDescription',
-          'Free, legally redistributable IWADs — no commercial Doom purchase required.'
-        )}
-      </p>
-      <div className="mt-3">
+    <section
+      aria-labelledby={compact ? undefined : headingId}
+      aria-label={compact ? t('settings.wads.workbench.freeGames', 'FreeDoom / FreeDM') : undefined}
+      aria-busy={downloading !== null}
+    >
+      {!compact && (
+        <>
+          <h3 id={headingId} className="text-sm font-medium">
+            {t('settings.wads.workbench.freeGames', 'FreeDoom / FreeDM')}
+          </h3>
+          <p className="mt-2 text-xs leading-relaxed text-app-muted">
+            {t(
+              'settings.wads.freedoomDescription',
+              'Free, legally redistributable IWADs — no commercial Doom purchase required.'
+            )}
+          </p>
+        </>
+      )}
+      <div className={compact ? '' : 'mt-3'}>
         {BUNDLES.map(({ id: bundle, slugs }) => {
           const installed = slugs.every((slug) => versions.some((version) => version.slug === slug))
           const state = installed

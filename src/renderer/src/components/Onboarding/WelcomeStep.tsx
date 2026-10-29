@@ -1,4 +1,4 @@
-import { T, useTranslate } from '@tolgee/react'
+import { useTranslate } from '@tolgee/react'
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import uacLogo from '@/assets/UAC Logo.svg'
@@ -33,12 +33,10 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
         </div>
 
         <p className="text-app-secondary max-w-md mx-auto leading-relaxed">
-          <T
-            ns="desktop"
-            keyName="onboarding.welcome.description"
-            defaultValue="This is the {app} - your command centre for managing and launching Doom source ports, IWADs, and mods. {br}{br}Let's get the essentials in place — a source port and some WAD files — so you can start playing."
-            params={{ app: <strong>UAC Launch Control</strong>, br: <br /> }}
-          />
+          {t(
+            'onboarding.welcome.simpleDescription',
+            "We'll look for a Doom engine and your game files, then get you ready to play. You can skip any step and change your choices later in Settings."
+          )}
         </p>
 
         <p className="text-xs text-app-muted italic uppercase tracking-widest opacity-40 mt-6">

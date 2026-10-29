@@ -13,7 +13,9 @@ import {
   FolderOpen,
   Download,
   ScanSearch,
-  Plus
+  Plus,
+  Check,
+  Loader2
 } from 'lucide-react'
 import { api, type ScannedPort } from '@/api'
 import type { IAppSettings, ISourcePort, SourcePortFamily } from '@shared/schema'
@@ -48,8 +50,8 @@ interface SourcePortsTabProps {
   /** Kick off a scan on mount — used by the onboarding wizard so arriving at
    *  this step starts working immediately instead of waiting on a click. */
   autoScan?: boolean
-  /** Shared bounded inventory/editor, or the legacy inline form. */
-  layout?: 'standard' | 'workbench'
+  /** Settings workbench, compact guided setup, or the legacy inline form. */
+  layout?: 'standard' | 'workbench' | 'setup'
   /** A guided setup step can supply its own heading and persistence hint. */
   showHeading?: boolean
   footerHint?: React.ReactNode
@@ -77,6 +79,8 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
   const [scanError, setScanError] = useState(false)
   const [scanDialogOpen, setScanDialogOpen] = useState(false)
   const workbenchRef = useRef<HTMLElement>(null)
+  const setupRef = useRef<HTMLElement>(null)
+  const setupEditTriggerRef = useRef<HTMLButtonElement | null>(null)
   const focusImportedPortRef = useRef(false)
   const sourcePortsRef = useRef(settings.sourcePorts)
   useEffect(() => {
@@ -173,6 +177,16 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
       focusImportedPortRef.current = true
       selectPort(additions[0].id)
     }
+    if (layout === 'setup' && additions[0]) {
+      const importedId = additions[0].id
+      requestAnimationFrame(() =>
+        setupRef.current
+          ?.querySelector<HTMLButtonElement>(
+            `[data-settings-resource-id="${importedId}"] [data-onboarding-port-default]`
+          )
+          ?.focus({ preventScroll: true })
+      )
+    }
     setScanDialogOpen(false)
     setScanResults(null)
     setScanSelections([])
@@ -208,7 +222,13 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
       const exePath = result.filePaths[0]
       const { name, family } = inferPortIdentity(exePath)
 
-      const newPort: ISourcePort = {
+      const existingPort =
+        layout === 'setup'
+          ? sourcePortsRef.current.find(
+              (port) => port.executablePath.toLowerCase() === exePath.toLowerCase()
+            )
+          : undefined
+      const newPort: ISourcePort = existingPort ?? {
         id: crypto.randomUUID(),
         name,
         executablePath: exePath,
@@ -272,10 +292,17 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
           version: result.version,
           ignored: false
         }
-        setSettings((prev) => ({
-          ...prev,
-          sourcePorts: [...prev.sourcePorts, downloadedPort]
-        }))
+        setSettings((prev) => {
+          if (
+            layout === 'setup' &&
+            prev.sourcePorts.some(
+              (port) =>
+                port.executablePath.toLowerCase() === downloadedPort.executablePath.toLowerCase()
+            )
+          )
+            return prev
+          return { ...prev, sourcePorts: [...prev.sourcePorts, downloadedPort] }
+        })
         if (layout === 'workbench') selectPort(downloadedPort.id)
       }}
       existingPorts={settings.sourcePorts.flatMap((port) => [
@@ -351,6 +378,290 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
       </div>
     </div>
   )
+
+  if (layout === 'setup') {
+    // Preserve scan indices while only offering engines that are not already
+    // configured. Going Back or replaying setup must not duplicate the inventory.
+    const newScanResults = (scanResults ?? [])
+      .map((result, index) => ({ result, index }))
+      .filter(
+        ({ result }) =>
+          !settings.sourcePorts.some(
+            (port) => port.executablePath.toLowerCase() === result.path.toLowerCase()
+          )
+      )
+    const selectedScanCount = newScanResults.filter(({ index }) => scanSelections[index]).length
+    const editingExisting = settings.sourcePorts.some((port) => port.id === editingPort?.id)
+    const closeEditor = (): void => {
+      setShowPortForm(false)
+      setEditingPort(null)
+    }
+
+    return (
+      <section
+        ref={setupRef}
+        className="space-y-4"
+        aria-label={t('sourcePorts.title', 'Source Ports')}
+      >
+        {(scanning || scanError || scanResults !== null) && (
+          <div
+            className="rounded-md border border-app bg-app-secondary/40 p-4"
+            data-onboarding-scan-result
+          >
+            {scanning ? (
+              <p role="status" className="flex items-center gap-2 text-sm text-app-muted">
+                <Loader2
+                  className="size-4 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+                {t(
+                  'onboarding.sourcePorts.scanningComputer',
+                  'Looking for source ports on your computer…'
+                )}
+              </p>
+            ) : scanError ? (
+              <p role="alert" className="text-sm text-app-muted">
+                {t(
+                  'sourcePorts.workbench.scanFailed',
+                  'The scan failed. Try scanning again, or add an executable manually.'
+                )}
+              </p>
+            ) : newScanResults.length === 0 ? (
+              <p role="status" className="text-sm text-app-muted">
+                {settings.sourcePorts.length > 0
+                  ? t('onboarding.sourcePorts.noNewPorts', 'No new source ports found.')
+                  : t(
+                      'onboarding.sourcePorts.noneFound',
+                      'No source ports found. You can download one with Get Port, or choose an installed engine with Add Port.'
+                    )}
+              </p>
+            ) : (
+              <>
+                <h3 className="text-sm font-medium" role="status">
+                  {t(
+                    'onboarding.sourcePorts.foundForYou',
+                    '{count, plural, one {We found # source port for you} other {We found # source ports for you}}',
+                    { count: newScanResults.length }
+                  )}
+                </h3>
+                <div className="mt-3 divide-y divide-app">
+                  {newScanResults.map(({ result, index }) => (
+                    <label
+                      key={result.path}
+                      className="flex cursor-pointer items-center gap-3 py-2.5 text-sm"
+                      title={result.path}
+                    >
+                      <input
+                        type="checkbox"
+                        data-onboarding-scan-choice={result.path}
+                        aria-label={t('sourcePorts.scan.select', 'Select {name}', {
+                          name: result.name
+                        })}
+                        checked={scanSelections[index] ?? false}
+                        onChange={() =>
+                          setScanSelections((previous) =>
+                            previous.map((selected, i) => (i === index ? !selected : selected))
+                          )
+                        }
+                        className="size-4 shrink-0 accent-accent-highlight"
+                      />
+                      <span className="min-w-0 flex-1 truncate">{result.name}</span>
+                      <span className="hidden max-w-[44%] truncate font-mono text-xs text-app-muted sm:block">
+                        {result.path}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    data-onboarding-scan-import
+                    onClick={handleImportScanned}
+                    disabled={selectedScanCount === 0}
+                    className="gap-2"
+                  >
+                    <Plus className="size-4" aria-hidden="true" />
+                    {t('sourcePorts.scan.addSelected', 'Add Selected ({count, number})', {
+                      count: selectedScanCount
+                    })}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2 border-b border-app pb-4">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void handleScanPorts()}
+            disabled={scanning}
+          >
+            <ScanSearch className="size-4" aria-hidden="true" />
+            {scanning
+              ? t('sourcePorts.scanning', 'Scanning…')
+              : t('sourcePorts.scanPath', 'Scan Path')}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setShowPortDownloadModal(true)}
+          >
+            <Download className="size-4" aria-hidden="true" />
+            {t('sourcePorts.get', 'Get Port')}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            data-onboarding-port-add
+            onClick={(event) => {
+              setupEditTriggerRef.current = event.currentTarget
+              void handleAddPort()
+            }}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            {t('sourcePorts.add', 'Add Port')}
+          </Button>
+        </div>
+
+        {settings.sourcePorts.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs text-app-muted">
+              {t(
+                'onboarding.sourcePorts.preferredHint',
+                'Ready to use. Select the engine you want to use by default.'
+              )}
+            </p>
+            <div className="divide-y divide-app" data-settings-resource-list>
+              {settings.sourcePorts.map((port) => {
+                const isDefault = settings.defaultSourcePortId === port.id
+                return (
+                  <div
+                    key={port.id}
+                    data-settings-resource-id={port.id}
+                    className="flex items-center gap-1"
+                  >
+                    <button
+                      type="button"
+                      data-onboarding-port-default
+                      aria-pressed={isDefault}
+                      aria-label={t('onboarding.sourcePorts.useDefault', 'Use {name} by default', {
+                        name: port.name
+                      })}
+                      className="flex min-w-0 flex-1 items-center gap-3 rounded-sm px-2 py-3 text-left hover:bg-app-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                      onClick={() => handleSetDefaultPort(port.id)}
+                    >
+                      <Cpu className="size-5 shrink-0 text-app-muted" aria-hidden="true" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">{port.name}</span>
+                        <span className="mt-0.5 block truncate text-xs text-app-muted">
+                          {port.family === 'other'
+                            ? t('sourcePorts.form.other', 'Other')
+                            : port.family.toUpperCase()}
+                          {port.version ? ` / ${port.version}` : ''}
+                        </span>
+                      </span>
+                      {port.ignored && (
+                        <EyeOff
+                          className="size-4 text-app-muted"
+                          aria-label={t('sourcePorts.workbench.hidden', 'Hidden from launcher')}
+                        />
+                      )}
+                      <span className="settings-resource-badge-slot">
+                        <span
+                          className={`inline-flex items-center gap-1 text-xs text-app-muted ${isDefault ? '' : 'invisible'}`}
+                          aria-hidden={!isDefault}
+                        >
+                          <Check className="size-3.5" aria-hidden="true" />
+                          {t('settings.resources.default', 'Default')}
+                        </span>
+                      </span>
+                    </button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      data-onboarding-port-edit
+                      className="size-9 shrink-0 text-app-muted"
+                      aria-label={t('onboarding.sourcePorts.editName', 'Edit {name}', {
+                        name: port.name
+                      })}
+                      onClick={(event) => {
+                        setupEditTriggerRef.current = event.currentTarget
+                        setEditingPort(port)
+                        setShowPortForm(true)
+                      }}
+                    >
+                      <Pencil className="size-4" aria-hidden="true" />
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {footerHint && <p className="text-xs text-app-muted">{footerHint}</p>}
+        {portDownloadModal}
+        <Dialog
+          open={showPortForm}
+          onOpenChange={(open) => {
+            if (!open) closeEditor()
+          }}
+        >
+          <DialogContent
+            data-onboarding-port-editor
+            className="settings-surface max-h-[85dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto border-app bg-app-primary"
+            onCloseAutoFocus={(event) => {
+              event.preventDefault()
+              const trigger = setupEditTriggerRef.current
+              if (trigger?.isConnected) trigger.focus({ preventScroll: true })
+              else
+                setupRef.current
+                  ?.querySelector<HTMLButtonElement>(
+                    '[data-onboarding-port-default], [data-onboarding-port-add]'
+                  )
+                  ?.focus({ preventScroll: true })
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>
+                {editingExisting
+                  ? t('sourcePorts.form.edit', 'Edit Source Port')
+                  : t('sourcePorts.form.new', 'New Source Port')}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                {t('sourcePorts.workbench.description', 'Engines and their launch configuration.')}
+              </DialogDescription>
+            </DialogHeader>
+            {editingPort && (
+              <PortForm
+                key={editingPort.id}
+                port={editingPort}
+                onSave={handleSavePort}
+                onCancel={closeEditor}
+                compact
+                existingPorts={settings.sourcePorts}
+                onRemove={
+                  editingExisting
+                    ? () => {
+                        handleDeletePort(editingPort.id)
+                        closeEditor()
+                      }
+                    : undefined
+                }
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      </section>
+    )
+  }
 
   if (layout === 'workbench') {
     return (
@@ -926,28 +1237,64 @@ interface PortFormProps {
   port: ISourcePort
   onSave: (port: ISourcePort) => void
   onCancel: () => void
+  compact?: boolean
+  existingPorts?: ISourcePort[]
+  onRemove?: () => void
 }
 
-const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
+const PortForm: React.FC<PortFormProps> = ({
+  port,
+  onSave,
+  onCancel,
+  compact = false,
+  existingPorts = [],
+  onRemove
+}) => {
   const { t } = useTranslate('desktop')
   const [name, setName] = useState(port.name)
   const [version, setVersion] = useState(port.version || '')
   const [family, setFamily] = useState<SourcePortFamily>(port.family)
   const [executablePath, setExecutablePath] = useState(port.executablePath)
+  const [ignored, setIgnored] = useState(port.ignored ?? false)
+  const fieldId = `port-form-${port.id}`
+  const duplicatePath = existingPorts.some(
+    (existing) =>
+      existing.id !== port.id &&
+      existing.executablePath.toLowerCase() === executablePath.toLowerCase()
+  )
+  const canSave = Boolean(name.trim() && executablePath.trim() && !duplicatePath)
 
   return (
-    <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3 animate-in slide-in-from-top-2 duration-200">
-      <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-        {port.id
-          ? t('sourcePorts.form.edit', 'Edit Source Port')
-          : t('sourcePorts.form.new', 'New Source Port')}
-      </Label>
+    <form
+      className={
+        compact
+          ? 'space-y-4'
+          : 'bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3 animate-in slide-in-from-top-2 duration-200'
+      }
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (canSave)
+          onSave({ ...port, name, version: version || undefined, family, executablePath, ignored })
+      }}
+    >
+      {!compact && (
+        <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+          {port.id
+            ? t('sourcePorts.form.edit', 'Edit Source Port')
+            : t('sourcePorts.form.new', 'New Source Port')}
+        </Label>
+      )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label className="text-xs text-app-muted">{t('sourcePorts.form.name', 'Name')}</Label>
+          <Label htmlFor={`${fieldId}-name`} className="text-xs text-app-muted">
+            {t('sourcePorts.form.name', 'Name')}
+          </Label>
           <Input
+            id={`${fieldId}-name`}
+            name="name"
             value={name}
+            required
             onChange={(e) => setName(e.target.value)}
             className="bg-app-primary border-app h-9 text-sm"
             placeholder={t('sourcePorts.form.nameExample', 'e.g. {name}', {
@@ -956,10 +1303,12 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-app-muted">
+          <Label htmlFor={`${fieldId}-version`} className="text-xs text-app-muted">
             {t('sourcePorts.form.version', 'Version (optional)')}
           </Label>
           <Input
+            id={`${fieldId}-version`}
+            name="version"
             value={version}
             onChange={(e) => setVersion(e.target.value)}
             className="bg-app-primary border-app h-9 text-sm"
@@ -971,28 +1320,31 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs text-app-muted">
+        <Label htmlFor={`${fieldId}-path`} className="text-xs text-app-muted">
           {t('sourcePorts.form.path', 'Executable Path')}
         </Label>
         <div className="flex gap-2">
           <Input
+            id={`${fieldId}-path`}
+            name="executablePath"
             value={executablePath}
+            required
+            aria-invalid={duplicatePath || undefined}
+            aria-describedby={duplicatePath ? `${fieldId}-duplicate` : undefined}
             onChange={(e) => setExecutablePath(e.target.value)}
-            className="bg-app-primary border-app h-9 text-sm flex-1"
+            className="min-w-0 bg-app-primary border-app h-9 text-sm flex-1"
           />
           <Button
+            type="button"
             aria-label={t('sourcePorts.form.browse', 'Browse for executable')}
             size="icon"
-            variant="ghost"
-            className="h-9 w-9 shrink-0 hover:bg-accent-highlight/10 text-accent-highlight border border-app/30"
+            variant="outline"
+            className="h-9 w-9 shrink-0 border-app"
             onClick={async () => {
               const result = await api.showOpenDialog({
                 properties: ['openFile'],
                 filters: [
-                  {
-                    name: t('sourcePorts.dialog.executables', 'Executables'),
-                    extensions: ['*']
-                  }
+                  { name: t('sourcePorts.dialog.executables', 'Executables'), extensions: ['*'] }
                 ]
               })
               if (!result.canceled && result.filePaths.length > 0) {
@@ -1000,56 +1352,79 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
               }
             }}
           >
-            <FolderOpen className="w-4 h-4" />
+            <FolderOpen className="w-4 h-4" aria-hidden="true" />
           </Button>
         </div>
+        {duplicatePath && (
+          <p id={`${fieldId}-duplicate`} className="text-xs text-destructive" role="alert">
+            {t('onboarding.sourcePorts.duplicatePath', 'This executable is already added.')}
+          </p>
+        )}
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs text-app-muted">{t('sourcePorts.form.family', 'Family')}</Label>
+        <Label htmlFor={`${fieldId}-family`} className="text-xs text-app-muted">
+          {t('sourcePorts.form.family', 'Family')}
+        </Label>
         <Select value={family} onValueChange={(v) => setFamily(v as SourcePortFamily)}>
-          <SelectTrigger className="bg-app-primary border-app h-9">
+          <SelectTrigger id={`${fieldId}-family`} className="bg-app-primary border-app h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-app-secondary border-app">
             {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'helion', 'other'] as const).map(
               (f) => (
                 <SelectItem key={f} value={f} className="text-app-primary">
-                  {f === 'other' ? t('sourcePorts.form.other', 'Other') : f}
+                  {f === 'other' ? t('sourcePorts.form.other', 'Other') : f.toUpperCase()}
                 </SelectItem>
               )
             )}
           </SelectContent>
         </Select>
       </div>
+      {compact && (
+        <div className="flex items-center justify-between gap-4 border-t border-app pt-4">
+          <Label htmlFor={`${fieldId}-hidden`} className="text-sm text-app-muted">
+            {t('sourcePorts.workbench.hideFromLauncher', 'Hide from launcher')}
+          </Label>
+          <Switch id={`${fieldId}-hidden`} checked={ignored} onCheckedChange={setIgnored} />
+        </div>
+      )}
 
-      <div className="flex justify-end gap-2 pt-2">
+      <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+        {onRemove && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            data-onboarding-port-remove
+            onClick={onRemove}
+            className="mr-auto text-destructive hover:text-destructive"
+          >
+            <Trash2 className="size-4" aria-hidden="true" />
+            {t('sourcePorts.workbench.remove', 'Remove entry')}
+          </Button>
+        )}
         <Button
+          type="button"
           variant="outline"
           size="sm"
+          data-onboarding-port-cancel
           onClick={onCancel}
           className="text-xs bg-transparent border-app hover:bg-app-hover text-app-muted h-8"
         >
           {t('sourcePorts.form.cancel', 'Cancel')}
         </Button>
         <Button
+          type="submit"
           size="sm"
-          onClick={() =>
-            onSave({
-              ...port,
-              name,
-              version: version || undefined,
-              family,
-              executablePath
-            })
-          }
-          disabled={!name.trim() || !executablePath.trim()}
-          className="text-xs bg-accent-highlight text-white hover:bg-accent-highlight/90 h-8"
+          data-onboarding-port-save
+          disabled={!canSave}
+          className="text-xs h-8"
         >
           {t('sourcePorts.form.save', 'Save')}
         </Button>
       </div>
-    </div>
+    </form>
   )
 }
 

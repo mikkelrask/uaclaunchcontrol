@@ -40,10 +40,39 @@ let settings = {
   showLaunchPreview: true
 }
 let versions = []
-const scannedPorts = Array.from({ length: 28 }, (_, index) => ({
-  path: `/fixture/engine-${index + 1}/doom`,
-  name: `Fixture engine ${String(index + 1).padStart(2, '0')}`,
-  family: index % 2 === 0 ? 'gzdoom' : 'uzdoom'
+const scannedPorts = [
+  { path: '/usr/bin/gzdoom', name: 'GZDoom', family: 'gzdoom' },
+  { path: '/home/operator/.local/bin/Helion.AppImage', name: 'Helion', family: 'helion' },
+  { path: '/home/operator/.local/bin/UZDoom.AppImage', name: 'UZDoom', family: 'uzdoom' },
+  {
+    path: '/home/operator/.local/bin/UZDoom-experimental.AppImage',
+    name: 'UZDoom experimental',
+    family: 'uzdoom'
+  },
+  { path: '/usr/bin/zandronum', name: 'Zandronum', family: 'zandronum' },
+  { path: '/usr/bin/zandronum-server', name: 'Zandronum server', family: 'zandronum' },
+  { path: '/usr/bin/zdoom', name: 'ZDoom', family: 'zdoom' }
+]
+const commercialGames = [
+  ['doom', 'Ultimate Doom (1.9)', 'doom.wad'],
+  ['doom2', 'Doom II (1.9)', 'doom2.wad'],
+  ['tnt', 'Final Doom: TNT Evilution', 'tnt.wad'],
+  ['plutonia', 'Final Doom: The Plutonia Experiment', 'plutonia.wad'],
+  ['heretic', 'Heretic', 'heretic.wad'],
+  ['hexen', 'Hexen: Beyond Heretic', 'hexen.wad'],
+  ['hexdd', 'Hexen: Deathkings of the Dark Citadel', 'hexdd.wad'],
+  ['chex', 'Chex Quest', 'chex.wad'],
+  ['chex3', 'Chex Quest 3', 'chex3.wad'],
+  ['strife', 'Strife', 'strife1.wad'],
+  ['hacx', 'Hacx', 'hacx.wad']
+].map(([slug, name, file]) => ({
+  id: slug,
+  slug,
+  name,
+  defaultIwad: `/fixture/chosen-wads/${file}`,
+  args: `-iwad "/fixture/chosen-wads/${file}"`,
+  parameters: '',
+  icon: ''
 }))
 const player = {
   rank: 'cadet',
@@ -84,7 +113,8 @@ const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const wizard = '[data-testid="onboarding-wizard"]'
 const activePanel = `${wizard} [data-onboarding-step="ports"]`
 const listSelector = `${activePanel} [data-settings-resource-list]`
-const editorSelector = `${activePanel} [data-settings-editor]`
+const editorSelector = '[data-onboarding-port-editor]'
+const scanSelector = `${activePanel} [data-onboarding-scan-result]`
 
 async function evaluate(expression) {
   try {
@@ -193,6 +223,13 @@ async function step(name) {
   )
 }
 async function footerReachable(name) {
+  assert.equal(
+    await evaluate(
+      'document.querySelectorAll(\'li[data-state="open"][data-swipe-direction]\').length'
+    ),
+    0,
+    'Achievement toast interrupted setup'
+  )
   const bounds = await rectangle(wizard)
   const viewport = await evaluate('({ width: innerWidth, height: innerHeight })')
   sameRectangle({ x: 0, y: 0, ...viewport }, bounds, 'Onboarding no longer covers the viewport')
@@ -222,7 +259,7 @@ async function replay() {
   await evaluate("window.dispatchEvent(new Event('uac:replay-onboarding'))")
   await waitFor(`!!document.querySelector(${JSON.stringify(wizard)})`)
   await waitFor("!document.querySelector('.fixed.inset-0.z-50')")
-  await click(`${wizard} button`, 'Initialize Setup')
+  await click(`${wizard} [data-onboarding-next]`)
   await step('ports')
 }
 
@@ -302,7 +339,9 @@ app
       } else if (url.pathname.startsWith('/api/versions/')) result = versions[0] || {}
       else if (url.pathname === '/api/dialog/open') {
         const options = await request.json()
-        assert(options.properties.includes('openDirectory'))
+        assert(
+          options.properties.includes('openDirectory') || options.properties.includes('openFile')
+        )
         result = nextPickerResult
         nextPickerResult = { canceled: true, filePaths: [] }
       } else if (url.pathname === '/api/freedoom/download') {
@@ -373,9 +412,11 @@ app
     )
     await waitFor("!document.querySelector('.fixed.inset-0.z-50')")
     await capture('welcome')
-    await click(`${wizard} button`, 'Initialize Setup')
+    await click(`${wizard} [data-onboarding-next]`)
     await step('ports')
-    await waitFor(`!!document.querySelector('[data-onboarding-scan-review]')`)
+    await waitFor(
+      `document.querySelectorAll(${JSON.stringify(`${scanSelector} [data-onboarding-scan-choice]`)}).length === 7`
+    )
     assert.equal(scanRequests, 1)
     assert.equal(
       await evaluate('!!document.querySelector("[role=dialog]")'),
@@ -383,110 +424,134 @@ app
       'Automatic discovery interrupted setup with a modal'
     )
     await footerReachable('ports')
+    const frame = await rectangle(`${wizard} .onboarding-stage-inner`)
+    assert(frame.width <= 800, 'Setup expanded back into a full-width settings page')
     await capture('ports-discovery')
-    await click('[data-onboarding-scan-review]')
-    await waitFor(`!!document.querySelector('[role="dialog"]')`)
-    await key('Escape')
-    await waitFor(
-      `!document.querySelector('[role="dialog"]') && !!document.querySelector(${JSON.stringify(wizard)})`
-    )
+    window.webContents.setZoomFactor(1.2)
+    await waitFor('Math.abs(innerWidth - 1280 / 1.2) < 2')
+    await footerReachable('ports')
+    await capture('ports-discovery-120')
+    window.webContents.setZoomFactor(1)
+    await waitFor('innerWidth === 1280')
     await click(`${activePanel} button`, 'Scan Path')
-    await waitFor(`!!document.querySelector('[role="dialog"]')`)
     await waitFor(
-      `document.querySelector('[role="dialog"]')?.textContent.includes('Add Selected (28)')`
+      `document.querySelectorAll(${JSON.stringify(`${scanSelector} [data-onboarding-scan-choice]`)}).length === 7`
     )
     assert.equal(scanRequests, 2, 'Manual Scan did not request a fresh discovery')
-    await click('[role="dialog"] button', 'Add Selected (28)')
+    await click(`${activePanel} [data-onboarding-scan-import]`)
     await waitFor(
-      `document.querySelectorAll(${JSON.stringify(`${listSelector} [data-settings-resource-id]`)}).length === 28`
+      `document.querySelectorAll(${JSON.stringify(`${listSelector} [data-settings-resource-id]`)}).length === 7`
     )
-    await waitFor(`!document.querySelector('[role="dialog"]')`)
     await pause(550)
-    assert.equal(settings.sourcePorts.length, 28)
+    assert.equal(settings.sourcePorts.length, 7)
     const lastId = settings.sourcePorts.at(-1).id
-    await click(`${listSelector} [data-settings-resource-id="${lastId}"]`)
-    const editorBefore = await rectangle(editorSelector)
-    await evaluate(`document.querySelector(${JSON.stringify(listSelector)}).scrollTop = 0`)
-    sameRectangle(
-      editorBefore,
-      await rectangle(editorSelector),
-      'Inventory scroll moved the port editor'
+    const lastRow = `${listSelector} [data-settings-resource-id="${lastId}"]`
+    const defaultControl = `${lastRow} [data-onboarding-port-default]`
+    await evaluate(
+      `document.querySelector(${JSON.stringify(defaultControl)}).scrollIntoView({ block: 'nearest' })`
     )
-    const defaultControl = `${editorSelector} [data-settings-default]`
     const defaultBefore = await rectangle(defaultControl)
     await click(defaultControl)
     sameRectangle(
       defaultBefore,
       await rectangle(defaultControl),
-      'Default selection resized its control'
+      'Default selection resized its row'
     )
     await pause(550)
     assert.equal(settings.defaultSourcePortId, lastId)
+    await evaluate(
+      `document.querySelector(${JSON.stringify(`${activePanel} .onboarding-step-body`)}).scrollTop = 0`
+    )
+    await capture('ports-added')
 
-    // Workbench edits are local until every required port field is complete.
-    await click(`${activePanel} button`, 'Add Port')
+    // Details appear only on request; unfinished edits never reach saved settings.
+    await click(`${lastRow} [data-onboarding-port-edit]`)
+    await waitFor(`!!document.querySelector(${JSON.stringify(editorSelector)})`)
+    const oldName = settings.sourcePorts.find((port) => port.id === lastId).name
+    await fill(`${editorSelector} input[name="name"]`, '')
     assert.equal(
       await evaluate(
-        `document.querySelector(${JSON.stringify(`${activePanel} [data-onboarding-next]`)})?.disabled`
+        `document.querySelector(${JSON.stringify(`${editorSelector} [data-onboarding-port-save]`)})?.disabled`
       ),
       true
     )
-    await pause(600)
-    assert.equal(settings.sourcePorts.length, 28, 'An unfinished added port reached autosave')
-    await fill(`${editorSelector} input[name="name"]`, 'New fixture engine')
-    await pause(500)
-    assert.equal(settings.sourcePorts.length, 28)
-    await click(`${editorSelector} [role="combobox"]`)
-    await click('[role="option"]', 'UZDOOM')
-    await waitFor('!document.querySelector(\'[role="listbox"]\')')
-    await fill(`${editorSelector} input[name="executablePath"]`, '/fixture/new-engine/doom')
-    await waitFor(
-      `!document.querySelector(${JSON.stringify(`${activePanel} [data-onboarding-next]`)})?.disabled`
-    )
     await pause(550)
-    assert.equal(settings.sourcePorts.length, 29)
-    const newId = settings.sourcePorts.at(-1).id
-    await fill(`${editorSelector} input[name="name"]`, '')
-    await pause(600)
-    assert.equal(
-      settings.sourcePorts.at(-1).name,
-      'New fixture engine',
-      'Temporarily blank editing destroyed a valid saved entry'
+    assert.equal(settings.sourcePorts.find((port) => port.id === lastId).name, oldName)
+    await key('Escape')
+    await waitFor(
+      `!document.querySelector(${JSON.stringify(editorSelector)}) && !!document.querySelector(${JSON.stringify(wizard)})`
     )
-    await fill(`${editorSelector} input[name="name"]`, 'New fixture engine')
+    await waitFor(`document.activeElement?.hasAttribute('data-onboarding-port-edit')`)
+
+    nextPickerResult = { canceled: false, filePaths: ['/fixture/new-engine/doom'] }
+    await click(`${activePanel} button`, 'Add Port')
+    await waitFor(`!!document.querySelector(${JSON.stringify(editorSelector)})`)
+    await fill(`${editorSelector} input[name="name"]`, 'My source port')
+    await fill(`${editorSelector} input[name="executablePath"]`, '')
+    await pause(550)
+    assert.equal(settings.sourcePorts.length, 7, 'An unfinished added port reached autosave')
+    assert.equal(
+      await evaluate(
+        `document.querySelector(${JSON.stringify(`${editorSelector} [data-onboarding-port-save]`)})?.disabled`
+      ),
+      true
+    )
+    await fill(`${editorSelector} input[name="executablePath"]`, '/fixture/new-engine/doom')
     await capture('ports-editor')
+    await click(`${editorSelector} [data-onboarding-port-save]`)
+    await waitFor(`!document.querySelector(${JSON.stringify(editorSelector)})`)
+    await pause(550)
+    assert.equal(settings.sourcePorts.length, 8)
+    const newId = settings.sourcePorts.at(-1).id
+    const newEdit = `${listSelector} [data-settings-resource-id="${newId}"] [data-onboarding-port-edit]`
 
     window.setSize(560, 900)
-    await waitFor(
-      `!!document.querySelector(${JSON.stringify(`${activePanel} [data-settings-back]`)})?.getClientRects().length`
-    )
-    await click(`${activePanel} [data-settings-back]`)
-    await click(`${listSelector} [data-settings-resource-id="${newId}"]`)
-    await waitFor(`document.activeElement?.hasAttribute('data-settings-back')`)
+    await waitFor('innerWidth === 560')
     await footerReachable('ports')
     await capture('ports-narrow')
-    await click(`${activePanel} [data-settings-back]`)
+    await click(newEdit)
+    await waitFor(`!!document.querySelector(${JSON.stringify(editorSelector)})`)
+    const modal = await rectangle(editorSelector)
+    const viewport = await evaluate('({width:innerWidth,height:innerHeight})')
+    assert(
+      modal.x >= 0 && modal.x + modal.width <= viewport.width + 1,
+      'Narrow editor overflows viewport'
+    )
+    await key('Escape')
     await waitFor(
-      `document.activeElement?.getAttribute('data-settings-resource-id') === ${JSON.stringify(newId)}`
+      `!document.querySelector(${JSON.stringify(editorSelector)}) && !!document.querySelector(${JSON.stringify(wizard)})`
     )
     window.setSize(1280, 940)
     window.webContents.setZoomFactor(1.2)
     await waitFor('Math.abs(innerWidth - 1280 / 1.2) < 2')
     await footerReachable('ports')
-    const pane = await rectangle(editorSelector)
-    const next = await rectangle(`${activePanel} [data-onboarding-next]`)
-    assert(pane.y + pane.height <= next.y + 1, 'Zoomed editor overlaps Next')
+    await evaluate(
+      `document.querySelector(${JSON.stringify(`${activePanel} .onboarding-step-body`)}).scrollTop = 0`
+    )
     await capture('ports-120')
     window.webContents.setZoomFactor(1)
+    await waitFor('innerWidth === 1280')
     await click(`${activePanel} [data-onboarding-next]`)
     await step('wads')
     const wads = `${wizard} [data-onboarding-step="wads"]`
-    await waitFor(
-      `document.querySelectorAll(${JSON.stringify(`${wads} [data-freedoom-bundle]`)}).length === 2`
-    )
+    const freeGames = `${wads} [data-onboarding-freegames]`
+    const freeGamesToggle = `${wads} [data-onboarding-freegames-trigger]`
+    await waitFor(`!!document.querySelector(${JSON.stringify(freeGamesToggle)})`)
     assert.equal(versions.length, 0)
+    assert.equal(
+      await evaluate(`document.querySelector(${JSON.stringify(freeGames)})?.open`),
+      false
+    )
     await footerReachable('wads')
     await capture('wads-empty')
+    await click(freeGamesToggle)
+    await waitFor(`document.querySelector(${JSON.stringify(freeGames)})?.open`)
+    await capture('wads-free-offer')
+    await key('Escape')
+    await waitFor(
+      `!document.querySelector(${JSON.stringify(freeGames)})?.open && !!document.querySelector(${JSON.stringify(wizard)})`
+    )
+    await waitFor(`document.activeElement?.hasAttribute('data-onboarding-freegames-trigger')`)
     const editPath = `${wads} [data-settings-path-edit="wadFilesDirectory"]`
     const pathInput = `${wads} input[name="wadFilesDirectory"]`
     await click(editPath)
@@ -528,6 +593,7 @@ app
       `document.querySelector(${JSON.stringify(wads)}).textContent.includes('/fixture/chosen-wads')`
     )
     assert.equal(settings.wadFilesDirectory, '/fixture/chosen-wads')
+    await click(freeGamesToggle)
     await click(`${wads} [data-freedoom-download="phase12"]`)
     await waitFor(
       `document.querySelector(${JSON.stringify(`${wads} [data-freedoom-bundle="phase12"]`)})?.getAttribute('data-freedoom-state') === 'downloading'`
@@ -554,59 +620,110 @@ app
     )
     assert.equal(downloadRequests, 3)
     assert.equal(versions.length, 3)
-    await click(`${wads} [data-settings-resource-id="freedoom2"]`)
+    await click(freeGamesToggle)
+    versions = [...commercialGames, ...versions]
+    await click(`${wads} [data-onboarding-next]`)
+    await step('registry')
+    assert.equal(
+      await evaluate(
+        `document.querySelector(${JSON.stringify(`${wizard} [role="switch"]`)})?.getAttribute('data-state')`
+      ),
+      'unchecked'
+    )
+    await footerReachable('registry')
+    await capture('registry')
+    window.setSize(1100, 1300)
+    await waitFor('innerWidth === 1100 && innerHeight === 1300')
+    await footerReachable('registry')
+    await capture('registry-tall')
+    window.setSize(1280, 940)
+    await waitFor('innerWidth === 1280')
+    await click(`${wizard} [data-onboarding-back]`)
+    await step('wads')
     await waitFor(
-      `document.querySelector(${JSON.stringify(`${wads} [data-settings-resource-id="freedoom2"]`)})?.getAttribute('aria-pressed') === 'true'`
+      `document.querySelectorAll(${JSON.stringify(`${wads} [data-settings-resource-id]`)}).length === 14`
+    )
+    assert.equal(
+      await evaluate(`document.querySelector(${JSON.stringify(freeGames)})?.open`),
+      false
+    )
+    assert.equal(
+      await evaluate(
+        `document.querySelector(${JSON.stringify(freeGamesToggle)})?.getAttribute('data-freedoom-installed')`
+      ),
+      'true'
+    )
+    await click(`${wads} [data-settings-resource-id="doom"]`)
+    await waitFor(
+      `document.querySelector(${JSON.stringify(`${wads} [data-settings-resource-id="doom"]`)})?.getAttribute('aria-pressed') === 'true'`
     )
     await pause(550)
-    assert.equal(settings.defaultDoomVersionId, 'freedoom2')
+    assert.equal(settings.defaultDoomVersionId, 'doom')
+    await evaluate(
+      `document.querySelector(${JSON.stringify(`${wads} .onboarding-step-body`)}).scrollTop = 0`
+    )
+    await capture('wads-installed')
     window.webContents.setZoomFactor(1.2)
     await waitFor('Math.abs(innerWidth - 1280 / 1.2) < 2')
     await footerReachable('wads')
     await capture('wads-120-installed')
     window.webContents.setZoomFactor(1)
+    await waitFor('innerWidth === 1280')
     window.setSize(560, 850)
+    await waitFor('innerWidth === 560')
     await footerReachable('wads')
     await capture('wads-narrow')
     window.setSize(1280, 940)
     await click(`${wads} [data-onboarding-next]`)
     await step('registry')
-    assert.equal(
-      await evaluate(
-        `${JSON.stringify(wizard)} && document.querySelector(${JSON.stringify(`${wizard} [role="switch"]`)})?.getAttribute('data-state')`
-      ),
-      'unchecked'
-    )
-    await click(`${wizard} [data-onboarding-back]`)
-    await step('wads')
-    await waitFor(
-      `document.querySelector(${JSON.stringify(`${wads} [data-freedoom-bundle="phase12"]`)})?.getAttribute('data-freedoom-state') === 'installed'`
-    )
-    await click(`${wads} [data-onboarding-next]`)
-    await step('registry')
+    window.webContents.setZoomFactor(1.2)
+    await waitFor('Math.abs(innerWidth - 1280 / 1.2) < 2')
+    await footerReachable('registry')
+    await capture('registry-120')
+    window.webContents.setZoomFactor(1)
+    await waitFor('innerWidth === 1280')
     await click(`${wizard} [data-onboarding-next]`)
     await waitFor(
-      `document.querySelector(${JSON.stringify(wizard)})?.textContent.includes('29 source ports and 3 WAD files')`
+      `document.querySelector(${JSON.stringify(wizard)})?.textContent.includes('8 source ports and 14 WAD files')`
     )
     await capture('complete')
-    await click(`${wizard} button`, 'Finish')
+    await click(`${wizard} [data-onboarding-next]`)
     await waitFor(
       `!document.querySelector(${JSON.stringify(wizard)}) && !!document.querySelector('nav a')`
     )
     assert.equal(firstRun, false)
     assert.equal(settings.registryLookupEnabled, false)
-    assert.equal(settings.sourcePorts.length, 29)
-    assert.equal(settings.defaultDoomVersionId, 'freedoom2')
+    assert.equal(settings.sourcePorts.length, 8)
+    assert.equal(settings.defaultDoomVersionId, 'doom')
+    await waitFor('!!document.querySelector(\'li[data-state="open"][data-swipe-direction]\')')
+    await click('li[data-state="open"][data-swipe-direction] [toast-close]')
+    await waitFor('!document.querySelector(\'li[data-state="open"][data-swipe-direction]\')')
 
     // A successful retry reconciles a default whose WAD disappeared after setup.
     await replay()
+    await waitFor(
+      `document.querySelector(${JSON.stringify(scanSelector)})?.textContent.includes('No new source ports found.')`
+    )
+    assert.equal(
+      await evaluate(
+        `document.querySelectorAll(${JSON.stringify(`${scanSelector} [data-onboarding-scan-choice]`)}).length`
+      ),
+      0,
+      'Replay duplicated configured ports in discovery'
+    )
+    assert.equal(
+      await evaluate(
+        `document.querySelectorAll(${JSON.stringify(`${listSelector} [data-settings-resource-id]`)}).length`
+      ),
+      8
+    )
     failNextVersions = true
     await click(`${activePanel} [data-onboarding-next]`)
     await step('wads')
     await waitFor(
       `!!document.querySelector(${JSON.stringify(`${wads} [data-onboarding-wads-retry]`)})`
     )
-    versions = versions.filter((version) => version.id !== 'freedoom2')
+    versions = versions.filter((version) => version.id !== 'doom')
     await click(`${wads} [data-onboarding-wads-retry]`)
     await waitFor(
       `!document.querySelector(${JSON.stringify(`${wads} [data-onboarding-wads-retry]`)})`
@@ -619,24 +736,45 @@ app
     )
     await click(`${wads} [data-onboarding-back]`)
     await step('ports')
+    await waitFor(
+      `document.querySelector(${JSON.stringify(scanSelector)})?.textContent.includes('No new source ports found.')`
+    )
+    assert.equal(
+      await evaluate(
+        `document.querySelectorAll(${JSON.stringify(`${scanSelector} [data-onboarding-scan-choice]`)}).length`
+      ),
+      0,
+      'Back duplicated configured ports in discovery'
+    )
 
-    // Skipping a replay retains the latest valid edit and drops an unfinished local draft.
-    await click(`${listSelector} [data-settings-resource-id="${newId}"]`)
-    delayNextSettingsWrite = 1500
+    // Skipping a replay waits for the latest accepted edit, even during an older save.
+    await click(newEdit)
+    await waitFor(`!!document.querySelector(${JSON.stringify(editorSelector)})`)
+    delayNextSettingsWrite = 4500
     await fill(`${editorSelector} input[name="name"]`, 'First queued name')
+    await click(`${editorSelector} [data-onboarding-port-save]`)
     const saveDeadline = Date.now() + 5000
     while (!delayedSaveStarted && Date.now() < saveDeadline) await pause(30)
     assert(delayedSaveStarted, 'Delayed autosave fixture never started')
+    await click(newEdit)
     await fill(`${editorSelector} input[name="name"]`, 'Final queued name')
+    await click(`${editorSelector} [data-onboarding-port-save]`)
+    await waitFor(`!document.querySelector(${JSON.stringify(editorSelector)})`)
+    nextPickerResult = { canceled: false, filePaths: ['/fixture/cancelled-engine/doom'] }
     await click(`${activePanel} button`, 'Add Port')
-    await pause(600)
+    await waitFor(
+      `!!document.querySelector(${JSON.stringify(`${editorSelector} input[name="name"]`)})`
+    )
+    await fill(`${editorSelector} input[name="name"]`, '')
+    await click(`${editorSelector} [data-onboarding-port-cancel]`)
+    await waitFor(`!document.querySelector(${JSON.stringify(editorSelector)})`)
     await click(`${wizard} button`, 'Skip setup')
     assert(
       await evaluate(`!!document.querySelector(${JSON.stringify(wizard)})`),
       'Skip dismissed setup before its pending save finished'
     )
     await waitFor(`!document.querySelector(${JSON.stringify(wizard)})`)
-    assert.equal(settings.sourcePorts.length, 29)
+    assert.equal(settings.sourcePorts.length, 8)
     assert.equal(
       settings.sourcePorts.find((port) => port.id === newId)?.name,
       'Final queued name',
@@ -656,7 +794,7 @@ app
       JSON.stringify(requests)
     )
     console.log(
-      'PASS fresh onboarding: boot, discovery/import, bounded editors, valid-only autosave, narrow focus, 120% zoom, folder recovery/queued writes, FreeDoom download/retry, default reconciliation, Back/Next/Finish/Skip, sandbox and offline renderer'
+      'PASS fresh onboarding: inline discovery/import, compact port rows, optional edit dialogs, 14-game inventory, compact FreeDoom offer/download/retry, narrow and 120% layouts, folder recovery/queued writes, valid-only persistence, default reconciliation, Back/Next/Finish/Skip, sandbox and offline renderer'
     )
     clearTimeout(deadline)
     window.destroy()

@@ -1,8 +1,18 @@
-import { T, useTranslate } from '@tolgee/react'
+import { useTranslate } from '@tolgee/react'
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, FolderOpen, Loader2, Pencil, RefreshCw } from 'lucide-react'
+import {
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FolderOpen,
+  Loader2,
+  Pencil,
+  RefreshCw
+} from 'lucide-react'
 import { api } from '@/api'
 import { queryClient } from '@/lib/queryClient'
 import type { IAppSettings, IDoomVersion } from '@shared/schema'
@@ -41,6 +51,8 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
   const [directoryError, setDirectoryError] = useState('')
   const editButtonRef = useRef<HTMLButtonElement>(null)
   const pathInputRef = useRef<HTMLInputElement>(null)
+  const freeGamesRef = useRef<HTMLDetailsElement>(null)
+  const freeGamesSummaryRef = useRef<HTMLElement>(null)
   const operationPending = useRef(true)
   const mounted = useRef(false)
   const setSettingsRef = useRef(setSettings)
@@ -227,32 +239,19 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
     }
   }
   const busy = directoryPending || isLoadingVersions || freedoomDownloading !== null
+  const freeDoomInstalled = ['freedoom1', 'freedoom2'].every((slug) =>
+    doomVersions.some((version) => version.slug === slug)
+  )
 
   return (
     <OnboardingStepLayout
       id="wads"
-      title={t('onboarding.wads.title', 'WAD Files')}
+      title={t('onboarding.wads.setupTitle', 'Base games')}
       kicker={t('onboarding.wads.terminal', 'UAC-7 // Data Repositories')}
-      description={
-        <T
-          ns="desktop"
-          keyName="onboarding.wads.description"
-          defaultValue="Point at a folder with your Doom WAD files, or drop them into the folder below. {br}{br}Don't own DOOM or DOOM II? Grab FreeDoom — free and legally redistributable, or {guide} to see how to acquire them."
-          params={{
-            br: <br />,
-            guide: (
-              <a
-                href="https://uac-soft.online/guides/acquiring-doom/"
-                target="_blank"
-                rel="noreferrer"
-                className="underline underline-offset-2"
-              >
-                {t('onboarding.wads.acquireGuide', 'click here')}
-              </a>
-            )
-          }}
-        />
-      }
+      description={t(
+        'onboarding.wads.setupDescription',
+        'Use your Doom game files, or get FreeDoom to start playing for free.'
+      )}
       footer={
         <>
           <Button
@@ -280,85 +279,90 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
       }
     >
       <section
-        className="settings-path"
+        className="onboarding-folder"
         data-settings-path="wadFilesDirectory"
         aria-labelledby={`${id}-directory`}
       >
-        <div className="settings-path-heading">
-          <h3 id={`${id}-directory`}>{t('onboarding.wads.directory', 'WAD Files Directory')}</h3>
-          {directoryPending && (
-            <Loader2
-              className="h-4 w-4 animate-spin motion-reduce:animate-none"
-              aria-hidden="true"
-            />
-          )}
-        </div>
         {isEditingPath ? (
-          <div className="settings-path-input">
-            <Input
-              ref={pathInputRef}
-              autoFocus
-              name="wadFilesDirectory"
-              value={pathDraft}
-              aria-label={t('onboarding.wads.directory', 'WAD Files Directory')}
-              aria-invalid={!pathDraft.trim()}
-              disabled={directoryPending}
-              className="settings-control font-mono"
-              onChange={(event) => setPathDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault()
-                  void applyPathEdit()
-                }
-                if (event.key === 'Escape') {
-                  event.preventDefault()
-                  event.stopPropagation()
-                  cancelPathEdit()
-                }
-              }}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              data-onboarding-path-done
-              disabled={directoryPending || !pathDraft.trim()}
-              onClick={() => void applyPathEdit()}
-            >
-              {t('settings.paths.done', 'Done')}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              data-onboarding-path-cancel
-              disabled={directoryPending}
-              onClick={cancelPathEdit}
-            >
-              {t('sourcePorts.form.cancel', 'Cancel')}
-            </Button>
-          </div>
-        ) : (
-          <div className="settings-path-value">
-            <code>
-              {settings.wadFilesDirectory || t('settings.paths.notSet', 'No folder selected')}
-            </code>
-            <div className="settings-path-actions">
+          <>
+            <h3 id={`${id}-directory`} className="mb-2 text-sm font-medium">
+              {t('onboarding.wads.gameFolder', 'Game folder')}
+            </h3>
+            <div className="settings-path-input">
+              <Input
+                ref={pathInputRef}
+                autoFocus
+                name="wadFilesDirectory"
+                value={pathDraft}
+                aria-label={t('onboarding.wads.directory', 'WAD Files Directory')}
+                aria-invalid={!pathDraft.trim()}
+                disabled={directoryPending}
+                className="settings-control font-mono"
+                onChange={(event) => setPathDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    void applyPathEdit()
+                  }
+                  if (event.key === 'Escape') {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    cancelPathEdit()
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-onboarding-path-done
+                disabled={directoryPending || !pathDraft.trim()}
+                onClick={() => void applyPathEdit()}
+              >
+                {t('settings.paths.done', 'Done')}
+              </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
+                data-onboarding-path-cancel
+                disabled={directoryPending}
+                onClick={cancelPathEdit}
+              >
+                {t('sourcePorts.form.cancel', 'Cancel')}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="onboarding-folder-row flex flex-wrap items-center gap-3">
+            <div className="onboarding-folder-copy min-w-0 flex-1">
+              <h3 id={`${id}-directory`} className="text-sm font-medium">
+                {t('onboarding.wads.gameFolder', 'Game folder')}
+              </h3>
+              <code
+                className="mt-1 block truncate text-xs text-app-muted"
+                title={settings.wadFilesDirectory}
+              >
+                {settings.wadFilesDirectory || t('settings.paths.notSet', 'No folder selected')}
+              </code>
+            </div>
+            <div className="onboarding-folder-actions flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
                 ref={editButtonRef}
                 data-settings-path-edit="wadFilesDirectory"
                 disabled={busy}
+                aria-label={t('settings.paths.edit', 'Edit path')}
+                title={t('settings.paths.edit', 'Edit path')}
                 onClick={() => {
                   setPathDraft(settings.wadFilesDirectory ?? '')
                   setDirectoryError('')
                   setIsEditingPath(true)
                 }}
               >
-                <Pencil aria-hidden="true" />
-                {t('settings.paths.edit', 'Edit path')}
+                <Pencil className="h-4 w-4" aria-hidden="true" />
               </Button>
               <Button
                 type="button"
@@ -369,7 +373,14 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
                 aria-label={t('onboarding.wads.browse', 'Browse for WAD files directory')}
                 onClick={() => void handleBrowse()}
               >
-                <FolderOpen aria-hidden="true" />
+                {directoryPending ? (
+                  <Loader2
+                    className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <FolderOpen aria-hidden="true" />
+                )}
                 {t('settings.paths.browseAction', 'Browse…')}
               </Button>
             </div>
@@ -382,8 +393,44 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
         )}
       </section>
 
-      <div className="onboarding-wad-grid">
-        <div className="onboarding-wad-panel">
+      <details
+        ref={freeGamesRef}
+        className="onboarding-freegames"
+        data-onboarding-freegames
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape' || !freeGamesRef.current?.open) return
+          event.preventDefault()
+          event.stopPropagation()
+          freeGamesRef.current.open = false
+          freeGamesSummaryRef.current?.focus({ preventScroll: true })
+        }}
+      >
+        <summary
+          ref={freeGamesSummaryRef}
+          className="onboarding-freegames-summary"
+          data-onboarding-freegames-trigger
+          data-freedoom-installed={freeDoomInstalled}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            {freedoomDownloading ? (
+              <Loader2
+                className="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
+            ) : freeDoomInstalled ? (
+              <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <Download className="h-4 w-4 shrink-0" aria-hidden="true" />
+            )}
+            {freedoomDownloading
+              ? t('settings.wads.downloading', 'Downloading…')
+              : freeDoomInstalled
+                ? t('onboarding.wads.freeDoomReady', 'FreeDoom is installed')
+                : t('onboarding.wads.freeDoomOffer', 'No Doom files? Get FreeDoom')}
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0" aria-hidden="true" />
+        </summary>
+        <div className="onboarding-freegames-content">
           <FreeDoomDownloads
             versions={doomVersions}
             downloading={freedoomDownloading}
@@ -391,101 +438,111 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
             lastDownload={lastDownload}
             onDownload={handleDownloadFreedoom}
             disabled={directoryPending || isLoadingVersions || isEditingPath}
+            compact
+            showError={false}
           />
+          <a
+            href="https://uac-soft.online/guides/acquiring-doom/"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-block text-xs text-app-muted underline underline-offset-2"
+          >
+            {t('onboarding.wads.acquireDoom', 'Where to get the original Doom games')}
+          </a>
         </div>
-        <section className="onboarding-wad-panel" aria-labelledby={`${id}-detected`}>
-          <div className="flex items-center justify-between gap-3">
-            <h3 id={`${id}-detected`} className="text-sm font-medium">
-              {t('onboarding.wads.detected', 'Detected IWADs')}
-            </h3>
-            <span className="text-xs text-app-muted">{doomVersions.length}</span>
-          </div>
-          <p className="mt-2 text-xs text-app-muted">
-            {t(
-              'onboarding.wads.defaultSelectionHint',
-              'Select a base game to use for new protocols.'
-            )}
-          </p>
-          {isLoadingVersions ? (
-            <p className="mt-4 flex items-center gap-2 text-xs text-app-muted" role="status">
-              <Loader2
-                className="h-4 w-4 animate-spin motion-reduce:animate-none"
-                aria-hidden="true"
-              />
-              {t('onboarding.wads.scanning', 'Scanning…')}
-            </p>
-          ) : versionsError ? (
-            <div className="mt-4 space-y-3">
-              <p className="text-xs text-destructive" role="alert">
-                {versionsError}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                data-onboarding-wads-retry
-                onClick={() => void refreshVersions()}
-                disabled={busy}
-              >
-                <RefreshCw aria-hidden="true" />
-                {t('onboarding.wads.scanAgain', 'Scan again')}
-              </Button>
-            </div>
-          ) : doomVersions.length === 0 ? (
-            <p className="mt-4 text-xs text-app-muted">
-              {t(
-                'onboarding.wads.empty',
-                'No WAD files detected yet. Point at a folder above or download FreeDoom.'
-              )}
-            </p>
-          ) : (
-            <div className="onboarding-wad-list settings-scroll mt-3" data-settings-resource-list>
-              {doomVersions.map((version) => (
-                <button
-                  type="button"
-                  key={version.id}
-                  className="settings-resource-row"
-                  data-settings-resource-id={version.id}
-                  aria-pressed={settings.defaultDoomVersionId === version.id}
-                  disabled={busy}
-                  onClick={() =>
-                    setSettings((previous) => ({ ...previous, defaultDoomVersionId: version.id }))
-                  }
-                >
-                  <span
-                    className="flex h-8 w-8 shrink-0 items-center justify-center"
-                    aria-hidden="true"
-                  >
-                    <DoomVersionIcon
-                      version={version.slug}
-                      customIcon={version.icon}
-                      className="h-full w-full object-contain"
-                    />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">{version.name}</span>
-                    <span className="mt-1 block truncate text-xs text-app-muted">
-                      {version.defaultIwad.split(/[\\/]/).pop()}
-                    </span>
-                  </span>
-                  <span className="settings-resource-badge-slot">
-                    {settings.defaultDoomVersionId === version.id && (
-                      <span className="settings-resource-badge">
-                        {t('settings.resources.default', 'Default')}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-      {freedoomDownloading && (
-        <p className="settings-info" role="status">
-          {t('settings.wads.downloading', 'Downloading…')}
+      </details>
+      {freedoomError && (
+        <p className="mt-2 text-xs text-destructive" role="alert">
+          {freedoomError}
         </p>
       )}
+
+      <section className="onboarding-games" aria-labelledby={`${id}-detected`}>
+        <h3 id={`${id}-detected`} className="text-sm font-medium">
+          {doomVersions.length > 0
+            ? t(
+                'onboarding.wads.foundGames',
+                '{count, plural, one {We found # base game} other {We found # base games}}',
+                { count: doomVersions.length }
+              )
+            : t('onboarding.wads.yourGames', 'Your base games')}
+        </h3>
+        {doomVersions.length > 0 && (
+          <p className="mt-1 text-xs text-app-muted">
+            {t('onboarding.wads.chooseDefault', 'Choose a default game, or leave this for later.')}
+          </p>
+        )}
+        {isLoadingVersions ? (
+          <p className="mt-4 flex items-center gap-2 text-xs text-app-muted" role="status">
+            <Loader2
+              className="h-4 w-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            {t('onboarding.wads.scanning', 'Scanning…')}
+          </p>
+        ) : versionsError ? (
+          <div className="mt-4 space-y-3">
+            <p className="text-xs text-destructive" role="alert">
+              {versionsError}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              data-onboarding-wads-retry
+              onClick={() => void refreshVersions()}
+              disabled={busy}
+            >
+              <RefreshCw aria-hidden="true" />
+              {t('onboarding.wads.scanAgain', 'Scan again')}
+            </Button>
+          </div>
+        ) : doomVersions.length === 0 ? (
+          <p className="mt-4 text-xs text-app-muted">
+            {t(
+              'onboarding.wads.setupEmpty',
+              'No games found yet. Choose their folder above, or get FreeDoom.'
+            )}
+          </p>
+        ) : (
+          <div className="onboarding-wad-list mt-3" data-settings-resource-list>
+            {doomVersions.map((version) => (
+              <button
+                type="button"
+                key={version.id}
+                className="settings-resource-row"
+                data-settings-resource-id={version.id}
+                aria-pressed={settings.defaultDoomVersionId === version.id}
+                disabled={busy}
+                onClick={() =>
+                  setSettings((previous) => ({ ...previous, defaultDoomVersionId: version.id }))
+                }
+              >
+                <span
+                  className="flex h-8 w-8 shrink-0 items-center justify-center"
+                  aria-hidden="true"
+                >
+                  <DoomVersionIcon
+                    version={version.slug}
+                    customIcon={version.icon}
+                    className="h-full w-full object-contain"
+                  />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{version.name}</span>
+                </span>
+                <span className="settings-resource-badge-slot">
+                  {settings.defaultDoomVersionId === version.id && (
+                    <span className="settings-resource-badge">
+                      {t('settings.resources.default', 'Default')}
+                    </span>
+                  )}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
       {doomVersions.length === 0 && !busy && (
         <p className="settings-info">
           {t(
