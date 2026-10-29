@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
+import { FreeDoomDownloads, allFreeGamesInstalled } from '@/components/FreeDoomDownloads'
 import { SettingsDefaultControl, SettingsResourceWorkbench } from './SettingsResourceWorkbench'
 
 export interface SettingsWadsTabProps {
@@ -43,21 +44,7 @@ export function SettingsWadsTab({
   const [lastDownload, setLastDownload] = useState<'phase12' | 'freedm' | null>(null)
   const activeIndex = doomVersions[selectedWadIndex] ? selectedWadIndex : 0
   const selected = doomVersions[activeIndex]
-  const bundles = [
-    {
-      id: 'phase12' as const,
-      label: t('settings.wads.freedoomBundle', 'FreeDoom (Phase 1 + 2)'),
-      installed: ['freedoom1', 'freedoom2'].every((slug) =>
-        doomVersions.some((version) => version.slug === slug)
-      )
-    },
-    {
-      id: 'freedm' as const,
-      label: 'FreeDM',
-      installed: doomVersions.some((version) => version.slug === 'freedm')
-    }
-  ]
-  const allBundlesInstalled = bundles.every((bundle) => bundle.installed)
+  const allBundlesInstalled = allFreeGamesInstalled(doomVersions)
 
   return (
     <section className="settings-resource-section" aria-labelledby={`${id}-title`}>
@@ -102,55 +89,18 @@ export function SettingsWadsTab({
             className="w-[min(26rem,calc(100vw-2rem))] max-h-[min(28rem,70vh)] overflow-y-auto border-app bg-app-secondary text-app-primary"
             aria-labelledby={`${id}-freedoom-title`}
           >
-            <h3 id={`${id}-freedoom-title`} className="text-sm font-medium">
-              {t('settings.wads.workbench.freeGames', 'FreeDoom / FreeDM')}
-            </h3>
-            <p className="mt-2 text-xs leading-relaxed text-app-muted">
-              {t(
-                'settings.wads.freedoomDescription',
-                'Free, legally redistributable IWADs — no commercial Doom purchase required.'
-              )}
-            </p>
-            <div className="mt-4">
-              {bundles.map((bundle) => (
-                <div
-                  key={bundle.id}
-                  className="flex flex-wrap items-center justify-between gap-3 border-b border-app py-3 last:border-b-0"
-                >
-                  <span className="text-sm">{bundle.label}</span>
-                  {bundle.installed ? (
-                    <span className="flex items-center gap-1 text-xs text-app-muted">
-                      <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                      {t('settings.wads.installed', 'Installed')}
-                    </span>
-                  ) : (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={freedoomDownloading !== null}
-                      onClick={() => {
-                        setLastDownload(bundle.id)
-                        void onDownloadFreedoom(bundle.id)
-                      }}
-                    >
-                      <Download className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                      {freedoomDownloading === bundle.id
-                        ? t('settings.wads.downloading', 'Downloading…')
-                        : freedoomError && lastDownload === bundle.id
-                          ? t('settings.wads.workbench.retryDownload', 'Retry download')
-                          : t('settings.wads.download', 'Download')}
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-            <p className="mt-3 text-xs leading-relaxed text-app-muted">
-              {t(
-                'settings.wads.workbench.downloadsImmediate',
-                'Downloads are installed immediately.'
-              )}
-            </p>
+            <FreeDoomDownloads
+              titleId={`${id}-freedoom-title`}
+              versions={doomVersions}
+              downloading={freedoomDownloading}
+              error={freedoomError}
+              lastDownload={lastDownload}
+              showError={false}
+              onDownload={async (bundle) => {
+                setLastDownload(bundle)
+                await onDownloadFreedoom(bundle)
+              }}
+            />
           </PopoverContent>
         </Popover>
       </div>

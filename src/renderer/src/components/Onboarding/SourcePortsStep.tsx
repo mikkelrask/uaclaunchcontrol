@@ -1,9 +1,10 @@
-import { T, useTranslate } from '@tolgee/react'
-import React from 'react'
+import { useTranslate } from '@tolgee/react'
+import React, { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { IAppSettings } from '@shared/schema'
 import { SourcePortsTab } from '@/components/SourcePortsTab'
+import { OnboardingStepLayout } from './OnboardingStepLayout'
 
 interface SourcePortsStepProps {
   settings: IAppSettings
@@ -19,74 +20,91 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
   onBack
 }) => {
   const { t } = useTranslate('desktop')
-  const hasPort = settings.sourcePorts.length > 0
+  // Keep incomplete editor drafts out of the wizard's automatic persistence.
+  // The parent retains the last valid configuration if this step is skipped.
+  const [portSettings, setPortSettings] = useState(settings)
+  const ports = portSettings.sourcePorts
+  const defaultPortId = portSettings.defaultSourcePortId
+  const hasIncompletePort = ports.some((port) => !port.name.trim() || !port.executablePath.trim())
+
+  useEffect(() => {
+    if (hasIncompletePort) return
+    setSettings((previous) => {
+      if (previous.sourcePorts === ports && previous.defaultSourcePortId === defaultPortId)
+        return previous
+      return { ...previous, sourcePorts: ports, defaultSourcePortId: defaultPortId }
+    })
+  }, [ports, defaultPortId, hasIncompletePort, setSettings])
+
+  const next = (): void => {
+    if (hasIncompletePort) return
+    // Flush the latest complete edit before moving to the next step.
+    setSettings((previous) => ({
+      ...previous,
+      sourcePorts: ports,
+      defaultSourcePortId: defaultPortId
+    }))
+    onNext()
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2 text-center">
-        <div>
-          <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
-            {t('onboarding.sourcePorts.terminal', 'UAC-7 // Runtime Engine')}
-          </span>
-        </div>
-        <h2 className="text-2xl font-bold tracking-tight text-app-primary">
-          {t('sourcePorts.title', 'Source Ports')}
-        </h2>
-        <p className="text-sm text-app-secondary max-w-lg mx-auto">
-          <T
-            ns="desktop"
-            keyName="onboarding.sourcePorts.description"
-            defaultValue="Your terminal has been scanned for already installed source ports {engines} — if any are found, you can add all, some, or add one at a specific location manually. {br}{br}You can also download one of your choosing directly with the {getPort} button — no need to leave the app."
-            params={{
-              engines: (
-                <em>
-                  {t('onboarding.sourcePorts.engineExamples', '({engines} and others)', {
-                    engines: 'GZDoom, UZDoom, Zandronum, Helion'
-                  })}
-                </em>
-              ),
-              getPort: <strong>{t('sourcePorts.get', 'Get Port')}</strong>,
-              br: <br />
-            }}
-          />
-        </p>
-      </div>
-
-      <SourcePortsTab settings={settings} setSettings={setSettings} autoScan />
-
-      {hasPort ? (
-        <p className="text-xs text-app-muted italic text-center opacity-70">
-          {t(
-            'onboarding.sourcePorts.defaultHint',
-            "Click the dot next to a port to make it your default — it'll be pre-selected when you create a new protocol."
-          )}
-        </p>
-      ) : (
-        <p className="text-sm text-app-muted italic text-center">
-          {t(
-            'onboarding.optional',
-            "You can also do this later in Settings — this step isn't required to continue."
-          )}
-        </p>
+    <OnboardingStepLayout
+      id="ports"
+      title={t('sourcePorts.title', 'Source Ports')}
+      kicker={t('onboarding.sourcePorts.terminal', 'UAC-7 // Runtime Engine')}
+      description={t(
+        'onboarding.sourcePorts.workbenchDescription',
+        'Choose an engine to run your games. Review the detected ports, download one, or add an executable.'
       )}
-
-      <div className="flex items-center justify-between pt-2">
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          className="text-app-muted hover:text-app-primary gap-1"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          {t('onboarding.back', 'Back')}
-        </Button>
-        <Button
-          onClick={onNext}
-          className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
-        >
-          {t('onboarding.next', 'Next')}
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
-    </div>
+      scroll={false}
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onBack}
+            data-onboarding-back
+            className="text-app-muted hover:text-app-primary gap-1"
+          >
+            <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+            {t('onboarding.back', 'Back')}
+          </Button>
+          <Button
+            type="button"
+            onClick={next}
+            disabled={hasIncompletePort}
+            data-onboarding-next
+            className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
+          >
+            {t('onboarding.next', 'Next')}
+            <ChevronRight className="w-4 h-4" aria-hidden="true" />
+          </Button>
+        </>
+      }
+    >
+      <SourcePortsTab
+        settings={portSettings}
+        setSettings={setPortSettings}
+        autoScan
+        layout="workbench"
+        showHeading={false}
+        footerHint={
+          hasIncompletePort
+            ? t(
+                'settings.state.portIncomplete',
+                'Each source port needs a name and executable path.'
+              )
+            : ports.length > 0
+              ? t(
+                  'onboarding.sourcePorts.autosaveHint',
+                  'Complete entries are saved automatically. Set a default to preselect it for new protocols.'
+                )
+              : t(
+                  'onboarding.optional',
+                  "You can also do this later in Settings — this step isn't required to continue."
+                )
+        }
+      />
+    </OnboardingStepLayout>
   )
 }

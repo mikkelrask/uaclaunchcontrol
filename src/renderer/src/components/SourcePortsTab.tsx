@@ -48,15 +48,20 @@ interface SourcePortsTabProps {
   /** Kick off a scan on mount — used by the onboarding wizard so arriving at
    *  this step starts working immediately instead of waiting on a click. */
   autoScan?: boolean
-  /** The settings workbench stages edits in the parent; onboarding keeps its inline form. */
+  /** Shared bounded inventory/editor, or the legacy inline form. */
   layout?: 'standard' | 'workbench'
+  /** A guided setup step can supply its own heading and persistence hint. */
+  showHeading?: boolean
+  footerHint?: React.ReactNode
 }
 
 export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
   settings,
   setSettings,
   autoScan,
-  layout = 'standard'
+  layout = 'standard',
+  showHeading = true,
+  footerHint
 }) => {
   const { t } = useTranslate('desktop')
   const [editingPort, setEditingPort] = useState<ISourcePort | null>(null)
@@ -70,6 +75,9 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
   )
   const [detailOpen, setDetailOpen] = useState(false)
   const [scanError, setScanError] = useState(false)
+  const [scanDialogOpen, setScanDialogOpen] = useState(false)
+  const workbenchRef = useRef<HTMLElement>(null)
+  const focusImportedPortRef = useRef(false)
   const sourcePortsRef = useRef(settings.sourcePorts)
   useEffect(() => {
     sourcePortsRef.current = settings.sourcePorts
@@ -89,9 +97,12 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
     }))
   }
 
-  const handleScanPorts = async (): Promise<void> => {
+  const handleScanPorts = async (showResults = true): Promise<void> => {
     setScanning(true)
     setScanError(false)
+    setScanResults(null)
+    setScanSelections([])
+    if (showResults && layout === 'workbench') setScanDialogOpen(true)
     try {
       const results = await api.scanPorts()
       const currentPorts = sourcePortsRef.current
@@ -124,7 +135,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
   useEffect(() => {
     if (!autoScan || hasAutoScannedRef.current) return
     hasAutoScannedRef.current = true
-    handleScanPorts()
+    void handleScanPorts(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoScan])
 
@@ -158,7 +169,11 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
       }
       return { ...prev, sourcePorts: newPorts }
     })
-    if (layout === 'workbench' && additions[0]) selectPort(additions[0].id)
+    if (layout === 'workbench' && additions[0]) {
+      focusImportedPortRef.current = true
+      selectPort(additions[0].id)
+    }
+    setScanDialogOpen(false)
     setScanResults(null)
     setScanSelections([])
   }
@@ -340,17 +355,20 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
   if (layout === 'workbench') {
     return (
       <section
+        ref={workbenchRef}
         className="settings-resource-section"
         aria-label={t('sourcePorts.title', 'Source Ports')}
       >
-        <div className="settings-section-heading">
-          <div>
-            <h2>{t('sourcePorts.title', 'Source Ports')}</h2>
-            <p>
-              {t('sourcePorts.workbench.description', 'Engines and their launch configuration.')}
-            </p>
+        {showHeading && (
+          <div className="settings-section-heading">
+            <div>
+              <h2>{t('sourcePorts.title', 'Source Ports')}</h2>
+              <p>
+                {t('sourcePorts.workbench.description', 'Engines and their launch configuration.')}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
         <div className="settings-toolbar">
           <p className="text-xs text-app-muted">
             {t('sourcePorts.workbench.selectHint', 'Select an engine to edit')}
@@ -360,7 +378,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
               type="button"
               size="sm"
               variant="outline"
-              onClick={handleScanPorts}
+              onClick={() => void handleScanPorts()}
               disabled={scanning}
             >
               <ScanSearch className="size-4" aria-hidden="true" />
@@ -383,6 +401,39 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
             </Button>
           </div>
         </div>
+        {autoScan && !scanning && (scanResults !== null || scanError) && (
+          <div className="settings-toolbar border-b border-app pb-3" data-onboarding-scan-result>
+            <p role="status" className="text-xs text-app-muted">
+              {scanError
+                ? t(
+                    'sourcePorts.workbench.scanFailed',
+                    'The scan failed. Try scanning again, or add an executable manually.'
+                  )
+                : scanResults?.length === 0
+                  ? t(
+                      'sourcePorts.workbench.scanEmpty',
+                      'No supported source ports were detected. Use Add Port to choose an executable manually.'
+                    )
+                  : t(
+                      'sourcePorts.scan.found',
+                      '{count, plural, one {Found # port} other {Found # ports}}',
+                      { count: scanResults?.length ?? 0 }
+                    )}
+            </p>
+            {scanResults && scanResults.length > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                data-onboarding-scan-review
+                onClick={() => setScanDialogOpen(true)}
+              >
+                <ScanSearch className="size-4" aria-hidden="true" />
+                {t('sourcePorts.workbench.reviewScan', 'Review detected ports')}
+              </Button>
+            )}
+          </div>
+        )}
         <SettingsResourceWorkbench
           listLabel={t('sourcePorts.workbench.installed', 'Installed engines')}
           count={settings.sourcePorts.length}
@@ -456,23 +507,31 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
         />
         <p className="settings-info">
           <Info className="size-4 shrink-0" aria-hidden="true" />
-          {t(
-            'sourcePorts.workbench.stagedHint',
-            'Entry changes are staged. Downloads start separately.'
-          )}
+          {footerHint ??
+            t(
+              'sourcePorts.workbench.stagedHint',
+              'Entry changes are staged. Downloads start separately.'
+            )}
         </p>
         {portDownloadModal}
-        <Dialog
-          open={scanResults !== null || scanError}
-          onOpenChange={(open) => {
-            if (!open) {
-              setScanResults(null)
-              setScanSelections([])
-              setScanError(false)
-            }
-          }}
-        >
-          <DialogContent className="max-h-[85dvh] max-w-2xl overflow-y-auto bg-app-primary border-app">
+        <Dialog open={scanDialogOpen} onOpenChange={setScanDialogOpen}>
+          <DialogContent
+            className="max-h-[85dvh] max-w-2xl overflow-y-auto bg-app-primary border-app"
+            onCloseAutoFocus={(event) => {
+              if (!focusImportedPortRef.current) return
+              focusImportedPortRef.current = false
+              event.preventDefault()
+              requestAnimationFrame(() => {
+                const back =
+                  workbenchRef.current?.querySelector<HTMLButtonElement>('[data-settings-back]')
+                if (back?.getClientRects().length) back.focus({ preventScroll: true })
+                else
+                  workbenchRef.current
+                    ?.querySelector<HTMLInputElement>('[data-settings-editor] input[name="name"]')
+                    ?.focus({ preventScroll: true })
+              })
+            }}
+          >
             <DialogHeader>
               <DialogTitle>
                 {t('sourcePorts.workbench.scanTitle', 'Detected source ports')}
@@ -484,7 +543,11 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
                 )}
               </DialogDescription>
             </DialogHeader>
-            {scanError ? (
+            {scanning ? (
+              <p role="status" className="text-sm text-app-muted">
+                {t('sourcePorts.scanning', 'Scanning…')}
+              </p>
+            ) : scanError ? (
               <p role="alert" className="text-sm text-destructive">
                 {t(
                   'sourcePorts.workbench.scanFailed',
@@ -523,7 +586,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
             <Button
               size="sm"
               variant="outline"
-              onClick={handleScanPorts}
+              onClick={() => void handleScanPorts()}
               disabled={scanning}
               className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
             >

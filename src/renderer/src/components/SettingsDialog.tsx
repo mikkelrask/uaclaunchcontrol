@@ -433,7 +433,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       }}
     >
       <DialogContent
-        className="settings-shell shadow-2xl"
+        className="settings-shell settings-surface shadow-2xl"
         data-testid="settings-dialog"
         aria-describedby="settings-description"
         aria-busy={isSaving}

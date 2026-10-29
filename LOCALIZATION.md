@@ -153,6 +153,11 @@ views, the protocol editor and cancellation of deletion, installation tabs/form
 validation, catalog editing, the Danish catalog, and English fallback for untranslated messages. Expected translated labels come from the catalogs so wording edits do not
 require rewriting the tests. It does not start the backend or touch real application data.
 
+The focused `npm run onboarding:smoke -- --ozone-platform=x11` fixture checks the
+fresh-install tour, source-port discovery/editing, FreeDoom downloads and retries,
+folder changes, queued saves, and navigation at narrow widths and 120% zoom. It
+uses disposable settings and simulated downloads; it does not change your library.
+
 On Linux/Xwayland, run `npm run i18n:smoke -- --ozone-platform=x11` if needed. To test
 the renderer inside a Linux directory package, run `npx electron-builder --dir
 --publish never`, then set `UAC_I18N_RENDERER` to the absolute

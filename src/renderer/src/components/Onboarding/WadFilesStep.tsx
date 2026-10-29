@@ -1,20 +1,20 @@
 import { T, useTranslate } from '@tolgee/react'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, FolderOpen, Download, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FolderOpen, Loader2, Pencil, RefreshCw } from 'lucide-react'
 import { api } from '@/api'
 import { queryClient } from '@/lib/queryClient'
 import type { IAppSettings, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
+import { FreeDoomDownloads, type FreeDoomBundle } from '@/components/FreeDoomDownloads'
+import { OnboardingStepLayout } from './OnboardingStepLayout'
 
-import { createLogger } from '@shared/logger'
-
-const log = createLogger('onboarding/WadFilesStepx')
 interface WadFilesStepProps {
   settings: IAppSettings
   setSettings: React.Dispatch<React.SetStateAction<IAppSettings>>
+  persistSettings: (patch: Partial<IAppSettings>) => Promise<IAppSettings>
+  onDirectoryBusyChange: (busy: boolean) => void
   onNext: () => void
   onBack: () => void
 }
@@ -22,288 +22,478 @@ interface WadFilesStepProps {
 export const WadFilesStep: React.FC<WadFilesStepProps> = ({
   settings,
   setSettings,
+  persistSettings,
+  onDirectoryBusyChange,
   onNext,
   onBack
 }) => {
   const { t } = useTranslate('desktop')
-  const FREEDOOM_BUNDLES = [
-    {
-      bundle: 'phase12' as const,
-      label: t('settings.wads.freedoomBundle', 'FreeDoom (Phase 1 + 2)'),
-      slugs: ['freedoom1', 'freedoom2']
-    },
-    { bundle: 'freedm' as const, label: 'FreeDM', slugs: ['freedm'] }
-  ]
-
+  const id = useId()
   const [doomVersions, setDoomVersions] = useState<IDoomVersion[]>([])
   const [isLoadingVersions, setIsLoadingVersions] = useState(true)
-  const [freedoomDownloading, setFreedoomDownloading] = useState<'phase12' | 'freedm' | null>(null)
+  const [versionsError, setVersionsError] = useState('')
+  const [freedoomDownloading, setFreedoomDownloading] = useState<FreeDoomBundle | null>(null)
+  const [lastDownload, setLastDownload] = useState<FreeDoomBundle | null>(null)
   const [freedoomError, setFreedoomError] = useState('')
+  const [isEditingPath, setIsEditingPath] = useState(false)
+  const [pathDraft, setPathDraft] = useState(settings.wadFilesDirectory ?? '')
+  const [directoryPending, setDirectoryPending] = useState(false)
+  const [directoryError, setDirectoryError] = useState('')
+  const editButtonRef = useRef<HTMLButtonElement>(null)
+  const pathInputRef = useRef<HTMLInputElement>(null)
+  const operationPending = useRef(true)
+  const mounted = useRef(false)
+  const setSettingsRef = useRef(setSettings)
+
+  useEffect(() => {
+    setSettingsRef.current = setSettings
+  }, [setSettings])
+  useEffect(() => {
+    onDirectoryBusyChange(directoryPending)
+    return () => onDirectoryBusyChange(false)
+  }, [directoryPending, onDirectoryBusyChange])
+
+  const applyVersions = useCallback((versions: IDoomVersion[]): void => {
+    setDoomVersions(versions)
+    setSettingsRef.current((previous) =>
+      previous.defaultDoomVersionId &&
+      !versions.some((version) => version.id === previous.defaultDoomVersionId)
+        ? { ...previous, defaultDoomVersionId: undefined }
+        : previous
+    )
+  }, [])
 
   useEffect(() => {
     let cancelled = false
+    mounted.current = true
     api
       .getDoomVersions()
       .then((versions) => {
-        if (!cancelled) setDoomVersions(versions)
+        if (!cancelled) applyVersions(versions)
       })
-      .catch((err: unknown) => log.error(err))
+      .catch(() => {
+        if (!cancelled)
+          setVersionsError(
+            t('onboarding.wads.loadFailed', 'Could not load base games. Try scanning again.')
+          )
+      })
       .finally(() => {
-        if (!cancelled) setIsLoadingVersions(false)
+        if (!cancelled) {
+          operationPending.current = false
+          setIsLoadingVersions(false)
+        }
       })
     return () => {
       cancelled = true
+      mounted.current = false
     }
-  }, [])
+  }, [t, applyVersions])
 
-  const persistDirectory = async (dir: string): Promise<void> => {
+  const restoreEditFocus = (): void => {
+    requestAnimationFrame(() => editButtonRef.current?.focus({ preventScroll: true }))
+  }
+  const cancelPathEdit = (): void => {
+    setPathDraft(settings.wadFilesDirectory ?? '')
+    setIsEditingPath(false)
+    setDirectoryError('')
+    restoreEditFocus()
+  }
+  const refreshVersions = async (): Promise<void> => {
+    if (operationPending.current) return
+    operationPending.current = true
+    setIsLoadingVersions(true)
+    setVersionsError('')
     try {
-      await api.updateSettings({ wadFilesDirectory: dir })
       const versions = await api.getDoomVersions()
-      setDoomVersions(versions)
-      // Refresh the shared caches so the new directory and re-scanned WADs
-      // show up immediately in InstallPage/Settings — the WAD watcher event
-      // usually covers versions, but the settings cache never refreshes on
-      // its own (staleTime: Infinity).
-      queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
-      queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
+      if (mounted.current) applyVersions(versions)
     } catch {
-      // Directory persistence is best-effort here — the field itself already
-      // reflects the user's intent, and the main Settings dialog remains the
-      // fallback if this silently fails.
+      if (mounted.current)
+        setVersionsError(
+          t('onboarding.wads.loadFailed', 'Could not load base games. Try scanning again.')
+        )
+    } finally {
+      operationPending.current = false
+      if (mounted.current) setIsLoadingVersions(false)
     }
   }
 
+  // A folder is displayed as selected only once the server accepts it. The
+  // subsequent inventory refresh can be retried independently if it fails.
+  const persistDirectory = async (directory: string): Promise<void> => {
+    setDirectoryError('')
+    setIsLoadingVersions(true)
+    let saved: IAppSettings
+    try {
+      saved = await persistSettings({ wadFilesDirectory: directory })
+    } catch {
+      if (mounted.current) {
+        setDirectoryError(
+          t(
+            'onboarding.wads.folderSaveFailed',
+            'Could not change the WAD folder. Your previous folder is still selected.'
+          )
+        )
+        setIsLoadingVersions(false)
+        requestAnimationFrame(() => pathInputRef.current?.focus())
+      }
+      return
+    }
+    const committedDirectory = saved.wadFilesDirectory ?? directory
+    if (mounted.current) {
+      setSettings((previous) => ({ ...previous, wadFilesDirectory: committedDirectory }))
+      setPathDraft(committedDirectory)
+      setIsEditingPath(false)
+      setVersionsError('')
+      setDoomVersions([])
+      restoreEditFocus()
+    }
+    void queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
+    void queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
+    try {
+      const versions = await api.getDoomVersions()
+      if (mounted.current) applyVersions(versions)
+    } catch {
+      if (mounted.current)
+        setVersionsError(
+          t('onboarding.wads.loadFailed', 'Could not load base games. Try scanning again.')
+        )
+    } finally {
+      if (mounted.current) setIsLoadingVersions(false)
+    }
+  }
+  const applyPathEdit = async (): Promise<void> => {
+    if (operationPending.current || !pathDraft.trim()) return
+    if (pathDraft === settings.wadFilesDirectory) {
+      setIsEditingPath(false)
+      restoreEditFocus()
+      return
+    }
+    operationPending.current = true
+    setDirectoryPending(true)
+    try {
+      await persistDirectory(pathDraft)
+    } finally {
+      operationPending.current = false
+      if (mounted.current) setDirectoryPending(false)
+    }
+  }
   const handleBrowse = async (): Promise<void> => {
-    const result = await api.showOpenDialog({
-      properties: ['openDirectory'],
-      defaultPath: settings.wadFilesDirectory
-    })
-    if (!result.canceled && result.filePaths.length > 0) {
-      const dir = result.filePaths[0]
-      setSettings((prev) => ({ ...prev, wadFilesDirectory: dir }))
-      await persistDirectory(dir)
+    if (operationPending.current) return
+    operationPending.current = true
+    setDirectoryPending(true)
+    setDirectoryError('')
+    try {
+      const result = await api.showOpenDialog({
+        properties: ['openDirectory'],
+        defaultPath: settings.wadFilesDirectory
+      })
+      if (!result.canceled && result.filePaths[0]) await persistDirectory(result.filePaths[0])
+    } catch {
+      if (mounted.current)
+        setDirectoryError(
+          t(
+            'settings.paths.pickerFailed',
+            'Could not open the folder chooser. You can still edit the path manually.'
+          )
+        )
+    } finally {
+      operationPending.current = false
+      if (mounted.current) setDirectoryPending(false)
     }
   }
-
-  const handleDownloadFreedoom = async (bundle: 'phase12' | 'freedm'): Promise<void> => {
+  const handleDownloadFreedoom = async (bundle: FreeDoomBundle): Promise<void> => {
+    if (operationPending.current || isEditingPath) return
+    operationPending.current = true
     setFreedoomDownloading(bundle)
+    setLastDownload(bundle)
     setFreedoomError('')
     try {
       const result = await api.downloadFreedoom(bundle)
-      setDoomVersions(result.doomVersions)
-      // New IWADs are on disk now — make the versions cache refetch so the
-      // new-protocol form lists them without a restart.
-      queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
-    } catch (e: unknown) {
-      setFreedoomError(
-        e instanceof Error ? e.message : t('settings.wads.downloadFailed', 'Download failed')
-      )
+      if (mounted.current) {
+        applyVersions(result.doomVersions)
+        setVersionsError('')
+      }
+      void queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
+    } catch (error: unknown) {
+      if (mounted.current)
+        setFreedoomError(
+          error instanceof Error
+            ? error.message
+            : t('settings.wads.downloadFailed', 'Download failed')
+        )
     } finally {
-      setFreedoomDownloading(null)
+      operationPending.current = false
+      if (mounted.current) setFreedoomDownloading(null)
     }
   }
-
-  const hasAnyIwad = doomVersions.length > 0
+  const busy = directoryPending || isLoadingVersions || freedoomDownloading !== null
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2 text-center">
-        <div>
-          <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
-            {t('onboarding.wads.terminal', 'UAC-7 // Data Repositories')}
-          </span>
-        </div>
-        <h2 className="text-2xl font-bold tracking-tight text-app-primary">
-          {t('onboarding.wads.title', 'WAD Files')}
-        </h2>
-        <p className="text-sm text-app-secondary max-w-lg mx-auto">
-          <T
-            ns="desktop"
-            keyName="onboarding.wads.description"
-            defaultValue="Point at a folder with your Doom WAD files, or drop them into the folder below. {br}{br}Don't own DOOM or DOOM II? Grab FreeDoom — free and legally redistributable, or {guide} to see how to acquire them."
-            params={{
-              br: <br />,
-              guide: (
-                <a
-                  href="https://uac-soft.online/guides/acquiring-doom/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline font-bold"
-                >
-                  {t('onboarding.wads.acquireGuide', 'click here')}
-                </a>
-              )
-            }}
-          />
-        </p>
-      </div>
-
-      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
-        <div>
-          <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-            {t('onboarding.wads.directory', 'WAD Files Directory')}
-          </Label>
-        </div>
-        <div className="flex gap-2">
-          <Input
-            aria-label={t('onboarding.wads.directory', 'WAD Files Directory')}
-            value={settings.wadFilesDirectory ?? ''}
-            onChange={(e) =>
-              setSettings((prev) => ({ ...prev, wadFilesDirectory: e.target.value }))
-            }
-            onBlur={(e) => persistDirectory(e.target.value)}
-            className="bg-app-primary border-app h-10 text-sm flex-1 focus-visible:ring-2 focus-visible:ring-accent-highlight/40"
-          />
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-10 w-10 shrink-0 hover:bg-app-primary/50 text-app-primary border border-app/30"
-            aria-label={t('onboarding.wads.browse', 'Browse for WAD files directory')}
-            onClick={handleBrowse}
-          >
-            <FolderOpen className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
-        <div>
-          <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-            FreeDoom
-          </Label>
-        </div>
-        <p className="text-xs text-app-muted leading-tight">
-          {t(
-            'settings.wads.freedoomDescription',
-            'Free, legally redistributable IWADs — no commercial Doom purchase required.'
-          )}
-        </p>
-        <div className="flex flex-col gap-2">
-          {FREEDOOM_BUNDLES.map(({ bundle, label, slugs }) => {
-            const installed = slugs.every((slug) => doomVersions.some((v) => v.slug === slug))
-            return (
-              <div
-                key={bundle}
-                className="flex items-center justify-between gap-4 bg-app-primary p-2.5 rounded-lg border border-app"
+    <OnboardingStepLayout
+      id="wads"
+      title={t('onboarding.wads.title', 'WAD Files')}
+      kicker={t('onboarding.wads.terminal', 'UAC-7 // Data Repositories')}
+      description={
+        <T
+          ns="desktop"
+          keyName="onboarding.wads.description"
+          defaultValue="Point at a folder with your Doom WAD files, or drop them into the folder below. {br}{br}Don't own DOOM or DOOM II? Grab FreeDoom — free and legally redistributable, or {guide} to see how to acquire them."
+          params={{
+            br: <br />,
+            guide: (
+              <a
+                href="https://uac-soft.online/guides/acquiring-doom/"
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-2"
               >
-                <span className="text-sm text-app-primary">{label}</span>
-                {installed ? (
-                  <span className="flex items-center gap-1 text-xs text-green-500 shrink-0">
-                    <Check className="w-3.5 h-3.5" />
-                    {t('settings.wads.installed', 'Installed')}
-                  </span>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDownloadFreedoom(bundle)}
-                    disabled={freedoomDownloading !== null}
-                    className="text-xs h-7 bg-app-secondary hover:bg-app-hover text-app-primary border-app shrink-0"
-                  >
-                    <Download className="w-3 h-3 mr-1" />
-                    {freedoomDownloading === bundle
-                      ? t('settings.wads.downloading', 'Downloading…')
-                      : t('settings.wads.download', 'Download')}
-                  </Button>
-                )}
-              </div>
+                {t('onboarding.wads.acquireGuide', 'click here')}
+              </a>
             )
-          })}
+          }}
+        />
+      }
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            data-onboarding-back
+            onClick={onBack}
+            disabled={busy}
+            className="gap-1"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            {t('onboarding.back', 'Back')}
+          </Button>
+          <Button
+            type="button"
+            data-onboarding-next
+            onClick={onNext}
+            disabled={busy || isEditingPath}
+            className="settings-apply gap-1 px-6"
+          >
+            {t('onboarding.next', 'Next')}
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </>
+      }
+    >
+      <section
+        className="settings-path"
+        data-settings-path="wadFilesDirectory"
+        aria-labelledby={`${id}-directory`}
+      >
+        <div className="settings-path-heading">
+          <h3 id={`${id}-directory`}>{t('onboarding.wads.directory', 'WAD Files Directory')}</h3>
+          {directoryPending && (
+            <Loader2
+              className="h-4 w-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+          )}
         </div>
-        {freedoomError && <p className="text-xs text-red-400">{freedoomError}</p>}
-      </div>
-
-      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
-        <div>
-          <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-            {t('onboarding.wads.detected', 'Detected IWADs')}
-          </Label>
-        </div>
-        {isLoadingVersions ? (
-          <p className="text-xs text-app-muted italic py-2">
-            {t('onboarding.wads.scanning', 'Scanning…')}
+        {isEditingPath ? (
+          <div className="settings-path-input">
+            <Input
+              ref={pathInputRef}
+              autoFocus
+              name="wadFilesDirectory"
+              value={pathDraft}
+              aria-label={t('onboarding.wads.directory', 'WAD Files Directory')}
+              aria-invalid={!pathDraft.trim()}
+              disabled={directoryPending}
+              className="settings-control font-mono"
+              onChange={(event) => setPathDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  void applyPathEdit()
+                }
+                if (event.key === 'Escape') {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  cancelPathEdit()
+                }
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              data-onboarding-path-done
+              disabled={directoryPending || !pathDraft.trim()}
+              onClick={() => void applyPathEdit()}
+            >
+              {t('settings.paths.done', 'Done')}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              data-onboarding-path-cancel
+              disabled={directoryPending}
+              onClick={cancelPathEdit}
+            >
+              {t('sourcePorts.form.cancel', 'Cancel')}
+            </Button>
+          </div>
+        ) : (
+          <div className="settings-path-value">
+            <code>
+              {settings.wadFilesDirectory || t('settings.paths.notSet', 'No folder selected')}
+            </code>
+            <div className="settings-path-actions">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                ref={editButtonRef}
+                data-settings-path-edit="wadFilesDirectory"
+                disabled={busy}
+                onClick={() => {
+                  setPathDraft(settings.wadFilesDirectory ?? '')
+                  setDirectoryError('')
+                  setIsEditingPath(true)
+                }}
+              >
+                <Pencil aria-hidden="true" />
+                {t('settings.paths.edit', 'Edit path')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-settings-path-browse="wadFilesDirectory"
+                disabled={busy}
+                aria-label={t('onboarding.wads.browse', 'Browse for WAD files directory')}
+                onClick={() => void handleBrowse()}
+              >
+                <FolderOpen aria-hidden="true" />
+                {t('settings.paths.browseAction', 'Browse…')}
+              </Button>
+            </div>
+          </div>
+        )}
+        {directoryError && (
+          <p className="mt-2 text-xs text-destructive" data-onboarding-path-error role="alert">
+            {directoryError}
           </p>
-        ) : !hasAnyIwad ? (
-          <p className="text-xs text-app-muted italic py-2">
+        )}
+      </section>
+
+      <div className="onboarding-wad-grid">
+        <div className="onboarding-wad-panel">
+          <FreeDoomDownloads
+            versions={doomVersions}
+            downloading={freedoomDownloading}
+            error={freedoomError}
+            lastDownload={lastDownload}
+            onDownload={handleDownloadFreedoom}
+            disabled={directoryPending || isLoadingVersions || isEditingPath}
+          />
+        </div>
+        <section className="onboarding-wad-panel" aria-labelledby={`${id}-detected`}>
+          <div className="flex items-center justify-between gap-3">
+            <h3 id={`${id}-detected`} className="text-sm font-medium">
+              {t('onboarding.wads.detected', 'Detected IWADs')}
+            </h3>
+            <span className="text-xs text-app-muted">{doomVersions.length}</span>
+          </div>
+          <p className="mt-2 text-xs text-app-muted">
             {t(
-              'onboarding.wads.empty',
-              'No WAD files detected yet. Point at a folder above or download FreeDoom.'
+              'onboarding.wads.defaultSelectionHint',
+              'Select a base game to use for new protocols.'
             )}
           </p>
-        ) : (
-          <>
-            <div className="flex flex-wrap gap-2 pt-1">
+          {isLoadingVersions ? (
+            <p className="mt-4 flex items-center gap-2 text-xs text-app-muted" role="status">
+              <Loader2
+                className="h-4 w-4 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
+              {t('onboarding.wads.scanning', 'Scanning…')}
+            </p>
+          ) : versionsError ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs text-destructive" role="alert">
+                {versionsError}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-onboarding-wads-retry
+                onClick={() => void refreshVersions()}
+                disabled={busy}
+              >
+                <RefreshCw aria-hidden="true" />
+                {t('onboarding.wads.scanAgain', 'Scan again')}
+              </Button>
+            </div>
+          ) : doomVersions.length === 0 ? (
+            <p className="mt-4 text-xs text-app-muted">
+              {t(
+                'onboarding.wads.empty',
+                'No WAD files detected yet. Point at a folder above or download FreeDoom.'
+              )}
+            </p>
+          ) : (
+            <div className="onboarding-wad-list settings-scroll mt-3" data-settings-resource-list>
               {doomVersions.map((version) => (
-                <div
+                <button
+                  type="button"
                   key={version.id}
-                  className="flex items-center gap-2 bg-app-primary pl-2 pr-2.5 py-1.5 rounded-lg border border-app"
+                  className="settings-resource-row"
+                  data-settings-resource-id={version.id}
+                  aria-pressed={settings.defaultDoomVersionId === version.id}
+                  disabled={busy}
+                  onClick={() =>
+                    setSettings((previous) => ({ ...previous, defaultDoomVersionId: version.id }))
+                  }
                 >
-                  <button
-                    onClick={() =>
-                      setSettings((prev) => ({ ...prev, defaultDoomVersionId: version.id }))
-                    }
-                    className={`shrink-0 w-3.5 h-3.5 rounded-full border-2 transition-colors ${
-                      settings.defaultDoomVersionId === version.id
-                        ? 'border-accent-highlight bg-accent-highlight'
-                        : 'border-app-muted/40 hover:border-app-muted'
-                    }`}
-                    title={
-                      settings.defaultDoomVersionId === version.id
-                        ? t(
-                            'settings.wads.default',
-                            'Default WAD — pre-fills Base WAD on new protocols'
-                          )
-                        : t('settings.wads.setDefault', 'Set as default WAD')
-                    }
-                  />
-                  <div className="w-5 h-5 shrink-0 flex items-center justify-center overflow-hidden rounded bg-black/20">
+                  <span
+                    className="flex h-8 w-8 shrink-0 items-center justify-center"
+                    aria-hidden="true"
+                  >
                     <DoomVersionIcon
                       version={version.slug}
                       customIcon={version.icon}
-                      className="w-full h-full object-contain"
+                      className="h-full w-full object-contain"
                     />
-                  </div>
-                  <span className="text-xs text-app-primary">{version.name}</span>
-                </div>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{version.name}</span>
+                    <span className="mt-1 block truncate text-xs text-app-muted">
+                      {version.defaultIwad.split(/[\\/]/).pop()}
+                    </span>
+                  </span>
+                  <span className="settings-resource-badge-slot">
+                    {settings.defaultDoomVersionId === version.id && (
+                      <span className="settings-resource-badge">
+                        {t('settings.resources.default', 'Default')}
+                      </span>
+                    )}
+                  </span>
+                </button>
               ))}
             </div>
-            <p className=" text-app-muted italic opacity-70">
-              {t(
-                'onboarding.wads.defaultHint',
-                "Click the dot next to a WAD to make it your default — it'll be pre-selected as the Base WAD when you create a new protocol."
-              )}
-            </p>
-          </>
-        )}
+          )}
+        </section>
       </div>
-
-      {!hasAnyIwad && (
-        <p className="text-xs text-app-muted italic text-center">
+      {freedoomDownloading && (
+        <p className="settings-info" role="status">
+          {t('settings.wads.downloading', 'Downloading…')}
+        </p>
+      )}
+      {doomVersions.length === 0 && !busy && (
+        <p className="settings-info">
           {t(
             'onboarding.optional',
             "You can also do this later in Settings — this step isn't required to continue."
           )}
         </p>
       )}
-
-      <div className="flex items-center justify-between pt-2">
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          className="text-app-muted hover:text-app-primary gap-1"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          {t('onboarding.back', 'Back')}
-        </Button>
-        <Button
-          onClick={onNext}
-          className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
-        >
-          {t('onboarding.next', 'Next')}
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
-    </div>
+    </OnboardingStepLayout>
   )
 }

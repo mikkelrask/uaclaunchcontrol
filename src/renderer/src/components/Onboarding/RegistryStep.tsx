@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ChevronLeft, ChevronRight, Database } from 'lucide-react'
+import { OnboardingStepLayout } from './OnboardingStepLayout'
 import type { IAppSettings } from '@shared/schema'
 
 interface RegistryStepProps {
@@ -41,25 +42,38 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
   const enabled = settings.registryLookupEnabled ?? false
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2 text-center">
-        <div>
-          <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
-            {t('onboarding.registry.terminal', 'UAC-7 // Data Uplink')}
-          </span>
-        </div>
-        <h2 className="text-2xl font-bold tracking-tight text-app-primary">
-          {t('onboarding.registry.title', 'UAC Registry')}
-        </h2>
-        <p className="text-sm text-app-secondary max-w-lg mx-auto">
-          {t(
-            'onboarding.registry.description',
-            'A community database of mod metadata — names, versions, categories and load orders — maintained by players like you.'
-          )}
-        </p>
-      </div>
-
-      <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
+    <OnboardingStepLayout
+      id="registry"
+      title={t('onboarding.registry.title', 'UAC Registry')}
+      kicker={t('onboarding.registry.terminal', 'UAC-7 // Data Uplink')}
+      description={t(
+        'onboarding.registry.description',
+        'A community database of mod metadata — names, versions, categories and load orders — maintained by players like you.'
+      )}
+      footer={
+        <>
+          {' '}
+          <Button
+            data-onboarding-back
+            variant="ghost"
+            onClick={onBack}
+            className="text-app-muted hover:text-app-primary gap-1"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            {t('onboarding.back', 'Back')}
+          </Button>
+          <Button
+            data-onboarding-next
+            onClick={onNext}
+            className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
+          >
+            {t('onboarding.next', 'Next')}
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </>
+      }
+    >
+      <div className="onboarding-registry-panel space-y-4">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-accent-highlight/10 rounded-md shrink-0">
             <Database className="w-4 h-4 text-accent-highlight" />
@@ -128,25 +142,7 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
           />
         </div>
       </div>
-
-      <div className="flex items-center justify-between pt-2">
-        <Button
-          variant="ghost"
-          onClick={onBack}
-          className="text-app-muted hover:text-app-primary gap-1"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          {t('onboarding.back', 'Back')}
-        </Button>
-        <Button
-          onClick={onNext}
-          className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
-        >
-          {t('onboarding.next', 'Next')}
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      </div>
-    </div>
+    </OnboardingStepLayout>
   )
 }
 

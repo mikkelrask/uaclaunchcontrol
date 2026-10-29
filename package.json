@@ -34,7 +34,8 @@
     "i18n:push": "node tools/i18n/tolgee.mjs push",
     "i18n:pull": "node tools/i18n/tolgee.mjs pull",
     "i18n:smoke": "electron tools/i18n/electron-smoke.cjs",
-    "settings:smoke": "electron tools/settings/electron-smoke.cjs"
+    "settings:smoke": "electron tools/settings/electron-smoke.cjs",
+    "onboarding:smoke": "electron tools/onboarding/electron-smoke.cjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

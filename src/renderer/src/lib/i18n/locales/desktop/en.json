@@ -663,5 +663,13 @@
   "settings.state.saving": "Applying changes…",
   "settings.state.unsaved": "Unsaved changes",
   "settings.state.loadFailed": "Configuration could not be loaded. Close settings and try again.",
-  "settings.state.installing": "Installing free games…"
+  "settings.state.installing": "Installing free games…",
+  "onboarding.saveFailed": "Could not save setup. Your choices are still here; please try again.",
+  "onboarding.sourcePorts.autosaveHint": "Complete entries are saved automatically. Set a default to preselect it for new protocols.",
+  "onboarding.sourcePorts.workbenchDescription": "Choose an engine to run your games. Review the detected ports, download one, or add an executable.",
+  "onboarding.wads.defaultSelectionHint": "Select a base game to use for new protocols.",
+  "onboarding.wads.folderSaveFailed": "Could not change the WAD folder. Your previous folder is still selected.",
+  "onboarding.wads.loadFailed": "Could not load base games. Try scanning again.",
+  "onboarding.wads.scanAgain": "Scan again",
+  "sourcePorts.workbench.reviewScan": "Review detected ports"
 }

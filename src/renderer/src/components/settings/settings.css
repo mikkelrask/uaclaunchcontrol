@@ -1,3 +1,7 @@
+.settings-surface {
+  font-family: system-ui, sans-serif;
+  color: hsl(var(--text-primary));
+}
 /* Settings use the app's theme tokens; only their layout/type hierarchy is scoped here. */
 .settings-shell {
   container: settings / inline-size;
@@ -15,12 +19,12 @@
   background: hsl(var(--bg-primary));
   border-color: hsl(var(--border));
 }
-.settings-shell h2,
-.settings-shell h3,
-.settings-shell .settings-title {
+.settings-surface h2,
+.settings-surface h3,
+.settings-surface .settings-title {
   font-family: Aldrich, sans-serif;
 }
-.settings-shell .settings-header {
+.settings-surface .settings-header {
   display: flex;
   flex: none;
   align-items: center;
@@ -50,7 +54,7 @@
   display: flex;
   flex-direction: column;
 }
-.settings-shell .settings-tabs-list {
+.settings-surface .settings-tabs-list {
   flex: none;
   width: 100%;
   height: auto;
@@ -63,7 +67,7 @@
   border-radius: 0;
   background: hsl(var(--bg-secondary));
 }
-.settings-shell .settings-tab {
+.settings-surface .settings-tab {
   border: 1px solid transparent;
   border-radius: 0.3rem;
   background: transparent;
@@ -73,29 +77,29 @@
   font-size: 0.75rem;
   box-shadow: none;
 }
-.settings-shell .settings-tab[data-state='active'] {
+.settings-surface .settings-tab[data-state='active'] {
   background: hsl(var(--bg-hover));
   border-color: hsl(var(--border));
   color: hsl(var(--text-primary));
   box-shadow: none;
 }
 .settings-tab svg,
-.settings-shell button svg {
+.settings-surface button svg {
   width: 1rem;
   height: 1rem;
   flex: none;
 }
-.settings-shell .settings-panel {
+.settings-surface .settings-panel {
   flex: 1;
   min-height: 0;
   margin: 0;
   padding: 1.5rem;
   overflow: auto;
 }
-.settings-shell .settings-panel[data-state='inactive'] {
+.settings-surface .settings-panel[data-state='inactive'] {
   display: none;
 }
-.settings-shell .settings-panel-inventory {
+.settings-surface .settings-panel-inventory {
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -113,7 +117,7 @@
   line-height: 1.35;
   margin: 0;
 }
-.settings-shell p,
+.settings-surface p,
 .settings-description {
   font-size: 0.75rem;
   line-height: 1.55;
@@ -122,7 +126,7 @@
 .settings-section-heading p {
   margin-top: 0.35rem;
 }
-.settings-shell .settings-control {
+.settings-surface .settings-control {
   background: hsl(var(--bg-primary));
   border-color: hsl(var(--border));
   color: hsl(var(--text-primary));
@@ -131,7 +135,7 @@
   min-height: 2.5rem;
   font-size: 0.8rem;
 }
-.settings-shell .settings-field {
+.settings-surface .settings-field {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -143,16 +147,16 @@
   font-size: 0.8rem;
   font-weight: 500;
 }
-.settings-shell .settings-field input[name='args'],
-.settings-shell .settings-field input[name='parameters'],
-.settings-shell .settings-field input[name='executablePath'] {
+.settings-surface .settings-field input[name='args'],
+.settings-surface .settings-field input[name='parameters'],
+.settings-surface .settings-field input[name='executablePath'] {
   font-family: var(--font-mono);
   font-size: 0.75rem;
 }
-.settings-shell .settings-group {
+.settings-surface .settings-group {
   margin-top: 1.5rem;
 }
-.settings-shell .settings-group:first-of-type {
+.settings-surface .settings-group:first-of-type {
   margin-top: 0;
 }
 .settings-group h3 {
@@ -417,7 +421,7 @@
   font-size: 0.7rem;
   color: hsl(var(--text-muted));
 }
-.settings-shell .settings-default-control {
+.settings-surface .settings-default-control {
   flex: none;
   min-height: 2.3rem;
   height: auto;
@@ -435,7 +439,7 @@
   color: hsl(var(--text-muted));
   background: hsl(var(--bg-secondary));
 }
-.settings-shell .settings-resource-back {
+.settings-surface .settings-resource-back {
   display: none;
   height: auto;
   min-height: 1.75rem;
@@ -558,7 +562,7 @@
   flex: none;
   gap: 0.5rem;
 }
-.settings-shell .settings-apply {
+.settings-surface .settings-apply {
   background: hsl(var(--accent-highlight));
   color: hsl(var(--primary-foreground));
 }
@@ -578,16 +582,16 @@
   .settings-resource-workbench[data-detail-open='true'] .settings-resource-inspector {
     display: flex;
   }
-  .settings-shell .settings-resource-back {
+  .settings-surface .settings-resource-back {
     display: inline-flex;
   }
-  .settings-shell .settings-panel {
+  .settings-surface .settings-panel {
     padding: 1rem;
   }
-  .settings-shell .settings-tabs-list {
+  .settings-surface .settings-tabs-list {
     padding: 0.5rem 0.75rem;
   }
-  .settings-shell .settings-tab {
+  .settings-surface .settings-tab {
     font-size: 0.7rem;
     padding: 0.45rem 0.5rem;
   }
@@ -611,7 +615,7 @@
   .settings-row:has(> [role='switch']) {
     grid-template-columns: minmax(0, 1fr) auto;
   }
-  .settings-shell .settings-header {
+  .settings-surface .settings-header {
     padding: 1rem 2.5rem 1rem 1rem;
   }
   .settings-subtitle {
@@ -646,15 +650,15 @@
   .settings-shell {
     height: 94dvh;
   }
-  .settings-shell .settings-header {
+  .settings-surface .settings-header {
     padding-top: 0.65rem;
     padding-bottom: 0.65rem;
   }
-  .settings-shell .settings-tabs-list {
+  .settings-surface .settings-tabs-list {
     padding-top: 0.4rem;
     padding-bottom: 0.4rem;
   }
-  .settings-shell .settings-panel {
+  .settings-surface .settings-panel {
     padding-top: 0.85rem;
     padding-bottom: 0.85rem;
   }
