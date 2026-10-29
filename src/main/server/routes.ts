@@ -774,6 +774,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === Settings API ===
   app.get(
+    '/api/settings/default-paths',
+    wrapRoute(async (_req, res) => {
+      return res.json(storage.getDefaultSettingsPaths())
+    }, '/api/settings/default-paths')
+  )
+
+  app.get(
     '/api/settings',
     wrapRoute(async (_req, res) => {
       const settings = await storage.getSettings()

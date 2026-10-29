@@ -1,0 +1,682 @@
+/* Settings use the app's theme tokens; only their layout/type hierarchy is scoped here. */
+.settings-shell {
+  container: settings / inline-size;
+  width: min(68rem, calc(100vw - 2rem));
+  max-width: none;
+  height: min(54rem, 90dvh);
+  min-height: 0;
+  gap: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+  color: hsl(var(--text-primary));
+  background: hsl(var(--bg-primary));
+  border-color: hsl(var(--border));
+}
+.settings-shell h2,
+.settings-shell h3,
+.settings-shell .settings-title {
+  font-family: Aldrich, sans-serif;
+}
+.settings-shell .settings-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 3rem 1.2rem 1.5rem;
+  border-bottom: 1px solid hsl(var(--border));
+  background: hsl(var(--bg-secondary));
+}
+.settings-header img {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+}
+.settings-title {
+  font-size: 1.45rem;
+}
+.settings-subtitle {
+  color: hsl(var(--text-muted));
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  margin-top: 0.3rem;
+  letter-spacing: 0.06em;
+}
+.settings-tabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.settings-shell .settings-tabs-list {
+  flex: none;
+  width: 100%;
+  height: auto;
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid hsl(var(--border));
+  border-radius: 0;
+  background: hsl(var(--bg-secondary));
+}
+.settings-shell .settings-tab {
+  border: 1px solid transparent;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: hsl(var(--text-muted));
+  padding: 0.5rem 0.7rem;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  box-shadow: none;
+}
+.settings-shell .settings-tab[data-state='active'] {
+  background: hsl(var(--bg-hover));
+  border-color: hsl(var(--border));
+  color: hsl(var(--text-primary));
+  box-shadow: none;
+}
+.settings-tab svg,
+.settings-shell button svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+.settings-shell .settings-panel {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 1.5rem;
+  overflow: auto;
+}
+.settings-shell .settings-panel[data-state='inactive'] {
+  display: none;
+}
+.settings-shell .settings-panel-inventory {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.settings-section-heading {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.35rem;
+}
+.settings-section-heading h2 {
+  font-size: 1.35rem;
+  line-height: 1.35;
+  margin: 0;
+}
+.settings-shell p,
+.settings-description {
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: hsl(var(--text-muted));
+}
+.settings-section-heading p {
+  margin-top: 0.35rem;
+}
+.settings-shell .settings-control {
+  background: hsl(var(--bg-primary));
+  border-color: hsl(var(--border));
+  color: hsl(var(--text-primary));
+  min-width: 0;
+  width: 100%;
+  min-height: 2.5rem;
+  font-size: 0.8rem;
+}
+.settings-shell .settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 1.1rem;
+  min-width: 0;
+}
+.settings-field label,
+.settings-field > span {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.settings-shell .settings-field input[name='args'],
+.settings-shell .settings-field input[name='parameters'],
+.settings-shell .settings-field input[name='executablePath'] {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+.settings-shell .settings-group {
+  margin-top: 1.5rem;
+}
+.settings-shell .settings-group:first-of-type {
+  margin-top: 0;
+}
+.settings-group h3 {
+  font-size: 0.85rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(11rem, 40%);
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid hsl(var(--border) / 0.65);
+  min-height: 4.2rem;
+}
+.settings-row:last-child {
+  border-bottom: 0;
+}
+.settings-row label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.settings-row p {
+  margin-top: 0.3rem;
+}
+.settings-row > [role='switch'] {
+  justify-self: end;
+}
+.settings-control-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.settings-text-button {
+  color: hsl(var(--accent-highlight));
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+  font-size: 0.7rem;
+  align-self: flex-end;
+}
+.settings-scale {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.settings-scale output {
+  font-size: 0.75rem;
+  min-width: 3rem;
+  text-align: right;
+}
+.settings-view-options {
+  display: flex;
+  border: 1px solid hsl(var(--border));
+  padding: 0.2rem;
+  border-radius: 0.3rem;
+}
+.settings-view-options button {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  border-radius: 0.2rem;
+  padding: 0.45rem;
+  color: hsl(var(--text-muted));
+}
+.settings-view-options button[aria-pressed='true'] {
+  color: hsl(var(--text-primary));
+  background: hsl(var(--bg-hover));
+}
+.settings-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid hsl(var(--border));
+}
+.settings-toolbar {
+  flex: none;
+  min-height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.settings-toolbar > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.settings-resource-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.settings-resource-workbench {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 40%) minmax(0, 60%);
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.35rem;
+  overflow: hidden;
+}
+.settings-resource-library,
+.settings-resource-inspector {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.settings-resource-library {
+  border-right: 1px solid hsl(var(--border));
+}
+.settings-resource-panel-heading {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  height: 2.65rem;
+  padding: 0.5rem 0.85rem;
+  background: hsl(var(--bg-secondary));
+  border-bottom: 1px solid hsl(var(--border));
+  color: hsl(var(--text-muted));
+  font-size: 0.75rem;
+}
+.settings-resource-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.35rem;
+}
+.settings-resource-editor {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 1.1rem;
+}
+.settings-scroll {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--text-muted) / 0.3) transparent;
+}
+.settings-scroll:hover,
+.settings-scroll:focus-within {
+  scrollbar-color: hsl(var(--text-muted) / 0.55) transparent;
+}
+.settings-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.settings-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.settings-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--text-muted) / 0.3);
+  border: none;
+  border-radius: 4px;
+}
+.settings-resource-row {
+  width: 100%;
+  min-height: 4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem;
+  border: 0;
+  border-radius: 0.25rem;
+  text-align: left;
+  color: hsl(var(--text-primary));
+  margin-bottom: 0.2rem;
+}
+.settings-resource-row:hover {
+  background: hsl(var(--bg-hover) / 0.65);
+}
+.settings-resource-row[aria-pressed='true'] {
+  background: hsl(var(--bg-hover));
+}
+.settings-resource-row > img,
+.settings-resource-icon {
+  width: 1.8rem;
+  height: 2rem;
+  object-fit: contain;
+  flex: none;
+}
+.settings-resource-row .settings-resource-copy {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.settings-resource-row .settings-resource-name {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.settings-resource-row .settings-resource-meta {
+  display: block;
+  font-size: 0.7rem;
+  color: hsl(var(--text-muted));
+  margin-top: 0.25rem;
+}
+.settings-resource-badge-slot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 4rem;
+  min-width: 4rem;
+  min-height: 1.4rem;
+  margin-left: auto;
+}
+.settings-resource-badge {
+  font-size: 0.65rem;
+  line-height: 1.4;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.2rem;
+  background: hsl(var(--bg-secondary));
+  color: hsl(var(--text-primary));
+}
+.settings-editor-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 3.5rem;
+  margin-bottom: 1rem;
+}
+.settings-editor-heading h3 {
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+.settings-editor-heading > img,
+.settings-editor-heading > svg,
+.settings-editor-icon {
+  width: 2.8rem;
+  height: 2.8rem;
+  object-fit: contain;
+  flex: none;
+}
+.settings-default-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  border-top: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 0.7rem 0;
+}
+.settings-default-row > span {
+  font-size: 0.7rem;
+  color: hsl(var(--text-muted));
+}
+.settings-shell .settings-default-control {
+  flex: none;
+  min-height: 2.3rem;
+  height: auto;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.75rem;
+  gap: 0.45rem;
+}
+.settings-default-labels {
+  display: grid;
+}
+.settings-default-labels > span {
+  grid-area: 1/1;
+}
+.settings-default-control[aria-disabled='true'] {
+  color: hsl(var(--text-muted));
+  background: hsl(var(--bg-secondary));
+}
+.settings-shell .settings-resource-back {
+  display: none;
+  height: auto;
+  min-height: 1.75rem;
+  padding: 0;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+}
+.settings-info {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: hsl(var(--text-muted));
+  margin-top: 0.85rem;
+}
+.settings-empty {
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: hsl(var(--text-muted));
+}
+.settings-path {
+  padding: 1.25rem 0;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.settings-path:first-of-type {
+  padding-top: 0;
+}
+.settings-path-heading,
+.settings-path-value,
+.settings-path-help {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.settings-path-heading {
+  margin-bottom: 0.65rem;
+}
+.settings-path-heading h3 {
+  font-size: 0.9rem;
+}
+.settings-path-heading span {
+  font-size: 0.7rem;
+  color: hsl(var(--text-muted));
+}
+.settings-path-value code,
+.settings-path-text {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  user-select: text;
+}
+.settings-path-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: none;
+}
+.settings-path-help {
+  margin-top: 0.5rem;
+  align-items: flex-start;
+}
+.settings-path-help button {
+  font-size: 0.7rem;
+  color: hsl(var(--text-muted));
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.settings-path-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.settings-code {
+  width: 100%;
+  min-height: 18rem;
+  padding: 1rem;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.75;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.3rem;
+  background: hsl(var(--bg-primary));
+}
+.settings-theme-help {
+  margin-top: 1.2rem;
+  font-size: 0.8rem;
+}
+.settings-theme-help code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.settings-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  min-height: 4.5rem;
+  background: hsl(var(--bg-secondary));
+  border-top: 1px solid hsl(var(--border));
+}
+.settings-footer-status {
+  font-size: 0.7rem;
+  color: hsl(var(--text-muted));
+  max-width: 60%;
+}
+.settings-footer-status[data-dirty='true'] {
+  color: hsl(var(--accent-highlight));
+}
+.settings-footer-actions {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 0.5rem;
+}
+.settings-shell .settings-apply {
+  background: hsl(var(--accent-highlight));
+  color: hsl(var(--primary-foreground));
+}
+@container settings (max-width: 42rem) {
+  .settings-resource-workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-resource-library {
+    border-right: 0;
+  }
+  .settings-resource-workbench .settings-resource-inspector {
+    display: none;
+  }
+  .settings-resource-workbench[data-detail-open='true'] .settings-resource-library {
+    display: none;
+  }
+  .settings-resource-workbench[data-detail-open='true'] .settings-resource-inspector {
+    display: flex;
+  }
+  .settings-shell .settings-resource-back {
+    display: inline-flex;
+  }
+  .settings-shell .settings-panel {
+    padding: 1rem;
+  }
+  .settings-shell .settings-tabs-list {
+    padding: 0.5rem 0.75rem;
+  }
+  .settings-shell .settings-tab {
+    font-size: 0.7rem;
+    padding: 0.45rem 0.5rem;
+  }
+  .settings-tab svg {
+    display: none;
+  }
+  .settings-path-value {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+  .settings-path-actions {
+    align-self: flex-end;
+  }
+}
+@container settings (max-width: 27rem) {
+  .settings-row {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+  .settings-row:has(> [role='switch']) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .settings-shell .settings-header {
+    padding: 1rem 2.5rem 1rem 1rem;
+  }
+  .settings-subtitle {
+    font-size: 0.55rem;
+    letter-spacing: 0;
+  }
+  .settings-footer {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+  }
+  .settings-footer-status {
+    max-width: 100%;
+    width: 100%;
+  }
+  .settings-footer-actions {
+    margin-left: auto;
+  }
+  .settings-path-input,
+  .settings-path-help {
+    flex-wrap: wrap;
+  }
+  .settings-path-input input {
+    flex-basis: 100%;
+  }
+  .settings-path-heading {
+    align-items: flex-start;
+  }
+}
+
+/* Keep the editor useful when app zoom reduces the available viewport height. */
+@media (max-height: 700px) {
+  .settings-shell {
+    height: 94dvh;
+  }
+  .settings-shell .settings-header {
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+  .settings-shell .settings-tabs-list {
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+  }
+  .settings-shell .settings-panel {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+  .settings-section-heading {
+    margin-bottom: 0.75rem;
+  }
+  .settings-panel-inventory .settings-section-heading p {
+    display: none;
+  }
+  .settings-toolbar {
+    margin-bottom: 0.65rem;
+  }
+  .settings-editor-heading {
+    min-height: 2.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .settings-info {
+    margin-top: 0.5rem;
+  }
+  .settings-footer {
+    min-height: 3.75rem;
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+}

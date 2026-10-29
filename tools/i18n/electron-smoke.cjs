@@ -36,6 +36,9 @@ let settings = {
   selectedPresetIndex: 0,
   configPath: '/fixture/uac',
   wadFilesDirectory: '/fixture/wads',
+  modsDirectory: '/fixture/mods',
+  savegamesPath: '/fixture/saves',
+  screenshotsPath: '/fixture/screenshots',
   uiScale: 100
 }
 const protocolFixture = {
@@ -130,7 +133,14 @@ app
       if (url.pathname === '/api/settings') {
         if (request.method === 'PUT') settings = { ...settings, ...(await request.json()) }
         result = settings
-      } else if (url.pathname === '/api/protocols') result = [protocolFixture]
+      } else if (url.pathname === '/api/settings/default-paths')
+        result = {
+          wadFilesDirectory: '/fixture/wads',
+          modsDirectory: '/fixture/mods',
+          savegamesPath: '/fixture/saves',
+          screenshotsPath: '/fixture/screenshots'
+        }
+      else if (url.pathname === '/api/protocols') result = [protocolFixture]
       else if (url.pathname === '/api/protocols/localisation-fixture')
         result = { protocol: protocolFixture, files: [] }
       else if (url.pathname === '/api/mod-files/catalog')
@@ -239,18 +249,22 @@ app
           (await window.webContents.capturePage()).toPNG()
         )
       }
-      for (const [tab, expected] of [
-        ['paths', message('settings.paths.title')],
-        ['wad-config', message('settings.wads.identity')],
-        ['source-ports', message('sourcePorts.infrastructure')],
-        ['advanced', message('settings.customTheme.title')]
-      ]) {
+      for (const tab of ['paths', 'wad-config', 'source-ports', 'advanced']) {
         await clickSelector(window, `[role="tab"][id$="-trigger-${tab}"]`)
         await waitFor(
           window,
-          `document.querySelector('[role="tabpanel"][data-state="active"]').textContent.includes(${JSON.stringify(expected)})`
+          `(() => {
+            const trigger = document.querySelector('[role="tab"][id$="-trigger-${tab}"]')
+            const panel = document.getElementById(trigger?.getAttribute('aria-controls'))
+            return trigger?.getAttribute('data-state') === 'active' && !!panel?.getClientRects().length && panel.textContent.trim().length > 0
+          })()`
         )
         if (tab === 'advanced') {
+          await clickSelector(window, '[role="tabpanel"][data-state="active"] details > summary')
+          await waitFor(
+            window,
+            `!!document.querySelector('[role="tabpanel"][data-state="active"] details[open]')`
+          )
           const content = await window.webContents.executeJavaScript(
             `document.querySelector('[role="tabpanel"][data-state="active"]').textContent`
           )
@@ -260,14 +274,22 @@ app
         }
         if (tab === 'source-ports') {
           // Scan only fixtures; check the active catalog or English fallback.
-          await clickSelector(window, '[role="tabpanel"][data-state="active"] button')
-          await waitFor(
-            window,
-            `document.querySelector('[role="tabpanel"][data-state="active"]').textContent.includes(${JSON.stringify(message('sourcePorts.scan.found', { count: 1 }))})`
-          )
           await clickSelector(
             window,
-            '[role="tabpanel"][data-state="active"] button:nth-of-type(2)'
+            '[data-testid="settings-dialog"] button',
+            message('sourcePorts.scanPath')
+          )
+          await waitFor(
+            window,
+            `[...document.querySelectorAll('[role="dialog"]')].some(el => el.textContent.includes(${JSON.stringify(message('sourcePorts.scan.found', { count: 1 }))}))`
+          )
+          window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+          window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+          await waitFor(window, `document.querySelectorAll('[role="dialog"]').length === 1`)
+          await clickSelector(
+            window,
+            '[data-testid="settings-dialog"] button',
+            message('sourcePorts.get')
           )
           await waitFor(
             window,

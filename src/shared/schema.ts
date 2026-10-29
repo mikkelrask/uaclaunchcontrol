@@ -109,13 +109,7 @@ export interface IDatabaseLink {
 }
 
 export type SourcePortFamily =
-  | 'uzdoom'
-  | 'gzdoom'
-  | 'zdoom'
-  | 'zandronum'
-  | 'lzdoom'
-  | 'helion'
-  | 'other'
+  'uzdoom' | 'gzdoom' | 'zdoom' | 'zandronum' | 'lzdoom' | 'helion' | 'other'
 
 export interface ISourcePort {
   id: string
@@ -181,17 +175,15 @@ export interface IAppSettings {
   /** @deprecated Migrated to playerData.json — use IPlayerData.rank instead */
   rank?: string
 }
+export type SettingsDirectoryPaths = Required<
+  Pick<IAppSettings, 'wadFilesDirectory' | 'modsDirectory' | 'savegamesPath' | 'screenshotsPath'>
+>
+
 export interface IUpdateInfo {
   version: string
   releaseNotes?: string
   status:
-    | 'available'
-    | 'downloading'
-    | 'downloaded'
-    | 'error'
-    | 'idle'
-    | 'checking'
-    | 'not-available'
+    'available' | 'downloading' | 'downloaded' | 'error' | 'idle' | 'checking' | 'not-available'
   percent?: number
   error?: string
   isManual?: boolean

@@ -72,6 +72,11 @@ describe('English source catalog', () => {
       }
       visit(source)
     }
-    expect(Object.fromEntries(messages)).toEqual(en)
+    // Retain retired catalog keys so additive Tolgee sync preserves existing translations.
+    // Every message still used by the renderer must have an exact English default.
+    for (const [key, value] of messages) {
+      expect(en, `Missing English catalog entry for ${key}`).toHaveProperty([key])
+      expect(en[key as keyof typeof en], `English default differs for ${key}`).toBe(value)
+    }
   })
 })

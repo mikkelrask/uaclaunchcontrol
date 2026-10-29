@@ -3,6 +3,7 @@ import {
   IProtocol,
   InsertProtocol,
   IAppSettings,
+  SettingsDirectoryPaths,
   IDoomVersion,
   IUpdateInfo,
   IPlayerData,
@@ -94,11 +95,7 @@ export interface OpenDialogOptions {
   defaultPath?: string
   filters?: { name: string; extensions: string[] }[]
   properties?: (
-    | 'openFile'
-    | 'openDirectory'
-    | 'multiSelections'
-    | 'showHiddenFiles'
-    | 'createDirectory'
+    'openFile' | 'openDirectory' | 'multiSelections' | 'showHiddenFiles' | 'createDirectory'
   )[]
 }
 
@@ -152,6 +149,11 @@ async function handleApiResponse<T>(response: Response): Promise<T> {
 
 export const api = {
   // Settings operations
+  getDefaultSettingsPaths: async (): Promise<SettingsDirectoryPaths> => {
+    const res = await fetch(`${API_BASE}/api/settings/default-paths`)
+    return handleApiResponse<SettingsDirectoryPaths>(res)
+  },
+
   getSettings: async (): Promise<IAppSettings> => {
     const res = await fetch(`${API_BASE}/api/settings`)
     return handleApiResponse<IAppSettings>(res)
@@ -560,8 +562,7 @@ export const api = {
   onGameEventDetected: (
     callback: (
       data: { protocolId?: string } & (
-        | { type: 'MAP_REACHED'; mapName: string }
-        | { type: 'CHEAT_ACTIVATED'; cheat: string }
+        { type: 'MAP_REACHED'; mapName: string } | { type: 'CHEAT_ACTIVATED'; cheat: string }
       )
     ) => void
   ): void => {

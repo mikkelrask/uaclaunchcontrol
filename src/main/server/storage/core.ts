@@ -2,7 +2,7 @@ import fs from 'fs-extra'
 import path from 'path'
 import crypto from 'crypto'
 import os from 'os'
-import { IAppSettings, IDatabaseLink, IDoomVersion } from '@shared/schema'
+import { IAppSettings, IDatabaseLink, IDoomVersion, SettingsDirectoryPaths } from '@shared/schema'
 import { createLogger } from '@shared/logger'
 import { debug } from '@shared/debug'
 import { countMd5Suffixes } from '@shared/wad-names'
@@ -43,6 +43,15 @@ const DEFAULT_SETTINGS: IAppSettings = {
   registryLookupEnabled: false,
   showLaunchPreview: true,
   uiScale: 100
+}
+
+export function getDefaultSettingsPaths(): SettingsDirectoryPaths {
+  return {
+    wadFilesDirectory: resolvePath(DEFAULT_SETTINGS.wadFilesDirectory!),
+    modsDirectory: resolvePath(DEFAULT_SETTINGS.modsDirectory!),
+    savegamesPath: resolvePath(DEFAULT_SETTINGS.savegamesPath!),
+    screenshotsPath: resolvePath(DEFAULT_SETTINGS.screenshotsPath!)
+  }
 }
 
 export const DEFAULT_DOOM_VERSIONS: IDoomVersion[] = [

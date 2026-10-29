@@ -1,10 +1,8 @@
-import { T, useTranslate } from '@tolgee/react'
-import React, { useState, useEffect, useId, useRef, useCallback } from 'react'
+import { useTranslate } from '@tolgee/react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Settings, FolderOpen, LayoutGrid, List, BookOpen, Download, Check } from 'lucide-react'
+import { SlidersHorizontal, FolderOpen, Cpu, Gamepad2, Palette } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
@@ -12,21 +10,14 @@ import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
 import { queryClient } from '@/lib/queryClient'
 import type { IDoomVersion, IAppSettings } from '@shared/schema'
 import { SourcePortsTab } from '@/components/SourcePortsTab'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { DoomVersionIcon } from '@/icons/DoomIcons'
-import { Switch } from '@/components/ui/switch'
-import { Slider } from '@/components/ui/slider'
-import { isLanguagePreference } from '@shared/locales'
+import { SettingsGeneralTab } from './settings/SettingsGeneralTab'
+import { SettingsPathsTab } from './settings/SettingsPathsTab'
+import { SettingsWadsTab } from './settings/SettingsWadsTab'
+import { SettingsThemeTab } from './settings/SettingsThemeTab'
 import { applyLanguage } from '@/lib/i18n'
 import uacLogo from '@/assets/UAC Logo.svg'
-
 import { createLogger } from '@shared/logger'
+import './settings/settings.css'
 
 const log = createLogger('SettingsDialogx')
 interface SettingsDialogProps {
@@ -34,39 +25,51 @@ interface SettingsDialogProps {
   onClose: () => void
 }
 
+const EMPTY_SETTINGS: IAppSettings = {
+  language: 'system',
+  sourcePorts: [],
+  defaultSourcePortId: undefined,
+  defaultDoomVersionId: undefined,
+  theme: 'dark',
+  savegamesPath: '',
+  modsDirectory: '',
+  screenshotsPath: '',
+  wadFilesDirectory: '',
+  databaseLinkPresets: [
+    { name: 'MODDB', url: 'https://www.moddb.com/games/doom-ii' },
+    { name: 'ZDOOM', url: 'https://forum.zdoom.org/' },
+    { name: 'DOOMWORLD', url: 'https://www.doomworld.com/' },
+    { name: 'ITCH', url: 'https://itch.io/game-mods/tag-doom' }
+  ],
+  selectedPresetIndex: 0,
+  configPath: '',
+  autoUpdateEnabled: true,
+  registryLookupEnabled: false,
+  showLaunchPreview: true,
+  customThemeCss: '',
+  defaultView: 'grid',
+  uiScale: 100
+}
+
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose }) => {
   const { t } = useTranslate('desktop')
   const { toast } = useToast()
-  const id = useId()
-  const [settings, setSettings] = useState<IAppSettings>({
-    language: 'system',
-    sourcePorts: [],
-    defaultSourcePortId: undefined,
-    defaultDoomVersionId: undefined,
-    theme: 'dark',
-    savegamesPath: '',
-    modsDirectory: '',
-    screenshotsPath: '',
-    wadFilesDirectory: '',
-    databaseLinkPresets: [
-      { name: 'MODDB', url: 'https://www.moddb.com/games/doom-ii' },
-      { name: 'ZDOOM', url: 'https://forum.zdoom.org/' },
-      { name: 'DOOMWORLD', url: 'https://www.doomworld.com/' },
-      { name: 'ITCH', url: 'https://itch.io/game-mods/tag-doom' }
-    ],
-    selectedPresetIndex: 0,
-    configPath: '',
-    autoUpdateEnabled: true,
-    registryLookupEnabled: false,
-    showLaunchPreview: true,
-    customThemeCss: '',
-    defaultView: 'grid',
-    uiScale: 100
-  })
+  const [activeTab, setActiveTab] = useState('general')
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [initialSettings, setInitialSettings] = useState('')
+  const [initialVersions, setInitialVersions] = useState('')
+  const translateRef = useRef(t)
+  useEffect(() => {
+    translateRef.current = t
+  }, [t])
+  const [settings, setSettings] = useState<IAppSettings>(EMPTY_SETTINGS)
 
   // Doom versions state
   const [doomVersions, setDoomVersions] = useState<IDoomVersion[]>([])
-  const [isLoadingVersions, setIsLoadingVersions] = useState(false)
+  const [isLoadingVersions, setIsLoadingVersions] = useState(true)
   const [selectedWadIndex, setSelectedWadIndex] = useState(0)
   const [freedoomDownloading, setFreedoomDownloading] = useState<'phase12' | 'freedm' | null>(null)
   const [freedoomError, setFreedoomError] = useState('')
@@ -89,76 +92,87 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   // Snapshot of source port state at dialog open, for achievement tracking
   const initialPortFamiliesRef = useRef<string[]>([])
 
-  // Fetch settings from API when dialog opens
+  // Keep the opening snapshot stable while previews and translations change.
   useEffect(() => {
     if (!isOpen) return
-
-    // Fetch app version
+    let active = true
+    setActiveTab('general')
+    setSelectedWadIndex(0)
+    setIsLoadingSettings(true)
+    setLoadFailed(false)
+    setSaveError('')
+    setIsLoadingVersions(true)
+    setFreedoomError('')
+    fetchedRef.current = false
+    setInitialSettings('')
+    setInitialVersions('')
     api
       .getVersion()
-      .then(setAppVersion)
-      .catch((err: unknown) => log.error(err))
-
+      .then((version) => {
+        if (active) setAppVersion(version)
+      })
+      .catch(log.error)
     api
       .getSettings()
       .then((data) => {
-        if (data) {
-          savedRef.current = {
-            theme: data.theme,
-            customThemeCss: data.customThemeCss,
-            uiScale: data.uiScale ?? 100
-          }
-          initialWadDirRef.current = data.wadFilesDirectory || ''
-          setSettings((prev) => ({ ...prev, ...data }))
-          fetchedRef.current = true
-          // Capture initial source port state for achievement tracking
-          const activePorts = (data.sourcePorts || []).filter(
-            (p: { ignored?: boolean }) => !p.ignored
-          )
-          initialPortFamiliesRef.current = [
-            ...new Set(
-              activePorts.map((p: { family?: string }) => p.family).filter((f): f is string => !!f)
-            )
-          ]
+        if (!active || !data) return
+        savedRef.current = {
+          theme: data.theme,
+          customThemeCss: data.customThemeCss,
+          uiScale: data.uiScale ?? 100
         }
+        initialWadDirRef.current = data.wadFilesDirectory || ''
+        const next = { ...EMPTY_SETTINGS, ...data }
+        setInitialSettings(JSON.stringify(next))
+        setSettings(next)
+        fetchedRef.current = true
+        initialPortFamiliesRef.current = [
+          ...new Set(
+            (data.sourcePorts || [])
+              .filter((port) => !port.ignored)
+              .map((port) => port.family)
+              .filter((family) => !!family)
+          )
+        ]
       })
       .catch(() => {
-        toast({
-          title: 'FATAL: cfg_load_err',
-          description: t('settings.load.failed', 'Failed to load settings'),
-          variant: 'destructive'
-        })
+        if (active) setLoadFailed(true)
+        if (active)
+          toast({
+            title: 'FATAL: cfg_load_err',
+            description: translateRef.current('settings.load.failed', 'Failed to load settings'),
+            variant: 'destructive'
+          })
       })
-
-    // Fetch doom versions
-    const fetchVersions = async (): Promise<void> => {
-      setIsLoadingVersions(true)
-      try {
-        const versions = await api.getDoomVersions()
+      .finally(() => {
+        if (active) setIsLoadingSettings(false)
+      })
+    api
+      .getDoomVersions()
+      .then((versions) => {
+        if (!active) return
+        setInitialVersions(JSON.stringify(versions))
         setDoomVersions(versions)
-      } catch {
-        log.error('[settings] Failed to load doom versions')
-        toast({
-          title: 'FATAL: version_load_err',
-          description: t('settings.versions.failed', 'Failed to load doom versions'),
-          variant: 'destructive'
-        })
-      } finally {
-        setIsLoadingVersions(false)
-      }
+      })
+      .catch(() => {
+        if (active) setLoadFailed(true)
+        if (active)
+          toast({
+            title: 'FATAL: version_load_err',
+            description: translateRef.current(
+              'settings.versions.failed',
+              'Failed to load doom versions'
+            ),
+            variant: 'destructive'
+          })
+      })
+      .finally(() => {
+        if (active) setIsLoadingVersions(false)
+      })
+    return () => {
+      active = false
     }
-
-    fetchVersions()
-  }, [isOpen, toast, t])
-
-  // Handle input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const { name, value } = e.target
-    setSettings((prev) => ({
-      ...prev,
-      [name]: value
-    }))
-  }
+  }, [isOpen, toast])
 
   // Handle doom version field changes
   const handleVersionChange = (
@@ -219,7 +233,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     setFreedoomError('')
     try {
       const result = await api.downloadFreedoom(bundle)
-      setDoomVersions(result.doomVersions)
+      setInitialVersions(JSON.stringify(result.doomVersions))
+      setDoomVersions((draft) =>
+        result.doomVersions.map(
+          (version) => draft.find((item) => item.id === version.id) ?? version
+        )
+      )
       // The WAD watcher usually fires for new files too, but refresh
       // deterministically so the versions cache never goes stale
       // (queryCacheContracts: downloadFreedoom → /api/versions).
@@ -267,6 +286,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
 
   // Restore saved theme/scale when closing without saving
   const handleClose = useCallback((): void => {
+    if (isSaving) return
+    if (!fetchedRef.current) {
+      onClose()
+      return
+    }
     fetchedRef.current = false
     document.documentElement.classList.remove('dark', 'light', 'terminal', 'custom')
     document.documentElement.classList.add(savedRef.current.theme)
@@ -287,10 +311,30 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
     }
 
     onClose()
-  }, [onClose])
+  }, [onClose, isSaving])
 
-  // Handle save
+  const hasChanges =
+    !!initialSettings &&
+    (JSON.stringify(settings) !== initialSettings ||
+      JSON.stringify(doomVersions) !== initialVersions)
+  const invalidPort = settings.sourcePorts.some(
+    (port) => !port.name.trim() || !port.executablePath.trim()
+  )
+  const invalidPath = [
+    settings.wadFilesDirectory,
+    settings.modsDirectory,
+    settings.savegamesPath,
+    settings.screenshotsPath
+  ].some((value) => !value?.trim())
+  const ready = !isLoadingSettings && !isLoadingVersions && !!initialSettings && !!initialVersions
+  const canSave =
+    ready && hasChanges && !invalidPort && !invalidPath && !isSaving && !freedoomDownloading
+
+  // Persist drafts only through the dialog's Apply action.
   const handleSave = async (): Promise<void> => {
+    if (!canSave) return
+    setIsSaving(true)
+    setSaveError('')
     try {
       const payload = {
         language: settings.language ?? 'system',
@@ -339,25 +383,28 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       }
 
       const savedSettings = await api.updateSettings(payload)
-      await applyLanguage(savedSettings.language)
-
-      // Re-fetch versions from the server (it re-scanned if wad dir changed)
-      const freshVersions = await api.getDoomVersions()
-
-      if (initialWadDirRef.current !== payload.wadFilesDirectory) {
-        // WAD dir changed → server already re-scanned; use its result.
-        // Discard any local edits to versions since they were against the old scan.
-        setDoomVersions(freshVersions)
-        await api.updateDoomVersions(freshVersions)
-      } else {
-        // No directory change → preserve local metadata edits (name, icon, ignored, etc.)
-        setDoomVersions(freshVersions)
-        await api.updateDoomVersions(doomVersions)
+      savedRef.current = {
+        theme: savedSettings.theme,
+        customThemeCss: savedSettings.customThemeCss,
+        uiScale: savedSettings.uiScale ?? 100
       }
 
-      // Invalidate queries to trigger global theme sync
-      await queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
+      // Settings can persist even if the metadata request fails. Synchronise
+      // successful writes immediately so a retry/Cancel cannot leave stale UI.
+      await applyLanguage(savedSettings.language)
       await queryClient.invalidateQueries({ queryKey: ['/api/settings'] })
+      try {
+        if (initialWadDirRef.current !== payload.wadFilesDirectory) {
+          // The settings endpoint has rescanned the new folder. Old-folder
+          // metadata must not replace that new inventory.
+          const freshVersions = await api.getDoomVersions()
+          setDoomVersions(freshVersions)
+        } else {
+          await api.updateDoomVersions(doomVersions)
+        }
+      } finally {
+        await queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
+      }
 
       // Update savedRef so close-restore is a no-op (theme is already persisted)
       savedRef.current = {
@@ -372,912 +419,167 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       })
       onClose()
     } catch {
-      toast({
-        title: 'SYSTEM: core_settings',
-        description: t(
-          'settings.save.failed',
-          'No changes have been applied. Could not save settings.'
-        ),
-        variant: 'destructive'
-      })
-    }
-  }
-
-  // Handle folder browse
-  const handleBrowse = async (settingName: string): Promise<void> => {
-    const currentPath = settings[settingName as keyof typeof settings] as string | undefined
-
-    const result = await api.showOpenDialog({
-      properties: ['openDirectory'],
-      defaultPath: currentPath
-    })
-
-    if (!result.canceled && result.filePaths.length > 0) {
-      setSettings((prev) => ({
-        ...prev,
-        [settingName]: result.filePaths[0]
-      }))
+      setSaveError(t('settings.save.incomplete', 'Could not save all changes. Please try again.'))
+    } finally {
+      setIsSaving(false)
     }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden border-app bg-app-primary shadow-2xl h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-app bg-app-secondary">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-accent-highlight/10 rounded-md">
-              <Settings className="w-5 h-5 text-accent-highlight" />
-            </div>
-            <div>
-              <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                {t('settings.title', 'core_settings')}
-              </DialogTitle>
-              <p className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                {t('settings.subtitle', 'UAC Launch Control // System Configuration')}
-              </p>
-            </div>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) handleClose()
+      }}
+    >
+      <DialogContent
+        className="settings-shell shadow-2xl"
+        data-testid="settings-dialog"
+        aria-describedby="settings-description"
+        aria-busy={isSaving}
+        onEscapeKeyDown={(event) => {
+          // Radix handles Escape during capture, before the path input can
+          // cancel its own inline edit. Let that edit consume the first Escape.
+          if (document.activeElement?.matches('.settings-path-input input')) event.preventDefault()
+        }}
+      >
+        <header className="settings-header">
+          <img src={uacLogo} alt="" aria-hidden="true" />
+          <div>
+            <DialogTitle className="settings-title">
+              {t('settings.title', 'core_settings')}
+            </DialogTitle>
+            <p id="settings-description" className="settings-subtitle">
+              {t('settings.subtitle', 'UAC Launch Control // System Configuration')}
+            </p>
           </div>
-        </div>
-
-        <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">
-          <div className="px-4 bg-app-secondary">
-            <TabsList className="bg-transparent border-b-0 gap-6 h-12">
-              <TabsTrigger
-                value="general"
-                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
-              >
-                {t('settings.tabs.general', 'General')}
-              </TabsTrigger>
-              <TabsTrigger
-                value="paths"
-                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
-              >
-                {t('settings.tabs.paths', 'Paths')}
-              </TabsTrigger>
-              <TabsTrigger
-                value="source-ports"
-                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
-              >
-                {t('settings.tabs.sourcePorts', 'Source Ports')}
-              </TabsTrigger>
-              <TabsTrigger
-                value="wad-config"
-                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
-              >
-                {t('settings.tabs.wads', 'WAD Config')}
-              </TabsTrigger>
-              <TabsTrigger
-                value="advanced"
-                className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
-              >
-                {t('settings.tabs.advanced', 'Advanced')}
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            <TabsContent value="general" className="space-y-4 mt-0 p-6">
-              <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-5">
-                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                  {t('settings.interface', 'INTERFACE')}
-                </Label>
-
-                <div className="flex items-start justify-between gap-6">
-                  <div className="min-w-0">
-                    <Label
-                      htmlFor={`${id}-language`}
-                      className="text-sm font-medium text-app-primary"
-                    >
-                      {t('settings.language.label', 'Language')}
-                    </Label>
-                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
-                      {t(
-                        'settings.language.description',
-                        'Choose the interface language. Untranslated text is shown in English.'
-                      )}
-                    </p>
-                  </div>
-                  <Select
-                    value={settings.language ?? 'system'}
-                    onValueChange={(language) => {
-                      if (isLanguagePreference(language)) setSettings((s) => ({ ...s, language }))
-                    }}
-                  >
-                    <SelectTrigger
-                      id={`${id}-language`}
-                      className="bg-app-primary border-app text-app-primary w-[260px] shrink-0"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-app-secondary border-app text-app-primary">
-                      <SelectItem value="system">
-                        {t('settings.language.system', 'System language')}
-                      </SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="da-DK">Dansk</SelectItem>
-                      <SelectItem value="es-ES">Español</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-start justify-between gap-6">
-                  <div className="min-w-0">
-                    <Label className="text-sm font-medium text-app-primary">
-                      {t('settings.theme.label', 'App Theme')}
-                    </Label>
-                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
-                      {t('settings.theme.description', 'Visual colour profile for the terminal.')}
-                    </p>
-                  </div>
-                  <Select
-                    value={settings.theme}
-                    onValueChange={(value) =>
-                      setSettings((s) => ({
-                        ...s,
-                        theme: value as IAppSettings['theme']
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="bg-app-primary border-app text-app-primary w-[260px] shrink-0">
-                      <SelectValue placeholder={t('settings.theme.placeholder', 'Select theme')} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-app-secondary border-app text-app-primary">
-                      {[
-                        {
-                          value: 'dark',
-                          label: t('settings.theme.dark', 'UAC PHOBOS — Default, dark/red')
-                        },
-                        {
-                          value: 'light',
-                          label: t('settings.theme.light', 'MAYKR — Bright argent energy')
-                        },
-                        {
-                          value: 'terminal',
-                          label: t('settings.theme.terminal', 'PLUTONIA TERMINAL — Green phosphor')
-                        },
-                        {
-                          value: 'custom',
-                          label: t('settings.theme.custom', 'CUSTOM — User-defined palette')
-                        }
-                      ].map(({ value, label }) => (
-                        <SelectItem
-                          key={value}
-                          value={value}
-                          className="focus:bg-app-hover focus:text-app-primary"
-                        >
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-start justify-between gap-6">
-                  <div className="min-w-0">
-                    <Label className="text-sm font-medium text-app-primary">
-                      {t('settings.database.label', 'Database Link')}
-                    </Label>
-                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
-                      {t(
-                        'settings.database.description',
-                        'Changes the shortcut link shown in the header next to LAUNCH/INSTALL.'
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <Select
-                      value={settings.selectedPresetIndex.toString()}
-                      onValueChange={(value) =>
-                        setSettings((s) => ({
-                          ...s,
-                          selectedPresetIndex: parseInt(value, 10)
-                        }))
-                      }
-                    >
-                      <SelectTrigger className="bg-app-primary border-app text-app-primary w-[260px] shrink-0">
-                        <SelectValue
-                          placeholder={t('settings.database.placeholder', 'Select a database')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent className="bg-app-secondary border-app text-app-primary">
-                        {settings.databaseLinkPresets.map((preset, index) => (
-                          <SelectItem
-                            key={index}
-                            value={index.toString()}
-                            className="focus:bg-app-hover focus:text-app-primary"
-                          >
-                            {preset.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p
-                      className="text-[0.625rem] text-app-muted truncate max-w-48 text-right"
-                      title={settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
-                    >
-                      {settings.databaseLinkPresets[settings.selectedPresetIndex]?.url || ''}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between gap-6">
-                  <div className="min-w-0">
-                    <Label className="text-sm font-medium text-app-primary">
-                      {t('settings.view.label', 'Default View')}
-                    </Label>
-                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
-                      {t(
-                        'settings.view.description',
-                        'Starting view mode when opening the games page.'
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex rounded-lg border border-app overflow-hidden shrink-0">
-                    {[
-                      {
-                        value: 'grid' as const,
-                        icon: LayoutGrid,
-                        label: t('settings.view.grid', 'Grid')
-                      },
-                      {
-                        value: 'list' as const,
-                        icon: List,
-                        label: t('settings.view.list', 'List')
-                      },
-                      {
-                        value: 'detail' as const,
-                        icon: BookOpen,
-                        label: t('settings.view.detail', 'Detail')
-                      }
-                    ].map(({ value, icon: Icon, label }) => (
-                      <button
-                        key={value}
-                        onClick={() => setSettings((s) => ({ ...s, defaultView: value }))}
-                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
-                          settings.defaultView === value
-                            ? 'bg-accent-highlight text-white'
-                            : 'bg-app-primary text-app-muted hover:text-app-primary hover:bg-app-hover'
-                        }`}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
-                        <span className="max-sm:sr-only">{label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between gap-6">
-                  <div className="min-w-0">
-                    <Label className="text-sm font-medium text-app-primary">
-                      {t('settings.scale.label', 'UI Scale')}
-                    </Label>
-                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
-                      {t(
-                        'settings.scale.description',
-                        'Text and spacing size, independent of window zoom (Ctrl +/-).'
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 w-[260px] shrink-0">
-                    <Slider
-                      aria-label={t('settings.scale.label', 'UI Scale')}
-                      value={[settings.uiScale ?? 100]}
-                      onValueChange={([value]) => setSettings((s) => ({ ...s, uiScale: value }))}
-                      onValueCommit={([value]) => api.setZoomFactor(value / 100)}
-                      min={80}
-                      max={150}
-                      step={5}
-                      className="flex-1"
-                    />
-                    <span className="text-xs font-mono text-app-muted w-10 text-right shrink-0">
-                      {settings.uiScale ?? 100}%
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between gap-6">
-                  <div className="min-w-0">
-                    <Label className="text-sm font-medium text-app-primary">
-                      {t('settings.preview.label', 'Launch Preview')}
-                    </Label>
-                    <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
-                      {t(
-                        'settings.preview.description',
-                        'Show the generated launch command in settings and install page.'
-                      )}
-                    </p>
-                  </div>
-                  <Switch
-                    aria-label={t('settings.preview.label', 'Launch Preview')}
-                    checked={settings.showLaunchPreview ?? true}
-                    onCheckedChange={(checked) =>
-                      setSettings((s) => ({ ...s, showLaunchPreview: checked }))
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="bg-app-secondary/50 p-4 rounded-xl border border-app border-dashed space-y-4">
-                {appVersion && (
-                  <>
-                    <div className="flex items-center justify-between pt-2">
-                      <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                        {t('settings.liveSystem', 'LIVE SYSTEM')}
-                      </Label>
-                      <span className="text-xs px-2 py-0.5 rounded bg-app-primary text-app-muted border border-app">
-                        E1M{appVersion}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label className="text-xs text-app-primary font-medium">
-                          {t('settings.updates.label', 'Check for updates on Startup')}
-                        </Label>
-                        <p className="text-[0.625rem] text-app-muted leading-tight">
-                          <T
-                            keyName="settings.updates.description"
-                            ns="desktop"
-                            defaultValue="Automatically notify about application updates. {br}Updating is always optional - new updates will never be downloaded/applied without interaction."
-                            params={{ br: <br /> }}
-                          />
-                        </p>
-                      </div>
-                      <Switch
-                        aria-label={t('settings.updates.label', 'Check for updates on Startup')}
-                        checked={settings.autoUpdateEnabled ?? true}
-                        onCheckedChange={(checked) =>
-                          setSettings((s) => ({ ...s, autoUpdateEnabled: checked }))
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label className="text-xs text-app-primary font-medium">
-                          {t('settings.registry.label', 'Registry Lookup')}
-                        </Label>
-                        <p className="text-[0.625rem] text-app-muted leading-tight">
-                          <T
-                            keyName="settings.registry.description"
-                            ns="desktop"
-                            defaultValue="Look up mod file metadata in the UAC Registry when adding to catalog.{br}Requires an active internet connection."
-                            params={{ br: <br /> }}
-                          />
-                        </p>
-                      </div>
-                      <Switch
-                        aria-label={t('settings.registry.label', 'Registry Lookup')}
-                        checked={settings.registryLookupEnabled ?? false}
-                        onCheckedChange={(checked) => {
-                          if (checked && !settings.registryUuid) {
-                            const uuid = crypto.randomUUID()
-                            setSettings((s) => ({
-                              ...s,
-                              registryLookupEnabled: checked,
-                              registryUuid: uuid
-                            }))
-                          } else {
-                            setSettings((s) => ({ ...s, registryLookupEnabled: checked }))
-                          }
-                        }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-app-primary font-medium">
-                        {t('settings.updates.manual', 'Manually check for app updates')}
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => api.checkForUpdates()}
-                        className="text-xs h-7 bg-app-primary hover:bg-app-hover text-app-primary border-app"
-                      >
-                        {t('settings.updates.check', 'Check')}
-                      </Button>
-                    </div>
-                  </>
-                )}
-                <div className="flex items-center justify-between border-t pt-6 border-app/30">
-                  <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                    {t('settings.config.label', 'Application Ini')}
-                  </Label>
-                  <span className="text-xs px-2 py-0.5 rounded bg-accent-highlight/10 text-accent-highlight/60 font-mono border border-accent-highlight/25">
-                    {t('settings.config.restricted', 'RESTRICTED AREA')}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <div className="bg-app-primary/40 border border-app h-10 px-3 text-sm flex-1 flex items-center text-app-muted opacity-80 rounded-md truncate">
-                    {settings.configPath}
-                  </div>
-                </div>
-                <p className="text-xs text-app-muted italic opacity-70">
-                  {t(
-                    'settings.config.description',
-                    'Internal master directory for settings, telemetry catalogues, and system state.'
-                  )}
-                </p>
-              </div>
-              <div className="flex-col items-center pt-8 border-t border-dashed">
-                <img
-                  src={uacLogo}
-                  alt=""
-                  className="w-12 opacity-30 hover:opacity-60 mx-auto animate-pulse color-accent-highlight"
-                />
-                <p className="text-xs text-app-muted text-center transition-opacity opacity-30 italic uppercase mt-2">
-                  <T
-                    keyName="settings.legal"
-                    ns="desktop"
-                    defaultValue="This software is developed by The Union Aerospace Corporation, UAC.{br}Unauthorized access or usage outside Phobos facility is strictly prohibited{br}Any violations will result in termination."
-                    params={{ br: <br /> }}
-                  />
-                </p>
-              </div>
-            </TabsContent>
-
-            <TabsContent
-              value="paths"
-              className="space-y-6 mt-0 p-6 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-app-hover"
-            >
-              <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
-                {t('settings.paths.title', 'DATA REPOSITORIES')}
-              </Label>
-              <div className="grid grid-cols-1 gap-4">
-                {[
-                  {
-                    id: 'wadFilesDirectory',
-                    label: t('settings.paths.wads', 'WAD Assets'),
-                    desc: t(
-                      'settings.paths.wadsDescription',
-                      'Central repository for .WAD and .PK3 data structures.'
-                    )
-                  },
-                  {
-                    id: 'modsDirectory',
-                    label: t('settings.paths.mods', 'Mod Logic'),
-                    desc: t(
-                      'settings.paths.modsDescription',
-                      'Localized storage for external mod modifications.'
-                    )
-                  },
-                  {
-                    id: 'savegamesPath',
-                    label: t('settings.paths.saves', 'Telemetry/Saves'),
-                    desc: t(
-                      'settings.paths.savesDescription',
-                      'Secure sector for game state and progress backups.'
-                    )
-                  },
-                  {
-                    id: 'screenshotsPath',
-                    label: t('settings.paths.screenshots', 'Optical/Screens'),
-                    desc: t(
-                      'settings.paths.screenshotsDescription',
-                      'Visual capture repository for mission debriefings.'
-                    )
-                  }
-                ].map((field) => (
-                  <div
-                    key={field.id}
-                    className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3"
-                  >
-                    <div>
-                      <Label
-                        htmlFor={`${id}-${field.id}`}
-                        className="text-xs text-app-muted font-bold uppercase tracking-wider"
-                      >
-                        {field.label}
-                      </Label>
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        id={`${id}-${field.id}`}
-                        name={field.id}
-                        value={String(settings[field.id as keyof typeof settings] ?? '')}
-                        onChange={handleChange}
-                        className="bg-app-primary border-app h-10 text-sm flex-1 focus-visible:ring-2 focus-visible:ring-accent-highlight/40"
-                      />
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-10 w-10 shrink-0 hover:bg-app-primary/50 text-app-primary transition-colors border border-app/30 hover:border-app"
-                        aria-label={t('settings.paths.browse', 'Browse for {directory}', {
-                          directory: field.label
-                        })}
-                        onClick={() => handleBrowse(field.id)}
-                      >
-                        <FolderOpen className="w-5 h-5" />
-                      </Button>
-                    </div>
-                    <p className="text-xs text-app-muted italic opacity-70">{field.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent
-              value="source-ports"
-              className="mt-0 p-6 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-app-hover"
-            >
-              <SourcePortsTab settings={settings} setSettings={setSettings} />
-            </TabsContent>
-
-            <TabsContent
-              value="wad-config"
-              className="flex-1 min-h-0 p-6 flex flex-col gap-4 overflow-hidden"
-            >
-              <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3 shrink-0">
-                <div>
-                  <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                    FreeDoom
-                  </Label>
-                </div>
-                <p className="text-[0.625rem] text-app-muted leading-tight">
-                  {t(
-                    'settings.wads.freedoomDescription',
-                    'Free, legally redistributable IWADs — no commercial Doom purchase required.'
-                  )}
-                </p>
-                <p className="text-xs text-app-muted">
-                  {t(
-                    'settings.wads.detected',
-                    '{count, plural, =0 {No WADs detected} one {# WAD detected} other {# WADs detected}}',
-                    { count: doomVersions.length }
-                  )}
-                </p>
-                <div className="flex flex-col gap-2">
-                  {(
-                    [
-                      {
-                        bundle: 'phase12' as const,
-                        label: t('settings.wads.freedoomBundle', 'FreeDoom (Phase 1 + 2)')
-                      },
-                      { bundle: 'freedm' as const, label: 'FreeDM' }
-                    ] as const
-                  ).map(({ bundle, label }) => {
-                    const slugs = bundle === 'phase12' ? ['freedoom1', 'freedoom2'] : ['freedm']
-                    const installed = slugs.every((slug) =>
-                      doomVersions.some((v) => v.slug === slug)
-                    )
-                    return (
-                      <div
-                        key={bundle}
-                        className="flex items-center justify-between gap-4 bg-app-primary p-2.5 rounded-lg border border-app"
-                      >
-                        <span className="text-sm text-app-primary">{label}</span>
-                        {installed ? (
-                          <span className="flex items-center gap-1 text-xs text-green-500 shrink-0">
-                            <Check className="w-3.5 h-3.5" />
-                            {t('settings.wads.installed', 'Installed')}
-                          </span>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDownloadFreedoom(bundle)}
-                            disabled={freedoomDownloading !== null}
-                            className="text-xs h-7 bg-app-secondary hover:bg-app-hover text-app-primary border-app shrink-0"
-                          >
-                            <Download className="w-3 h-3 mr-1" />
-                            {freedoomDownloading === bundle
-                              ? t('settings.wads.downloading', 'Downloading…')
-                              : t('settings.wads.download', 'Download')}
-                          </Button>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-                {freedoomError && <p className="text-xs text-red-400">{freedoomError}</p>}
-              </div>
-
-              <div className="flex-1 min-h-0 bg-app-secondary rounded-xl border border-app shadow-xs overflow-hidden flex flex-col">
-                {isLoadingVersions ? (
-                  <div className="flex items-center justify-center h-full gap-3 text-app-secondary font-mono italic">
-                    <div className="w-2 h-2 rounded-full bg-accent-highlight animate-pulse" />
-                    {t('settings.wads.loading', 'CALIBRATING REPOSITORIES ...')}
-                  </div>
-                ) : doomVersions.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-app-secondary italic opacity-60">
-                      {t('settings.wads.empty', 'No WAD files detected in the secure sector.')}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-[240px_1fr] h-full overflow-hidden">
-                    {/* Master: WAD List Sidebar */}
-                    <div className="flex flex-col overflow-y-auto border-r border-app bg-app-primary/20 scrollbar-thin scrollbar-thumb-app-hover">
-                      <div className="p-2 space-y-1">
-                        {doomVersions.map((version, index) => (
-                          <div
-                            key={version.id || index}
-                            onClick={() => setSelectedWadIndex(index)}
-                            className={`flex items-center gap-2.5 p-3 rounded-lg transition-all text-left group shrink-0 border border-transparent cursor-pointer ${
-                              selectedWadIndex === index
-                                ? 'bg-app-primary border-app shadow-xs outline-accent-highlight/30 outline-1'
-                                : 'hover:bg-app-primary/40'
-                            }`}
-                          >
-                            {/* Default indicator */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleSetDefaultDoomVersion(version.id)
-                              }}
-                              className={`shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${
-                                settings.defaultDoomVersionId === version.id
-                                  ? 'border-accent-highlight bg-accent-highlight'
-                                  : 'border-app-muted/40 hover:border-app-muted'
-                              }`}
-                              title={
-                                settings.defaultDoomVersionId === version.id
-                                  ? t(
-                                      'settings.wads.default',
-                                      'Default WAD — pre-fills Base WAD on new protocols'
-                                    )
-                                  : t('settings.wads.setDefault', 'Set as default WAD')
-                              }
-                            />
-                            <div className="w-8 h-8 shrink-0 flex items-center justify-center overflow-hidden rounded bg-black/20 group-hover:bg-black/40 transition-colors">
-                              <DoomVersionIcon
-                                version={version.slug}
-                                customIcon={version.icon}
-                                className="w-full h-full object-contain"
-                              />
-                            </div>
-                            <span
-                              className={`text-sm font-medium truncate flex-1 ${
-                                selectedWadIndex === index
-                                  ? 'text-accent-highlight'
-                                  : 'text-app-primary'
-                              }`}
-                            >
-                              {version.name}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Detail: WAD Settings Editor */}
-                    <div className="flex flex-col gap-8 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-app-hover">
-                      {doomVersions[selectedWadIndex] && (
-                        <>
-                          <div className="flex items-start gap-6">
-                            <div className="w-32 h-32 rounded-xl bg-app-primary border border-app shadow-2xl group relative overflow-hidden shrink-0 flex items-center justify-center p-2 transition-transform hover:scale-[1.02]">
-                              <DoomVersionIcon
-                                version={doomVersions[selectedWadIndex].slug}
-                                customIcon={doomVersions[selectedWadIndex].icon}
-                                className="w-full h-full object-contain"
-                              />
-                              <button
-                                onClick={() => handleIconBrowse(selectedWadIndex)}
-                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-bold text-white transition-opacity uppercase"
-                              >
-                                {t('settings.wads.relocateIcon', 'Relocate Icon')}
-                              </button>
-                            </div>
-                            <div className="flex-1 space-y-6 min-w-0">
-                              <div className="space-y-2">
-                                <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                                  {t('settings.wads.identity', 'WAD Identity')}
-                                </Label>
-                                <Input
-                                  value={doomVersions[selectedWadIndex].name}
-                                  onChange={(e) =>
-                                    handleVersionChange(selectedWadIndex, 'name', e.target.value)
-                                  }
-                                  className="bg-app-primary border-app h-11 text-base focus-visible:ring-accent-highlight/40"
-                                />
-                              </div>
-                              {/* Engine Runtime removed — source port is now configured per-game via ISourcePort */}
-                            </div>
-                          </div>
-
-                          <div className="space-y-4 p-5 bg-app-primary border border-app rounded-xl shadow-lg">
-                            <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block">
-                              {t('settings.wads.technicalParameters', 'Technical Parameters')}
-                            </Label>
-                            <div className="space-y-4 pt-1">
-                              <div className="flex flex-col gap-2">
-                                <span className="text-xs text-app-primary font-medium">
-                                  {t('settings.wads.arguments', 'Launch Arguments')}
-                                </span>
-                                <Input
-                                  value={doomVersions[selectedWadIndex].args || ''}
-                                  onChange={(e) =>
-                                    handleVersionChange(selectedWadIndex, 'args', e.target.value)
-                                  }
-                                  className="bg-app-secondary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
-                                />
-                              </div>
-                              <div className="flex flex-col gap-2">
-                                <span className="text-xs text-app-primary font-medium">
-                                  {t('settings.wads.additionalParameters', 'Additional Parameters')}
-                                </span>
-                                <Input
-                                  value={doomVersions[selectedWadIndex].parameters || ''}
-                                  onChange={(e) =>
-                                    handleVersionChange(
-                                      selectedWadIndex,
-                                      'parameters',
-                                      e.target.value
-                                    )
-                                  }
-                                  className="bg-app-secondary border-app h-10 text-sm text-app-primary focus-visible:ring-accent-highlight/40"
-                                  placeholder={t(
-                                    'settings.wads.parametersExample',
-                                    'e.g. {arguments}',
-                                    { arguments: '-nomonsters -warp 01' }
-                                  )}
-                                />
-                              </div>
-                              <div className="pt-2">
-                                <div className="flex items-center justify-between pb-4">
-                                  <div className="space-y-0.5">
-                                    <Label className="text-xs text-app-primary font-medium">
-                                      {t('settings.wads.hide', 'Hide from Interface')}
-                                    </Label>
-                                    <p className="text-xs text-app-muted italic opacity-70">
-                                      {t(
-                                        'settings.wads.hideDescription',
-                                        'Exclude this WAD from the sidebar and general WAD selectors.'
-                                      )}
-                                    </p>
-                                  </div>
-                                  <Switch
-                                    aria-label={t('settings.wads.hide', 'Hide from Interface')}
-                                    checked={doomVersions[selectedWadIndex].ignored || false}
-                                    onCheckedChange={(checked) =>
-                                      handleVersionChange(selectedWadIndex, 'ignored', checked)
-                                    }
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex flex-col gap-2 overflow-hidden">
-                                <span className="text-xs text-app-primary font-medium">
-                                  {t('settings.wads.fileSource', 'File Source')}
-                                </span>
-                                <code className="text-xs font-mono p-3 bg-black/30 rounded-lg border border-app/50 break-all text-app-muted leading-relaxed">
-                                  {doomVersions[selectedWadIndex].defaultIwad}
-                                </code>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="advanced" className="space-y-4 mt-0 p-6">
-              <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
-                {t('settings.customTheme.title', 'CUSTOM THEME EDITOR')}
-              </Label>
-              <div className="bg-app-secondary p-4 rounded-xl border border-app space-y-4">
-                <div className="space-y-2">
-                  <p className="text-xs text-app-muted leading-relaxed">
-                    <T
-                      ns="desktop"
-                      keyName="settings.customTheme.instructions"
-                      defaultValue="Paste HSL variable overrides below. Each line should follow the format: {format}Example: {example}Wrap the overrides in {wrapper} or just paste the variable lines — the app will wrap them automatically."
-                      params={{
-                        format: (
-                          <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50">
-                            --variable-name: hue saturation lightness;
-                          </code>
-                        ),
-                        example: (
-                          <code className="block font-mono text-xs mt-1 p-2 bg-app-primary rounded border border-app/50 whitespace-pre">
-                            --bg-primary: 220 18% 5%; --text-primary: 210 20% 92%;
-                            --accent-highlight: 0 84% 60%;
-                          </code>
-                        ),
-                        wrapper: <code className="font-mono text-xs">{'.custom { ... }'}</code>
-                      }}
-                    />
-                  </p>
-                  <p className="text-xs text-app-muted leading-relaxed">
-                    <T
-                      ns="desktop"
-                      keyName="settings.customTheme.guideDescription"
-                      defaultValue="See the {guide} for the full variable reference and examples."
-                      params={{
-                        guide: (
-                          <a
-                            href="https://github.com/mikkelrask/uaclaunchcontrol/wiki/Theming#custom-theme"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="underline underline-offset-2 hover:text-accent-highlight transition-colors"
-                          >
-                            {t('settings.customTheme.guide', 'Theming guide on GitHub')}
-                          </a>
-                        )
-                      }}
-                    />
-                  </p>
-                </div>
-                <textarea
-                  className="w-full h-64 bg-app-primary border border-app rounded-md p-3 font-mono text-xs text-app-primary resize-none focus:outline-hidden focus:ring-1 focus:ring-accent-highlight/40"
-                  value={settings.customThemeCss || ''}
-                  onChange={(e) => setSettings((s) => ({ ...s, customThemeCss: e.target.value }))}
-                  placeholder={`--bg-primary: 220 18% 5%;\n--text-primary: 210 20% 92%;\n--accent-highlight: 0 84% 60%;`}
-                  aria-label={t('settings.customTheme.title', 'CUSTOM THEME EDITOR')}
-                  spellCheck={false}
-                />
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSettings((s) => ({
-                        ...s,
-                        customThemeCss: s.customThemeCss ? `.custom {\n${s.customThemeCss}\n}` : ''
-                      }))
-                    }}
-                    className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
-                  >
-                    {t('settings.customTheme.wrap', 'Wrap in {selector}', {
-                      selector: '.custom { }'
-                    })}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      // Copy dark theme values as a starter
-                      const darkThemeVars = [
-                        '--bg-primary: 220 18% 5%;',
-                        '--bg-secondary: 220 15% 9%;',
-                        '--bg-tertiary: 220 12% 14%;',
-                        '--bg-card: 220 18% 8%;',
-                        '--bg-popover: 220 18% 9%;',
-                        '--bg-muted: 220 10% 18%;',
-                        '--bg-sidebar: 220 18% 6%;',
-                        '--bg-hover: 220 12% 16%;',
-                        '',
-                        '--text-primary: 210 20% 92%;',
-                        '--text-secondary: 215 12% 70%;',
-                        '--text-muted: 215 10% 75%;',
-                        '--text-sidebar: 210 20% 92%;',
-                        '--text-card: 210 20% 92%;',
-                        '--text-popover: 210 20% 92%;',
-                        '',
-                        '--accent-highlight: 0 84% 60%;',
-                        '--accent-destructive: 0 65% 45%;',
-                        '',
-                        '--border: 220 12% 18%;'
-                      ].join('\n')
-                      setSettings((s) => ({
-                        ...s,
-                        customThemeCss: darkThemeVars
-                      }))
-                    }}
-                    className="text-xs bg-app-primary hover:bg-app-hover text-app-primary border-app h-8"
-                  >
-                    {t('settings.customTheme.reset', 'Reset to defaults')}
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
-          </div>
+        </header>
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="settings-tabs"
+          inert={isSaving || isLoadingSettings}
+        >
+          <TabsList
+            className="settings-tabs-list"
+            aria-label={t('settings.navigation', 'Settings sections')}
+          >
+            <TabsTrigger value="general" className="settings-tab">
+              <SlidersHorizontal aria-hidden="true" />
+              {t('settings.tabs.general', 'General')}
+            </TabsTrigger>
+            <TabsTrigger value="paths" className="settings-tab">
+              <FolderOpen aria-hidden="true" />
+              {t('settings.tabs.paths', 'Paths')}
+            </TabsTrigger>
+            <TabsTrigger value="source-ports" className="settings-tab">
+              <Cpu aria-hidden="true" />
+              {t('settings.tabs.sourcePorts', 'Source Ports')}
+            </TabsTrigger>
+            <TabsTrigger value="wad-config" className="settings-tab">
+              <Gamepad2 aria-hidden="true" />
+              {t('settings.wads.workbench.title', 'Base games')}
+            </TabsTrigger>
+            <TabsTrigger value="advanced" className="settings-tab">
+              <Palette aria-hidden="true" />
+              {t('settings.themeLab.title', 'Theme lab')}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent forceMount value="general" className="settings-panel settings-scroll">
+            <SettingsGeneralTab
+              settings={settings}
+              setSettings={setSettings}
+              appVersion={appVersion}
+              onEditTheme={() => setActiveTab('advanced')}
+            />
+          </TabsContent>
+          <TabsContent forceMount value="paths" className="settings-panel settings-scroll">
+            <SettingsPathsTab settings={settings} setSettings={setSettings} />
+          </TabsContent>
+          <TabsContent
+            forceMount
+            value="source-ports"
+            className="settings-panel settings-panel-inventory"
+          >
+            <SourcePortsTab settings={settings} setSettings={setSettings} layout="workbench" />
+          </TabsContent>
+          <TabsContent
+            forceMount
+            value="wad-config"
+            className="settings-panel settings-panel-inventory"
+          >
+            <SettingsWadsTab
+              settings={settings}
+              doomVersions={doomVersions}
+              isLoadingVersions={isLoadingVersions}
+              selectedWadIndex={selectedWadIndex}
+              setSelectedWadIndex={setSelectedWadIndex}
+              freedoomDownloading={freedoomDownloading}
+              freedoomError={freedoomError}
+              onVersionChange={handleVersionChange}
+              onSetDefault={handleSetDefaultDoomVersion}
+              onIconBrowse={handleIconBrowse}
+              onDownloadFreedoom={handleDownloadFreedoom}
+            />
+          </TabsContent>
+          <TabsContent forceMount value="advanced" className="settings-panel settings-scroll">
+            <SettingsThemeTab settings={settings} setSettings={setSettings} />
+          </TabsContent>
         </Tabs>
-
-        <div className="flex justify-between items-center p-4 border-t border-app bg-app-secondary shrink-0">
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            className="text-xs uppercase bg-transparent border-app hover:bg-app-hover text-app-muted hover:text-app-primary h-9 px-6"
+        <footer className="settings-footer">
+          <span
+            className="settings-footer-status"
+            data-dirty={hasChanges}
+            role={saveError ? 'alert' : 'status'}
           >
-            {t('settings.abort', 'Abort')}
-          </Button>
-          <Button
-            onClick={handleSave}
-            className="text-xs font-bold uppercase bg-accent-highlight text-white hover:bg-accent-highlight/90 h-9 px-4 shadow-lg shadow-accent-highlight/20"
-          >
-            {t('settings.apply', 'Apply Changes')}
-          </Button>
-        </div>
+            {saveError
+              ? saveError
+              : freedoomDownloading
+                ? t('settings.state.installing', 'Installing free games…')
+                : isSaving
+                  ? t('settings.state.saving', 'Applying changes…')
+                  : loadFailed
+                    ? t(
+                        'settings.state.loadFailed',
+                        'Configuration could not be loaded. Close settings and try again.'
+                      )
+                    : !ready
+                      ? t('settings.state.loading', 'Loading configuration…')
+                      : invalidPort
+                        ? t(
+                            'settings.state.portIncomplete',
+                            'Each source port needs a name and executable path.'
+                          )
+                        : invalidPath
+                          ? t(
+                              'settings.state.pathIncomplete',
+                              'Choose a folder or use its default location.'
+                            )
+                          : hasChanges
+                            ? t('settings.state.unsaved', 'Unsaved changes')
+                            : t('settings.state.saved', 'Configuration up to date')}
+          </span>
+          <div className="settings-footer-actions">
+            <Button
+              type="button"
+              variant="outline"
+              data-settings-cancel
+              onClick={handleClose}
+              disabled={isSaving}
+            >
+              {t('sourcePorts.form.cancel', 'Cancel')}
+            </Button>
+            <Button
+              type="button"
+              className="settings-apply"
+              data-settings-apply
+              onClick={() => void handleSave()}
+              disabled={!canSave}
+            >
+              {t('settings.apply', 'Apply Changes')}
+            </Button>
+          </div>
+        </footer>
       </DialogContent>
     </Dialog>
   )

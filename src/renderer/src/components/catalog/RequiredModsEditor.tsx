@@ -121,10 +121,7 @@ export const RequiredModsEditor: React.FC<RequiredModsEditorProps> = ({
               </div>
               {req.isMain && (
                 <p className="text-[0.625rem] text-app-muted pl-14">
-                  {t(
-                    'catalog.required.thisIsTheModItselfItsRequirementsGoBelow',
-                    'This is the mod itself - its requirements go below.'
-                  )}
+                  {t('catalog.required.thisIsTheModItself', 'This is the mod itself.')}
                 </p>
               )}
             </div>

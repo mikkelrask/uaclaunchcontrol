@@ -1,8 +1,17 @@
 # UAC settings design study
 
-Current direction: **revised Maintenance workbench**, incorporating the user's review of the initial three variants. This remains a throwaway visual prototype. No production settings implementation has changed.
+Approved direction: **revised Maintenance workbench**, incorporating the user's review of the initial three variants. The standalone files in this folder remain the original throwaway prototype. The production implementation now lives in `SettingsDialog.tsx`, `SourcePortsTab.tsx`, and `../settings/`, with the localization foundation merged into this branch and existing translation entries retained.
 
 Run `node preview.mjs`, then open http://127.0.0.1:8347. The preview begins on Source ports so the inventory/editor behaviour can be inspected immediately. All five sections work with in-memory sample state; no launcher API, real downloads, file pickers, or settings writes are used.
+
+## Production validation
+
+Run `npm run build`, `npm run lint`, `npm test`, and `npm run i18n:check`. The built-renderer checks use disposable Electron profiles and fixture APIs:
+
+- `npm run settings:smoke -- --ozone-platform=x11`: long inventories, stable default controls, draft Apply/Cancel, narrow list/editor navigation, keyboard focus, path actions, live themes, 120%/150% zoom, and partial-save recovery.
+- `npm run i18n:smoke -- --ozone-platform=x11`: English, Danish, Spanish fallback, settings, onboarding, and the localized library/install flows. The check runs all three fixture locales.
+
+Set `UAC_SETTINGS_SCREENSHOT_DIR` when running the settings check to capture its screens. Neither check reads or modifies the user's launcher configuration.
 
 ## Revision decisions
 

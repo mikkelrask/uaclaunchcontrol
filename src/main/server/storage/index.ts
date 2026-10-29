@@ -13,6 +13,7 @@ export {
   reenableFirstRun,
   initStorage,
   getSettings,
+  getDefaultSettingsPaths,
   saveSettings,
   resolvePath,
   resolveModFilePath,
