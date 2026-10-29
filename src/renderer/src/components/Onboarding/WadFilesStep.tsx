@@ -1,3 +1,4 @@
+import { T, useTranslate } from '@tolgee/react'
 import React, { useEffect, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,21 +19,22 @@ interface WadFilesStepProps {
   onBack: () => void
 }
 
-const FREEDOOM_BUNDLES = [
-  {
-    bundle: 'phase12' as const,
-    label: 'FreeDoom (Phase 1 + 2)',
-    slugs: ['freedoom1', 'freedoom2']
-  },
-  { bundle: 'freedm' as const, label: 'FreeDM', slugs: ['freedm'] }
-]
-
 export const WadFilesStep: React.FC<WadFilesStepProps> = ({
   settings,
   setSettings,
   onNext,
   onBack
 }) => {
+  const { t } = useTranslate('desktop')
+  const FREEDOOM_BUNDLES = [
+    {
+      bundle: 'phase12' as const,
+      label: t('settings.wads.freedoomBundle', 'FreeDoom (Phase 1 + 2)'),
+      slugs: ['freedoom1', 'freedoom2']
+    },
+    { bundle: 'freedm' as const, label: 'FreeDM', slugs: ['freedm'] }
+  ]
+
   const [doomVersions, setDoomVersions] = useState<IDoomVersion[]>([])
   const [isLoadingVersions, setIsLoadingVersions] = useState(true)
   const [freedoomDownloading, setFreedoomDownloading] = useState<'phase12' | 'freedm' | null>(null)
@@ -94,7 +96,9 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
       // new-protocol form lists them without a restart.
       queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
     } catch (e: unknown) {
-      setFreedoomError(e instanceof Error ? e.message : 'Download failed')
+      setFreedoomError(
+        e instanceof Error ? e.message : t('settings.wads.downloadFailed', 'Download failed')
+      )
     } finally {
       setFreedoomDownloading(null)
     }
@@ -107,34 +111,43 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
       <div className="space-y-2 text-center">
         <div>
           <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
-            UAC-7 // Data Repositories
+            {t('onboarding.wads.terminal', 'UAC-7 // Data Repositories')}
           </span>
         </div>
-        <h2 className="text-2xl font-bold tracking-tight text-app-primary">WAD Files</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-app-primary">
+          {t('onboarding.wads.title', 'WAD Files')}
+        </h2>
         <p className="text-sm text-app-secondary max-w-lg mx-auto">
-          Point at a folder with your Doom WAD files, or drop them into the folder below.
-          <br /> <br />
-          Don&apos;t own DOOM or DOOM II? Grab FreeDoom — free and legally redistributable, or{' '}
-          <a
-            href="https://uac-soft.online/guides/acquiring-doom/"
-            target="_blank"
-            rel="noreferrer"
-            className="underline font-bold"
-          >
-            click here
-          </a>{' '}
-          to see how to acquire them.
+          <T
+            ns="desktop"
+            keyName="onboarding.wads.description"
+            defaultValue="Point at a folder with your Doom WAD files, or drop them into the folder below. {br}{br}Don't own DOOM or DOOM II? Grab FreeDoom — free and legally redistributable, or {guide} to see how to acquire them."
+            params={{
+              br: <br />,
+              guide: (
+                <a
+                  href="https://uac-soft.online/guides/acquiring-doom/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline font-bold"
+                >
+                  {t('onboarding.wads.acquireGuide', 'click here')}
+                </a>
+              )
+            }}
+          />
         </p>
       </div>
 
       <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
         <div>
           <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-            WAD Files Directory
+            {t('onboarding.wads.directory', 'WAD Files Directory')}
           </Label>
         </div>
         <div className="flex gap-2">
           <Input
+            aria-label={t('onboarding.wads.directory', 'WAD Files Directory')}
             value={settings.wadFilesDirectory ?? ''}
             onChange={(e) =>
               setSettings((prev) => ({ ...prev, wadFilesDirectory: e.target.value }))
@@ -146,6 +159,7 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
             size="icon"
             variant="ghost"
             className="h-10 w-10 shrink-0 hover:bg-app-primary/50 text-app-primary border border-app/30"
+            aria-label={t('onboarding.wads.browse', 'Browse for WAD files directory')}
             onClick={handleBrowse}
           >
             <FolderOpen className="w-5 h-5" />
@@ -160,7 +174,10 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
           </Label>
         </div>
         <p className="text-xs text-app-muted leading-tight">
-          Free, legally redistributable IWADs — no commercial Doom purchase required.
+          {t(
+            'settings.wads.freedoomDescription',
+            'Free, legally redistributable IWADs — no commercial Doom purchase required.'
+          )}
         </p>
         <div className="flex flex-col gap-2">
           {FREEDOOM_BUNDLES.map(({ bundle, label, slugs }) => {
@@ -174,7 +191,7 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
                 {installed ? (
                   <span className="flex items-center gap-1 text-xs text-green-500 shrink-0">
                     <Check className="w-3.5 h-3.5" />
-                    Installed
+                    {t('settings.wads.installed', 'Installed')}
                   </span>
                 ) : (
                   <Button
@@ -185,7 +202,9 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
                     className="text-xs h-7 bg-app-secondary hover:bg-app-hover text-app-primary border-app shrink-0"
                   >
                     <Download className="w-3 h-3 mr-1" />
-                    {freedoomDownloading === bundle ? 'Downloading…' : 'Download'}
+                    {freedoomDownloading === bundle
+                      ? t('settings.wads.downloading', 'Downloading…')
+                      : t('settings.wads.download', 'Download')}
                   </Button>
                 )}
               </div>
@@ -198,14 +217,19 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
       <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
         <div>
           <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-            Detected IWADs
+            {t('onboarding.wads.detected', 'Detected IWADs')}
           </Label>
         </div>
         {isLoadingVersions ? (
-          <p className="text-xs text-app-muted italic py-2">Scanning…</p>
+          <p className="text-xs text-app-muted italic py-2">
+            {t('onboarding.wads.scanning', 'Scanning…')}
+          </p>
         ) : !hasAnyIwad ? (
           <p className="text-xs text-app-muted italic py-2">
-            No WAD files detected yet. Point at a folder above or download FreeDoom.
+            {t(
+              'onboarding.wads.empty',
+              'No WAD files detected yet. Point at a folder above or download FreeDoom.'
+            )}
           </p>
         ) : (
           <>
@@ -226,8 +250,11 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
                     }`}
                     title={
                       settings.defaultDoomVersionId === version.id
-                        ? 'Default WAD — pre-fills Base WAD on new protocols'
-                        : 'Set as default WAD'
+                        ? t(
+                            'settings.wads.default',
+                            'Default WAD — pre-fills Base WAD on new protocols'
+                          )
+                        : t('settings.wads.setDefault', 'Set as default WAD')
                     }
                   />
                   <div className="w-5 h-5 shrink-0 flex items-center justify-center overflow-hidden rounded bg-black/20">
@@ -242,8 +269,10 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
               ))}
             </div>
             <p className=" text-app-muted italic opacity-70">
-              Click the dot next to a WAD to make it your default — it&apos;ll be pre-selected as
-              the Base WAD when you create a new protocol.
+              {t(
+                'onboarding.wads.defaultHint',
+                "Click the dot next to a WAD to make it your default — it'll be pre-selected as the Base WAD when you create a new protocol."
+              )}
             </p>
           </>
         )}
@@ -251,7 +280,10 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
 
       {!hasAnyIwad && (
         <p className="text-xs text-app-muted italic text-center">
-          You can also do this later in Settings — this step isn&apos;t required to continue.
+          {t(
+            'onboarding.optional',
+            "You can also do this later in Settings — this step isn't required to continue."
+          )}
         </p>
       )}
 
@@ -262,13 +294,13 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
           className="text-app-muted hover:text-app-primary gap-1"
         >
           <ChevronLeft className="w-4 h-4" />
-          Back
+          {t('onboarding.back', 'Back')}
         </Button>
         <Button
           onClick={onNext}
           className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
         >
-          Next
+          {t('onboarding.next', 'Next')}
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>

@@ -1,9 +1,10 @@
+import { T, useTranslate } from '@tolgee/react'
 import React from 'react'
 import { IProtocol, IDoomVersion } from '@shared/schema'
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Button } from '@/components/ui/button'
 import { useLaunchProtocol } from '@/hooks/useLaunchProtocol'
-import { formatPlaytime, formatDate } from '@/lib/utils'
+import { useLibraryFormatters } from '@/lib/i18n/library-formatters'
 import placeholder from '@renderer/assets/placeholder.png'
 import {
   ExternalLink,
@@ -42,6 +43,9 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
   doomVersion,
   onSettingsClick
 }) => {
+  const { t } = useTranslate('desktop')
+  const { formatDate, formatPlaytime, absoluteDate } = useLibraryFormatters()
+
   const { handleLaunch, isPending } = useLaunchProtocol(protocol)
 
   const handleSettings = (): void => {
@@ -92,7 +96,12 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
                   <div className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5 text-app-muted" />
                     <span className="text-xs text-app-muted">
-                      Last played {formatDate(protocol.lastLaunchedAt)}
+                      <T
+                        ns="desktop"
+                        keyName="library.detail.lastPlayed"
+                        defaultValue={'Last played {date}'}
+                        params={{ date: formatDate(protocol.lastLaunchedAt) }}
+                      />
                     </span>
                   </div>
                   {formatPlaytime(protocol.playtimeSeconds) && (
@@ -116,11 +125,11 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
               className="bg-accent-highlight hover:opacity-90 text-white shadow-lg shadow-accent-highlight/25"
             >
               {isPending ? (
-                'LAUNCHING...'
+                t('library.detail.launching', 'LAUNCHING...')
               ) : (
                 <>
                   <Play className="w-4 h-4 mr-1.5 fill-current" />
-                  LAUNCH
+                  {t('library.detail.launch', 'LAUNCH')}
                 </>
               )}
             </Button>
@@ -131,7 +140,7 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
               className="bg-app-secondary/80 hover:bg-app-hover text-app-primary border border-app"
             >
               <Settings className="w-4 h-4 mr-1.5" />
-              ADJUST
+              {t('library.detail.adjust', 'ADJUST')}
             </Button>
           </div>
         </div>
@@ -145,10 +154,11 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
             {/* Description */}
             <div className="mb-6">
               <h3 className="text-sm font-bold text-app-muted tracking-widest mb-2">
-                {'// ABOUT'}
+                {t('library.detail.about', '// ABOUT')}
               </h3>
               <p className="text-app-primary leading-relaxed text-sm">
-                {protocol.description || 'No description available.'}
+                {protocol.description ||
+                  t('library.detail.noDescriptionAvailable', 'No description available.')}
               </p>
             </div>
 
@@ -156,11 +166,14 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
             {files.length > 0 ? (
               <div>
                 <h3 className="text-sm font-bold text-app-muted tracking-widest mb-2">
-                  {`// MOD FILES (${files.length})`}
+                  {t('library.detail.modFiles', '// MOD FILES ({count, number})', {
+                    count: files.length
+                  })}
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {files.map((f, i) => {
-                    const fileName = f.name || f.fileName || 'Unknown file'
+                    const fileName =
+                      f.name || f.fileName || t('library.detail.unknownFile', 'Unknown file')
                     const hasUrl = !!f.url
                     const tile = (
                       <>
@@ -204,7 +217,10 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
               </div>
             ) : (
               <div className="text-sm text-app-muted italic">
-                No files configured for this protocol.
+                {t(
+                  'library.detail.noFilesConfiguredForThisProtocol',
+                  'No files configured for this protocol.'
+                )}
               </div>
             )}
           </div>
@@ -213,56 +229,52 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
           <div className="space-y-4">
             <div className="bg-app-secondary/50 rounded-lg border border-app/40 p-4 space-y-3">
               <h3 className="text-sm font-bold text-app-muted tracking-widest mb-1">
-                {'// DETAILS'}
+                {t('library.detail.details', '// DETAILS')}
               </h3>
 
               {protocol.author && (
                 <InfoRow
-                  label="Author"
+                  label={t('library.detail.author', 'Author')}
                   value={protocol.author}
                   icon={<User className="w-3.5 h-3.5 text-accent-highlight" />}
                 />
               )}
               {protocol.version && (
                 <InfoRow
-                  label="Version"
+                  label={t('library.detail.version', 'Version')}
                   value={`v${protocol.version}`}
                   icon={<Tag className="w-3.5 h-3.5 text-accent-highlight" />}
                 />
               )}
               {protocol.releaseDate && (
                 <InfoRow
-                  label="Released"
-                  value={new Date(protocol.releaseDate).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })}
+                  label={t('library.detail.released', 'Released')}
+                  value={absoluteDate(protocol.releaseDate)}
                   icon={<Calendar className="w-3.5 h-3.5 text-accent-highlight" />}
                 />
               )}
               <InfoRow
-                label="Base Game"
+                label={t('library.detail.baseGame', 'Base Game')}
                 value={doomVersion.name}
                 icon={<Tag className="w-3.5 h-3.5 text-accent-highlight" />}
               />
               {protocol.lastLaunchedAt && (
                 <InfoRow
-                  label="Last Played"
+                  label={t('library.detail.lastPlayed2', 'Last Played')}
                   value={formatDate(protocol.lastLaunchedAt)}
                   icon={<Clock className="w-3.5 h-3.5 text-accent-highlight" />}
                 />
               )}
               {formatPlaytime(protocol.playtimeSeconds) && (
                 <InfoRow
-                  label="Total Playtime"
+                  label={t('library.detail.totalPlaytime', 'Total Playtime')}
                   value={formatPlaytime(protocol.playtimeSeconds)!}
                   icon={<Hourglass className="w-3.5 h-3.5 text-accent-highlight" />}
                 />
               )}
               {protocol.launchParameters && (
                 <InfoRow
-                  label="Parameters"
+                  label={t('library.detail.parameters', 'Parameters')}
                   value={protocol.launchParameters}
                   icon={<Terminal className="w-3.5 h-3.5 text-accent-highlight" />}
                   mono
@@ -279,7 +291,7 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
                            bg-app-secondary/50 rounded-lg border border-app/40 p-3"
               >
                 <ExternalLink className="w-4 h-4" />
-                Visit Website
+                {t('library.detail.visitWebsite', 'Visit Website')}
               </a>
             )}
           </div>

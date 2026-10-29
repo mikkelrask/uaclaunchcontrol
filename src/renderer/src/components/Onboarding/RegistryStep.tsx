@@ -1,3 +1,4 @@
+import { T, useTranslate } from '@tolgee/react'
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -25,6 +26,7 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
   onNext,
   onBack
 }) => {
+  const { t } = useTranslate('desktop')
   const handleToggle = (checked: boolean): void => {
     setSettings((prev) => {
       if (checked && !prev.registryUuid) {
@@ -43,13 +45,17 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
       <div className="space-y-2 text-center">
         <div>
           <span className="font-mono text-xs uppercase tracking-[0.3em] text-accent-highlight/70">
-            UAC-7 // Data Uplink
+            {t('onboarding.registry.terminal', 'UAC-7 // Data Uplink')}
           </span>
         </div>
-        <h2 className="text-2xl font-bold tracking-tight text-app-primary">UAC Registry</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-app-primary">
+          {t('onboarding.registry.title', 'UAC Registry')}
+        </h2>
         <p className="text-sm text-app-secondary max-w-lg mx-auto">
-          A community database of mod metadata — names, versions, categories and load orders —
-          maintained by players like you.
+          {t(
+            'onboarding.registry.description',
+            'A community database of mod metadata — names, versions, categories and load orders — maintained by players like you.'
+          )}
         </p>
       </div>
 
@@ -61,35 +67,65 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
           <div className="space-y-1.5">
             <div>
               <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-                What enabling does
+                {t('onboarding.registry.whatEnablingDoes', 'What enabling does')}
               </Label>
             </div>
             <ul className="text-xs text-app-secondary space-y-1.5 leading-relaxed">
               <li>
-                <span className="text-app-primary font-semibold">Look up</span> — mods you add or
-                download get their name, version, category and load order filled in automatically.
+                <T
+                  ns="desktop"
+                  keyName="onboarding.registry.lookupDescription"
+                  defaultValue="{lookUp} — mods you add or download get their name, version, category and load order filled in automatically."
+                  params={{
+                    lookUp: (
+                      <span className="text-app-primary font-semibold">
+                        {t('onboarding.registry.lookup', 'Look up')}
+                      </span>
+                    )
+                  }}
+                />
               </li>
               <li>
-                <span className="text-app-primary font-semibold">Contribute</span> — files the
-                registry doesn&apos;t recognize yet have their metadata (hashes and names only)
-                offered to the shared database for others.
+                <T
+                  ns="desktop"
+                  keyName="onboarding.registry.contributeDescription"
+                  defaultValue="{contribute} — files the registry doesn't recognize yet have their metadata (hashes and names only) offered to the shared database for others."
+                  params={{
+                    contribute: (
+                      <span className="text-app-primary font-semibold">
+                        {t('onboarding.registry.contribute', 'Contribute')}
+                      </span>
+                    )
+                  }}
+                />
               </li>
             </ul>
             <p className="text-[0.625rem] text-app-muted italic leading-tight">
-              Your mod files, folders and game data are never uploaded — only metadata. You can
-              change this anytime in Settings.
+              {t(
+                'onboarding.registry.privacy',
+                'Your mod files, folders and game data are never uploaded — only metadata. You can change this anytime in Settings.'
+              )}
             </p>
           </div>
         </div>
 
         <div className="flex items-center justify-between border-t border-app/50 pt-3">
           <div className="space-y-0.5">
-            <Label className="text-xs text-app-primary font-medium">Enable registry</Label>
+            <Label className="text-xs text-app-primary font-medium">
+              {t('onboarding.registry.enable', 'Enable registry')}
+            </Label>
             <p className="text-[0.625rem] text-app-muted leading-tight">
-              Off by default — requires an active connection to the UAC Registry.
+              {t(
+                'onboarding.registry.connection',
+                'Off by default — requires an active connection to the UAC Registry.'
+              )}
             </p>
           </div>
-          <Switch checked={enabled} onCheckedChange={handleToggle} />
+          <Switch
+            aria-label={t('onboarding.registry.enable', 'Enable registry')}
+            checked={enabled}
+            onCheckedChange={handleToggle}
+          />
         </div>
       </div>
 
@@ -100,13 +136,13 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
           className="text-app-muted hover:text-app-primary gap-1"
         >
           <ChevronLeft className="w-4 h-4" />
-          Back
+          {t('onboarding.back', 'Back')}
         </Button>
         <Button
           onClick={onNext}
           className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
         >
-          Next
+          {t('onboarding.next', 'Next')}
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>

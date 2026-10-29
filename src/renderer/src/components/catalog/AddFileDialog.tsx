@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -43,6 +44,8 @@ export function AddFileDialog({
   onBrowseConfigFile,
   onClearConfigFile
 }: AddFileDialogProps): React.ReactElement {
+  const { t } = useTranslate('desktop')
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-app-primary shadow-2xl border-app max-w-md max-h-[80vh] flex flex-col p-0 overflow-hidden">
@@ -53,10 +56,13 @@ export function AddFileDialog({
             </div>
             <div>
               <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                add_mod_file
+                {t('catalog.add.addModFile', 'add_mod_file')}
               </DialogTitle>
               <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                UAC Launch Control // Catalog Management
+                {t(
+                  'catalog.add.uacLaunchControlCatalogManagement',
+                  'UAC Launch Control // Catalog Management'
+                )}
               </DialogDescription>
             </div>
           </div>
@@ -65,14 +71,14 @@ export function AddFileDialog({
         <div className="space-y-4 p-4 overflow-y-auto">
           <div className="space-y-2">
             <div>
-              <Label htmlFor="add-file-select">Select File</Label>
+              <Label htmlFor="add-file-select">{t('catalog.add.selectFile', 'Select File')}</Label>
             </div>
             <div className="flex gap-2">
               <Input
                 id="add-file-select"
                 value={form.filePath}
                 onChange={(e) => setForm((prev) => ({ ...prev, filePath: e.target.value }))}
-                placeholder="Path to mod file"
+                placeholder={t('catalog.add.pathToModFile', 'Path to mod file')}
                 className="bg-app-secondary border-app flex-1"
               />
               <Button
@@ -94,11 +100,17 @@ export function AddFileDialog({
             requiredModsActions={requiredModsActions}
             onBrowseConfigFile={onBrowseConfigFile}
             onClearConfigFile={onClearConfigFile}
-            configTemplateHelpText="When this mod is added to a protocol, the config will be copied so each protocol has its own isolated copy."
-            configTemplatePlaceholder="No config linked — global defaults apply"
-            namePlaceholder="Pretty name for the mod"
-            versionPlaceholder="e.g., 1.0, v2.1"
-            urlLabel="URL (ModDB, forum)"
+            configTemplateHelpText={t(
+              'catalog.add.whenThisModIsAddedToAProtocolThe',
+              'When this mod is added to a protocol, the config will be copied so each protocol has its own isolated copy.'
+            )}
+            configTemplatePlaceholder={t(
+              'catalog.add.noConfigLinkedGlobalDefaultsApply',
+              'No config linked — global defaults apply'
+            )}
+            namePlaceholder={t('catalog.add.prettyNameForTheMod', 'Pretty name for the mod')}
+            versionPlaceholder={t('catalog.add.eG10V21', 'e.g., 1.0, v2.1')}
+            urlLabel={t('catalog.add.urlModdbForum', 'URL (ModDB, forum)')}
             urlPlaceholder="https://www.moddb.com/mods/..."
           />
         </div>
@@ -110,7 +122,7 @@ export function AddFileDialog({
             disabled={isSubmitting}
             className="bg-app-secondary"
           >
-            Cancel
+            {t('catalog.add.cancel', 'Cancel')}
           </Button>
           <Button
             onClick={onAddFile}
@@ -120,12 +132,12 @@ export function AddFileDialog({
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                Copying & hashing…
+                {t('catalog.add.copyingHashing', 'Copying & hashing…')}
               </>
             ) : (
               <>
                 <Plus className="h-4 w-4 mr-1" />
-                Add to Catalog
+                {t('catalog.add.addToCatalog', 'Add to Catalog')}
               </>
             )}
           </Button>

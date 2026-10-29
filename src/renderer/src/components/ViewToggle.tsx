@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React from 'react'
 import { LayoutGrid, List, BookOpen, ArrowUp, ArrowDown } from 'lucide-react'
 
@@ -14,13 +15,6 @@ interface ViewToggleProps {
   onSortChange: (field: SortField, desc: boolean) => void
 }
 
-const SORT_LABELS: Record<SortField, string> = {
-  lastPlayed: 'Last Played',
-  playtime: 'Playtime',
-  alphabetical: 'A–Z',
-  created: 'Created'
-}
-
 export const ViewToggle: React.FC<ViewToggleProps> = ({
   viewMode,
   onViewModeChange,
@@ -29,6 +23,15 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
   sortDesc,
   onSortChange
 }) => {
+  const { t } = useTranslate('desktop')
+
+  const SORT_LABELS: Record<SortField, string> = {
+    lastPlayed: t('library.sort.lastPlayed', 'Last Played'),
+    playtime: t('library.sort.playtime', 'Playtime'),
+    alphabetical: t('library.sort.alphabetical', 'A–Z'),
+    created: t('library.sort.created', 'Created')
+  }
+
   const [showSortDropdown, setShowSortDropdown] = React.useState(false)
   const dropdownRef = React.useRef<HTMLDivElement>(null)
 
@@ -60,9 +63,9 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
     <div className="px-4 py-2 bg-app-secondary flex items-center border-b border-app shrink-0">
       <div className="flex space-x-1">
         {[
-          { mode: 'grid' as ViewMode, icon: LayoutGrid, label: 'Grid' },
-          { mode: 'list' as ViewMode, icon: List, label: 'List' },
-          { mode: 'detail' as ViewMode, icon: BookOpen, label: 'Detail' }
+          { mode: 'grid' as ViewMode, icon: LayoutGrid, label: t('library.view.grid', 'Grid') },
+          { mode: 'list' as ViewMode, icon: List, label: t('library.view.list', 'List') },
+          { mode: 'detail' as ViewMode, icon: BookOpen, label: t('library.view.detail', 'Detail') }
         ].map(({ mode, icon: Icon, label }) => {
           const active = viewMode === mode
           return (
@@ -92,7 +95,7 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
               : 'text-app-muted hover:text-app-primary hover:bg-app-hover'
           }`}
           onClick={() => setShowSortDropdown(!showSortDropdown)}
-          title="Sort protocols"
+          title={t('library.view.sortProtocols', 'Sort protocols')}
         >
           {sortDesc ? <ArrowDown className="h-3.5 w-3.5" /> : <ArrowUp className="h-3.5 w-3.5" />}
           <span>{SORT_LABELS[sortField]}</span>
@@ -131,7 +134,7 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
           className="text-xs font-medium text-app-primary flex items-center hover:underline"
           onClick={onManageGames}
         >
-          Manage Protocols
+          {t('library.view.manageProtocols', 'Manage Protocols')}
         </button>
       </div>
     </div>

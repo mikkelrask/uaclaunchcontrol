@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React from 'react'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -31,18 +32,22 @@ export function ProtocolConfigControl({
   isCreating = false,
   variant = 'field'
 }: ProtocolConfigControlProps): React.ReactElement {
+  const { t } = useTranslate('desktop')
+
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">
         {variant === 'section' ? (
           <>
-            <h3 className="text-lg mb-2">Protocol Config</h3>
+            <h3 className="text-lg mb-2">
+              {t('library.config.protocolConfig', 'Protocol Config')}
+            </h3>
             <p className="text-sm text-app-secondary mb-4">{statusText}</p>
           </>
         ) : (
           <>
             <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-              Protocol Config
+              {t('library.config.protocolConfig', 'Protocol Config')}
             </Label>
             <p className="text-xs text-app-muted mt-0.5 leading-relaxed">{statusText}</p>
           </>
@@ -57,7 +62,11 @@ export function ProtocolConfigControl({
         className="shrink-0 bg-app-primary hover:bg-app-hover text-app-primary border-app"
       >
         <FilePlus className="w-3.5 h-3.5 mr-1.5" />
-        {isCreating ? 'Creating…' : hasConfig ? 'Replace with Fresh' : 'Create Unique Config'}
+        {isCreating
+          ? t('library.config.creating', 'Creating…')
+          : hasConfig
+            ? t('library.config.replaceWithFresh', 'Replace with Fresh')
+            : t('library.config.createUniqueConfig', 'Create Unique Config')}
       </Button>
     </div>
   )

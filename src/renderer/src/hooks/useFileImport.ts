@@ -1,3 +1,4 @@
+import { getTranslate } from '@/lib/i18n'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks/use-toast'
@@ -35,11 +36,18 @@ export function useFileImport({ onChange }: UseFileImportOptions): UseFileImport
   const [archiveFilePath, setArchiveFilePath] = useState<string>('')
 
   const tryArchiveImport = async (filePath: string): Promise<boolean> => {
+    const { t } = getTranslate('desktop')
+
     const ext = getArchiveExtension(filePath)
     if (!ext) return false
 
     try {
-      toast({ title: 'SYSTEM: decompressing', description: `Analyzing ${ext} contents.` })
+      toast({
+        title: 'SYSTEM: decompressing',
+        description: t('catalog.importFlow.analyzingContents', 'Analyzing {ext} contents.', {
+          ext: String(ext)
+        })
+      })
       const scan = (await api.archiveScan(filePath)) as ArchiveScanResult
       setArchiveScanResult(scan)
       setArchiveFilePath(filePath)
@@ -48,7 +56,12 @@ export function useFileImport({ onChange }: UseFileImportOptions): UseFileImport
       log.error(error)
       toast({
         title: 'FATAL: archive_scan_failed',
-        description: error instanceof Error ? error.message : `Failed to scan ${ext} file`,
+        description:
+          error instanceof Error
+            ? error.message
+            : t('catalog.importFlow.failedToScanFile', 'Failed to scan {ext} file', {
+                ext: String(ext)
+              }),
         variant: 'destructive'
       })
     }

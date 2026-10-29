@@ -1,3 +1,4 @@
+import { T, useTranslate } from '@tolgee/react'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
@@ -25,15 +26,20 @@ export function DeleteConfirmDialog({
   onCancel,
   onConfirm
 }: DeleteConfirmDialogProps): React.ReactElement {
+  const { t } = useTranslate('desktop')
+
   return (
     <Dialog open={target !== null} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Remove from catalog</DialogTitle>
+          <DialogTitle>{t('catalog.delete.removeFromCatalog', 'Remove from catalog')}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to remove{' '}
-            <strong>{target ? target.name || target.fileName : ''}</strong> from your mod file
-            catalog?
+            <T
+              ns="desktop"
+              keyName="catalog.delete.areYouSureYouWantToRemoveFromYour"
+              defaultValue={'Are you sure you want to remove {strong} from your mod file catalog?'}
+              params={{ strong: <strong>{target ? target.name || target.fileName : ''}</strong> }}
+            />
           </DialogDescription>
         </DialogHeader>
         <label className="flex items-center gap-2 text-sm cursor-pointer py-2">
@@ -41,14 +47,16 @@ export function DeleteConfirmDialog({
             checked={deleteFromDisk}
             onCheckedChange={(checked) => onDeleteFromDiskChange(checked === true)}
           />
-          <span>Also delete the file from disk</span>
+          <span>
+            {t('catalog.delete.alsoDeleteTheFileFromDisk', 'Also delete the file from disk')}
+          </span>
         </label>
         <DialogFooter>
           <Button variant="ghost" onClick={onCancel}>
-            Cancel
+            {t('catalog.delete.cancel', 'Cancel')}
           </Button>
           <Button variant="destructive" onClick={onConfirm}>
-            Delete
+            {t('catalog.delete.delete', 'Delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

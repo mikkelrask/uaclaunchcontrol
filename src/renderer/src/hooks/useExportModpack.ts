@@ -1,3 +1,4 @@
+import { getTranslate } from '@/lib/i18n'
 import { api } from '@/api'
 import { useToast } from '@/hooks/use-toast'
 import { slugify } from '@/lib/utils'
@@ -16,6 +17,8 @@ export function useExportModpack(
   const { toast } = useToast()
 
   const handleExport = async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     const doomVersion = doomVersions?.find((v) => v.id === protocol.doomVersionId)
     const portName = protocol.sourcePortId
       ? sourcePorts.find((p) => p.id === protocol.sourcePortId)?.name || 'gzdoom'
@@ -105,12 +108,17 @@ export function useExportModpack(
     URL.revokeObjectURL(url)
 
     const extras = [
-      Object.keys(configs).length > 0 ? 'configs' : null,
-      screenshot ? 'screenshot' : null
+      Object.keys(configs).length > 0 ? t('library.export.configs', 'configs') : null,
+      screenshot ? t('library.export.screenshot', 'screenshot') : null
     ].filter(Boolean)
     toast({
       title: 'SYSTEM: export_done',
-      description: `Modpack downloaded${extras.length > 0 ? ` with ${extras.join(' + ')}` : ''}`
+      description:
+        extras.length > 0
+          ? t('library.export.withExtras', 'Modpack downloaded with {extras}', {
+              extras: extras.join(' + ')
+            })
+          : t('library.export.complete', 'Modpack downloaded')
     })
   }
 

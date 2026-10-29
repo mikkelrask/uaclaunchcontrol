@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import * as React from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -23,10 +24,12 @@ export function Combobox({
   value,
   onValueChange,
   options,
-  placeholder = 'Select...',
+  placeholder,
   className,
   disabled
 }: ComboboxProps): React.ReactElement {
+  const { t } = useTranslate('desktop')
+
   const [open, setOpen] = React.useState(false)
   const listRef = React.useRef<HTMLDivElement>(null)
 
@@ -51,7 +54,7 @@ export function Combobox({
         >
           {selectedOption
             ? `${selectedOption.label}${selectedOption.description ? ` (${selectedOption.description})` : ''}`
-            : placeholder}
+            : (placeholder ?? t('ui.combobox.select', 'Select...'))}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="15"
@@ -70,9 +73,9 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="p-0" align="start">
         <Command>
-          <CommandInput placeholder="Search..." />
+          <CommandInput placeholder={t('ui.combobox.search', 'Search...')} />
           <CommandList ref={listRef} onWheel={handleWheel}>
-            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandEmpty>{t('ui.combobox.noResultsFound', 'No results found.')}</CommandEmpty>
             {options.map((opt) => (
               <CommandItem
                 key={opt.value}

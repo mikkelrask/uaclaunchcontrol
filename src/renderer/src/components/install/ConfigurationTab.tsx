@@ -1,3 +1,4 @@
+import { T, useTranslate } from '@tolgee/react'
 import React, { useState } from 'react'
 import type { UseMutationResult } from '@tanstack/react-query'
 import type { IModFile, IAppSettings, IDoomVersion, IProtocol } from '@shared/schema'
@@ -77,6 +78,8 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
   handleFilesChange,
   templateSeedName
 }) => {
+  const { t } = useTranslate('desktop')
+
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const isolatedConfigChecked = form.watch('isolatedConfig')
 
@@ -87,7 +90,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
         <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-4">
           <div>
             <span className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-              Protocol Identity
+              {t('install.configuration.protocolIdentity', 'Protocol Identity')}
             </span>
           </div>
 
@@ -99,12 +102,12 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                 <FormItem>
                   <div>
                     <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                      Label
+                      {t('install.configuration.label', 'Label')}
                     </FormLabel>
                   </div>
                   <FormControl>
                     <Input
-                      placeholder="I.e. 'Brutal Doom'"
+                      placeholder={t('install.configuration.iEBrutalDoom', "I.e. 'Brutal Doom'")}
                       className="bg-app-primary border-app"
                       {...field}
                       onChange={(e) => {
@@ -135,13 +138,19 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                 <FormItem>
                   <div>
                     <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                      Screenshot/Cover (Optional)
+                      {t(
+                        'install.configuration.screenshotCoverOptional',
+                        'Screenshot/Cover (Optional)'
+                      )}
                     </FormLabel>
                   </div>
                   <FormControl>
                     <div className="flex gap-2">
                       <Input
-                        placeholder="Enter screenshot URL"
+                        placeholder={t(
+                          'install.configuration.enterScreenshotUrl',
+                          'Enter screenshot URL'
+                        )}
                         className="bg-app-primary border-app flex-1"
                         {...field}
                       />
@@ -152,11 +161,11 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                         className="bg-app-primary border-app shrink-0 h-10 w-10"
                         onClick={async () => {
                           const result = await api.showOpenDialog({
-                            title: 'Select Screenshot',
+                            title: t('install.configuration.selectScreenshot', 'Select Screenshot'),
                             properties: ['openFile'],
                             filters: [
                               {
-                                name: 'Images',
+                                name: t('install.configuration.images', 'Images'),
                                 extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp']
                               }
                             ]
@@ -167,12 +176,19 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                               field.onChange(fileName)
                               toast({
                                 title: 'SYSTEM: image_ul',
-                                description: 'Image added successfully.'
+                                description: t(
+                                  'install.configuration.imageAddedSuccessfully',
+                                  'Image added successfully.'
+                                )
                               })
                             } catch (error: unknown) {
                               toast({
                                 title: 'FATAL: err_284',
-                                description: `Failed to upload image: ${error}`,
+                                description: t(
+                                  'install.configuration.failedToUploadImage',
+                                  'Failed to upload image: {error}',
+                                  { error: String(error) }
+                                ),
                                 variant: 'destructive'
                               })
                             }
@@ -196,12 +212,15 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
               <FormItem>
                 <div>
                   <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                    Description (Optional)
+                    {t('install.configuration.descriptionOptional', 'Description (Optional)')}
                   </FormLabel>
                 </div>
                 <FormControl>
                   <Textarea
-                    placeholder="Enter a fitting description"
+                    placeholder={t(
+                      'install.configuration.enterAFittingDescription',
+                      'Enter a fitting description'
+                    )}
                     className="bg-app-primary border-app"
                     {...field}
                   />
@@ -219,7 +238,12 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
             onClick={() => setAdvancedOpen((open) => !open)}
             className="w-full flex items-center justify-between gap-3 px-4 py-3 text-xs uppercase tracking-widest text-app-muted font-mono font-bold hover:text-app-primary hover:bg-app-hover transition-colors"
           >
-            <span>Advanced — base WAD &amp; source port, save path, isolated config</span>
+            <span>
+              {t(
+                'install.configuration.advancedBaseWadSourcePortSavePathIsolatedConfig',
+                'Advanced — base WAD & source port, save path, isolated config'
+              )}
+            </span>
             <ChevronDown
               className={`w-4 h-4 shrink-0 transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
             />
@@ -235,7 +259,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                     <FormItem>
                       <div>
                         <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                          Base WAD
+                          {t('install.configuration.baseWad', 'Base WAD')}
                         </FormLabel>
                       </div>
                       {/* key forces a fresh mount the instant a value is first
@@ -251,7 +275,12 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                       >
                         <FormControl>
                           <SelectTrigger className="bg-app-primary border-app">
-                            <SelectValue placeholder="Select Base Game/Version" />
+                            <SelectValue
+                              placeholder={t(
+                                'install.configuration.selectBaseGameVersion',
+                                'Select Base Game/Version'
+                              )}
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="bg-app-secondary border-app text-app-primary">
@@ -276,7 +305,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                     <FormItem>
                       <div>
                         <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                          Source Port
+                          {t('install.configuration.sourcePort', 'Source Port')}
                         </FormLabel>
                       </div>
                       <FormControl>
@@ -290,7 +319,10 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                               label: p.name,
                               description: p.version
                             }))}
-                          placeholder="Select a source port"
+                          placeholder={t(
+                            'install.configuration.selectASourcePort',
+                            'Select a source port'
+                          )}
                           className="w-full bg-app-primary border-app"
                         />
                       </FormControl>
@@ -308,7 +340,10 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                     <FormItem>
                       <div>
                         <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                          Save Directory (Optional)
+                          {t(
+                            'install.configuration.saveDirectoryOptional',
+                            'Save Directory (Optional)'
+                          )}
                         </FormLabel>
                       </div>
                       <FormControl>
@@ -331,7 +366,10 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                     <FormItem>
                       <div>
                         <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                          Launch Parameters (Optional)
+                          {t(
+                            'install.configuration.launchParametersOptional',
+                            'Launch Parameters (Optional)'
+                          )}
                         </FormLabel>
                       </div>
                       <FormControl>
@@ -362,12 +400,17 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                     <div className="space-y-1 leading-none">
                       <div>
                         <FormLabel className="text-sm font-normal text-app-primary cursor-pointer">
-                          Create an isolated config for this protocol
+                          {t(
+                            'install.configuration.createAnIsolatedConfigForThisProtocol',
+                            'Create an isolated config for this protocol'
+                          )}
                         </FormLabel>
                       </div>
                       <p className="text-xs text-app-muted">
-                        A private copy of the source port&apos;s current settings, so changes here
-                        won&apos;t affect other protocols. Created automatically when you save.
+                        {t(
+                          'install.configuration.aPrivateCopyOfTheSourcePortSCurrent',
+                          "A private copy of the source port's current settings, so changes here won't affect other protocols. Created automatically when you save."
+                        )}
                       </p>
                     </div>
                   </FormItem>
@@ -376,8 +419,14 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
 
               {templateSeedName && !isolatedConfigChecked && (
                 <p className="text-xs text-app-muted italic">
-                  This protocol will use the saved config from &quot;{templateSeedName}&quot; unless
-                  you check the box above.
+                  <T
+                    ns="desktop"
+                    keyName="install.configuration.thisProtocolWillUseTheSavedConfigFromUnless"
+                    defaultValue={
+                      'This protocol will use the saved config from "{templateSeedName}" unless you check the box above.'
+                    }
+                    params={{ templateSeedName: templateSeedName }}
+                  />
                 </p>
               )}
             </div>
@@ -414,7 +463,10 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                 )
                 toast({
                   title: 'SYSTEM: test_launch',
-                  description: 'Game launched. Close it to return here.'
+                  description: t(
+                    'install.configuration.gameLaunchedCloseItToReturnHere',
+                    'Game launched. Close it to return here.'
+                  )
                 })
               } catch (err: unknown) {
                 toast({
@@ -426,7 +478,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
             }}
           >
             <FlaskConical className="w-4 h-4 mr-2" />
-            Test
+            {t('install.configuration.test', 'Test')}
           </Button>
           <Button
             type="submit"
@@ -434,7 +486,9 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
             disabled={!form.watch('title') || !form.watch('doomVersionId')}
           >
             <Plus className="w-4 h-4 mr-2" />
-            {createMutation.isPending ? 'Applying...' : 'Create Protocol'}
+            {createMutation.isPending
+              ? t('install.configuration.applying', 'Applying...')
+              : t('install.configuration.createProtocol', 'Create Protocol')}
           </Button>
         </div>
       </form>

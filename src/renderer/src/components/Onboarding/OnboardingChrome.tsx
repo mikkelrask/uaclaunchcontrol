@@ -1,22 +1,5 @@
+import { useTranslate } from '@tolgee/react'
 import React, { useEffect, useState } from 'react'
-
-const LEFT_LOG_LINES = [
-  'PHOBOS UPLINK — NOMINAL',
-  'AUTH TOKEN … VERIFIED',
-  'SCANNING FOR SOURCE PORTS',
-  'WAD REGISTRY SYNC OK',
-  'CONTAINMENT FIELD — HOLDING',
-  'PERSONNEL FILE LOADED'
-]
-
-const RIGHT_LOG_LINES = [
-  'ANOMALY LEVEL — NONE DETECTED',
-  'SIGNAL://UAC-7.PHOBOS.NET',
-  'ACCESS LEVEL — CLEARANCE 4',
-  'MOD CATALOGUE INDEXED',
-  'AUX POWER — STABLE',
-  'AWAITING OPERATOR INPUT'
-]
 
 function formatClock(date: Date): string {
   return date.toTimeString().slice(0, 8)
@@ -71,6 +54,25 @@ const HudCorner: React.FC<{ position: 'tl' | 'tr' | 'bl' | 'br' }> = ({ position
  * stays correct across Default/Light/Terminal Green/Custom.
  */
 export const OnboardingChrome: React.FC = () => {
+  const { t } = useTranslate('desktop')
+  const LEFT_LOG_LINES = [
+    t('onboarding.chrome.uplink', 'PHOBOS UPLINK — NOMINAL'),
+    t('onboarding.chrome.auth', 'AUTH TOKEN … VERIFIED'),
+    t('onboarding.chrome.scanning', 'SCANNING FOR SOURCE PORTS'),
+    t('onboarding.chrome.wads', 'WAD REGISTRY SYNC OK'),
+    t('onboarding.chrome.containment', 'CONTAINMENT FIELD — HOLDING'),
+    t('onboarding.chrome.personnel', 'PERSONNEL FILE LOADED')
+  ]
+
+  const RIGHT_LOG_LINES = [
+    t('onboarding.chrome.anomaly', 'ANOMALY LEVEL — NONE DETECTED'),
+    'SIGNAL://UAC-7.PHOBOS.NET',
+    t('onboarding.chrome.clearance', 'ACCESS LEVEL — CLEARANCE 4'),
+    t('onboarding.chrome.catalog', 'MOD CATALOGUE INDEXED'),
+    t('onboarding.chrome.power', 'AUX POWER — STABLE'),
+    t('onboarding.chrome.awaiting', 'AWAITING OPERATOR INPUT')
+  ]
+
   const time = useClock()
 
   return (
@@ -87,7 +89,7 @@ export const OnboardingChrome: React.FC = () => {
       </div>
       <div className="fixed bottom-4 right-6 flex items-center gap-1.5 font-mono text-[10px] tracking-widest text-app-muted/40 pointer-events-none z-40">
         <span className="w-1.5 h-1.5 rounded-full bg-accent-highlight/60 animate-pulse" />
-        REC
+        {t('onboarding.chrome.recording', 'REC')}
       </div>
     </>
   )

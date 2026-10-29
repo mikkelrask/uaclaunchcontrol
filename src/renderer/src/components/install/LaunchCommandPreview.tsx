@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React from 'react'
 import { CopyButton } from '@/components/ui/copy-button'
 
@@ -13,12 +14,14 @@ export const LaunchCommandPreview: React.FC<LaunchCommandPreviewProps> = ({
   launchCommand,
   showPreview = true
 }) => {
+  const { t } = useTranslate('desktop')
+
   if (showPreview === false || !launchCommand) return null
 
   return (
     <div className="bg-app-primary border border-app rounded p-3 group">
       <p className="text-[0.625rem] uppercase tracking-widest text-app-muted font-mono font-bold mb-0.5 opacity-60">
-        Launch Preview
+        {t('install.preview.launchPreview', 'Launch Preview')}
       </p>
       <div className="flex items-start gap-2">
         <code className="text-xs text-app-muted font-mono break-all opacity-70 flex-1 min-w-0">

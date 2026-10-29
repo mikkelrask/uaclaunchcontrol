@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '@/api'
 import { queryClient } from '@/lib/queryClient'
@@ -27,6 +28,7 @@ interface OnboardingWizardProps {
 }
 
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate, onFinished }) => {
+  const { t } = useTranslate('desktop')
   const { toast } = useToast()
   const [isActive, setIsActive] = useState(false)
   const [showBoot, setShowBoot] = useState(false)
@@ -189,7 +191,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
         <div className="flex items-center gap-3">
           <img src={uacLogo} className="h-8 w-8" alt="" />
           <span className="font-mono text-xs uppercase tracking-widest text-app-muted">
-            UAC Launch Control // Setup
+            {t('onboarding.setup', 'UAC Launch Control // Setup')}
           </span>
         </div>
         <div className="flex items-center gap-4">
@@ -207,7 +209,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
             onClick={finish}
             className="text-xs text-app-muted hover:text-app-primary uppercase tracking-wider transition-colors"
           >
-            Skip setup
+            {t('onboarding.skip', 'Skip setup')}
           </button>
         </div>
       </div>

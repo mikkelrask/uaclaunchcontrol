@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.tolgee.io/cli-schema.json",
+  "projectId": 36113,
+  "format": "JSON_TOLGEE",
+  "defaultNamespace": "desktop",
+  "patterns": ["src/renderer/src/**/!(*.test).{ts,tsx}"],
+  "push": {
+    "filesTemplate": "src/renderer/src/lib/i18n/locales/{namespace}/{languageTag}.json",
+    "languages": ["en"],
+    "namespaces": ["desktop"],
+    "overrideKeyDescriptions": false
+  },
+  "pull": {
+    "path": "src/renderer/src/lib/i18n/locales",
+    "languages": ["en", "da-DK", "es-ES"],
+    "namespaces": ["desktop"],
+    "delimiter": "",
+    "fileStructureTemplate": "{namespace}/{languageTag}.json"
+  }
+}

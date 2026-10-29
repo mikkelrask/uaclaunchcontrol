@@ -1,3 +1,5 @@
+import { useTranslate } from '@tolgee/react'
+import { getTranslate } from '@/lib/i18n'
 import { Fragment, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -10,7 +12,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Combobox } from '@/components/ui/combobox'
-import { FolderOpenIcon, PlusIcon, TrashIcon, ExternalLink, Download, GripVertical } from 'lucide-react'
+import {
+  FolderOpenIcon,
+  PlusIcon,
+  TrashIcon,
+  ExternalLink,
+  Download,
+  GripVertical
+} from 'lucide-react'
 import { isInAppDownloadUrl } from '@shared/mod-download-url'
 import type { IModFile } from '@shared/schema'
 import { useToast } from '@/hooks/use-toast'
@@ -56,6 +65,8 @@ export function ModFileSelector({
     handleDragEnd
   }
 }: ModFileSelectorProps): React.ReactElement {
+  const { t } = useTranslate('desktop')
+
   const { toast } = useToast()
   const { data: catalogFiles = [], refetch: loadCatalogFiles } = useQuery({
     queryKey: ['/api/mod-files/catalog'],
@@ -152,6 +163,8 @@ export function ModFileSelector({
   }
 
   const handleSelectCatalogFile = (index: number, catalogFileId: number): void => {
+    const { t } = getTranslate('desktop')
+
     const catalogFile = catalogFiles.find((f) => f.id === parseInt(catalogFileId + '', 10))
     if (!catalogFile) return
 
@@ -219,8 +232,14 @@ export function ModFileSelector({
         title: 'SYSTEM: dupe_skipped',
         description:
           filesToInsert.length === 1
-            ? 'That file is already in this protocol.'
-            : 'Skipped one or more files already in this protocol.',
+            ? t(
+                'install.selector.thatFileIsAlreadyInThisProtocol',
+                'That file is already in this protocol.'
+              )
+            : t(
+                'install.selector.skippedOneOrMoreFilesAlreadyInThisProtocol',
+                'Skipped one or more files already in this protocol.'
+              ),
         variant: 'default'
       })
     }
@@ -232,16 +251,25 @@ export function ModFileSelector({
   }
 
   const handleBrowseFile = async (index: number): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     try {
       const result = await api.showOpenDialog({
-        title: 'Select Mod File',
+        title: t('install.selector.selectModFile', 'Select Mod File'),
         properties: ['openFile'],
-        filters: [{ name: 'DOOM Files', extensions: ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip'] }]
+        filters: [
+          {
+            name: t('install.selector.doomFiles', 'DOOM Files'),
+            extensions: ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip']
+          }
+        ]
       })
 
       if (!result.canceled && result.filePaths.length > 0) {
         const selectedFilePath = result.filePaths[0]
-        const fileName = selectedFilePath.split(/[\\/]/).pop() || 'No file selected'
+        const fileName =
+          selectedFilePath.split(/[\\/]/).pop() ||
+          t('install.selector.noFileSelected', 'No file selected')
 
         const extension = fileName.split('.').pop()?.toUpperCase() || ''
         let detectedType = 'WAD'
@@ -279,7 +307,11 @@ export function ModFileSelector({
           )
           toast({
             title: 'SYSTEM: already_in_catalog',
-            description: `"${existingEntry.name}" exists in catalog. Using existing entry.`,
+            description: t(
+              'install.selector.existsInCatalogUsingExistingEntry',
+              '"{name}" exists in catalog. Using existing entry.',
+              { name: String(existingEntry.name) }
+            ),
             variant: 'default'
           })
           fileToUse = existingEntry
@@ -297,7 +329,10 @@ export function ModFileSelector({
             loadCatalogFiles()
             toast({
               title: 'SYSTEM: copy_done',
-              description: 'Mod file copied to your mods directory.',
+              description: t(
+                'install.selector.modFileCopiedToYourModsDirectory',
+                'Mod file copied to your mods directory.'
+              ),
               variant: 'default'
             })
           } catch (err: unknown) {
@@ -315,7 +350,10 @@ export function ModFileSelector({
         if (isDuplicateFile(value, index, { hashValue: resolvedHash, filePath: resolvedPath })) {
           toast({
             title: 'SYSTEM: dupe_skipped',
-            description: 'That file is already in this protocol.',
+            description: t(
+              'install.selector.thatFileIsAlreadyInThisProtocol',
+              'That file is already in this protocol.'
+            ),
             variant: 'default'
           })
           return
@@ -343,7 +381,8 @@ export function ModFileSelector({
       log.error('Failed to open file dialog:', error)
       toast({
         title: 'FATAL: dialog_err',
-        description: err.message || 'Failed to open file dialog',
+        description:
+          err.message || t('install.selector.failedToOpenFileDialog', 'Failed to open file dialog'),
         variant: 'destructive'
       })
     }
@@ -353,9 +392,12 @@ export function ModFileSelector({
     <div>
       <div className="flex items-center mb-4 mt-4">
         <div className="flex flex-col w-full">
-          <h3 className="text-lg mb-2">Add Mod Files</h3>
+          <h3 className="text-lg mb-2">{t('install.selector.addModFiles', 'Add Mod Files')}</h3>
           <p className="text-sm text-app-secondary mb-4">
-            Add the mod files in the order they should be loaded. Drag the handle to reorder.
+            {t(
+              'install.selector.addTheModFilesInTheOrderTheyShould',
+              'Add the mod files in the order they should be loaded. Drag the handle to reorder.'
+            )}
           </p>
         </div>
         <div className="flex justify-end w-full">
@@ -367,14 +409,17 @@ export function ModFileSelector({
             type="button"
           >
             <PlusIcon className="h-4 w-4 mr-1" />
-            Add file
+            {t('install.selector.addFile', 'Add file')}
           </Button>
         </div>
       </div>
 
       {value.length === 0 ? (
         <div className="text-center text-app-muted py-8 border border-dashed border-app rounded">
-          No mod files added. Click &quot;Add file&quot; to begin.
+          {t(
+            'install.selector.noModFilesAddedClickAddFileToBegin',
+            'No mod files added. Click "Add file" to begin.'
+          )}
         </div>
       ) : (
         <div className="space-y-3" onDragOver={handleDragOver} onDrop={handleDrop}>
@@ -387,7 +432,7 @@ export function ModFileSelector({
                 {showPlaceholderBefore && (
                   <div className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
                     <span className="text-accent-highlight text-sm tracking-widest uppercase opacity-60">
-                      drop here
+                      {t('install.selector.dropHere', 'drop here')}
                     </span>
                   </div>
                 )}
@@ -407,7 +452,7 @@ export function ModFileSelector({
                     onDragEnd={handleDragEnd}
                     className="shrink-0 cursor-grab active:cursor-grabbing text-app-muted opacity-40 group-hover:opacity-100 transition-opacity"
                     tabIndex={-1}
-                    aria-label="Reorder"
+                    aria-label={t('install.selector.reorder', 'Reorder')}
                   >
                     <GripVertical className="h-4 w-4" />
                   </button>
@@ -418,7 +463,7 @@ export function ModFileSelector({
 
                   <div className="flex-1 flex items-center gap-1">
                     <Input
-                      placeholder="Pretty name"
+                      placeholder={t('install.selector.prettyName', 'Pretty name')}
                       value={file.name || ''}
                       onChange={(e) => handleUpdateFile(index, 'name', e.target.value)}
                       className="bg-app-primary border-app"
@@ -433,7 +478,7 @@ export function ModFileSelector({
                       size="sm"
                       onClick={() => file.url && window.open(file.url, '_blank')}
                       className={`p-1 h-8 w-8 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity ${file.url ? 'text-app-muted hover:text-app-primary' : 'text-app-muted/30 cursor-not-allowed'}`}
-                      title={file.url || 'No URL'}
+                      title={file.url || t('install.selector.noUrl', 'No URL')}
                       type="button"
                     >
                       {file.url && isInAppDownloadUrl(file.url) ? (
@@ -444,7 +489,7 @@ export function ModFileSelector({
                     </Button>
                     {!file.filePath && (
                       <span className="text-xs bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded shrink-0">
-                        missing
+                        {t('install.selector.missing', 'missing')}
                       </span>
                     )}
                   </div>
@@ -455,7 +500,7 @@ export function ModFileSelector({
                       onValueChange={(value) => handleUpdateFile(index, 'fileType', value)}
                     >
                       <SelectTrigger className="bg-app-primary border-app">
-                        <SelectValue placeholder="Type" />
+                        <SelectValue placeholder={t('install.selector.type', 'Type')} />
                       </SelectTrigger>
                       <SelectContent className="bg-app-secondary border-app">
                         <SelectItem value="WAD">WAD</SelectItem>
@@ -485,7 +530,7 @@ export function ModFileSelector({
                         value: f.id.toString(),
                         label: f.name + (f.version ? ` (${f.version})` : '')
                       }))}
-                      placeholder="Catalog..."
+                      placeholder={t('install.selector.catalog', 'Catalog...')}
                       className="bg-app-primary border-app"
                       disabled={selectableFiles.length === 0}
                     />
@@ -493,6 +538,9 @@ export function ModFileSelector({
 
                   <Button
                     variant="ghost"
+                    aria-label={t('install.files.remove', 'Remove {name} from this protocol', {
+                      name: file.name || file.fileName || ''
+                    })}
                     onClick={() => handleRemoveFile(index)}
                     className="text-red-500 hover:text-red-700 hover:bg-transparent opacity-40 group-hover:opacity-100 transition-opacity"
                     type="button"
@@ -507,7 +555,7 @@ export function ModFileSelector({
           {insertionIndex === value.length && draggedIndex !== value.length - 1 && (
             <div className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
               <span className="text-sm text-accent-highlight tracking-widest uppercase opacity-60">
-                new placement
+                {t('install.selector.newPlacement', 'new placement')}
               </span>
             </div>
           )}

@@ -1,3 +1,5 @@
+import { useTranslate } from '@tolgee/react'
+import { getTranslate } from '@/lib/i18n'
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api'
@@ -35,6 +37,8 @@ export function useProtocolActions({
   onClose,
   onConfigCreated
 }: UseProtocolActionsArgs): UseProtocolActionsResult {
+  const { t } = useTranslate('desktop')
+
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const [isCreatingConfig, setIsCreatingConfig] = useState(false)
@@ -52,7 +56,10 @@ export function useProtocolActions({
     onSuccess: async (updatedProtocol, variables) => {
       toast({
         title: 'SYSTEM: protocol_saved',
-        description: 'Protocol settings successfully saved.'
+        description: t(
+          'library.actions.protocolSettingsSuccessfullySaved',
+          'Protocol settings successfully saved.'
+        )
       })
       queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
       queryClient.setQueryData([`/api/protocols/${variables.id}`], {
@@ -86,7 +93,9 @@ export function useProtocolActions({
     onError: (error) => {
       toast({
         title: 'FATAL: settings.save()',
-        description: `Failed to save changes: ${error}`,
+        description: t('library.actions.failedToSaveChanges', 'Failed to save changes: {error}', {
+          error: String(error)
+        }),
         variant: 'destructive'
       })
     }
@@ -97,7 +106,10 @@ export function useProtocolActions({
     onSuccess: () => {
       toast({
         title: 'SYSTEM: delete_protocol',
-        description: 'Protocol deleted successfully'
+        description: t(
+          'library.actions.protocolDeletedSuccessfully',
+          'Protocol deleted successfully'
+        )
       })
       queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
       onClose()
@@ -105,7 +117,11 @@ export function useProtocolActions({
     onError: (error) => {
       toast({
         title: 'FATAL: delete_failed',
-        description: `Failed to delete protocol: ${error}`,
+        description: t(
+          'library.actions.failedToDeleteProtocol',
+          'Failed to delete protocol: {error}',
+          { error: String(error) }
+        ),
         variant: 'destructive'
       })
     }
@@ -119,13 +135,19 @@ export function useProtocolActions({
     onSuccess: () => {
       toast({
         title: 'SYSTEM: launch_protocol',
-        description: `Process "${protocol.title}" is now running`
+        description: t('library.actions.processIsNowRunning', 'Process "{title}" is now running', {
+          title: String(protocol.title)
+        })
       })
     },
     onError: (error) => {
       toast({
         title: 'FATAL: launch_protocol',
-        description: `Failed to launch protocol: "${error}"`,
+        description: t(
+          'library.actions.failedToLaunchProtocol',
+          'Failed to launch protocol: "{error}"',
+          { error: String(error) }
+        ),
         variant: 'destructive'
       })
     }
@@ -162,18 +184,25 @@ export function useProtocolActions({
   // takes effect on the protocol once Save Changes is hit — consistent with
   // how every other edit in this modal works.
   const handleCreateFreshConfig = async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     setIsCreatingConfig(true)
     try {
       const result = await api.createBlankConfig(protocolId)
       onConfigCreated(result)
       toast({
         title: 'SYSTEM: config_created',
-        description: 'Fresh isolated config created. Click Save Changes to apply.'
+        description: t(
+          'library.actions.freshIsolatedConfigCreatedClickSaveChangesToApply',
+          'Fresh isolated config created. Click Save Changes to apply.'
+        )
       })
     } catch (error: unknown) {
       toast({
         title: 'FATAL: config_create_failed',
-        description: `Failed to create config: ${error}`,
+        description: t('library.actions.failedToCreateConfig', 'Failed to create config: {error}', {
+          error: String(error)
+        }),
         variant: 'destructive'
       })
     } finally {

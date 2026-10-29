@@ -1,3 +1,4 @@
+import { getTranslate } from '@/lib/i18n'
 import { useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
@@ -150,10 +151,12 @@ export function useCatalogEdit({
   }
 
   const handleSaveEdit = async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     if (!selectedFile || !editForm.name.trim()) {
       toast({
         title: 'WARNING: name_required',
-        description: 'Name cannot be empty',
+        description: t('catalog.editFlow.nameCannotBeEmpty', 'Name cannot be empty'),
         variant: 'destructive'
       })
       return
@@ -175,7 +178,7 @@ export function useCatalogEdit({
       if (selfRefCheck) {
         toast({
           title: 'SYSTEM: circular_ref',
-          description: 'A mod cannot require itself',
+          description: t('catalog.editFlow.aModCannotRequireItself', 'A mod cannot require itself'),
           variant: 'destructive'
         })
         return
@@ -241,7 +244,9 @@ export function useCatalogEdit({
 
       toast({
         title: 'SYSTEM: save_success',
-        description: `Updated info: "${editForm.name}"`
+        description: t('catalog.editFlow.updatedInfo', 'Updated info: "{name}"', {
+          name: String(editForm.name)
+        })
       })
 
       setIsEditModalOpen(false)
@@ -257,20 +262,24 @@ export function useCatalogEdit({
     } catch (error: unknown) {
       toast({
         title: 'FATAL: update_failed',
-        description: `Failed to update: ${error}`,
+        description: t('catalog.editFlow.failedToUpdate', 'Failed to update: {error}', {
+          error: String(error)
+        }),
         variant: 'destructive'
       })
     }
   }
 
   const handleEditBrowseConfigFile = async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     try {
       const result = await api.showOpenDialog({
-        title: 'Select Config File',
+        title: t('catalog.editFlow.selectConfigFile', 'Select Config File'),
         properties: ['openFile'],
         filters: [
           {
-            name: 'Config files',
+            name: t('catalog.editFlow.configFiles', 'Config files'),
             extensions: ['cfg', 'ini', 'conf']
           }
         ]
@@ -289,14 +298,22 @@ export function useCatalogEdit({
         }))
         toast({
           title: 'SYSTEM: config_linked',
-          description: `Config template linked: ${configPath.split(/[\\/]/).pop()}`
+          description: t(
+            'catalog.editFlow.configTemplateLinked',
+            'Config template linked: {name}',
+            { name: String(configPath.split(/[\\/]/).pop()) }
+          )
         })
       }
     } catch (error: unknown) {
       log.error('Failed to browse config file:', error)
       toast({
         title: 'FATAL: config_link_failed',
-        description: `Failed to link config file: ${error}`,
+        description: t(
+          'catalog.editFlow.failedToLinkConfigFile',
+          'Failed to link config file: {error}',
+          { error: String(error) }
+        ),
         variant: 'destructive'
       })
     }

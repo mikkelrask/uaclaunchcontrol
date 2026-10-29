@@ -1,3 +1,4 @@
+import { T, useTranslate } from '@tolgee/react'
 import React from 'react'
 import {
   Dialog,
@@ -19,14 +20,15 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
   isOpen,
   onClose
 }) => {
+  const { t } = useTranslate('desktop')
   const shortcuts = [
-    { key: '/', description: 'Focus search input' },
-    { key: 'i', description: 'Go to Install page' },
-    { key: 'm', description: 'Go to Install > Mod Files tab' },
-    { key: 'w', description: 'Go to Install > WAD Files tab' },
-    { key: 'l', description: 'Go to Launch page' },
-    { key: 'Ctrl + .', description: 'Open Settings' },
-    { key: '?', description: 'Show this help' }
+    { key: '/', description: t('shortcuts.search', 'Focus search input') },
+    { key: 'i', description: t('shortcuts.install', 'Go to Install page') },
+    { key: 'm', description: t('shortcuts.modFiles', 'Go to Install > Mod Files tab') },
+    { key: 'w', description: t('shortcuts.wadFiles', 'Go to Install > WAD Files tab') },
+    { key: 'l', description: t('shortcuts.launch', 'Go to Launch page') },
+    { key: 'Ctrl + .', description: t('shortcuts.settings', 'Open Settings') },
+    { key: '?', description: t('shortcuts.help', 'Show this help') }
   ]
 
   return (
@@ -39,10 +41,10 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
             </div>
             <div>
               <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                keyboard_protocols
+                {t('shortcuts.title', 'keyboard_protocols')}
               </DialogTitle>
               <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                UAC Launch Control // Shortcuts
+                {t('shortcuts.subtitle', 'UAC Launch Control // Shortcuts')}
               </DialogDescription>
             </div>
           </div>
@@ -62,17 +64,25 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
           ))}
         </div>
 
-        <DialogFooter className="sm:justify-between items-center bg-app-secondary border-t border-app p-4 shrink-0">
-          <span className="text-xs text-app-muted">For more info see</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-accent-highlight hover:bg-accent-highlight/10 gap-1"
-            onClick={() => window.open('https://uac-soft.online/getting-started/', '_blank')}
-          >
-            Wiki
-            <ExternalLink className="w-3 h-3" />
-          </Button>
+        <DialogFooter className="sm:justify-between items-center text-xs text-app-muted bg-app-secondary border-t border-app p-4 shrink-0">
+          <T
+            ns="desktop"
+            keyName="shortcuts.moreInfo"
+            defaultValue="For more info see {wiki}"
+            params={{
+              wiki: (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-accent-highlight hover:bg-accent-highlight/10 gap-1"
+                  onClick={() => window.open('https://uac-soft.online/getting-started/', '_blank')}
+                >
+                  {t('shortcuts.wiki', 'Wiki')}
+                  <ExternalLink className="w-3 h-3" />
+                </Button>
+              )
+            }}
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React, { useEffect, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,6 +32,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
   setSettings,
   autoScan
 }) => {
+  const { t } = useTranslate('desktop')
   const [editingPort, setEditingPort] = useState<ISourcePort | null>(null)
   const [showPortForm, setShowPortForm] = useState(false)
   const [scanning, setScanning] = useState(false)
@@ -104,7 +106,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
   const handleAddPort = async (): Promise<void> => {
     const result = await api.showOpenDialog({
       properties: ['openFile'],
-      filters: [{ name: 'Executables', extensions: ['*'] }]
+      filters: [{ name: t('sourcePorts.dialog.executables', 'Executables'), extensions: ['*'] }]
     })
 
     if (!result.canceled && result.filePaths.length > 0) {
@@ -167,14 +169,14 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
   return (
     <div className="space-y-4">
       <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold block border-b border-app pb-2">
-        CORE INFRASTRUCTURE
+        {t('sourcePorts.infrastructure', 'CORE INFRASTRUCTURE')}
       </Label>
 
       {/* Source Ports List */}
       <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3">
         <div className="flex items-center justify-between">
           <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-            Source Ports
+            {t('sourcePorts.title', 'Source Ports')}
           </Label>
           <div className="flex gap-2">
             <Button
@@ -185,7 +187,9 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
               className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
             >
               <ScanSearch className="w-3 h-3 mr-1" />
-              {scanning ? 'Scanning…' : 'Scan Path'}
+              {scanning
+                ? t('sourcePorts.scanning', 'Scanning…')
+                : t('sourcePorts.scanPath', 'Scan Path')}
             </Button>
             <Button
               size="sm"
@@ -194,7 +198,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
               className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
             >
               <Download className="w-3 h-3 mr-1" />
-              Get Port
+              {t('sourcePorts.get', 'Get Port')}
             </Button>
             <Button
               size="sm"
@@ -203,14 +207,17 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
               className="text-xs h-8 bg-app-primary hover:bg-app-hover text-app-primary border-app"
             >
               <Plus className="w-3 h-3 mr-1" />
-              Add Port
+              {t('sourcePorts.add', 'Add Port')}
             </Button>
           </div>
         </div>
 
         {settings.sourcePorts.length === 0 ? (
           <p className="text-xs text-app-muted italic py-2">
-            No source ports configured. Add at least one to launch games.
+            {t(
+              'sourcePorts.empty',
+              'No source ports configured. Add at least one to launch games.'
+            )}
           </p>
         ) : (
           <div className="space-y-2 pt-1">
@@ -228,13 +235,15 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
                       : 'border-app-muted/40 hover:border-app-muted'
                   }`}
                   title={
-                    settings.defaultSourcePortId === port.id ? 'Default port' : 'Set as default'
+                    settings.defaultSourcePortId === port.id
+                      ? t('sourcePorts.default', 'Default port')
+                      : t('sourcePorts.setDefault', 'Set as default')
                   }
                 />
 
                 {/* Family badge */}
                 <span className="text-[0.625rem] font-mono uppercase px-1.5 py-0.5 rounded bg-app-secondary border border-app/50 text-app-muted shrink-0">
-                  {port.family}
+                  {port.family === 'other' ? t('sourcePorts.form.other', 'Other') : port.family}
                 </span>
 
                 {/* Name + version */}
@@ -252,6 +261,11 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
+                      aria-label={
+                        port.ignored
+                          ? t('sourcePorts.show', 'Show {name}', { name: port.name })
+                          : t('sourcePorts.hide', 'Hide {name}', { name: port.name })
+                      }
                       onClick={() => handleSavePort({ ...port, ignored: !port.ignored })}
                       className={`shrink-0 p-1.5 rounded transition-colors ${
                         port.ignored
@@ -264,8 +278,14 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs text-xs">
                     {port.ignored
-                      ? 'Hidden from protocol/launch selection lists. Click to show it again.'
-                      : 'Hide this port from selection lists without deleting it.'}
+                      ? t(
+                          'sourcePorts.hiddenHint',
+                          'Hidden from protocol/launch selection lists. Click to show it again.'
+                        )
+                      : t(
+                          'sourcePorts.hideHint',
+                          'Hide this port from selection lists without deleting it.'
+                        )}
                   </TooltipContent>
                 </Tooltip>
 
@@ -276,7 +296,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
                     setShowPortForm(true)
                   }}
                   className="shrink-0 p-1.5 text-app-muted hover:text-accent-highlight transition-colors rounded"
-                  title="Edit port"
+                  title={t('sourcePorts.edit', 'Edit port')}
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
@@ -285,7 +305,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
                 <button
                   onClick={() => handleDeletePort(port.id)}
                   className="shrink-0 p-1.5 text-app-muted hover:text-red-400 transition-colors rounded"
-                  title="Delete port"
+                  title={t('sourcePorts.delete', 'Delete port')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -323,7 +343,13 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
         <div className="mt-2 border border-accent-highlight/20 rounded-lg p-3 bg-app-secondary/50 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-app-muted">
-              Found {scanResults.length} port{scanResults.length !== 1 ? 's' : ''}
+              {t(
+                'sourcePorts.scan.found',
+                '{count, plural, one {Found # port} other {Found # ports}}',
+                {
+                  count: scanResults.length
+                }
+              )}
             </span>
             {scanSelections.some(Boolean) && (
               <Button
@@ -331,7 +357,9 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
                 onClick={handleImportScanned}
                 className="text-xs h-7 bg-accent-highlight hover:opacity-90 text-white"
               >
-                Add Selected ({scanSelections.filter(Boolean).length})
+                {t('sourcePorts.scan.addSelected', 'Add Selected ({count, number})', {
+                  count: scanSelections.filter(Boolean).length
+                })}
               </Button>
             )}
           </div>
@@ -346,6 +374,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
                   className={`flex items-center gap-2 text-xs py-1 ${alreadyAdded ? 'opacity-60' : ''}`}
                 >
                   <input
+                    aria-label={t('sourcePorts.scan.select', 'Select {name}', { name: r.name })}
                     type="checkbox"
                     checked={scanSelections[i] ?? false}
                     disabled={alreadyAdded}
@@ -359,12 +388,14 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
                     className="w-3.5 h-3.5 accent-accent-highlight shrink-0"
                   />
                   <span className="font-mono uppercase text-[0.625rem] text-app-muted w-14 shrink-0">
-                    {r.family}
+                    {r.family === 'other' ? t('sourcePorts.form.other', 'Other') : r.family}
                   </span>
                   <span className="flex-1 truncate text-app-primary">{r.name}</span>
                   <span className="text-app-muted truncate max-w-56 hidden sm:block">{r.path}</span>
                   {alreadyAdded && (
-                    <span className="text-green-500 shrink-0 text-[0.625rem]">already added</span>
+                    <span className="text-green-500 shrink-0 text-[0.625rem]">
+                      {t('sourcePorts.alreadyAdded', 'already added')}
+                    </span>
                   )}
                 </div>
               )
@@ -396,6 +427,7 @@ interface PortFormProps {
 }
 
 const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
+  const { t } = useTranslate('desktop')
   const [name, setName] = useState(port.name)
   const [version, setVersion] = useState(port.version || '')
   const [family, setFamily] = useState<SourcePortFamily>(port.family)
@@ -403,41 +435,43 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
 
   return (
     <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-xs space-y-3 animate-in slide-in-from-top-2 duration-200">
-      <div>
-        <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-          {port.id ? 'Edit Source Port' : 'New Source Port'}
-        </Label>
-      </div>
+      <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
+        {port.id
+          ? t('sourcePorts.form.edit', 'Edit Source Port')
+          : t('sourcePorts.form.new', 'New Source Port')}
+      </Label>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <div>
-            <Label className="text-xs text-app-muted">Name</Label>
-          </div>
+          <Label className="text-xs text-app-muted">{t('sourcePorts.form.name', 'Name')}</Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="bg-app-primary border-app h-9 text-sm"
-            placeholder="e.g. GZDoom 4.12.2"
+            placeholder={t('sourcePorts.form.nameExample', 'e.g. {name}', {
+              name: 'GZDoom 4.12.2'
+            })}
           />
         </div>
         <div className="space-y-1.5">
-          <div>
-            <Label className="text-xs text-app-muted">Version (optional)</Label>
-          </div>
+          <Label className="text-xs text-app-muted">
+            {t('sourcePorts.form.version', 'Version (optional)')}
+          </Label>
           <Input
             value={version}
             onChange={(e) => setVersion(e.target.value)}
             className="bg-app-primary border-app h-9 text-sm"
-            placeholder="e.g. 4.12.2"
+            placeholder={t('sourcePorts.form.versionExample', 'e.g. {version}', {
+              version: '4.12.2'
+            })}
           />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <div>
-          <Label className="text-xs text-app-muted">Executable Path</Label>
-        </div>
+        <Label className="text-xs text-app-muted">
+          {t('sourcePorts.form.path', 'Executable Path')}
+        </Label>
         <div className="flex gap-2">
           <Input
             value={executablePath}
@@ -445,13 +479,16 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
             className="bg-app-primary border-app h-9 text-sm flex-1"
           />
           <Button
+            aria-label={t('sourcePorts.form.browse', 'Browse for executable')}
             size="icon"
             variant="ghost"
             className="h-9 w-9 shrink-0 hover:bg-accent-highlight/10 text-accent-highlight border border-app/30"
             onClick={async () => {
               const result = await api.showOpenDialog({
                 properties: ['openFile'],
-                filters: [{ name: 'Executables', extensions: ['*'] }]
+                filters: [
+                  { name: t('sourcePorts.dialog.executables', 'Executables'), extensions: ['*'] }
+                ]
               })
               if (!result.canceled && result.filePaths.length > 0) {
                 setExecutablePath(result.filePaths[0])
@@ -464,9 +501,7 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
       </div>
 
       <div className="space-y-1.5">
-        <div>
-          <Label className="text-xs text-app-muted">Family</Label>
-        </div>
+        <Label className="text-xs text-app-muted">{t('sourcePorts.form.family', 'Family')}</Label>
         <Select value={family} onValueChange={(v) => setFamily(v as SourcePortFamily)}>
           <SelectTrigger className="bg-app-primary border-app h-9">
             <SelectValue />
@@ -475,7 +510,7 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
             {(['uzdoom', 'gzdoom', 'zdoom', 'zandronum', 'lzdoom', 'helion', 'other'] as const).map(
               (f) => (
                 <SelectItem key={f} value={f} className="text-app-primary">
-                  {f}
+                  {f === 'other' ? t('sourcePorts.form.other', 'Other') : f}
                 </SelectItem>
               )
             )}
@@ -490,7 +525,7 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
           onClick={onCancel}
           className="text-xs bg-transparent border-app hover:bg-app-hover text-app-muted h-8"
         >
-          Cancel
+          {t('sourcePorts.form.cancel', 'Cancel')}
         </Button>
         <Button
           size="sm"
@@ -506,7 +541,7 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
           disabled={!name.trim() || !executablePath.trim()}
           className="text-xs bg-accent-highlight text-white hover:bg-accent-highlight/90 h-8"
         >
-          Save
+          {t('sourcePorts.form.save', 'Save')}
         </Button>
       </div>
     </div>

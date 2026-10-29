@@ -15,6 +15,7 @@ import fs from 'fs-extra'
 import { debug } from '@shared/debug'
 import { wrapRoute } from './wrapRoute'
 import { REGISTRY_API_URL } from '@shared/registry-config'
+import { isLanguagePreference } from '@shared/locales'
 import { getPortReleases, downloadPortRelease } from './services/portService'
 import {
   getFreedoomManifest,
@@ -787,6 +788,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newSettings = req.body
       if (!newSettings) {
         return res.status(400).json({ message: 'No settings data provided' })
+      }
+      if (newSettings.language !== undefined && !isLanguagePreference(newSettings.language)) {
+        return res.status(400).json({ message: 'Unsupported language preference' })
       }
       const updatedSettings = await storage.saveSettings(newSettings)
       return res.json(updatedSettings)

@@ -1,3 +1,5 @@
+import { getCategoryLabel } from '@/lib/i18n/catalog-labels'
+import { getTranslate } from '@/lib/i18n'
 import type { DataTableColumn } from '@/components/ui/data-table'
 import { IModFile } from '@shared/schema'
 import { Button } from '@/components/ui/button'
@@ -19,6 +21,8 @@ export interface CatalogColumnCallbacks {
 }
 
 export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableColumn<IModFile>[] {
+  const { t } = getTranslate('desktop')
+
   const { catalogFiles, onEdit, onDelete, onOpenUrl } = callbacks
 
   function SortableHeader({
@@ -53,7 +57,9 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
   return [
     {
       accessorKey: 'name',
-      header: ({ column }) => <SortableHeader column={column} title="Name" />,
+      header: ({ column }) => (
+        <SortableHeader column={column} title={t('catalog.columns.name', 'Name')} />
+      ),
       cell: ({ row }) => {
         const file = row.original
         return (
@@ -61,7 +67,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
             <span>{file.name || file.fileName}</span>
             {file.sidecarOnly && (
               <span className="px-1.5 py-0.5 bg-yellow-900/50 text-yellow-500 text-xs rounded">
-                sidecar
+                {t('catalog.columns.sidecar', 'sidecar')}
               </span>
             )}
           </div>
@@ -74,13 +80,17 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
     },
     {
       accessorKey: 'version',
-      header: ({ column }) => <SortableHeader column={column} title="Version" />,
+      header: ({ column }) => (
+        <SortableHeader column={column} title={t('catalog.columns.version', 'Version')} />
+      ),
       cell: ({ row }) => <span className="text-app-muted">{row.original.version || '–'}</span>,
       size: 100
     },
     {
       accessorKey: 'fileType',
-      header: ({ column }) => <SortableHeader column={column} title="Type" />,
+      header: ({ column }) => (
+        <SortableHeader column={column} title={t('catalog.columns.type', 'Type')} />
+      ),
       cell: ({ row }) => (
         <span className="px-2 py-1 bg-app-primary rounded text-xs">{row.original.fileType}</span>
       ),
@@ -92,15 +102,13 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
     },
     {
       accessorKey: 'category',
-      header: ({ column }) => <SortableHeader column={column} title="Category" />,
+      header: ({ column }) => (
+        <SortableHeader column={column} title={t('catalog.columns.category', 'Category')} />
+      ),
       cell: ({ row }) => {
         const cat = row.original.category
         if (!cat) return <span className="text-app-muted">–</span>
-        return (
-          <span className="text-xs">
-            {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-          </span>
-        )
+        return <span className="text-xs">{getCategoryLabel(cat)}</span>
       },
       filterFn: (row, _columnId, filterValue: string) => {
         if (!filterValue || filterValue === 'all') return true
@@ -110,7 +118,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
     },
     {
       id: 'config',
-      header: 'Config',
+      header: t('catalog.columns.config', 'Config'),
       cell: ({ row }) => {
         const file = row.original
         if (!file.configTemplate) {
@@ -120,7 +128,10 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
         return (
           <span
             className="inline-flex items-center gap-1 text-xs text-green-500 cursor-help"
-            title={`Config: ${file.configTemplate.configFile} (${file.configTemplate.md5Hash})`}
+            title={t('catalog.columns.config2', 'Config: {configFile} ({md5Hash})', {
+              configFile: String(file.configTemplate.configFile),
+              md5Hash: String(file.configTemplate.md5Hash)
+            })}
           >
             <FileCog className="h-3.5 w-3.5" />
             {shortHash}…
@@ -132,7 +143,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
     },
     {
       id: 'dependencies',
-      header: 'Load Order',
+      header: t('catalog.columns.loadOrder', 'Load Order'),
       cell: ({ row }) => {
         const file = row.original
         if (!file.loadOrder || Object.keys(file.loadOrder).length === 0) {
@@ -157,7 +168,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
     },
     {
       accessorKey: 'hashValue',
-      header: 'MD5 Checksum',
+      header: t('catalog.columns.md5Checksum', 'MD5 Checksum'),
       cell: ({ row }) => {
         const hash = row.original.hashValue
         if (!hash) return <span className="text-app-muted">–</span>
@@ -172,7 +183,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
     },
     {
       id: 'actions',
-      header: () => <span className="sr-only">Actions</span>,
+      header: () => <span className="sr-only">{t('catalog.columns.actions', 'Actions')}</span>,
       cell: ({ row }) => {
         const file = row.original
         return (
@@ -183,7 +194,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
                 size="sm"
                 onClick={() => onOpenUrl(file.url!)}
                 className="text-app-muted hover:text-app-primary p-1 h-8 w-8"
-                title="Open URL"
+                title={t('catalog.columns.openUrl', 'Open URL')}
               >
                 <ExternalLink className="h-4 w-4" />
               </Button>
@@ -193,7 +204,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
               size="sm"
               onClick={() => onEdit(file)}
               className="text-app-muted hover:text-app-primary p-1 h-8 w-8"
-              title="Edit"
+              title={t('catalog.columns.edit', 'Edit')}
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -202,7 +213,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): DataTableC
               size="sm"
               onClick={() => onDelete(file)}
               className="text-red-500 hover:text-red-700 hover:bg-transparent p-1 h-8 w-8"
-              title="Delete"
+              title={t('catalog.columns.delete', 'Delete')}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

@@ -1,3 +1,4 @@
+import { getTranslate } from '@/lib/i18n'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks/use-toast'
@@ -117,6 +118,8 @@ export function useCatalogAdd({
   }
 
   const handleAddFile = async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     if (!addForm.filePath.trim() || isAddingFile) return
 
     const fileName = addForm.filePath.split(/[\\/]/).pop() || addForm.filePath
@@ -133,7 +136,11 @@ export function useCatalogAdd({
       if (duplicate) {
         toast({
           title: 'SYSTEM: already_in_catalog',
-          description: `"${duplicate.name || duplicate.fileName}" is already in your catalog — nothing was added.`,
+          description: t(
+            'catalog.addFlow.isAlreadyInYourCatalogNothingWasAdded',
+            '"{fileName}" is already in your catalog — nothing was added.',
+            { fileName: String(duplicate.name || duplicate.fileName) }
+          ),
           variant: 'default'
         })
         return
@@ -145,7 +152,7 @@ export function useCatalogAdd({
       if (selfRefCheck) {
         toast({
           title: 'SYSTEM: circular_ref',
-          description: 'A mod cannot require itself',
+          description: t('catalog.addFlow.aModCannotRequireItself', 'A mod cannot require itself'),
           variant: 'destructive'
         })
         return
@@ -177,7 +184,11 @@ export function useCatalogAdd({
       if (existing) {
         toast({
           title: 'SYSTEM: already_in_catalog',
-          description: `"${savedFile.name || savedFile.fileName}" is already in your catalog — nothing was added.`,
+          description: t(
+            'catalog.addFlow.isAlreadyInYourCatalogNothingWasAdded',
+            '"{fileName}" is already in your catalog — nothing was added.',
+            { fileName: String(savedFile.name || savedFile.fileName) }
+          ),
           variant: 'default'
         })
         resetLookupState()
@@ -245,7 +256,11 @@ export function useCatalogAdd({
 
       toast({
         title: 'SYSTEM: add_success',
-        description: `Added "${prettyName}" to your mod file catalog.`
+        description: t(
+          'catalog.addFlow.addedToYourModFileCatalog',
+          'Added "{prettyName}" to your mod file catalog.',
+          { prettyName: String(prettyName) }
+        )
       })
 
       const result = await dispatchAchievementEvent({
@@ -272,7 +287,9 @@ export function useCatalogAdd({
     } catch (error: unknown) {
       toast({
         title: 'FATAL: add_failed',
-        description: `Failed to add file: ${error}`,
+        description: t('catalog.addFlow.failedToAddFile', 'Failed to add file: {error}', {
+          error: String(error)
+        }),
         variant: 'destructive'
       })
     } finally {
@@ -283,13 +300,19 @@ export function useCatalogAdd({
   const initializeAddFormFromPath = async (
     filePath: string
   ): Promise<Partial<typeof addForm> | null> => {
+    const { t } = getTranslate('desktop')
+
     const fileName = filePath.split(/[\\/]/).pop() || ''
     const name = fileName.replace(/\.[^.]+$/, '')
     const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
 
     const hashingToast = toast({
       title: 'SYSTEM: hashing',
-      description: `Hashing ${fileName} — this can take a while for large files.`
+      description: t(
+        'catalog.addFlow.hashingThisCanTakeAWhileForLargeFiles',
+        'Hashing {fileName} — this can take a while for large files.',
+        { fileName: String(fileName) }
+      )
     })
 
     let hash = ''
@@ -392,13 +415,15 @@ export function useCatalogAdd({
   }
 
   const handleBrowseFile = async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     try {
       const result = await api.showOpenDialog({
-        title: 'Select Mod File',
+        title: t('catalog.addFlow.selectModFile', 'Select Mod File'),
         properties: ['openFile'],
         filters: [
           {
-            name: 'Mod stuff',
+            name: t('catalog.addFlow.modStuff', 'Mod stuff'),
             extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'bat', ...ARCHIVE_EXTENSIONS]
           }
         ]
@@ -421,7 +446,10 @@ export function useCatalogAdd({
             if (resolvedFiles.length === 0) {
               toast({
                 title: 'FATAL: bat_no_files',
-                description: 'No -file entries found in .bat file',
+                description: t(
+                  'catalog.addFlow.noFileEntriesFoundInBatFile',
+                  'No -file entries found in .bat file'
+                ),
                 variant: 'destructive'
               })
               return
@@ -450,7 +478,7 @@ export function useCatalogAdd({
             log.error('Failed to parse .bat:', error)
             toast({
               title: 'FATAL: bat_parse_failed',
-              description: 'Failed to parse .bat file',
+              description: t('catalog.addFlow.failedToParseBatFile', 'Failed to parse .bat file'),
               variant: 'destructive'
             })
           }
@@ -469,13 +497,15 @@ export function useCatalogAdd({
   }
 
   const handleBrowseConfigFile = async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     try {
       const result = await api.showOpenDialog({
-        title: 'Select Config File',
+        title: t('catalog.addFlow.selectConfigFile', 'Select Config File'),
         properties: ['openFile'],
         filters: [
           {
-            name: 'Config files',
+            name: t('catalog.addFlow.configFiles', 'Config files'),
             extensions: ['cfg', 'ini', 'conf']
           }
         ]
@@ -494,14 +524,20 @@ export function useCatalogAdd({
         }))
         toast({
           title: 'SYSTEM: config_linked',
-          description: `Config template linked: ${configPath.split(/[\\/]/).pop()}`
+          description: t('catalog.addFlow.configTemplateLinked', 'Config template linked: {name}', {
+            name: String(configPath.split(/[\\/]/).pop())
+          })
         })
       }
     } catch (error: unknown) {
       log.error('Failed to browse config file:', error)
       toast({
         title: 'FATAL: config_link_failed',
-        description: `Failed to link config file: ${error}`,
+        description: t(
+          'catalog.addFlow.failedToLinkConfigFile',
+          'Failed to link config file: {error}',
+          { error: String(error) }
+        ),
         variant: 'destructive'
       })
     }

@@ -6,6 +6,7 @@ import { IAppSettings, IDatabaseLink, IDoomVersion } from '@shared/schema'
 import { createLogger } from '@shared/logger'
 import { debug } from '@shared/debug'
 import { countMd5Suffixes } from '@shared/wad-names'
+import { isLanguagePreference } from '@shared/locales'
 import {
   CONFIG_DIR,
   DATA_DIR,
@@ -27,6 +28,7 @@ const DEFAULT_DATABASE_LINKS: IDatabaseLink[] = [
 ]
 
 const DEFAULT_SETTINGS: IAppSettings = {
+  language: 'system',
   sourcePorts: [],
   defaultSourcePortId: undefined,
   defaultDoomVersionId: undefined,
@@ -199,6 +201,7 @@ export async function getSettings(): Promise<IAppSettings> {
     const settings: IAppSettings = { ...DEFAULT_SETTINGS, ...settingsData }
     const resolvedSettings: IAppSettings = {
       ...settings,
+      language: isLanguagePreference(settings.language) ? settings.language : 'system',
       configPath: CONFIG_DIR,
       sourcePorts: settings.sourcePorts.map((p) => ({
         ...p,
@@ -227,6 +230,9 @@ export async function getSettings(): Promise<IAppSettings> {
 }
 
 export async function saveSettings(settings: Partial<IAppSettings>): Promise<IAppSettings> {
+  if (settings.language !== undefined && !isLanguagePreference(settings.language)) {
+    throw new Error('Unsupported language preference')
+  }
   try {
     initStorage()
     const currentSettings = await getSettings()

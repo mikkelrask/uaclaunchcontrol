@@ -1,3 +1,4 @@
+import { getTranslate } from '@/lib/i18n'
 import { useCallback } from 'react'
 import { api } from '@/api'
 import type { IModFile } from '@shared/schema'
@@ -55,12 +56,17 @@ export function useRequiredModsActions(
   )
 
   const handleBrowseFile = useCallback(async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     try {
       const result = await api.showOpenDialog({
-        title: 'Select Required Mod File',
+        title: t('catalog.required.selectRequiredModFile', 'Select Required Mod File'),
         properties: ['openFile'],
         filters: [
-          { name: 'DOOM Files', extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip'] }
+          {
+            name: t('catalog.required.doomFiles', 'DOOM Files'),
+            extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip']
+          }
         ]
       })
 

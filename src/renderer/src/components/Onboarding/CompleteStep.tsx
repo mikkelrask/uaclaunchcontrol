@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React, { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, CheckCircle2 } from 'lucide-react'
@@ -12,6 +13,7 @@ interface CompleteStepProps {
 }
 
 export const CompleteStep: React.FC<CompleteStepProps> = ({ onFinish, onBack }) => {
+  const { t } = useTranslate('desktop')
   const [portCount, setPortCount] = useState<number | null>(null)
   const [wadCount, setWadCount] = useState<number | null>(null)
 
@@ -38,18 +40,25 @@ export const CompleteStep: React.FC<CompleteStepProps> = ({ onFinish, onBack }) 
       <div className="space-y-2">
         <div>
           <span className="font-mono text-xs uppercase tracking-[0.3em] text-green-500/70">
-            UAC-7 // Systems Nominal
+            {t('onboarding.complete.terminal', 'UAC-7 // Systems Nominal')}
           </span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-app-primary">All set!</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-app-primary">
+          {t('onboarding.complete.title', 'All set!')}
+        </h1>
       </div>
 
       <p className="text-app-secondary max-w-md mx-auto leading-relaxed">
         {portCount !== null && wadCount !== null
-          ? `${portCount} source port${portCount === 1 ? '' : 's'} and ${wadCount} WAD file${
-              wadCount === 1 ? '' : 's'
-            } configured. Head to Install whenever you're ready to create your first protocol.`
-          : "Head to Install whenever you're ready to create your first protocol."}
+          ? t(
+              'onboarding.complete.summary',
+              "{portCount, plural, one {# source port and {wadCount, plural, one {# WAD file} other {# WAD files}} configured. Head to Install whenever you're ready to create your first protocol.} other {# source ports and {wadCount, plural, one {# WAD file} other {# WAD files}} configured. Head to Install whenever you're ready to create your first protocol.}}",
+              { portCount, wadCount }
+            )
+          : t(
+              'onboarding.complete.installHint',
+              "Head to Install whenever you're ready to create your first protocol."
+            )}
       </p>
 
       <Button
@@ -57,7 +66,7 @@ export const CompleteStep: React.FC<CompleteStepProps> = ({ onFinish, onBack }) 
         onClick={onFinish}
         className="bg-accent-highlight text-white hover:bg-accent-highlight/90 mt-2 px-8 uppercase tracking-wider font-bold"
       >
-        Finish
+        {t('onboarding.complete.finish', 'Finish')}
       </Button>
       <Button
         variant="ghost"
@@ -65,11 +74,11 @@ export const CompleteStep: React.FC<CompleteStepProps> = ({ onFinish, onBack }) 
         className="text-app-muted hover:text-app-primary gap-1"
       >
         <ChevronLeft className="w-4 h-4" />
-        Back
+        {t('onboarding.back', 'Back')}
       </Button>
 
       <p className="text-xs text-app-muted italic uppercase tracking-widest opacity-40 mt-2">
-        Union Aerospace Corporation — Phobos Facility Systems Division
+        {t('onboarding.footer', 'Union Aerospace Corporation — Phobos Facility Systems Division')}
       </p>
     </div>
   )

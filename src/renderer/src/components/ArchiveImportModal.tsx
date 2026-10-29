@@ -1,3 +1,6 @@
+import { getCategoryLabel } from '@/lib/i18n/catalog-labels'
+import { T, useTranslate } from '@tolgee/react'
+import { getTranslate } from '@/lib/i18n'
 import { Fragment, useEffect, useState, useRef } from 'react'
 import { Archive, Upload, GripVertical } from 'lucide-react'
 import type { ArchiveScanResult } from '@/types/archiveImport'
@@ -75,6 +78,8 @@ export function ArchiveImportModal({
   archiveFilePath,
   registryMeta
 }: ArchiveImportModalProps): React.ReactElement | null {
+  const { t } = useTranslate('desktop')
+
   const { toast } = useToast()
   const [fileMeta, setFileMeta] = useState<FileMeta[]>([])
   const [importing, setImporting] = useState(false)
@@ -296,6 +301,8 @@ export function ArchiveImportModal({
   } = useFileReorder(fileMeta, setFileMeta)
 
   const handleImport = async (): Promise<void> => {
+    const { t } = getTranslate('desktop')
+
     if (!scanResult) return
     setImporting(true)
 
@@ -336,12 +343,20 @@ export function ArchiveImportModal({
           existing
             ? {
                 title: 'SYSTEM: already_in_catalog',
-                description: `"${created.name || created.fileName}" is already in your catalog — nothing was added.`,
+                description: t(
+                  'install.archive.isAlreadyInYourCatalogNothingWasAdded',
+                  '"{fileName}" is already in your catalog — nothing was added.',
+                  { fileName: String(created.name || created.fileName) }
+                ),
                 variant: 'default'
               }
             : {
                 title: 'SYSTEM: archive_accepted',
-                description: `"${importNameValue}" added to catalog.`
+                description: t(
+                  'install.archive.addedToCatalog',
+                  '"{importNameValue}" added to catalog.',
+                  { importNameValue: String(importNameValue) }
+                )
               }
         )
       } else {
@@ -386,7 +401,11 @@ export function ArchiveImportModal({
 
         toast({
           title: 'SYSTEM: archive_extracted',
-          description: `${filesToImport.length} file(s) added to catalog.`
+          description: t(
+            'install.archive.importComplete',
+            '{count, plural, one {# file added to catalog.} other {# files added to catalog.}}',
+            { count: filesToImport.length }
+          )
         })
       }
 
@@ -426,14 +445,33 @@ export function ArchiveImportModal({
             </div>
             <div>
               <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                {archiveExt ? `import ${archiveExt} archive` : 'import archive'}
+                {archiveExt
+                  ? t('install.archive.importArchive', 'import {archiveExt} archive', {
+                      archiveExt: String(archiveExt)
+                    })
+                  : t('install.archive.importArchive2', 'import archive')}
               </DialogTitle>
               <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
                 {importAsArchive
-                  ? 'Import the archive as a single mod file'
-                  : `${supportedCount} file${supportedCount !== 1 ? 's' : ''} to import`}
-                {!importAsArchive && skippedCount > 0 ? ` · ${skippedCount} skipped` : ''}
-                {!importAsArchive && batName ? ` · .bat detected: ${batName}` : ''}
+                  ? t(
+                      'install.archive.importTheArchiveAsASingleModFile',
+                      'Import the archive as a single mod file'
+                    )
+                  : t(
+                      'install.archive.filesToImport',
+                      '{count, plural, one {# file to import} other {# files to import}}',
+                      { count: supportedCount }
+                    )}
+                {!importAsArchive && skippedCount > 0
+                  ? t('install.archive.skipped', ' · {skippedCount} skipped', {
+                      skippedCount: String(skippedCount)
+                    })
+                  : ''}
+                {!importAsArchive && batName
+                  ? t('install.archive.batDetected', ' · .bat detected: {batName}', {
+                      batName: String(batName)
+                    })
+                  : ''}
               </DialogDescription>
             </div>
           </div>
@@ -451,11 +489,22 @@ export function ArchiveImportModal({
                 className="w-4 h-4 accent-accent-highlight"
               />
               <span className="text-sm font-medium text-app-primary">
-                Import <span className="font-mono text-accent-highlight">{archiveBaseName}</span> as
-                is
+                <T
+                  ns="desktop"
+                  keyName="install.archive.importAsIs"
+                  defaultValue={'Import {span} as is'}
+                  params={{
+                    span: <span className="font-mono text-accent-highlight">{archiveBaseName}</span>
+                  }}
+                />
               </span>
               <span className="text-xs text-app-muted ml-auto">
-                (source ports load .{archiveExt} files as mods)
+                <T
+                  ns="desktop"
+                  keyName="install.archive.sourcePortsLoadFilesAsMods"
+                  defaultValue={'(source ports load .{archiveExt} files as mods)'}
+                  params={{ archiveExt: archiveExt }}
+                />
               </span>
             </label>
           )}
@@ -465,31 +514,35 @@ export function ArchiveImportModal({
             <div className="space-y-4 p-2">
               <div className="space-y-2">
                 <div>
-                  <Label htmlFor="archive-as-name">Name</Label>
+                  <Label htmlFor="archive-as-name">{t('install.archive.name', 'Name')}</Label>
                 </div>
                 <Input
                   id="archive-as-name"
                   value={importName}
                   onChange={(e) => setImportName(e.target.value)}
-                  placeholder="Pretty name for the mod"
+                  placeholder={t('install.archive.prettyNameForTheMod', 'Pretty name for the mod')}
                   className="bg-app-secondary border-app"
                 />
               </div>
               <div className="space-y-2">
                 <div>
-                  <Label htmlFor="archive-as-version">Version</Label>
+                  <Label htmlFor="archive-as-version">
+                    {t('install.archive.version', 'Version')}
+                  </Label>
                 </div>
                 <Input
                   id="archive-as-version"
                   value={importVersion}
                   onChange={(e) => setImportVersion(e.target.value)}
-                  placeholder="e.g., 1.0, v2.1"
+                  placeholder={t('install.archive.eG10V21', 'e.g., 1.0, v2.1')}
                   className="bg-app-secondary border-app"
                 />
               </div>
               <div className="space-y-2">
                 <div>
-                  <Label htmlFor="archive-as-url">URL (ModDB, forum)</Label>
+                  <Label htmlFor="archive-as-url">
+                    {t('install.archive.urlModdbForum', 'URL (ModDB, forum)')}
+                  </Label>
                 </div>
                 <Input
                   id="archive-as-url"
@@ -501,16 +554,18 @@ export function ArchiveImportModal({
               </div>
               <div className="space-y-2">
                 <div>
-                  <Label>Category</Label>
+                  <Label>{t('install.archive.category', 'Category')}</Label>
                 </div>
                 <Select value={importCategory} onValueChange={setImportCategory}>
                   <SelectTrigger className="bg-app-secondary border-app">
-                    <SelectValue placeholder="Uncategorized" />
+                    <SelectValue
+                      placeholder={t('install.archive.uncategorized', 'Uncategorized')}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {CATEGORIES.map((cat) => (
                       <SelectItem key={cat} value={cat}>
-                        {cat.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                        {getCategoryLabel(cat)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -523,9 +578,10 @@ export function ArchiveImportModal({
               {fileMeta.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs text-app-muted italic">
-                    Drag the handle to reorder. The order determines each file&apos;s position in
-                    the shared load order (shown in the # column). When a player adds any of these
-                    files to a protocol, all of them auto-load in this order.
+                    {t(
+                      'install.archive.dragTheHandleToReorderTheOrderDeterminesEach',
+                      "Drag the handle to reorder. The order determines each file's position in the shared load order (shown in the # column). When a player adds any of these files to a protocol, all of them auto-load in this order."
+                    )}
                   </p>
                   <div className="overflow-x-auto">
                     {/* Header and rows inherit the same column tracks, including the drag controls. */}
@@ -534,10 +590,10 @@ export function ArchiveImportModal({
                         <span></span>
                         <span className="text-center">#</span>
                         <span></span>
-                        <span>File</span>
-                        <span>Display Name</span>
-                        <span>Version</span>
-                        <span>Cat</span>
+                        <span>{t('install.archive.file', 'File')}</span>
+                        <span>{t('install.archive.displayName', 'Display Name')}</span>
+                        <span>{t('install.archive.version', 'Version')}</span>
+                        <span>{t('install.archive.cat', 'Cat')}</span>
                         <span>URL</span>
                       </div>
                       <div
@@ -558,7 +614,7 @@ export function ArchiveImportModal({
                               {showPlaceholderBefore && (
                                 <div className="col-span-full h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
                                   <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
-                                    drop here
+                                    {t('install.archive.dropHere', 'drop here')}
                                   </span>
                                 </div>
                               )}
@@ -575,7 +631,7 @@ export function ArchiveImportModal({
                                   onDragEnd={handleDragEnd}
                                   className="cursor-grab active:cursor-grabbing text-app-muted hover:text-app-primary opacity-40 hover:opacity-100 transition-opacity p-0.5"
                                   tabIndex={-1}
-                                  aria-label="Reorder"
+                                  aria-label={t('install.archive.reorder', 'Reorder')}
                                 >
                                   <GripVertical className="w-3.5 h-3.5" />
                                 </button>
@@ -603,19 +659,21 @@ export function ArchiveImportModal({
                                   </span>
                                   {f.fileName}
                                   {f.isReferencedByBat && (
-                                    <span className="ml-1 text-xs text-yellow-500">.bat</span>
+                                    <span className="ml-1 text-xs text-yellow-500">
+                                      {t('install.archive.bat', '.bat')}
+                                    </span>
                                   )}
                                 </div>
 
                                 <input
                                   className="border border-app rounded p-1 text-sm bg-app-primary min-w-0 w-full"
-                                  placeholder="Display name"
+                                  placeholder={t('install.archive.displayName2', 'Display name')}
                                   value={meta?.name ?? ''}
                                   onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
                                 />
                                 <input
                                   className="border border-app rounded p-1 text-sm bg-app-primary w-20"
-                                  placeholder="Version"
+                                  placeholder={t('install.archive.version', 'Version')}
                                   value={meta?.version ?? ''}
                                   onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
                                 />
@@ -629,9 +687,7 @@ export function ArchiveImportModal({
                                   <option value="">—</option>
                                   {CATEGORIES.map((cat) => (
                                     <option key={cat} value={cat}>
-                                      {cat
-                                        .replace(/_/g, ' ')
-                                        .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                      {getCategoryLabel(cat)}
                                     </option>
                                   ))}
                                 </select>
@@ -650,7 +706,7 @@ export function ArchiveImportModal({
                           draggedIndex !== fileMeta.length - 1 && (
                             <div className="col-span-full h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
                               <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
-                                new placement
+                                {t('install.archive.newPlacement', 'new placement')}
                               </span>
                             </div>
                           )}
@@ -663,7 +719,9 @@ export function ArchiveImportModal({
               {/* Skipped files */}
               {skippedCount > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-app-muted mb-1">Skipped files</p>
+                  <p className="text-sm font-semibold text-app-muted mb-1">
+                    {t('install.archive.skippedFiles', 'Skipped files')}
+                  </p>
                   <ul className="text-xs space-y-1">
                     {scanResult.skipped.map((s, i) => (
                       <li key={i} className="text-app-muted">
@@ -686,7 +744,7 @@ export function ArchiveImportModal({
               disabled={importing}
               className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
             >
-              Cancel
+              {t('install.archive.cancel', 'Cancel')}
             </Button>
             <Button
               onClick={handleImport}
@@ -695,10 +753,16 @@ export function ArchiveImportModal({
             >
               <Upload className="w-4 h-4 mr-2" />
               {importing
-                ? 'Importing…'
+                ? t('install.archive.importing', 'Importing…')
                 : importAsArchive
-                  ? `Import ${archiveBaseName}`
-                  : `Import ${supportedCount} file${supportedCount !== 1 ? 's' : ''}`}
+                  ? t('install.archive.import', 'Import {archiveBaseName}', {
+                      archiveBaseName: String(archiveBaseName)
+                    })
+                  : t(
+                      'install.archive.importFiles',
+                      '{count, plural, one {Import # file} other {Import # files}}',
+                      { count: supportedCount }
+                    )}
             </Button>
           </div>
         </DialogFooter>

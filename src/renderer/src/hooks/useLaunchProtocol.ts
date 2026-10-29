@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api'
 import { useToast } from '@/hooks/use-toast'
@@ -19,6 +20,8 @@ export function useLaunchProtocol(protocol: IProtocol): {
   handleLaunch: () => void
   isPending: boolean
 } {
+  const { t } = useTranslate('desktop')
+
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -28,7 +31,9 @@ export function useLaunchProtocol(protocol: IProtocol): {
       queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
       toast({
         title: 'SYSTEM: launch_protocol',
-        description: `${protocol.title} launched.`
+        description: t('library.launch.launched', '{title} launched.', {
+          title: String(protocol.title)
+        })
       })
       dispatchAchievementEvent({
         type: 'PROTOCOL_LAUNCHED',
@@ -51,7 +56,10 @@ export function useLaunchProtocol(protocol: IProtocol): {
     onError: (error) => {
       toast({
         title: 'FATAL: launch_failed',
-        description: `Could not launch ${protocol.title}: ${error}`,
+        description: t('library.launch.couldNotLaunch', 'Could not launch {title}: {error}', {
+          title: String(protocol.title),
+          error: String(error)
+        }),
         variant: 'destructive'
       })
     }
