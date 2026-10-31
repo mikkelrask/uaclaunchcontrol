@@ -1,3 +1,4 @@
+import { getTranslate } from '@/lib/i18n'
 import { Component, ErrorInfo, ReactNode } from 'react'
 
 import { createLogger } from '@shared/logger'
@@ -29,22 +30,28 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render(): ReactNode {
     if (this.state.hasError) {
+      const { t } = getTranslate('desktop')
       return (
         <div className="flex items-center justify-center h-screen bg-app-primary p-8">
           <div className="max-w-lg text-center space-y-4">
             <div className="text-6xl mb-4 opacity-20">!</div>
-            <h1 className="text-2xl font-bold text-accent-highlight">SYSTEM CRASH</h1>
+            <h1 className="text-2xl font-bold text-accent-highlight">
+              {t('recovery.title', 'SYSTEM CRASH')}
+            </h1>
             <p className="text-app-secondary text-sm">
-              The application encountered a critical error. Details have been logged to console.
+              {t(
+                'recovery.description',
+                'The application encountered a critical error. Details have been logged to console.'
+              )}
             </p>
             <pre className="text-xs text-left bg-app-secondary p-4 rounded border border-app overflow-auto max-h-40 font-mono text-app-muted">
-              {this.state.error?.message || 'Unknown error'}
+              {this.state.error?.message || t('recovery.unknown', 'Unknown error')}
             </pre>
             <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 bg-accent-highlight text-white rounded hover:opacity-90 text-sm"
             >
-              Reload Application
+              {t('recovery.reload', 'Reload Application')}
             </button>
           </div>
         </div>

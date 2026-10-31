@@ -1,3 +1,4 @@
+import { useTranslate } from '@tolgee/react'
 import React from 'react'
 import {
   Dialog,
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollText, Copy, FileText } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
-import { inferCrashHint } from '@/lib/crashHints'
+import { getCrashText } from '@/lib/i18n/crash-messages'
 
 export interface CrashLogData {
   protocolId?: string
@@ -27,17 +28,17 @@ interface CrashLogDialogProps {
 }
 
 export const CrashLogDialog: React.FC<CrashLogDialogProps> = ({ data, onClose }) => {
+  const { t } = useTranslate('desktop')
   const { toast } = useToast()
 
-  const hint = data ? inferCrashHint(data.logTail) : null
-  const codeStr = data ? (data.exitCode === null ? 'a signal' : `exit code ${data.exitCode}`) : ''
+  const presentation = data ? getCrashText(data) : null
 
   const handleCopy = async (): Promise<void> => {
     if (!data) return
     await navigator.clipboard.writeText(data.logTail.join('\n'))
     toast({
-      title: 'SYSTEM: log_copied',
-      description: 'Log copied to clipboard.'
+      title: t('crash.copyTitle', 'SYSTEM: log_copied'),
+      description: t('crash.copied', 'Log copied to clipboard.')
     })
   }
 
@@ -55,23 +56,25 @@ export const CrashLogDialog: React.FC<CrashLogDialogProps> = ({ data, onClose })
           </div>
           <div>
             <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-              crash_log — {data?.protocolName || 'unknown_protocol'}
+              {presentation?.title}
             </DialogTitle>
             <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-              Terminated with {codeStr} after {data?.sessionSeconds ?? 0}s
+              {presentation?.termination}
             </DialogDescription>
           </div>
         </div>
 
         <div className="p-4 space-y-3">
-          {hint && (
+          {presentation?.hint && (
             <div className="text-sm text-app-primary bg-accent-highlight/10 border border-accent-highlight/30 rounded-lg p-3">
-              {hint}
+              {presentation.hint}
             </div>
           )}
 
           <pre className="text-xs font-mono text-app-primary bg-app-secondary border border-app rounded-lg p-3 max-h-80 overflow-y-auto overflow-x-auto whitespace-pre-wrap">
-            {data?.logTail.length ? data.logTail.join('\n') : 'No console output captured.'}
+            {data?.logTail.length
+              ? data.logTail.join('\n')
+              : t('crash.noOutput', 'No console output captured.')}
           </pre>
         </div>
 
@@ -84,7 +87,7 @@ export const CrashLogDialog: React.FC<CrashLogDialogProps> = ({ data, onClose })
               onClick={handleOpenFile}
             >
               <FileText className="w-3 h-3" />
-              Open Log File
+              {t('crash.openFile', 'Open Log File')}
             </Button>
           ) : (
             <span />
@@ -96,7 +99,7 @@ export const CrashLogDialog: React.FC<CrashLogDialogProps> = ({ data, onClose })
             onClick={handleCopy}
           >
             <Copy className="w-3 h-3" />
-            Copy to Clipboard
+            {t('crash.copy', 'Copy to Clipboard')}
           </Button>
         </DialogFooter>
       </DialogContent>

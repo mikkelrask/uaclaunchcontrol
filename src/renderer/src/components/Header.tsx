@@ -325,7 +325,12 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
               <div className="space-y-2 text-xs text-app-muted ml-8">
                 <p>UAC Launch Control</p>
                 <p className="font-mono">v{appVersion}</p>
-                <p>Source port manager and mod launcher for Doom-engine games.</p>
+                <p>
+                  {t(
+                    'about.description',
+                    'Source port manager and mod launcher for Doom-engine games.'
+                  )}
+                </p>
                 <div className="pt-2 flex flex-col gap-1">
                   <a
                     href="https://github.com/mikkelrask/uaclaunchcontrol"
@@ -333,7 +338,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
                     rel="noopener noreferrer"
                     className="text-accent-highlight hover:underline"
                   >
-                    GitHub Repository
+                    {t('about.repository', 'GitHub Repository')}
                   </a>
                   <a
                     href="https://uac-soft.online"

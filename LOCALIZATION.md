@@ -10,7 +10,7 @@ unchanged. This is the first desktop pilot, not the completion of issue #78.
 The settings dialog (General, Paths, WAD configuration and custom-theme help),
 source-port management/downloads, keyboard shortcuts, header/navigation/drawer,
 sidebar loading/accessibility text, complete guided setup, and the library and
-installation flows now use **727 English source keys in this branch**. The fourth batch adds 390
+installation flows now use **764 English source keys in this branch**. The fourth batch adds 390
 messages covering all three library views, protocol settings/delete/discard dialogs,
 installation/configuration/WAD tabs, archive/JSON/batch imports, the shared mod
 catalog, file selectors, validation, status descriptions and shared controls.
@@ -38,6 +38,13 @@ Danish catalog now contains 281 entries. Release-note Markdown, release versions
 filenames, download URLs, raw diagnostics and IPC identifiers remain unchanged.
 The Danish achievement title `Knee Deep` is preserved in English because it refers
 to `Knee Deep in the Dead`; a translator note records the reference.
+
+The seventh batch adds 37 English messages and 37 Danish drafts for crash logs,
+heuristic crash hints, recovery errors, WAD watcher notices, About text, missing
+pages and shared pagination. They are uploaded with translator notes. The local
+Danish catalog now has 318 entries. Engine-log matching patterns, raw console
+snapshots and copied log text remain unchanged; the crash dialog and notification
+resolve their presentation in the active language.
 
 Source-port scan counts use ICU plurals; custom-theme instructions use named React
 placeholders so translators can move complete code examples and links without
@@ -185,7 +192,8 @@ rich text, all five onboarding screens and their boot sequence, all three librar
 views, the protocol editor and cancellation of deletion, installation tabs/form
 validation, catalog editing, all achievement category labels/hidden placeholders,
 the notification tray, translated update dialogs/actions/history, download
-progress/cancellation/fallbacks, Danish drafts, and English fallback for untranslated messages. Expected translated labels come from the catalogs so wording edits do not
+progress/cancellation/fallbacks, crash replay and raw-log copying with a fixture
+clipboard, WAD watcher/About/missing-page text, Danish drafts, and English fallback for untranslated messages. Expected translated labels come from the catalogs so wording edits do not
 require rewriting the tests. It does not start the backend or touch real application data.
 
 On Linux/Xwayland, run `npm run i18n:smoke -- --ozone-platform=x11` if needed. To test
@@ -199,7 +207,7 @@ loading in all three languages under file:// with no external requests/CSP error
 and no API key or Tolgee editing-tools chunk in the renderer output. Unit tests
 cover saved settings round trips, invalid preferences, browser language detection,
 fallback, ICU/plural validation and escaping, and React line-break placeholders.
-255 tests pass; the existing dependency-audit test fails as described above. Windows
+263 tests pass; the existing dependency-audit test fails as described above. Windows
 and macOS packaging and a full translated layout pass remain follow-up QA.
 
 The third batch also validates a completion sentence with independent source-port
@@ -229,3 +237,9 @@ English. Unrecognized legacy events preserve their original text/details. Progre
 updates retain the selected release version and release notes. The smoke test
 uses mocked install/download/cancel IPC handlers; no actual update or mod transfer
 runs, and system-installed builds retain their GitHub-only update behavior.
+
+The seventh batch adds checks for all crash-hint rule outcomes under Danish,
+language changes at display time, preserved protocol/exit/log data, escaped raw
+error details, the critical fallback without React translation context, and caller
+accessibility overrides on pagination. The About/missing-page text is user-facing;
+raw engine diagnostics and game/product names remain original data.

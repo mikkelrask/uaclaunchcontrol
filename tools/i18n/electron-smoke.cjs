@@ -378,6 +378,16 @@ app
         `button[aria-label=${JSON.stringify(message('navigation.menu'))}]`
       )
       await waitFor(window, `!!document.querySelector('[role="dialog"]')`)
+      assert(
+        (await window.webContents.executeJavaScript('document.body.textContent')).includes(
+          message('about.description')
+        )
+      )
+      assert(
+        (await window.webContents.executeJavaScript('document.body.textContent')).includes(
+          message('about.repository')
+        )
+      )
       await clickSelector(window, 'button', message('navigation.tour'))
       await waitFor(
         window,
@@ -660,6 +670,96 @@ app
         window,
         `!document.body.textContent.includes(${JSON.stringify(message('downloads.browserFallback'))})`
       )
+
+      // Crash replay and copy use captured fixture data and an in-memory clipboard.
+      const crashFixture = {
+        protocolName: 'Knee Deep fixture',
+        exitCode: 7,
+        sessionSeconds: 1234,
+        logTail: [
+          'Script error, "Fixture.pk3:DECORATE" line 12:',
+          'raw path /fixture/{unchanged}',
+          '<script>window.fixtureBad = true</script>'
+        ]
+      }
+      await window.webContents.executeJavaScript(
+        `Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.fixtureCopiedLog = text } } }); window.dispatchEvent(new CustomEvent('show-crash-log-modal', { detail: ${JSON.stringify(crashFixture)} }))`
+      )
+      await waitFor(
+        window,
+        `document.querySelector('[role="dialog"]')?.textContent.includes(${JSON.stringify(message('crash.hint.script'))})`
+      )
+      const crashBody = await window.webContents.executeJavaScript(
+        `document.querySelector('[role="dialog"]').textContent`
+      )
+      assert(crashBody.includes(message('crash.title', { protocol: crashFixture.protocolName })))
+      assert(crashBody.includes(message('crash.exitSummary', { code: 7, seconds: 1234 })))
+      assert(
+        !crashBody.includes(message('crash.openFile')),
+        'Historical replay must not offer a mutable log-file path'
+      )
+      assert.equal(
+        await window.webContents.executeJavaScript(
+          `document.querySelector('[role="dialog"] pre').textContent`
+        ),
+        crashFixture.logTail.join('\n')
+      )
+      assert(!(await window.webContents.executeJavaScript('Boolean(window.fixtureBad)')))
+      if (locale === 'da-DK' && process.env.UAC_I18N_CRASH_SCREENSHOT) {
+        await pause(200)
+        fs.writeFileSync(
+          process.env.UAC_I18N_CRASH_SCREENSHOT,
+          (await window.webContents.capturePage()).toPNG()
+        )
+      }
+      await clickSelector(window, '[role="dialog"] button', message('crash.copy'))
+      await waitFor(
+        window,
+        `window.fixtureCopiedLog === ${JSON.stringify(crashFixture.logTail.join('\n'))}`
+      )
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('crash.copied'))})`
+      )
+      await clickSelector(window, '[role="dialog"] button', message('ui.dialog.close'))
+      await waitFor(window, `!document.querySelector('[role="dialog"]')`)
+      await window.webContents.executeJavaScript(
+        `window.dispatchEvent(new CustomEvent('show-crash-log-modal', { detail: { exitCode: null, sessionSeconds: 0, logTail: [] } }))`
+      )
+      await waitFor(
+        window,
+        `document.querySelector('[role="dialog"]')?.textContent.includes(${JSON.stringify(message('crash.noOutput'))})`
+      )
+      assert(
+        (
+          await window.webContents.executeJavaScript(
+            `document.querySelector('[role="dialog"]').textContent`
+          )
+        ).includes(message('crash.signalSummary', { seconds: 0 }))
+      )
+      await clickSelector(window, '[role="dialog"] button', message('ui.dialog.close'))
+      await waitFor(window, `!document.querySelector('[role="dialog"]')`)
+      window.webContents.send('doom-versions-updated', {
+        added: [{ name: 'Knee Deep IWAD fixture' }]
+      })
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('watcher.added', { name: 'Knee Deep IWAD fixture' }))})`
+      )
+      window.webContents.send('doom-versions-updated', {
+        removed: [{ name: 'Knee Deep IWAD fixture' }]
+      })
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('watcher.removed', { name: 'Knee Deep IWAD fixture' }))})`
+      )
+      await window.webContents.executeJavaScript(`window.location.hash = '/missing-fixture-route'`)
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('notFound.title'))})`
+      )
+      await window.webContents.executeJavaScript(`window.location.hash = '/'`)
+      await waitFor(window, `!!document.querySelector('nav a')`)
       if (locale === 'en') {
         // System package installs offer the release link, without self-update actions.
         fixtureInstallType = { isAppImage: false, isSystemInstalled: true }
@@ -702,7 +802,7 @@ app
       // Each locale reload should start with an empty notification-history fixture.
       await window.webContents.executeJavaScript(`localStorage.removeItem('uac:notifications')`)
       console.log(
-        `PASS file:// renderer: ${locale}; updates/actions/history, download progress/cancellation/fallback, profile, settings, onboarding, library/install, CSP, sandbox`
+        `PASS file:// renderer: ${locale}; crash replay/raw-log copy, watcher/About/404, updates/downloads, profile, settings, onboarding, library/install, CSP, sandbox`
       )
     }
     assert(

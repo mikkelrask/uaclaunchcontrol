@@ -1,3 +1,5 @@
+import { getTranslate } from '@/lib/i18n'
+import { getCrashText } from '@/lib/i18n/crash-messages'
 import { useEffect, useState } from 'react'
 import { Switch, Route, Router } from 'wouter'
 import { useHashLocation } from 'wouter/use-hash-location'
@@ -24,7 +26,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { OnboardingWizard } from '@/components/Onboarding'
 import { CrashLogDialog, type CrashLogData } from '@/components/CrashLogDialog'
 import { ToastAction } from '@/components/ui/toast'
-import { inferCrashHint } from '@/lib/crashHints'
 import { applyLanguage } from '@/lib/i18n'
 
 import { createLogger } from '@shared/logger'
@@ -139,6 +140,7 @@ const App: React.FC = () => {
     // Listen for version updates from the main process
     if (window.api?.onVersionsUpdated) {
       window.api.onVersionsUpdated((data) => {
+        const { t } = getTranslate('desktop')
         debug('[DEBUG] Versions updated, invalidating query...')
         queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
 
@@ -146,8 +148,12 @@ const App: React.FC = () => {
         if (data?.added && data.added.length > 0) {
           data.added.forEach((wad) => {
             toast({
-              title: 'SYSTEM: wad_watcher',
-              description: `Found and added "${wad.name}" to your library. To update go to core_settings -> WAD Config`
+              title: t('watcher.title', 'SYSTEM: wad_watcher'),
+              description: t(
+                'watcher.added',
+                'Found and added "{name}" to your library. To update go to core_settings -> WAD Config',
+                { name: wad.name }
+              )
             })
           })
         }
@@ -155,8 +161,12 @@ const App: React.FC = () => {
         if (data?.removed && data.removed.length > 0) {
           data.removed.forEach((wad) => {
             toast({
-              title: 'SYSTEM: wad_watcher',
-              description: `The system detected that "${wad.name}" was removed from your library. Launch protocols using this will no longer work`
+              title: t('watcher.title', 'SYSTEM: wad_watcher'),
+              description: t(
+                'watcher.removed',
+                'The system detected that "{name}" was removed from your library. Launch protocols using this will no longer work',
+                { name: wad.name }
+              )
             })
           })
         }
@@ -223,19 +233,17 @@ const App: React.FC = () => {
 
         // Show crash toast for non-clean exits
         if (!data.clean) {
-          const codeStr = data.exitCode === null ? 'a signal' : `exit code ${data.exitCode}`
-          const hint = inferCrashHint(data.logTail)
+          const { t } = getTranslate('desktop')
+          const { toastDescription } = getCrashText(data)
           const protocolId = data.protocolId
           const protocolName = findProtocolTitle(protocolId)
           toast({
-            title: 'FATAL: process_died',
-            description: hint
-              ? `${hint} (${codeStr} after ${data.sessionSeconds}s)`
-              : `The game process terminated with ${codeStr} after ${data.sessionSeconds}s of playtime.`,
+            title: t('crash.toastTitle', 'FATAL: process_died'),
+            description: toastDescription,
             variant: 'destructive',
             action: (
               <ToastAction
-                altText="View Log"
+                altText={t('crash.viewLog', 'View Log')}
                 onClick={() =>
                   setCrashLog({
                     protocolId,
@@ -247,7 +255,7 @@ const App: React.FC = () => {
                   })
                 }
               >
-                View Log
+                {t('crash.viewLog', 'View Log')}
               </ToastAction>
             ),
             // logFilePath deliberately omitted here — it's opened with
