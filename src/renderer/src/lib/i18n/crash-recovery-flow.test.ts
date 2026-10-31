@@ -98,7 +98,7 @@ describe('crash and recovery localisation boundaries', () => {
     )
     expect(html).toContain(da['notFound.title'])
     expect(html).toContain(da['pagination.previous'])
-    expect(html).toContain(da['pagination.nextLabel'])
+    expect(html).toContain(da['common.pagination.nextLabel'])
     expect(html).toContain('Fixture page controls')
   })
 })

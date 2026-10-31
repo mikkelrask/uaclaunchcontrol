@@ -18,14 +18,14 @@ export function getCategoryLabel(value: string): string {
 export function getCatalogColumnLabel(value: string): string {
   const { t } = getTranslate('desktop')
   const labels: Record<string, string> = {
-    name: t('catalog.columnLabel.name', 'Name'),
-    version: t('catalog.columnLabel.version', 'Version'),
-    fileType: t('catalog.columnLabel.fileType', 'Type'),
-    category: t('catalog.columnLabel.category', 'Category'),
-    config: t('catalog.columnLabel.configTemplate', 'Config'),
-    dependencies: t('catalog.columnLabel.loadOrder', 'Load Order'),
-    hashValue: t('catalog.columnLabel.hashValue', 'MD5 Checksum'),
-    actions: t('catalog.columnLabel.actions', 'Actions')
+    name: t('common.labels.name', 'Name'),
+    version: t('common.labels.version', 'Version'),
+    fileType: t('common.labels.fileType', 'Type'),
+    category: t('common.labels.category', 'Category'),
+    config: t('common.labels.config', 'Config'),
+    dependencies: t('common.labels.loadOrder', 'Load Order'),
+    hashValue: t('common.labels.md5Checksum', 'MD5 Checksum'),
+    actions: t('common.labels.actions', 'Actions')
   }
   return labels[value] ?? value
 }

@@ -435,7 +435,7 @@ export const GamesPage: React.FC = () => {
                                   className="inline-flex items-center gap-1.5 text-xs text-accent-highlight hover:underline"
                                 >
                                   <ExternalLink className="w-3 h-3" />
-                                  {mod.urls[0].domain || t('library.games.download', 'Download')}
+                                  {mod.urls[0].domain || t('common.actions.download', 'Download')}
                                 </a>
                               ) : (
                                 <Select onValueChange={(url) => window.open(url, '_blank')}>
@@ -448,7 +448,7 @@ export const GamesPage: React.FC = () => {
                                   <SelectContent className="bg-app-secondary border-app text-app-primary">
                                     {mod.urls.map((u, j) => (
                                       <SelectItem key={j} value={u.url} className="text-xs">
-                                        {u.domain || t('library.games.download', 'Download')}
+                                        {u.domain || t('common.actions.download', 'Download')}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
@@ -514,7 +514,7 @@ export const GamesPage: React.FC = () => {
                                 className="inline-flex items-center gap-1.5 text-xs text-accent-highlight hover:underline"
                               >
                                 <ExternalLink className="w-3 h-3" />
-                                {mod.urls[0].domain || t('library.games.download', 'Download')}
+                                {mod.urls[0].domain || t('common.actions.download', 'Download')}
                               </a>
                             ) : (
                               <Select onValueChange={(url) => handleIdgamesDownload(url, mod)}>
@@ -527,7 +527,7 @@ export const GamesPage: React.FC = () => {
                                 <SelectContent className="bg-app-secondary border-app text-app-primary">
                                   {mod.urls.map((u, j) => (
                                     <SelectItem key={j} value={u.url} className="text-xs">
-                                      {u.domain || t('library.games.download', 'Download')}
+                                      {u.domain || t('common.actions.download', 'Download')}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -558,7 +558,7 @@ export const GamesPage: React.FC = () => {
                         >
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-app-primary truncate">
-                              {file.name || file.fileName || t('library.games.unnamed', 'Unnamed')}
+                              {file.name || file.fileName || t('common.labels.unnamed', 'Unnamed')}
                             </p>
                             <p className="text-xs text-app-muted mt-0.5">
                               {file.fileType && (
@@ -743,13 +743,13 @@ export const GamesPage: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('library.games.name', 'Name')}</Label>
+                  <Label>{t('common.labels.name', 'Name')}</Label>
                   <Input
                     value={importFile.name}
                     onChange={(e) =>
                       setImportFile((prev) => (prev ? { ...prev, name: e.target.value } : prev))
                     }
-                    placeholder={t('library.games.prettyNameForTheMod', 'Pretty name for the mod')}
+                    placeholder={t('common.placeholders.modName', 'Display name')}
                     className="bg-app-secondary border-app"
                   />
                 </div>
@@ -775,7 +775,7 @@ export const GamesPage: React.FC = () => {
                 }}
                 className="bg-app-secondary"
               >
-                {t('library.games.cancel', 'Cancel')}
+                {t('common.actions.cancel', 'Cancel')}
               </Button>
               <Button
                 onClick={handleImportSingleFile}
@@ -785,7 +785,7 @@ export const GamesPage: React.FC = () => {
                 {importing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    {t('library.games.importing', 'Importing…')}
+                    {t('common.status.importing', 'Importing…')}
                   </>
                 ) : (
                   <>

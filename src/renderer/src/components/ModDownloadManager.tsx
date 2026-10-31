@@ -180,7 +180,7 @@ export function DownloadCard({
           <div className="flex shrink-0 items-center gap-1">
             {active && (
               <Button variant="outline" size="sm" onClick={onCancel}>
-                {t('downloads.cancel', 'Cancel')}
+                {t('common.actions.cancel', 'Cancel')}
               </Button>
             )}
             {!active && (

@@ -420,7 +420,7 @@ export function useCatalogAdd({
 
     try {
       const result = await api.showOpenDialog({
-        title: t('catalog.addFlow.selectModFile', 'Select Mod File'),
+        title: t('common.dialogs.selectModFile', 'Select Mod File'),
         properties: ['openFile'],
         filters: [
           {
@@ -502,11 +502,11 @@ export function useCatalogAdd({
 
     try {
       const result = await api.showOpenDialog({
-        title: t('catalog.addFlow.selectConfigFile', 'Select Config File'),
+        title: t('common.dialogs.selectConfigFile', 'Select Config File'),
         properties: ['openFile'],
         filters: [
           {
-            name: t('catalog.addFlow.configFiles', 'Config files'),
+            name: t('common.files.configFiles', 'Config files'),
             extensions: ['cfg', 'ini', 'conf']
           }
         ]

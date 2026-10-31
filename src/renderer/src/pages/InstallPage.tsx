@@ -552,13 +552,13 @@ export const InstallPage: React.FC = () => {
                     value="files"
                     className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
                   >
-                    {t('install.page.modFiles', 'Mod Files')}
+                    {t('common.labels.modFiles', 'Mod Files')}
                   </TabsTrigger>
                   <TabsTrigger
                     value="wads"
                     className="data-[state=active]:bg-accent-highlight data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded px-4 text-app-secondary dark:data-[state=active]:text-foreground"
                   >
-                    {t('install.page.wadFiles', 'WAD Files')}
+                    {t('common.files.wadFiles', 'WAD Files')}
                   </TabsTrigger>
                 </TabsList>
 
@@ -629,7 +629,7 @@ export const InstallPage: React.FC = () => {
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={closeDownloadPrompt}>
-              {t('install.page.cancel', 'Cancel')}
+              {t('common.actions.cancel', 'Cancel')}
             </Button>
             {missingDownloadPrompt && missingDownloadPrompt.browserOnly.length > 0 && (
               <Button

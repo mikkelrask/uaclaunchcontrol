@@ -26,8 +26,8 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
   const { t } = useTranslate('desktop')
 
   const SORT_LABELS: Record<SortField, string> = {
-    lastPlayed: t('library.sort.lastPlayed', 'Last Played'),
-    playtime: t('library.sort.playtime', 'Playtime'),
+    lastPlayed: t('common.labels.lastPlayed', 'Last Played'),
+    playtime: t('common.labels.playtime', 'Playtime'),
     alphabetical: t('library.sort.alphabetical', 'A–Z'),
     created: t('library.sort.created', 'Created')
   }
@@ -63,9 +63,9 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
     <div className="px-4 py-2 bg-app-secondary flex items-center border-b border-app shrink-0">
       <div className="flex space-x-1">
         {[
-          { mode: 'grid' as ViewMode, icon: LayoutGrid, label: t('library.view.grid', 'Grid') },
-          { mode: 'list' as ViewMode, icon: List, label: t('library.view.list', 'List') },
-          { mode: 'detail' as ViewMode, icon: BookOpen, label: t('library.view.detail', 'Detail') }
+          { mode: 'grid' as ViewMode, icon: LayoutGrid, label: t('common.views.grid', 'Grid') },
+          { mode: 'list' as ViewMode, icon: List, label: t('common.views.list', 'List') },
+          { mode: 'detail' as ViewMode, icon: BookOpen, label: t('common.views.detail', 'Detail') }
         ].map(({ mode, icon: Icon, label }) => {
           const active = viewMode === mode
           return (

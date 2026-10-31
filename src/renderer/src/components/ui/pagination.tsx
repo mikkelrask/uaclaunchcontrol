@@ -62,7 +62,7 @@ const PaginationPrevious = ({
   const { t } = useTranslate('desktop')
   return (
     <PaginationLink
-      aria-label={t('pagination.previousLabel', 'Go to previous page')}
+      aria-label={t('common.pagination.previousLabel', 'Go to previous page')}
       size="default"
       className={cn('gap-1 pl-2.5', className)}
       {...props}
@@ -81,12 +81,12 @@ const PaginationNext = ({
   const { t } = useTranslate('desktop')
   return (
     <PaginationLink
-      aria-label={t('pagination.nextLabel', 'Go to next page')}
+      aria-label={t('common.pagination.nextLabel', 'Go to next page')}
       size="default"
       className={cn('gap-1 pr-2.5', className)}
       {...props}
     >
-      <span>{t('pagination.next', 'Next')}</span>
+      <span>{t('common.actions.next', 'Next')}</span>
       <ChevronRight className="h-4 w-4" />
     </PaginationLink>
   )

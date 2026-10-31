@@ -105,11 +105,11 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
           className="bg-accent-highlight hover:opacity-90 text-white"
         >
           {isPending ? (
-            t('library.card.launching', 'LAUNCHING...')
+            t('common.status.launching', 'LAUNCHING...')
           ) : (
             <>
               <Play className="w-4 h-4 mr-1.5 fill-current" />
-              {t('library.card.launch', 'LAUNCH')}
+              {t('common.actions.launch', 'LAUNCH')}
             </>
           )}
         </Button>
@@ -121,7 +121,7 @@ export const GameCard: React.FC<GameCardProps> = ({ protocol, doomVersion, onSet
         >
           <>
             <Settings className="w-4 h-4 mr-1.5" />
-            {t('library.card.adjust', 'ADJUST')}
+            {t('common.actions.adjust', 'ADJUST')}
           </>
         </Button>
       </div>

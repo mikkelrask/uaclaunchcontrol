@@ -349,7 +349,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
               <>
                 <Select value={fileTypeFilter} onValueChange={setFileTypeFilter}>
                   <SelectTrigger className="w-[100px] h-9 bg-app-primary border-app text-xs">
-                    <SelectValue placeholder={t('catalog.manager.type', 'Type')} />
+                    <SelectValue placeholder={t('common.labels.fileType', 'Type')} />
                   </SelectTrigger>
                   <SelectContent className="bg-app-secondary border-app text-app-primary">
                     <SelectItem value="all" className="text-xs">
@@ -372,7 +372,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger className="w-[130px] h-9 bg-app-primary border-app text-xs">
-                    <SelectValue placeholder={t('catalog.manager.category', 'Category')} />
+                    <SelectValue placeholder={t('common.labels.category', 'Category')} />
                   </SelectTrigger>
                   <SelectContent className="bg-app-secondary border-app text-app-primary">
                     <SelectItem value="all" className="text-xs">

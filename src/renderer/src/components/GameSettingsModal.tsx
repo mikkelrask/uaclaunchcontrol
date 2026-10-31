@@ -189,7 +189,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
                 htmlFor="title"
                 className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
               >
-                {t('library.editor.label', 'Label')}
+                {t('common.labels.label', 'Label')}
               </Label>
               <Input
                 id="title"
@@ -229,7 +229,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
                   htmlFor="doomVersionId"
                   className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
                 >
-                  {t('library.editor.baseWad', 'Base WAD')}
+                  {t('common.labels.baseWad', 'Base WAD')}
                 </Label>
                 <Select
                   value={protocol.doomVersionId?.toString() || ''}
@@ -255,7 +255,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
                   htmlFor="sourcePortId"
                   className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold"
                 >
-                  {t('library.editor.sourcePort', 'Source Port')}
+                  {t('common.labels.sourcePort', 'Source Port')}
                 </Label>
                 <Combobox
                   value={protocol.sourcePortId || ''}
@@ -267,7 +267,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
                       label: p.name,
                       description: p.version
                     }))}
-                  placeholder={t('library.editor.selectASourcePort', 'Select a source port')}
+                  placeholder={t('common.placeholders.sourcePort', 'Select a source port')}
                   className="w-full bg-app-secondary border-app"
                 />
               </div>
@@ -294,7 +294,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
           </div>
 
           <div>
-            <h3 className="text-lg mb-2">{t('library.editor.modFiles', 'Mod Files')}</h3>
+            <h3 className="text-lg mb-2">{t('common.labels.modFiles', 'Mod Files')}</h3>
             <ModFileList files={files} onChange={setFiles} />
           </div>
         </div>
@@ -327,7 +327,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
       {showLaunchPreview && launchCommand && (
         <div className="px-4 py-2 bg-app-primary border-t border-app shrink-0 group">
           <div className="text-[0.625rem] uppercase tracking-widest text-app-muted font-mono font-bold mb-0.5 opacity-60">
-            {t('library.editor.launchPreview', 'Launch Preview')}
+            {t('common.labels.launchPreview', 'Launch Preview')}
           </div>
           <div className="flex items-start gap-2">
             <code className="text-xs text-app-muted font-mono break-all opacity-70 flex-1 min-w-0">
@@ -367,7 +367,7 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
             disabled={isSaving}
           >
             <Save className="w-4 h-4 mr-2" />
-            {t('library.editor.saveChanges', 'Save Changes')}
+            {t('common.actions.saveChanges', 'Save Changes')}
           </Button>
           <Button
             onClick={handleLaunch}
@@ -376,8 +376,8 @@ const GameSettingsContent: React.FC<GameSettingsContentProps> = ({
           >
             <Play className="w-4 h-4 mr-1.5 fill-current" />
             {isLaunching
-              ? t('library.editor.launching', 'LAUNCHING...')
-              : t('library.editor.launch', 'LAUNCH')}
+              ? t('common.status.launching', 'LAUNCHING...')
+              : t('common.actions.launch', 'LAUNCH')}
           </Button>
         </div>
       </DialogFooter>

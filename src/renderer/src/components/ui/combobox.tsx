@@ -73,7 +73,7 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="p-0" align="start">
         <Command>
-          <CommandInput placeholder={t('ui.combobox.search', 'Search...')} />
+          <CommandInput placeholder={t('common.placeholders.search', 'Search...')} />
           <CommandList ref={listRef} onWheel={handleWheel}>
             <CommandEmpty>{t('ui.combobox.noResultsFound', 'No results found.')}</CommandEmpty>
             {options.map((opt) => (

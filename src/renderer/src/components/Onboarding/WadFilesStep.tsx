@@ -113,7 +113,7 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
           {t('onboarding.wads.terminal', 'UAC-7 // Data Repositories')}
         </span>
         <h2 className="text-2xl font-bold tracking-tight text-app-primary">
-          {t('onboarding.wads.title', 'WAD Files')}
+          {t('common.files.wadFiles', 'WAD Files')}
         </h2>
         <p className="text-sm text-app-secondary max-w-lg mx-auto">
           <T
@@ -198,7 +198,7 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
                     <Download className="w-3 h-3 mr-1" />
                     {freedoomDownloading === bundle
                       ? t('settings.wads.downloading', 'Downloading…')
-                      : t('settings.wads.download', 'Download')}
+                      : t('common.actions.download', 'Download')}
                   </Button>
                 )}
               </div>
@@ -214,7 +214,7 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
         </Label>
         {isLoadingVersions ? (
           <p className="text-xs text-app-muted italic py-2">
-            {t('onboarding.wads.scanning', 'Scanning…')}
+            {t('common.status.scanning', 'Scanning…')}
           </p>
         ) : !hasAnyIwad ? (
           <p className="text-xs text-app-muted italic py-2">
@@ -292,7 +292,7 @@ export const WadFilesStep: React.FC<WadFilesStepProps> = ({
           onClick={onNext}
           className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
         >
-          {t('onboarding.next', 'Next')}
+          {t('common.actions.next', 'Next')}
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>

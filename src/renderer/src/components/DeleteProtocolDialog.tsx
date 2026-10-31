@@ -46,13 +46,13 @@ export function DeleteProtocolDialog({
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            {t('library.delete.cancel', 'Cancel')}
+            {t('common.actions.cancel', 'Cancel')}
           </Button>
           <Button variant="destructive" onClick={onConfirm} disabled={isDeleting}>
             <Trash2 className="w-4 h-4 mr-2" />
             {isDeleting
               ? t('library.delete.deleting', 'Deleting...')
-              : t('library.delete.delete', 'Delete')}
+              : t('common.actions.delete', 'Delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

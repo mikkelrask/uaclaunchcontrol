@@ -106,9 +106,9 @@ export function AddFileDialog({
               'catalog.add.noConfigLinkedGlobalDefaultsApply',
               'No config linked — global defaults apply'
             )}
-            namePlaceholder={t('catalog.add.prettyNameForTheMod', 'Pretty name for the mod')}
-            versionPlaceholder={t('catalog.add.eG10V21', 'e.g., 1.0, v2.1')}
-            urlLabel={t('catalog.add.urlModdbForum', 'URL (ModDB, forum)')}
+            namePlaceholder={t('common.placeholders.modName', 'Display name')}
+            versionPlaceholder={t('common.placeholders.version', 'e.g., 1.0, v2.1')}
+            urlLabel={t('common.labels.modUrl', 'URL (ModDB, forum)')}
             urlPlaceholder="https://www.moddb.com/mods/..."
           />
         </div>
@@ -120,7 +120,7 @@ export function AddFileDialog({
             disabled={isSubmitting}
             className="bg-app-secondary"
           >
-            {t('catalog.add.cancel', 'Cancel')}
+            {t('common.actions.cancel', 'Cancel')}
           </Button>
           <Button
             onClick={onAddFile}

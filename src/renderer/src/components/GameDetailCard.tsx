@@ -125,11 +125,11 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
               className="bg-accent-highlight hover:opacity-90 text-white shadow-lg shadow-accent-highlight/25"
             >
               {isPending ? (
-                t('library.detail.launching', 'LAUNCHING...')
+                t('common.status.launching', 'LAUNCHING...')
               ) : (
                 <>
                   <Play className="w-4 h-4 mr-1.5 fill-current" />
-                  {t('library.detail.launch', 'LAUNCH')}
+                  {t('common.actions.launch', 'LAUNCH')}
                 </>
               )}
             </Button>
@@ -140,7 +140,7 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
               className="bg-app-secondary/80 hover:bg-app-hover text-app-primary border border-app"
             >
               <Settings className="w-4 h-4 mr-1.5" />
-              {t('library.detail.adjust', 'ADJUST')}
+              {t('common.actions.adjust', 'ADJUST')}
             </Button>
           </div>
         </div>
@@ -241,7 +241,7 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
               )}
               {protocol.version && (
                 <InfoRow
-                  label={t('library.detail.version', 'Version')}
+                  label={t('common.labels.version', 'Version')}
                   value={`v${protocol.version}`}
                   icon={<Tag className="w-3.5 h-3.5 text-accent-highlight" />}
                 />
@@ -260,7 +260,7 @@ export const GameDetailCard: React.FC<GameDetailCardProps> = ({
               />
               {protocol.lastLaunchedAt && (
                 <InfoRow
-                  label={t('library.detail.lastPlayed2', 'Last Played')}
+                  label={t('common.labels.lastPlayed', 'Last Played')}
                   value={formatDate(protocol.lastLaunchedAt)}
                   icon={<Clock className="w-3.5 h-3.5 text-accent-highlight" />}
                 />

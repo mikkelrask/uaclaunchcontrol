@@ -205,7 +205,7 @@ export function PortDownloadModal({
             disabled={!!downloadingTag}
             className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
           >
-            {t('portDownload.close', 'Close')}
+            {t('common.actions.close', 'Close')}
           </Button>
         </DialogFooter>
       </DialogContent>

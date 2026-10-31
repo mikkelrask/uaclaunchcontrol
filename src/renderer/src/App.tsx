@@ -245,7 +245,7 @@ const App: React.FC = () => {
             variant: 'destructive',
             action: (
               <ToastAction
-                altText={t('crash.viewLog', 'View Log')}
+                altText={t('common.actions.viewLog', 'View Log')}
                 onClick={() =>
                   setCrashLog({
                     protocolId,
@@ -257,7 +257,7 @@ const App: React.FC = () => {
                   })
                 }
               >
-                {t('crash.viewLog', 'View Log')}
+                {t('common.actions.viewLog', 'View Log')}
               </ToastAction>
             ),
             // logFilePath deliberately omitted here — it's opened with

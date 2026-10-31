@@ -109,7 +109,7 @@ export function DataTable<TData, TValue>({
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-app-muted" />
             <Input
-              placeholder={searchPlaceholder ?? t('catalog.table.search', 'Search...')}
+              placeholder={searchPlaceholder ?? t('common.placeholders.search', 'Search...')}
               value={globalFilter ?? ''}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="pl-8 bg-app-primary border-app h-9"
@@ -245,7 +245,7 @@ export function DataTable<TData, TValue>({
               </PaginationItem>
               <PaginationItem>
                 <PaginationLink
-                  aria-label={t('catalog.table.previousPage', 'Go to previous page')}
+                  aria-label={t('common.pagination.previousLabel', 'Go to previous page')}
                   onClick={() => table.previousPage()}
                   className={!table.getCanPreviousPage() ? 'pointer-events-none opacity-40' : ''}
                 >
@@ -254,7 +254,7 @@ export function DataTable<TData, TValue>({
               </PaginationItem>
               <PaginationItem>
                 <PaginationLink
-                  aria-label={t('catalog.table.nextPage', 'Go to next page')}
+                  aria-label={t('common.pagination.nextLabel', 'Go to next page')}
                   onClick={() => table.nextPage()}
                   className={!table.getCanNextPage() ? 'pointer-events-none opacity-40' : ''}
                 >

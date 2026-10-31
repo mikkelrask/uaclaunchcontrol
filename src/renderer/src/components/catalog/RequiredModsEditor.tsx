@@ -56,7 +56,7 @@ export const RequiredModsEditor: React.FC<RequiredModsEditorProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1.5">
-        <Label>{t('catalog.required.loadOrder', 'Load Order')}</Label>
+        <Label>{t('common.labels.loadOrder', 'Load Order')}</Label>
         <InfoTooltip
           text={t(
             'catalog.required.filesLoadTopToBottomLaterFilesOverrideEarlier',
@@ -138,7 +138,7 @@ export const RequiredModsEditor: React.FC<RequiredModsEditorProps> = ({
             }}
             options={selectableFiles.map((f) => ({
               value: f.id.toString(),
-              label: f.name || t('catalog.required.unnamed', 'Unnamed')
+              label: f.name || t('common.labels.unnamed', 'Unnamed')
             }))}
             placeholder={t('catalog.required.addFromCatalog', 'Add from catalog...')}
             className="bg-app-secondary border-app flex-1"

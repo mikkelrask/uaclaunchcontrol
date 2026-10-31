@@ -119,7 +119,7 @@ export const GameListCard: React.FC<GameListCardProps> = ({
         <div className="flex items-center gap-2 shrink-0">
           <Button
             size="sm"
-            aria-label={t('library.card.launch', 'LAUNCH')}
+            aria-label={t('common.actions.launch', 'LAUNCH')}
             onClick={handleLaunch}
             disabled={isPending}
             className="bg-accent-highlight hover:opacity-90 text-white px-3"
@@ -135,7 +135,7 @@ export const GameListCard: React.FC<GameListCardProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            aria-label={t('library.card.adjust', 'ADJUST')}
+            aria-label={t('common.actions.adjust', 'ADJUST')}
             onClick={handleSettings}
             className="bg-app-secondary/60 hover:bg-app-hover text-app-primary border border-app/50 px-2"
           >

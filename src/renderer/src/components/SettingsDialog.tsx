@@ -192,7 +192,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       properties: ['openFile'],
       filters: [
         {
-          name: t('settings.dialog.images', 'Images'),
+          name: t('common.files.images', 'Images'),
           extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp']
         }
       ],
@@ -448,7 +448,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 value="source-ports"
                 className="text-sm tracking-wide uppercase data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-accent-highlight rounded-none px-0 h-full border-b-2 border-transparent transition-all"
               >
-                {t('settings.tabs.sourcePorts', 'Source Ports')}
+                {t('common.labels.sourcePorts', 'Source Ports')}
               </TabsTrigger>
               <TabsTrigger
                 value="wad-config"
@@ -629,17 +629,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       {
                         value: 'grid' as const,
                         icon: LayoutGrid,
-                        label: t('settings.view.grid', 'Grid')
+                        label: t('common.views.grid', 'Grid')
                       },
                       {
                         value: 'list' as const,
                         icon: List,
-                        label: t('settings.view.list', 'List')
+                        label: t('common.views.list', 'List')
                       },
                       {
                         value: 'detail' as const,
                         icon: BookOpen,
-                        label: t('settings.view.detail', 'Detail')
+                        label: t('common.views.detail', 'Detail')
                       }
                     ].map(({ value, icon: Icon, label }) => (
                       <button
@@ -690,7 +690,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                 <div className="flex items-center justify-between gap-6">
                   <div className="min-w-0">
                     <Label className="text-sm font-medium text-app-primary">
-                      {t('settings.preview.label', 'Launch Preview')}
+                      {t('common.labels.launchPreview', 'Launch Preview')}
                     </Label>
                     <p className="text-[0.625rem] text-app-muted leading-tight mt-0.5">
                       {t(
@@ -700,7 +700,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     </p>
                   </div>
                   <Switch
-                    aria-label={t('settings.preview.label', 'Launch Preview')}
+                    aria-label={t('common.labels.launchPreview', 'Launch Preview')}
                     checked={settings.showLaunchPreview ?? true}
                     onCheckedChange={(checked) =>
                       setSettings((s) => ({ ...s, showLaunchPreview: checked }))
@@ -967,7 +967,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                             <Download className="w-3 h-3 mr-1" />
                             {freedoomDownloading === bundle
                               ? t('settings.wads.downloading', 'Downloading…')
-                              : t('settings.wads.download', 'Download')}
+                              : t('common.actions.download', 'Download')}
                           </Button>
                         )}
                       </div>

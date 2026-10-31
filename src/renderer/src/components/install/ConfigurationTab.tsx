@@ -100,7 +100,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                    {t('install.configuration.label', 'Label')}
+                    {t('common.labels.label', 'Label')}
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -156,11 +156,11 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                         className="bg-app-primary border-app shrink-0 h-10 w-10"
                         onClick={async () => {
                           const result = await api.showOpenDialog({
-                            title: t('install.configuration.selectScreenshot', 'Select Screenshot'),
+                            title: t('common.dialogs.selectScreenshot', 'Select Screenshot'),
                             properties: ['openFile'],
                             filters: [
                               {
-                                name: t('install.configuration.images', 'Images'),
+                                name: t('common.files.images', 'Images'),
                                 extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp']
                               }
                             ]
@@ -251,7 +251,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                        {t('install.configuration.baseWad', 'Base WAD')}
+                        {t('common.labels.baseWad', 'Base WAD')}
                       </FormLabel>
                       {/* key forces a fresh mount the instant a value is first
                           set programmatically (our default-fill effect in
@@ -295,7 +295,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                        {t('install.configuration.sourcePort', 'Source Port')}
+                        {t('common.labels.sourcePort', 'Source Port')}
                       </FormLabel>
                       <FormControl>
                         <Combobox
@@ -308,10 +308,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                               label: p.name,
                               description: p.version
                             }))}
-                          placeholder={t(
-                            'install.configuration.selectASourcePort',
-                            'Select a source port'
-                          )}
+                          placeholder={t('common.placeholders.sourcePort', 'Select a source port')}
                           className="w-full bg-app-primary border-app"
                         />
                       </FormControl>

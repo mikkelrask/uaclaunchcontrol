@@ -26,11 +26,11 @@ export function ProtocolScreenshotPicker({
     const { t } = getTranslate('desktop')
 
     const result = await api.showOpenDialog({
-      title: t('library.screenshot.selectScreenshot', 'Select Screenshot'),
+      title: t('common.dialogs.selectScreenshot', 'Select Screenshot'),
       properties: ['openFile'],
       filters: [
         {
-          name: t('library.screenshot.images', 'Images'),
+          name: t('common.files.images', 'Images'),
           extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp']
         }
       ]

@@ -514,30 +514,28 @@ export function ArchiveImportModal({
             /* ── Archive-as-mod form (matches add_mod_file modal style) ── */
             <div className="space-y-4 p-2">
               <div className="space-y-2">
-                <Label htmlFor="archive-as-name">{t('install.archive.name', 'Name')}</Label>
+                <Label htmlFor="archive-as-name">{t('common.labels.name', 'Name')}</Label>
                 <Input
                   id="archive-as-name"
                   value={importName}
                   onChange={(e) => setImportName(e.target.value)}
-                  placeholder={t('install.archive.prettyNameForTheMod', 'Pretty name for the mod')}
+                  placeholder={t('common.placeholders.modName', 'Display name')}
                   className="bg-app-secondary border-app"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="archive-as-version">
-                  {t('install.archive.version', 'Version')}
-                </Label>
+                <Label htmlFor="archive-as-version">{t('common.labels.version', 'Version')}</Label>
                 <Input
                   id="archive-as-version"
                   value={importVersion}
                   onChange={(e) => setImportVersion(e.target.value)}
-                  placeholder={t('install.archive.eG10V21', 'e.g., 1.0, v2.1')}
+                  placeholder={t('common.placeholders.version', 'e.g., 1.0, v2.1')}
                   className="bg-app-secondary border-app"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="archive-as-url">
-                  {t('install.archive.urlModdbForum', 'URL (ModDB, forum)')}
+                  {t('common.labels.modUrl', 'URL (ModDB, forum)')}
                 </Label>
                 <Input
                   id="archive-as-url"
@@ -548,12 +546,10 @@ export function ArchiveImportModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t('install.archive.category', 'Category')}</Label>
+                <Label>{t('common.labels.category', 'Category')}</Label>
                 <Select value={importCategory} onValueChange={setImportCategory}>
                   <SelectTrigger className="bg-app-secondary border-app">
-                    <SelectValue
-                      placeholder={t('install.archive.uncategorized', 'Uncategorized')}
-                    />
+                    <SelectValue placeholder={t('common.labels.uncategorized', 'Uncategorized')} />
                   </SelectTrigger>
                   <SelectContent>
                     {CATEGORIES.map((cat) => (
@@ -582,7 +578,7 @@ export function ArchiveImportModal({
                     <span></span>
                     <span>{t('install.archive.file', 'File')}</span>
                     <span>{t('install.archive.displayName', 'Display Name')}</span>
-                    <span>{t('install.archive.version', 'Version')}</span>
+                    <span>{t('common.labels.version', 'Version')}</span>
                     <span>{t('install.archive.cat', 'Cat')}</span>
                     <span>URL</span>
                   </div>
@@ -599,7 +595,7 @@ export function ArchiveImportModal({
                           {showPlaceholderBefore && (
                             <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
                               <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
-                                {t('install.archive.dropHere', 'drop here')}
+                                {t('common.dragDrop.dropHere', 'drop here')}
                               </span>
                             </div>
                           )}
@@ -616,7 +612,7 @@ export function ArchiveImportModal({
                               onDragEnd={handleDragEnd}
                               className="cursor-grab active:cursor-grabbing text-app-muted hover:text-app-primary opacity-40 hover:opacity-100 transition-opacity p-0.5"
                               tabIndex={-1}
-                              aria-label={t('install.archive.reorder', 'Reorder')}
+                              aria-label={t('common.actions.reorder', 'Reorder')}
                             >
                               <GripVertical className="w-3.5 h-3.5" />
                             </button>
@@ -652,13 +648,13 @@ export function ArchiveImportModal({
 
                             <input
                               className="border border-app rounded p-1 text-sm bg-app-primary"
-                              placeholder={t('install.archive.displayName2', 'Display name')}
+                              placeholder={t('common.placeholders.modName', 'Display name')}
                               value={meta?.name ?? ''}
                               onChange={(e) => handleMetaChange(idx, 'name', e.target.value)}
                             />
                             <input
                               className="border border-app rounded p-1 text-sm bg-app-primary w-20"
-                              placeholder={t('install.archive.version', 'Version')}
+                              placeholder={t('common.labels.version', 'Version')}
                               value={meta?.version ?? ''}
                               onChange={(e) => handleMetaChange(idx, 'version', e.target.value)}
                             />
@@ -688,7 +684,7 @@ export function ArchiveImportModal({
                     {insertionIndex === fileMeta.length && draggedIndex !== fileMeta.length - 1 && (
                       <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
                         <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
-                          {t('install.archive.newPlacement', 'new placement')}
+                          {t('common.dragDrop.newPlacement', 'new placement')}
                         </span>
                       </div>
                     )}
@@ -724,7 +720,7 @@ export function ArchiveImportModal({
               disabled={importing}
               className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
             >
-              {t('install.archive.cancel', 'Cancel')}
+              {t('common.actions.cancel', 'Cancel')}
             </Button>
             <Button
               onClick={handleImport}
@@ -733,7 +729,7 @@ export function ArchiveImportModal({
             >
               <Upload className="w-4 h-4 mr-2" />
               {importing
-                ? t('install.archive.importing', 'Importing…')
+                ? t('common.status.importing', 'Importing…')
                 : importAsArchive
                   ? t('install.archive.import', 'Import {archiveBaseName}', {
                       archiveBaseName: String(archiveBaseName)

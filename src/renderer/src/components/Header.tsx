@@ -226,7 +226,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
         </AchievementsPopover>
         <NotificationsPopover>
           <button
-            aria-label={t('navigation.notifications', 'Notifications')}
+            aria-label={t('common.labels.notifications', 'Notifications')}
             className="relative w-8 h-8 bg-app-primary rounded flex items-center justify-center hover:bg-app-hover"
           >
             <Bell className="h-5 w-5" />
@@ -291,7 +291,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, enableLiveSearch }) =>
                 }}
               >
                 <FileText className="h-5 w-5 text-app-muted" />
-                <span>{t('navigation.releaseNotes', 'Release Notes')}</span>
+                <span>{t('common.labels.releaseNotes', 'Release Notes')}</span>
               </Button>
             </SheetClose>
 

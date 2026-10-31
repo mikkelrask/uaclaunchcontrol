@@ -256,11 +256,11 @@ export function ModFileSelector({
 
     try {
       const result = await api.showOpenDialog({
-        title: t('install.selector.selectModFile', 'Select Mod File'),
+        title: t('common.dialogs.selectModFile', 'Select Mod File'),
         properties: ['openFile'],
         filters: [
           {
-            name: t('install.selector.doomFiles', 'DOOM Files'),
+            name: t('common.files.doomFiles', 'DOOM Files'),
             extensions: ['wad', 'pk3', 'ipk3', 'deh', 'bex', 'zip']
           }
         ]
@@ -433,7 +433,7 @@ export function ModFileSelector({
                 {showPlaceholderBefore && (
                   <div className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
                     <span className="text-accent-highlight text-sm tracking-widest uppercase opacity-60">
-                      {t('install.selector.dropHere', 'drop here')}
+                      {t('common.dragDrop.dropHere', 'drop here')}
                     </span>
                   </div>
                 )}
@@ -453,7 +453,7 @@ export function ModFileSelector({
                     onDragEnd={handleDragEnd}
                     className="shrink-0 cursor-grab active:cursor-grabbing text-app-muted opacity-40 group-hover:opacity-100 transition-opacity"
                     tabIndex={-1}
-                    aria-label={t('install.selector.reorder', 'Reorder')}
+                    aria-label={t('common.actions.reorder', 'Reorder')}
                   >
                     <GripVertical className="h-4 w-4" />
                   </button>
@@ -490,7 +490,7 @@ export function ModFileSelector({
                     </Button>
                     {!file.filePath && (
                       <span className="text-xs bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded shrink-0">
-                        {t('install.selector.missing', 'missing')}
+                        {t('common.files.missing', 'missing')}
                       </span>
                     )}
                   </div>
@@ -501,7 +501,7 @@ export function ModFileSelector({
                       onValueChange={(value) => handleUpdateFile(index, 'fileType', value)}
                     >
                       <SelectTrigger className="bg-app-primary border-app">
-                        <SelectValue placeholder={t('install.selector.type', 'Type')} />
+                        <SelectValue placeholder={t('common.labels.fileType', 'Type')} />
                       </SelectTrigger>
                       <SelectContent className="bg-app-secondary border-app">
                         <SelectItem value="WAD">WAD</SelectItem>
@@ -556,7 +556,7 @@ export function ModFileSelector({
           {insertionIndex === value.length && draggedIndex !== value.length - 1 && (
             <div className="h-12 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
               <span className="text-sm text-accent-highlight tracking-widest uppercase opacity-60">
-                {t('install.selector.newPlacement', 'new placement')}
+                {t('common.dragDrop.newPlacement', 'new placement')}
               </span>
             </div>
           )}

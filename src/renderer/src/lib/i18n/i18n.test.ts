@@ -85,7 +85,7 @@ describe('bundled desktop translations', () => {
   it('uses English fallback without changing technical parameters', async () => {
     const tolgee = createI18n('es-ES')
     await tolgee.run()
-    expect(tolgee.t('sourcePorts.title')).toBe('Source Ports')
+    expect(tolgee.t('common.labels.sourcePorts')).toBe('Source Ports')
     expect(tolgee.t('sourcePorts.scan.found', { count: 0 })).toBe('Found 0 ports')
     expect(tolgee.t('sourcePorts.scan.found', { count: 1 })).toBe('Found 1 port')
     expect(tolgee.t('sourcePorts.scan.found', { count: 2 })).toBe('Found 2 ports')

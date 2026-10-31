@@ -176,7 +176,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
       <div className="bg-app-secondary p-4 rounded-xl border border-app shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <Label className="text-xs text-app-muted font-bold uppercase tracking-wider">
-            {t('sourcePorts.title', 'Source Ports')}
+            {t('common.labels.sourcePorts', 'Source Ports')}
           </Label>
           <div className="flex gap-2">
             <Button
@@ -188,7 +188,7 @@ export const SourcePortsTab: React.FC<SourcePortsTabProps> = ({
             >
               <ScanSearch className="w-3 h-3 mr-1" />
               {scanning
-                ? t('sourcePorts.scanning', 'Scanning…')
+                ? t('common.status.scanning', 'Scanning…')
                 : t('sourcePorts.scanPath', 'Scan Path')}
             </Button>
             <Button
@@ -443,7 +443,7 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-xs text-app-muted">{t('sourcePorts.form.name', 'Name')}</Label>
+          <Label className="text-xs text-app-muted">{t('common.labels.name', 'Name')}</Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -525,7 +525,7 @@ const PortForm: React.FC<PortFormProps> = ({ port, onSave, onCancel }) => {
           onClick={onCancel}
           className="text-xs bg-transparent border-app hover:bg-app-hover text-app-muted h-8"
         >
-          {t('sourcePorts.form.cancel', 'Cancel')}
+          {t('common.actions.cancel', 'Cancel')}
         </Button>
         <Button
           size="sm"

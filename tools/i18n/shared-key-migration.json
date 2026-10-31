@@ -1,0 +1,498 @@
+[
+  {
+    "key": "common.actions.cancel",
+    "defaultValue": "Cancel",
+    "sources": [
+      "install.archive.cancel",
+      "library.delete.cancel",
+      "downloads.cancel",
+      "sourcePorts.form.cancel",
+      "catalog.add.cancel",
+      "catalog.delete.cancel",
+      "catalog.edit.cancel",
+      "library.games.cancel",
+      "install.page.cancel"
+    ],
+    "preferredSource": "sourcePorts.form.cancel",
+    "context": "Cancel the pending action or dialog without completing it.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.actions.delete",
+    "defaultValue": "Delete",
+    "sources": ["library.delete.delete", "catalog.delete.delete", "catalog.columns.delete"],
+    "preferredSource": "catalog.delete.delete",
+    "context": "Destructive delete action; confirmation text still explains what will be deleted.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.actions.close",
+    "defaultValue": "Close",
+    "sources": ["portDownload.close", "ui.dialog.close", "ui.sheet.close"],
+    "preferredSource": "portDownload.close",
+    "context": "Close the current dialog or panel.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.actions.saveChanges",
+    "defaultValue": "Save Changes",
+    "sources": ["library.editor.saveChanges", "catalog.edit.saveChanges"],
+    "preferredSource": "catalog.edit.saveChanges",
+    "context": "Persist edits in the current editor.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.actions.next",
+    "defaultValue": "Next",
+    "sources": ["onboarding.next", "pagination.next"],
+    "preferredSource": "pagination.next",
+    "context": "Advance to the next step or page.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.actions.reorder",
+    "defaultValue": "Reorder",
+    "sources": ["install.archive.reorder", "install.files.reorder", "install.selector.reorder"],
+    "preferredSource": "install.files.reorder",
+    "context": "Accessible label on a mod-file reorder handle.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.actions.download",
+    "defaultValue": "Download",
+    "sources": ["settings.wads.download", "library.games.download"],
+    "preferredSource": "settings.wads.download",
+    "context": "Begin downloading the selected resource.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.actions.restartNow",
+    "defaultValue": "Restart Now",
+    "sources": ["notifications.action.restart", "updates.action.restartNow"],
+    "preferredSource": "updates.action.restartNow",
+    "context": "Restart the application now to apply the downloaded update.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.actions.viewLog",
+    "defaultValue": "View Log",
+    "sources": ["crash.viewLog", "notifications.action.viewLog"],
+    "preferredSource": "crash.viewLog",
+    "context": "Open a captured game crash log.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.actions.viewUpdate",
+    "defaultValue": "View Update",
+    "sources": ["notifications.action.viewUpdate", "updates.action.viewUpdate"],
+    "preferredSource": "updates.action.viewUpdate",
+    "context": "Open details of the application update.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.actions.adjust",
+    "defaultValue": "ADJUST",
+    "sources": ["library.card.adjust", "library.detail.adjust"],
+    "preferredSource": "library.card.adjust",
+    "context": "Open the launch-protocol editor.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.actions.launch",
+    "defaultValue": "LAUNCH",
+    "sources": ["library.card.launch", "library.detail.launch", "library.editor.launch"],
+    "preferredSource": "library.card.launch",
+    "context": "Launch the selected game protocol. Navigation to the library remains a separate key.",
+    "separateKeys": ["navigation.launch"]
+  },
+  {
+    "key": "common.status.launching",
+    "defaultValue": "LAUNCHING...",
+    "sources": ["library.card.launching", "library.detail.launching", "library.editor.launching"],
+    "preferredSource": "library.card.launching",
+    "context": "A game protocol launch is in progress.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.status.importing",
+    "defaultValue": "Importing…",
+    "sources": ["install.archive.importing", "library.games.importing"],
+    "preferredSource": "install.archive.importing",
+    "context": "The selected mod files are being imported.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.status.scanning",
+    "defaultValue": "Scanning…",
+    "sources": ["onboarding.wads.scanning", "sourcePorts.scanning"],
+    "preferredSource": "sourcePorts.scanning",
+    "context": "A filesystem scan is in progress.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.name",
+    "defaultValue": "Name",
+    "sources": [
+      "install.archive.name",
+      "sourcePorts.form.name",
+      "catalog.fields.name",
+      "catalog.columns.name",
+      "catalog.columnLabel.name",
+      "library.games.name"
+    ],
+    "preferredSource": "sourcePorts.form.name",
+    "context": "Standalone name field or column label; not a sentence fragment.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.version",
+    "defaultValue": "Version",
+    "sources": [
+      "install.archive.version",
+      "library.detail.version",
+      "catalog.fields.version",
+      "catalog.columns.version",
+      "catalog.columnLabel.version"
+    ],
+    "preferredSource": "catalog.columnLabel.version",
+    "context": "Standalone software/mod version label.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.category",
+    "defaultValue": "Category",
+    "sources": [
+      "install.archive.category",
+      "catalog.manager.category",
+      "catalog.fields.category",
+      "catalog.columns.category",
+      "catalog.columnLabel.category"
+    ],
+    "preferredSource": "catalog.columnLabel.category",
+    "context": "Mod-category field, column or filter label.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.fileType",
+    "defaultValue": "Type",
+    "sources": [
+      "catalog.manager.type",
+      "install.selector.type",
+      "catalog.columns.type",
+      "catalog.columnLabel.fileType"
+    ],
+    "preferredSource": "catalog.columnLabel.fileType",
+    "context": "Mod file-format/type column or filter label; not a verb.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.actions",
+    "defaultValue": "Actions",
+    "sources": ["catalog.columns.actions", "catalog.columnLabel.actions"],
+    "preferredSource": "catalog.columnLabel.actions",
+    "context": "Column containing controls for a catalog entry.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.loadOrder",
+    "defaultValue": "Load Order",
+    "sources": [
+      "catalog.required.loadOrder",
+      "catalog.columns.loadOrder",
+      "catalog.columnLabel.loadOrder"
+    ],
+    "preferredSource": "catalog.columnLabel.loadOrder",
+    "context": "Order in which mod files and dependencies are loaded.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.config",
+    "defaultValue": "Config",
+    "sources": ["catalog.columns.config", "catalog.columnLabel.configTemplate"],
+    "preferredSource": "catalog.columnLabel.configTemplate",
+    "context": "Configuration-template column label.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.md5Checksum",
+    "defaultValue": "MD5 Checksum",
+    "sources": ["catalog.columns.md5Checksum", "catalog.columnLabel.hashValue"],
+    "preferredSource": "catalog.columnLabel.hashValue",
+    "context": "MD5 file checksum column label; preserve the MD5 acronym.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.baseWad",
+    "defaultValue": "Base WAD",
+    "sources": ["library.editor.baseWad", "install.configuration.baseWad"],
+    "preferredSource": "install.configuration.baseWad",
+    "context": "Base game WAD selection; preserve WAD.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.label",
+    "defaultValue": "Label",
+    "sources": ["library.editor.label", "install.configuration.label"],
+    "preferredSource": "install.configuration.label",
+    "context": "Human-readable title field of a launch protocol.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.modFiles",
+    "defaultValue": "Mod Files",
+    "sources": ["library.editor.modFiles", "install.page.modFiles"],
+    "preferredSource": "install.page.modFiles",
+    "context": "Mod file collection or selection section.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.sourcePort",
+    "defaultValue": "Source Port",
+    "sources": ["library.editor.sourcePort", "install.configuration.sourcePort"],
+    "preferredSource": "install.configuration.sourcePort",
+    "context": "Doom-compatible engine selection label.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.sourcePorts",
+    "defaultValue": "Source Ports",
+    "sources": ["sourcePorts.title", "settings.tabs.sourcePorts"],
+    "preferredSource": "sourcePorts.title",
+    "context": "Source-port management section/tab.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.launchPreview",
+    "defaultValue": "Launch Preview",
+    "sources": [
+      "library.editor.launchPreview",
+      "settings.preview.label",
+      "install.preview.launchPreview"
+    ],
+    "preferredSource": "settings.preview.label",
+    "context": "Preview of the generated game launch command.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.views.grid",
+    "defaultValue": "Grid",
+    "sources": ["settings.view.grid", "library.view.grid"],
+    "preferredSource": "settings.view.grid",
+    "context": "Grid library view, including the default-view setting.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.views.list",
+    "defaultValue": "List",
+    "sources": ["settings.view.list", "library.view.list"],
+    "preferredSource": "settings.view.list",
+    "context": "List library view, including the default-view setting.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.views.detail",
+    "defaultValue": "Detail",
+    "sources": ["settings.view.detail", "library.view.detail"],
+    "preferredSource": "settings.view.detail",
+    "context": "Detailed library view, including the default-view setting.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.lastPlayed",
+    "defaultValue": "Last Played",
+    "sources": ["library.detail.lastPlayed2", "library.sort.lastPlayed"],
+    "preferredSource": "library.sort.lastPlayed",
+    "context": "Last-played timestamp label or sort criterion.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.playtime",
+    "defaultValue": "Playtime",
+    "sources": ["library.sort.playtime", "achievements.stats.totalPlaytimeSeconds"],
+    "preferredSource": "achievements.stats.totalPlaytimeSeconds",
+    "context": "Elapsed gameplay time label; formatting and values stay outside this message.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.files.images",
+    "defaultValue": "Images",
+    "sources": [
+      "library.screenshot.images",
+      "settings.dialog.images",
+      "install.configuration.images"
+    ],
+    "preferredSource": "settings.dialog.images",
+    "context": "Native image-file picker filter label.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.files.configFiles",
+    "defaultValue": "Config files",
+    "sources": ["catalog.addFlow.configFiles", "catalog.editFlow.configFiles"],
+    "preferredSource": "catalog.addFlow.configFiles",
+    "context": "Native configuration-file picker filter label.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.files.doomFiles",
+    "defaultValue": "DOOM Files",
+    "sources": ["install.selector.doomFiles", "catalog.required.doomFiles"],
+    "preferredSource": "catalog.required.doomFiles",
+    "context": "Native Doom mod-file picker filter label.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.files.wadFiles",
+    "defaultValue": "WAD Files",
+    "sources": ["onboarding.wads.title", "install.wadImport.wadFiles", "install.page.wadFiles"],
+    "preferredSource": "install.wadImport.wadFiles",
+    "context": "WAD file picker filter or WAD-management section; preserve WAD.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.dialogs.selectConfigFile",
+    "defaultValue": "Select Config File",
+    "sources": ["catalog.addFlow.selectConfigFile", "catalog.editFlow.selectConfigFile"],
+    "preferredSource": "catalog.addFlow.selectConfigFile",
+    "context": "Native picker title for a configuration-template file.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.dialogs.selectModFile",
+    "defaultValue": "Select Mod File",
+    "sources": ["install.selector.selectModFile", "catalog.addFlow.selectModFile"],
+    "preferredSource": "catalog.addFlow.selectModFile",
+    "context": "Native picker title for a Doom mod file.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.dialogs.selectScreenshot",
+    "defaultValue": "Select Screenshot",
+    "sources": ["library.screenshot.selectScreenshot", "install.configuration.selectScreenshot"],
+    "preferredSource": "library.screenshot.selectScreenshot",
+    "context": "Native picker title for a protocol screenshot.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.placeholders.sourcePort",
+    "defaultValue": "Select a source port",
+    "sources": ["library.editor.selectASourcePort", "install.configuration.selectASourcePort"],
+    "preferredSource": "install.configuration.selectASourcePort",
+    "context": "Placeholder for the protocol engine selector.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.placeholders.search",
+    "defaultValue": "Search...",
+    "sources": ["ui.combobox.search", "catalog.table.search"],
+    "preferredSource": "ui.combobox.search",
+    "context": "Placeholder inside a searchable list or catalog.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.placeholders.modName",
+    "defaultValue": "Display name",
+    "sources": [
+      "install.archive.prettyNameForTheMod",
+      "catalog.add.prettyNameForTheMod",
+      "library.games.prettyNameForTheMod",
+      "install.archive.displayName2"
+    ],
+    "preferredSource": "catalog.add.prettyNameForTheMod",
+    "context": "Placeholder for the human-readable mod name.",
+    "separateKeys": [],
+    "acceptedEnglishValues": ["Pretty name for the mod", "Display name"]
+  },
+  {
+    "key": "common.placeholders.version",
+    "defaultValue": "e.g., 1.0, v2.1",
+    "sources": ["install.archive.eG10V21", "catalog.add.eG10V21"],
+    "preferredSource": "catalog.add.eG10V21",
+    "context": "Example mod-version values; examples must remain recognizable.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.modUrl",
+    "defaultValue": "URL (ModDB, forum)",
+    "sources": ["install.archive.urlModdbForum", "catalog.add.urlModdbForum"],
+    "preferredSource": "catalog.add.urlModdbForum",
+    "context": "Source/download URL field label; preserve ModDB.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.uncategorized",
+    "defaultValue": "Uncategorized",
+    "sources": ["install.archive.uncategorized", "catalog.fields.uncategorized"],
+    "preferredSource": "catalog.fields.uncategorized",
+    "context": "Mod without a category.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.unnamed",
+    "defaultValue": "Unnamed",
+    "sources": ["install.files.unnamed", "catalog.required.unnamed", "library.games.unnamed"],
+    "preferredSource": "catalog.required.unnamed",
+    "context": "Fallback display name for a mod file whose name is absent.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.files.missing",
+    "defaultValue": "missing",
+    "sources": ["install.files.missing", "install.selector.missing"],
+    "preferredSource": "install.files.missing",
+    "context": "Status badge for a referenced mod file missing locally.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.dragDrop.dropHere",
+    "defaultValue": "drop here",
+    "sources": ["install.archive.dropHere", "install.files.dropHere", "install.selector.dropHere"],
+    "preferredSource": "install.files.dropHere",
+    "context": "Mod-file drag-and-drop placement hint.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.dragDrop.newPlacement",
+    "defaultValue": "new placement",
+    "sources": [
+      "install.archive.newPlacement",
+      "install.files.newPlacement",
+      "install.selector.newPlacement"
+    ],
+    "preferredSource": "install.files.newPlacement",
+    "context": "Accessible mod-file drag-and-drop placement description.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.notifications",
+    "defaultValue": "Notifications",
+    "sources": ["navigation.notifications", "notifications.title"],
+    "preferredSource": "notifications.title",
+    "context": "Notification-history panel and the button opening it.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.labels.releaseNotes",
+    "defaultValue": "Release Notes",
+    "sources": ["navigation.releaseNotes", "updates.dialog.releaseNotes"],
+    "preferredSource": "updates.dialog.releaseNotes",
+    "context": "Application release-note heading or navigation link.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.pagination.previousLabel",
+    "defaultValue": "Go to previous page",
+    "sources": ["catalog.table.previousPage", "pagination.previousLabel"],
+    "preferredSource": "pagination.previousLabel",
+    "context": "Accessible label for the previous-page control.",
+    "separateKeys": []
+  },
+  {
+    "key": "common.pagination.nextLabel",
+    "defaultValue": "Go to next page",
+    "sources": ["catalog.table.nextPage", "pagination.nextLabel"],
+    "preferredSource": "pagination.nextLabel",
+    "context": "Accessible label for the next-page control.",
+    "separateKeys": []
+  }
+]

@@ -281,7 +281,11 @@ app
         )
       )
       if (choice !== 'en')
-        await clickSelector(window, `input[name="startup-language"][value="${choice}"]`)
+        await clickSelector(window, `label:has(input[name="startup-language"][value="${choice}"])`)
+      await waitFor(
+        window,
+        `!!document.querySelector('input[name="startup-language"][value="${choice}"]:checked')`
+      )
       if (choice === 'en') {
         settingsFailures = 1
         await clickSelector(window, 'button', catalogs.en['languageStartup.continue'])
@@ -420,7 +424,7 @@ app
       await waitFor(window, `!document.querySelector('[role="dialog"]')`)
       await clickSelector(
         window,
-        `button[aria-label=${JSON.stringify(message('navigation.notifications'))}]`
+        `button[aria-label=${JSON.stringify(message('common.labels.notifications'))}]`
       )
       await waitFor(
         window,
@@ -566,22 +570,22 @@ app
       await clickSelector(window, 'button', message('onboarding.welcome.initialize'))
       await waitFor(
         window,
-        `[...document.querySelectorAll('h2')].some(el => el.textContent === ${JSON.stringify(message('sourcePorts.title'))})`
+        `[...document.querySelectorAll('h2')].some(el => el.textContent === ${JSON.stringify(message('common.labels.sourcePorts'))})`
       )
       await waitFor(
         window,
         `document.body.textContent.includes(${JSON.stringify(message('sourcePorts.scan.found', { count: 1 }))})`
       )
-      await clickSelector(window, 'button', message('onboarding.next'))
+      await clickSelector(window, 'button', message('common.actions.next'))
       await waitFor(
         window,
-        `[...document.querySelectorAll('h2')].some(el => el.textContent === ${JSON.stringify(message('onboarding.wads.title'))})`
+        `[...document.querySelectorAll('h2')].some(el => el.textContent === ${JSON.stringify(message('common.files.wadFiles'))})`
       )
       const wadGuide = await window.webContents.executeJavaScript(
         `document.querySelector('a[href="https://uac-soft.online/guides/acquiring-doom/"]')?.textContent`
       )
       assert.equal(wadGuide, message('onboarding.wads.acquireGuide'))
-      await clickSelector(window, 'button', message('onboarding.next'))
+      await clickSelector(window, 'button', message('common.actions.next'))
       await waitFor(
         window,
         `[...document.querySelectorAll('h2')].some(el => el.textContent === ${JSON.stringify(message('onboarding.registry.title'))})`
@@ -590,7 +594,7 @@ app
         `document.querySelector('[role="switch"]')?.getAttribute('data-state')`
       )
       assert.equal(registryToggle, 'unchecked')
-      await clickSelector(window, 'button', message('onboarding.next'))
+      await clickSelector(window, 'button', message('common.actions.next'))
       const summary = message('onboarding.complete.summary', { portCount: 0, wadCount: 1 })
       await waitFor(window, `document.body.textContent.includes(${JSON.stringify(summary)})`)
       await clickSelector(window, 'button', message('onboarding.complete.finish'))
@@ -608,24 +612,24 @@ app
       for (const mode of ['list', 'detail', 'grid']) {
         await clickSelector(
           window,
-          `button[title=${JSON.stringify(message('library.view.' + mode))}]`
+          `button[title=${JSON.stringify(message('common.views.' + mode))}]`
         )
         await waitFor(
           window,
-          `!!document.querySelector('button[title=' + ${JSON.stringify(JSON.stringify(message('library.view.' + mode)))} + '] span')`
+          `!!document.querySelector('button[title=' + ${JSON.stringify(JSON.stringify(message('common.views.' + mode)))} + '] span')`
         )
       }
-      await clickSelector(window, 'button', message('library.card.adjust'))
+      await clickSelector(window, 'button', message('common.actions.adjust'))
       await waitFor(
         window,
-        `document.querySelector('[role="dialog"]')?.textContent.includes(${JSON.stringify(message('library.editor.saveChanges'))})`
+        `document.querySelector('[role="dialog"]')?.textContent.includes(${JSON.stringify(message('common.actions.saveChanges'))})`
       )
       await clickSelector(window, 'button', message('library.editor.deleteInstance'))
       await waitFor(
         window,
         `[...document.querySelectorAll('[role="dialog"]')].some(el => el.textContent.includes(${JSON.stringify(message('library.delete.deleteThisProtocol'))}))`
       )
-      await clickSelector(window, '[role="dialog"] button', message('library.delete.cancel'))
+      await clickSelector(window, '[role="dialog"] button', message('common.actions.cancel'))
       await waitFor(window, `document.querySelectorAll('[role="dialog"]').length === 1`)
       window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
       window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
@@ -667,7 +671,7 @@ app
           )
           await waitFor(
             window,
-            `document.querySelector('[role="dialog"]')?.textContent.includes(${JSON.stringify(message('catalog.fields.category'))})`
+            `document.querySelector('[role="dialog"]')?.textContent.includes(${JSON.stringify(message('common.labels.category'))})`
           )
           // A real catalog validation warning exercises translated diagnostic headings,
           // history classification and the shared notification accessibility defaults.
@@ -676,7 +680,11 @@ app
             Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '');
             input.dispatchEvent(new Event('input', { bubbles: true }));
           })()`)
-          await clickSelector(window, '[role="dialog"] button', message('catalog.edit.saveChanges'))
+          await clickSelector(
+            window,
+            '[role="dialog"] button',
+            message('common.actions.saveChanges')
+          )
           const warningTitle = message('notifications.status.caution', { code: 'name_required' })
           await waitFor(
             window,
@@ -700,7 +708,7 @@ app
             window,
             `button[aria-label=${JSON.stringify(message('ui.toast.close'))}]`
           )
-          await clickSelector(window, '[role="dialog"] button', message('catalog.edit.cancel'))
+          await clickSelector(window, '[role="dialog"] button', message('common.actions.cancel'))
           await waitFor(window, `!document.querySelector('[role="dialog"]')`)
         }
       }
@@ -757,7 +765,7 @@ app
       await waitFor(window, 'true')
       assert.equal(updateCalls.downloads, callsBefore.downloads + 1)
       assert.equal(updateCalls.installs, callsBefore.installs + 1)
-      await clickSelector(window, '[role="dialog"] button', message('ui.dialog.close'))
+      await clickSelector(window, '[role="dialog"] button', message('common.actions.close'))
       await waitFor(window, `!document.querySelector('[role="dialog"]')`)
       const history = await window.webContents.executeJavaScript(
         `JSON.parse(localStorage.getItem('uac:notifications') || '[]')`
@@ -789,7 +797,7 @@ app
         window,
         `document.body.textContent.includes(${JSON.stringify(message('downloads.waitingForModdb'))})`
       )
-      await clickSelector(window, 'button', message('downloads.cancel'))
+      await clickSelector(window, 'button', message('common.actions.cancel'))
       await waitFor(
         window,
         `document.body.textContent.includes(${JSON.stringify(message('downloads.cancelled'))})`
@@ -916,7 +924,7 @@ app
         window,
         `document.body.textContent.includes(${JSON.stringify(message('crash.copied'))})`
       )
-      await clickSelector(window, '[role="dialog"] button', message('ui.dialog.close'))
+      await clickSelector(window, '[role="dialog"] button', message('common.actions.close'))
       await waitFor(window, `!document.querySelector('[role="dialog"]')`)
       await window.webContents.executeJavaScript(
         `window.dispatchEvent(new CustomEvent('show-crash-log-modal', { detail: { exitCode: null, sessionSeconds: 0, logTail: [] } }))`
@@ -932,7 +940,7 @@ app
           )
         ).includes(message('crash.signalSummary', { seconds: 0 }))
       )
-      await clickSelector(window, '[role="dialog"] button', message('ui.dialog.close'))
+      await clickSelector(window, '[role="dialog"] button', message('common.actions.close'))
       await waitFor(window, `!document.querySelector('[role="dialog"]')`)
       window.webContents.send('doom-versions-updated', {
         added: [{ name: 'Knee Deep IWAD fixture' }]
@@ -989,7 +997,7 @@ app
             `[...document.querySelectorAll('[role="dialog"] button')].some(button => button.textContent.trim() === ${JSON.stringify(message('updates.dialog.install'))})`
           ))
         )
-        await clickSelector(window, '[role="dialog"] button', message('ui.dialog.close'))
+        await clickSelector(window, '[role="dialog"] button', message('common.actions.close'))
         await waitFor(window, `!document.querySelector('[role="dialog"]')`)
         assert.equal(updateCalls.downloads, callsBefore.downloads + 1)
         assert.equal(updateCalls.installs, callsBefore.installs + 1)

@@ -21,7 +21,7 @@ export const LaunchCommandPreview: React.FC<LaunchCommandPreviewProps> = ({
   return (
     <div className="bg-app-primary border border-app rounded p-3 group">
       <p className="text-[0.625rem] uppercase tracking-widest text-app-muted font-mono font-bold mb-0.5 opacity-60">
-        {t('install.preview.launchPreview', 'Launch Preview')}
+        {t('common.labels.launchPreview', 'Launch Preview')}
       </p>
       <div className="flex items-start gap-2">
         <code className="text-xs text-app-muted font-mono break-all opacity-70 flex-1 min-w-0">

@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import ts from 'typescript'
 import en from './locales/desktop/en.json'
+import sharedMessages from '../../../../../tools/i18n/shared-key-migration.json'
 
 // Scan every marked renderer message so new screens cannot bypass catalog validation.
 const RENDERER_ROOT = path.resolve(__dirname, '../..')
@@ -21,6 +22,20 @@ function literal(node: ts.Node | undefined): string | undefined {
 }
 
 describe('English source catalog', () => {
+  it('reuses the audited shared vocabulary and keeps documented context exceptions', () => {
+    const source: Record<string, string> = en
+    for (const group of sharedMessages) {
+      expect(source[group.key], group.key).toBe(group.defaultValue)
+      for (const retired of group.sources) expect(source, retired).not.toHaveProperty(retired)
+      const matches = Object.entries(source)
+        .filter(([, value]) => value === group.defaultValue)
+        .map(([key]) => key)
+        .sort()
+      expect(matches, `Reuse ${group.key} or document a distinct meaning`).toEqual(
+        [group.key, ...group.separateKeys].sort()
+      )
+    }
+  })
   it('matches every marked message, including messages outside hooks', () => {
     const messages = new Map<string, string>()
     const record = (key: string, value: string): void => {

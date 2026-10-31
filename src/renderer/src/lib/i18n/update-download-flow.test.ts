@@ -144,7 +144,7 @@ describe('update/download localisation boundaries', () => {
     expect(progress).toContain(
       new Intl.NumberFormat('da-DK', { style: 'percent', maximumFractionDigits: 0 }).format(0.425)
     )
-    expect(progress).toContain(da['downloads.cancel'])
+    expect(progress).toContain(da['common.actions.cancel'])
     expect(progress).toContain('IDKFA.pk3')
     const error = render({ state: 'error', id: 'x', message: '<script>raw diagnostic</script>' })
     expect(error).toContain('&lt;script&gt;raw diagnostic&lt;/script&gt;')

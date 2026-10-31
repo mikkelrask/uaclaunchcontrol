@@ -63,7 +63,7 @@ export function useRequiredModsActions(
         properties: ['openFile'],
         filters: [
           {
-            name: t('catalog.required.doomFiles', 'DOOM Files'),
+            name: t('common.files.doomFiles', 'DOOM Files'),
             extensions: ['wad', 'pk3', 'pk7', 'ipk3', 'deh', 'bex', 'zip']
           }
         ]

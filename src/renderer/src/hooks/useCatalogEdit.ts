@@ -276,11 +276,11 @@ export function useCatalogEdit({
 
     try {
       const result = await api.showOpenDialog({
-        title: t('catalog.editFlow.selectConfigFile', 'Select Config File'),
+        title: t('common.dialogs.selectConfigFile', 'Select Config File'),
         properties: ['openFile'],
         filters: [
           {
-            name: t('catalog.editFlow.configFiles', 'Config files'),
+            name: t('common.files.configFiles', 'Config files'),
             extensions: ['cfg', 'ini', 'conf']
           }
         ]

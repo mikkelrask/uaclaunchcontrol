@@ -36,9 +36,9 @@ export const NotificationsPopover: React.FC<NotificationsPopoverProps> = ({ chil
   const tolgee = useTolgee(['language'])
   const locale = tolgee.getLanguage() ?? 'en'
   const actionLabels: Record<NotificationAction['kind'], string> = {
-    'view-crash-log': t('notifications.action.viewLog', 'View Log'),
-    'view-update': t('notifications.action.viewUpdate', 'View Update'),
-    'restart-update': t('notifications.action.restart', 'Restart Now')
+    'view-crash-log': t('common.actions.viewLog', 'View Log'),
+    'view-update': t('common.actions.viewUpdate', 'View Update'),
+    'restart-update': t('common.actions.restartNow', 'Restart Now')
   }
   const [open, setOpen] = useState(false)
   const { notifications, unreadCount } = useNotifications()
@@ -64,7 +64,7 @@ export const NotificationsPopover: React.FC<NotificationsPopoverProps> = ({ chil
           </div>
           <div>
             <h4 className="text-lg font-bold tracking-tight text-app-primary lowercase">
-              {t('notifications.title', 'Notifications')}
+              {t('common.labels.notifications', 'Notifications')}
             </h4>
             <p className="text-[0.625rem] font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
               {t('notifications.subtitle', 'UAC Launch Control // Notifications')}

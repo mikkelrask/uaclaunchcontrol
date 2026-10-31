@@ -29,7 +29,7 @@ export function getUpdateNotice(data: IUpdateInfo): UpdateNotice | null {
         ),
         historyAction: { kind: 'view-update' },
         actionLabel: t('updates.action.view', 'View'),
-        actionAltText: t('updates.action.viewUpdate', 'View Update')
+        actionAltText: t('common.actions.viewUpdate', 'View Update')
       }
     case 'not-available':
       return data.isManual
@@ -51,7 +51,7 @@ export function getUpdateNotice(data: IUpdateInfo): UpdateNotice | null {
         ),
         historyAction: { kind: 'restart-update' },
         actionLabel: t('updates.action.restart', 'Restart'),
-        actionAltText: t('updates.action.restartNow', 'Restart Now')
+        actionAltText: t('common.actions.restartNow', 'Restart Now')
       }
     case 'error':
       return {

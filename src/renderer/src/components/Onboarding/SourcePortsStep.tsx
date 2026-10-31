@@ -28,7 +28,7 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
           {t('onboarding.sourcePorts.terminal', 'UAC-7 // Runtime Engine')}
         </span>
         <h2 className="text-2xl font-bold tracking-tight text-app-primary">
-          {t('sourcePorts.title', 'Source Ports')}
+          {t('common.labels.sourcePorts', 'Source Ports')}
         </h2>
         <p className="text-sm text-app-secondary max-w-lg mx-auto">
           <T
@@ -81,7 +81,7 @@ export const SourcePortsStep: React.FC<SourcePortsStepProps> = ({
           onClick={onNext}
           className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
         >
-          {t('onboarding.next', 'Next')}
+          {t('common.actions.next', 'Next')}
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>

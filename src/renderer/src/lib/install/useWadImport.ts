@@ -112,7 +112,7 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
     const result = await api.showOpenDialog({
       title: t('install.wadImport.selectWadFile', 'Select WAD File'),
       properties: ['openFile'],
-      filters: [{ name: t('install.wadImport.wadFiles', 'WAD Files'), extensions: ['wad'] }],
+      filters: [{ name: t('common.files.wadFiles', 'WAD Files'), extensions: ['wad'] }],
       defaultPath: settings?.wadFilesDirectory || undefined
     })
 

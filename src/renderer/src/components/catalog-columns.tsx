@@ -58,7 +58,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<
     {
       accessorKey: 'name',
       header: ({ column }) => (
-        <SortableHeader column={column} title={t('catalog.columns.name', 'Name')} />
+        <SortableHeader column={column} title={t('common.labels.name', 'Name')} />
       ),
       cell: ({ row }) => {
         const file = row.original
@@ -81,7 +81,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<
     {
       accessorKey: 'version',
       header: ({ column }) => (
-        <SortableHeader column={column} title={t('catalog.columns.version', 'Version')} />
+        <SortableHeader column={column} title={t('common.labels.version', 'Version')} />
       ),
       cell: ({ row }) => <span className="text-app-muted">{row.original.version || '–'}</span>,
       size: 100
@@ -89,7 +89,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<
     {
       accessorKey: 'fileType',
       header: ({ column }) => (
-        <SortableHeader column={column} title={t('catalog.columns.type', 'Type')} />
+        <SortableHeader column={column} title={t('common.labels.fileType', 'Type')} />
       ),
       cell: ({ row }) => (
         <span className="px-2 py-1 bg-app-primary rounded text-xs">{row.original.fileType}</span>
@@ -103,7 +103,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<
     {
       accessorKey: 'category',
       header: ({ column }) => (
-        <SortableHeader column={column} title={t('catalog.columns.category', 'Category')} />
+        <SortableHeader column={column} title={t('common.labels.category', 'Category')} />
       ),
       cell: ({ row }) => {
         const cat = row.original.category
@@ -118,7 +118,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<
     },
     {
       id: 'config',
-      header: t('catalog.columns.config', 'Config'),
+      header: t('common.labels.config', 'Config'),
       cell: ({ row }) => {
         const file = row.original
         if (!file.configTemplate) {
@@ -143,7 +143,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<
     },
     {
       id: 'dependencies',
-      header: t('catalog.columns.loadOrder', 'Load Order'),
+      header: t('common.labels.loadOrder', 'Load Order'),
       cell: ({ row }) => {
         const file = row.original
         if (!file.loadOrder || Object.keys(file.loadOrder).length === 0) {
@@ -168,7 +168,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<
     },
     {
       accessorKey: 'hashValue',
-      header: t('catalog.columns.md5Checksum', 'MD5 Checksum'),
+      header: t('common.labels.md5Checksum', 'MD5 Checksum'),
       cell: ({ row }) => {
         const hash = row.original.hashValue
         if (!hash) return <span className="text-app-muted">–</span>
@@ -183,7 +183,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<
     },
     {
       id: 'actions',
-      header: () => <span className="sr-only">{t('catalog.columns.actions', 'Actions')}</span>,
+      header: () => <span className="sr-only">{t('common.labels.actions', 'Actions')}</span>,
       cell: ({ row }) => {
         const file = row.original
         return (
@@ -213,7 +213,7 @@ export function getCatalogColumns(callbacks: CatalogColumnCallbacks): ColumnDef<
               size="sm"
               onClick={() => onDelete(file)}
               className="text-red-500 hover:text-red-700 hover:bg-transparent p-1 h-8 w-8"
-              title={t('catalog.columns.delete', 'Delete')}
+              title={t('common.actions.delete', 'Delete')}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

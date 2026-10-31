@@ -10,7 +10,7 @@ unchanged. This is the first desktop pilot, not the completion of issue #78.
 The settings dialog (General, Paths, WAD configuration and custom-theme help),
 source-port management/downloads, keyboard shortcuts, header/navigation/drawer,
 sidebar loading/accessibility text, complete guided setup, and the library and
-installation flows now use **784 English source keys in this branch**. The fourth batch adds 390
+installation flows now use **696 English source keys in this branch**. The fourth batch adds 390
 messages covering all three library views, protocol settings/delete/discard dialogs,
 installation/configuration/WAD tabs, archive/JSON/batch imports, the shared mod
 catalog, file selectors, validation, status descriptions and shared controls.
@@ -161,6 +161,37 @@ batch using a temporary `{namespace}/{languageTag}.json` file template and
 messages this branch does not yet use. Review language catalogs against the current
 branch's English keys before copying an export into the application.
 
+## Shared controls and labels
+
+The desktop now uses 55 audited shared messages for 143 former screen-specific
+keys, reducing the source catalog by 88 keys. Reuse `common.actions.cancel`,
+`common.actions.delete`, `common.actions.close`, `common.actions.saveChanges` and
+the existing `common.labels`, `common.views`, `common.files`, `common.dialogs`,
+`common.placeholders`, `common.status`, `common.pagination` and `common.dragDrop`
+messages for the same complete UI meaning. The audited groups and their context
+are recorded in `tools/i18n/shared-key-migration.json`; the source-catalog test
+prevents those meanings acquiring duplicate keys again, with explicit exceptions
+for different contexts.
+
+Identical English is a candidate, not proof of interchangeable meaning. The
+navigation tab named LAUNCH stays separate from the command that launches a game;
+achievement and rank titles stay independent. Source-port family Other remains
+separate from mod-category Other. Downloading and Download failed still have
+separate messages because their existing Danish variants differ. Complete error
+sentences and domain-specific explanations retain contextual keys. Never assemble
+sentences or object-specific commands by concatenating shared words.
+
+Tolgee consolidation renames one existing key in each group, preserving its key
+ID, translation IDs, review state and history. The shared description records all
+former keys and the intended meaning. Only the audited redundant copies are moved
+to Tolgee trash after checking for translation conflicts, new comments and other
+translator context. A full affected-key data backup is kept in the ignored
+`.i18n-backups/` directory before any change; Tolgee trash has a seven-day recovery
+window. This is an explicit migration allowlist, not permission to delete all
+remote keys absent from this branch. Other branches' entries remain untouched.
+The existing English edit Display name is retained for the four equivalent mod-name
+placeholders; existing Danish wording is reused rather than regenerated.
+
 ## Adding messages
 
 Use stable semantic keys with complete English defaults, e.g.
@@ -238,7 +269,7 @@ loading in all three languages under file:// with no external requests/CSP error
 and no API key or Tolgee editing-tools chunk in the renderer output. Unit tests
 cover saved settings round trips, invalid preferences, browser language detection,
 fallback, ICU/plural validation and escaping, and React line-break placeholders.
-273 tests pass; the existing dependency-audit test fails as described above. Windows
+274 tests pass; the existing dependency-audit test fails as described above. Windows
 and macOS packaging and a full translated layout pass remain follow-up QA.
 
 The third batch also validates a completion sentence with independent source-port

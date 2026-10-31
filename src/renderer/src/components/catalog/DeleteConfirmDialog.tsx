@@ -53,10 +53,10 @@ export function DeleteConfirmDialog({
         </label>
         <DialogFooter>
           <Button variant="ghost" onClick={onCancel}>
-            {t('catalog.delete.cancel', 'Cancel')}
+            {t('common.actions.cancel', 'Cancel')}
           </Button>
           <Button variant="destructive" onClick={onConfirm}>
-            {t('catalog.delete.delete', 'Delete')}
+            {t('common.actions.delete', 'Delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -20,5 +20,8 @@ Thumbs.db
 .env.*
 !.env.example
 
+# Local translation migration backups
+.i18n-backups/
+
 # Local code graphs
 graphify-out/

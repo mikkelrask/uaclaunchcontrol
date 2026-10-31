@@ -42,14 +42,14 @@ describe('library/install localisation boundaries', () => {
       'da-DK:desktop': {
         ...da,
         'catalog.category.weapon': 'fixture category',
-        'catalog.columnLabel.fileType': 'fixture column'
+        'common.labels.fileType': 'fixture column'
       }
     })
     await i18n.changeLanguage('da-DK')
     expect(getCategoryLabel('weapon')).toBe('fixture category')
     expect(getCatalogColumnLabel('fileType')).toBe('fixture column')
-    expect(getCatalogColumnLabel('config')).toBe('Config')
-    expect(getCatalogColumnLabel('dependencies')).toBe('Load Order')
+    expect(getCatalogColumnLabel('config')).toBe(da['common.labels.config'])
+    expect(getCatalogColumnLabel('dependencies')).toBe(da['common.labels.loadOrder'])
     expect(getCategoryLabel('My_Custom_Tag')).toBe('My_Custom_Tag')
     expect(getCatalogColumnLabel('customField')).toBe('customField')
     expect(JSON.stringify(CATEGORIES)).toBe(before)

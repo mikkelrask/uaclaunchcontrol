@@ -138,7 +138,7 @@ export const RegistryStep: React.FC<RegistryStepProps> = ({
           onClick={onNext}
           className="bg-accent-highlight text-white hover:bg-accent-highlight/90 gap-1 px-6"
         >
-          {t('onboarding.next', 'Next')}
+          {t('common.actions.next', 'Next')}
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>

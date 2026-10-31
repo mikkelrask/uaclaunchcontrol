@@ -78,7 +78,7 @@ export function ModFileFormFields<T extends ModFileFormFieldsState>({
   return (
     <>
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-name`}>{t('catalog.fields.name', 'Name')}</Label>
+        <Label htmlFor={`${idPrefix}-name`}>{t('common.labels.name', 'Name')}</Label>
         <Input
           id={`${idPrefix}-name`}
           value={form.name}
@@ -89,7 +89,7 @@ export function ModFileFormFields<T extends ModFileFormFieldsState>({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-version`}>{t('catalog.fields.version', 'Version')}</Label>
+        <Label htmlFor={`${idPrefix}-version`}>{t('common.labels.version', 'Version')}</Label>
         <Input
           id={`${idPrefix}-version`}
           value={form.version}
@@ -111,13 +111,13 @@ export function ModFileFormFields<T extends ModFileFormFieldsState>({
       </div>
 
       <div className="space-y-2">
-        <Label>{t('catalog.fields.category', 'Category')}</Label>
+        <Label>{t('common.labels.category', 'Category')}</Label>
         <Select
           value={form.category}
           onValueChange={(val) => setForm((prev) => ({ ...prev, category: val }))}
         >
           <SelectTrigger className="bg-app-secondary border-app">
-            <SelectValue placeholder={t('catalog.fields.uncategorized', 'Uncategorized')} />
+            <SelectValue placeholder={t('common.labels.uncategorized', 'Uncategorized')} />
           </SelectTrigger>
           <SelectContent>
             {CATEGORIES.map((cat) => (

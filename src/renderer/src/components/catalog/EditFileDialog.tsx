@@ -92,11 +92,11 @@ export function EditFileDialog({
             onClick={() => onOpenChange(false)}
             className="bg-app-secondary"
           >
-            {t('catalog.edit.cancel', 'Cancel')}
+            {t('common.actions.cancel', 'Cancel')}
           </Button>
           <Button onClick={onSaveEdit} className="bg-accent-highlight">
             <Check className="h-4 w-4 mr-1" />
-            {t('catalog.edit.saveChanges', 'Save Changes')}
+            {t('common.actions.saveChanges', 'Save Changes')}
           </Button>
         </DialogFooter>
       </DialogContent>

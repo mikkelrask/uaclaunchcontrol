@@ -212,7 +212,7 @@ export function getAchievementStatLabel(stat: string): string {
     totalProtocolsLaunched: t('achievements.stats.totalProtocolsLaunched', 'Protocols Launched'),
     totalModFilesAdded: t('achievements.stats.totalModFilesAdded', 'Mod Files Added'),
     totalWadsImported: t('achievements.stats.totalWadsImported', 'WADs Imported'),
-    totalPlaytimeSeconds: t('achievements.stats.totalPlaytimeSeconds', 'Playtime'),
+    totalPlaytimeSeconds: t('common.labels.playtime', 'Playtime'),
     totalCatalogFilesManaged: t('achievements.stats.totalCatalogFilesManaged', 'Files Cataloged'),
     protocolsLaunchedThisSession: t(
       'achievements.stats.protocolsLaunchedThisSession',

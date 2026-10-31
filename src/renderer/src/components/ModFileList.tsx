@@ -98,7 +98,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
               {showPlaceholderBefore && (
                 <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
                   <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
-                    {t('install.files.dropHere', 'drop here')}
+                    {t('common.dragDrop.dropHere', 'drop here')}
                   </span>
                 </div>
               )}
@@ -117,7 +117,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                     onDragEnd={handleDragEnd}
                     className="shrink-0 cursor-grab active:cursor-grabbing text-app-muted opacity-40 group-hover:opacity-100 transition-opacity"
                     tabIndex={-1}
-                    aria-label={t('install.files.reorder', 'Reorder')}
+                    aria-label={t('common.actions.reorder', 'Reorder')}
                   >
                     <GripVertical className="h-4 w-4" />
                   </button>
@@ -130,7 +130,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
                   </span>
                   {!file.filePath && (
                     <span className="text-xs bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded">
-                      {t('install.files.missing', 'missing')}
+                      {t('common.files.missing', 'missing')}
                     </span>
                   )}
                   {file.url && (
@@ -170,7 +170,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
       {insertionIndex === files.length && draggedIndex !== files.length - 1 && (
         <div className="h-8 mb-2 border-2 border-dashed border-accent-highlight/30 rounded-md flex items-center justify-center bg-accent-highlight/5 animate-in fade-in zoom-in-95 duration-200">
           <span className="text-accent-highlight text-[10px] tracking-widest uppercase opacity-60">
-            {t('install.files.newPlacement', 'new placement')}
+            {t('common.dragDrop.newPlacement', 'new placement')}
           </span>
         </div>
       )}
@@ -275,7 +275,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
           options={selectableFiles.map((f) => ({
             value: f.id?.toString() || '',
             label:
-              (f.name || f.fileName || t('install.files.unnamed', 'Unnamed')) +
+              (f.name || f.fileName || t('common.labels.unnamed', 'Unnamed')) +
               (f.version ? ` (${f.version})` : '')
           }))}
           placeholder={t('install.files.selectFromCatalog', 'Select from catalog...')}
