@@ -10,7 +10,7 @@ unchanged. This is the first desktop pilot, not the completion of issue #78.
 The settings dialog (General, Paths, WAD configuration and custom-theme help),
 source-port management/downloads, keyboard shortcuts, header/navigation/drawer,
 sidebar loading/accessibility text, complete guided setup, and the library and
-installation flows now use **764 English source keys in this branch**. The fourth batch adds 390
+installation flows now use **777 English source keys in this branch**. The fourth batch adds 390
 messages covering all three library views, protocol settings/delete/discard dialogs,
 installation/configuration/WAD tabs, archive/JSON/batch imports, the shared mod
 catalog, file selectors, validation, status descriptions and shared controls.
@@ -46,24 +46,44 @@ Danish catalog now has 318 entries. Engine-log matching patterns, raw console
 snapshots and copied log text remain unchanged; the crash dialog and notification
 resolve their presentation in the active language.
 
+The eighth batch adds 13 English keys and 13 Danish drafts for the remaining
+90 diagnostic toast headings, renderer-owned API error fallbacks, notification
+accessibility text and game-icon descriptions. Shared heading templates preserve
+diagnostic tokens such as `archive_scan_failed` and `settings.save()` unchanged.
+Game/episode titles and native picker payloads remain canonical. The local Danish
+catalog now contains 331 entries. The additive Tolgee upload retains all previous
+translations and key metadata; the shared desktop namespace has 874 English keys,
+including keys from another branch.
+
+A final source audit reviewed JSX text, accessible labels, placeholders, dialog
+options, toast messages and renderer-created errors, including short labels and
+icons. No further ordinary hardcoded desktop UI text was found. Remaining literals
+are proper names/autonyms, format names and units, command examples, raw server or
+engine diagnostics, logging/developer errors and legacy history matching. The old
+English date/playtime helpers in `lib/utils.ts` and sidecar explanation constant
+have no callers; active screens use the translated replacements. This is source
+coverage, not translation completeness or a guarantee that no runtime edge case
+remains. The public/embedded registry, startup language choice and release QA are
+still pending.
+
 Source-port scan counts use ICU plurals; custom-theme instructions use named React
 placeholders so translators can move complete code examples and links without
 changing their contents. Download dates and sizes follow the selected UI locale.
 Native file-picker filter labels are marked; paths, source-port family values,
 executable names, commands, CSS examples and shortcut bindings remain unchanged.
 
-Remaining notifications and native dialogs, and the public/embedded registry still
-need migration. The app does
-not yet pass its language to the registry iframe. Registry descriptions are separate
+The public/embedded registry still needs migration. Native picker titles and filter
+labels supplied by the renderer are marked; OS-owned picker chrome follows the
+platform. The app does not yet pass its language to the registry iframe. Registry descriptions are separate
 database content, as described in #78.
 
-Achievement/rank/update toasts now carry stable `historyKind` metadata through the toast
+Achievement/rank/update/warning toasts now carry stable `historyKind` metadata through the toast
 adapter. Notification history uses this metadata to record their translated titles,
 while retaining legacy English-title matching for older/unmigrated callers. Existing
 saved history and replay actions are kept as rendered snapshots; switching languages
-does not rewrite old entries. Other diagnostic toast titles are unchanged. Migrated
-error toasts retain their original variants and history eligibility. Decouple the
-remaining warning callers from English titles before migrating those titles.
+does not rewrite old entries. Diagnostic headings resolve their language when the event occurs; diagnostic codes
+are not translated. Error and routine toasts retain their original variants and
+history eligibility. Warning callers use explicit metadata rather than English headings.
 
 ## Language behaviour
 
@@ -155,7 +175,7 @@ screen requires reviewing and replacing its text, accessibility labels and state
 Keep mod names, user content, IDs, hashes, paths, source-port slugs, CLI arguments,
 URLs and import/export fields unchanged. Achievement/rank display text lives in `lib/achievements/messages.ts` and resolves
 at display time. Add matching entries there when adding achievement definitions.
-Remaining crash text must also resolve at display time when it is migrated. Do not translate crash-log matching expressions.
+Crash text also resolves at display time. Do not translate crash-log matching expressions.
 
 ## Short glossary and voice
 
@@ -175,7 +195,7 @@ Remaining crash text must also resolve at display time when it is migrated. Do n
 ## Remaining pilot checks
 
 A full registry detail-page pilot, in-context browser translator preview and a
-complete screen/layout migration remain separate steps. No editing tools or
+complete translated layout review remain separate steps. No editing tools or
 credentials are shipped in this foundation. Use the Tolgee platform editor and
 reviewed local exports as the initial translator workflow.
 
@@ -207,7 +227,7 @@ loading in all three languages under file:// with no external requests/CSP error
 and no API key or Tolgee editing-tools chunk in the renderer output. Unit tests
 cover saved settings round trips, invalid preferences, browser language detection,
 fallback, ICU/plural validation and escaping, and React line-break placeholders.
-263 tests pass; the existing dependency-audit test fails as described above. Windows
+268 tests pass; the existing dependency-audit test fails as described above. Windows
 and macOS packaging and a full translated layout pass remain follow-up QA.
 
 The third batch also validates a completion sentence with independent source-port
@@ -243,3 +263,10 @@ language changes at display time, preserved protocol/exit/log data, escaped raw
 error details, the critical fallback without React translation context, and caller
 accessibility overrides on pagination. The About/missing-page text is user-facing;
 raw engine diagnostics and game/product names remain original data.
+
+The eighth batch verifies language changes for diagnostic severities, untranslated
+server error details and canonical API paths, warning history through the real toast
+adapter, unchanged game titles/custom icon paths, and notification accessibility
+labels with Radix hotkeys and caller overrides. The Electron fixture triggers an
+actual catalog validation warning and verifies its translated heading/history,
+notification region and close button in all three languages.

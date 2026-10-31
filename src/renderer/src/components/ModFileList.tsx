@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { useTranslate } from '@tolgee/react'
 import React, { Fragment, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -252,7 +253,7 @@ export const ModFileList: React.FC<ModFileListProps> = ({ files, onChange }) => 
 
                 if (skippedDupes) {
                   toast({
-                    title: 'SYSTEM: dupe_skipped',
+                    title: getDiagnosticTitle('system', 'dupe_skipped'),
                     description:
                       updatedFiles.length === files.length
                         ? t(

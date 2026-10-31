@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { getTranslate } from '@/lib/i18n'
 import { useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
@@ -154,7 +155,8 @@ export function useCatalogEdit({
 
     if (!selectedFile || !editForm.name.trim()) {
       toast({
-        title: 'WARNING: name_required',
+        title: getDiagnosticTitle('warning', 'name_required'),
+        historyKind: 'warning',
         description: t('catalog.editFlow.nameCannotBeEmpty', 'Name cannot be empty'),
         variant: 'destructive'
       })
@@ -176,7 +178,7 @@ export function useCatalogEdit({
       )
       if (selfRefCheck) {
         toast({
-          title: 'SYSTEM: circular_ref',
+          title: getDiagnosticTitle('system', 'circular_ref'),
           description: t('catalog.editFlow.aModCannotRequireItself', 'A mod cannot require itself'),
           variant: 'destructive'
         })
@@ -242,7 +244,7 @@ export function useCatalogEdit({
       }
 
       toast({
-        title: 'SYSTEM: save_success',
+        title: getDiagnosticTitle('system', 'save_success'),
         description: t('catalog.editFlow.updatedInfo', 'Updated info: "{name}"', {
           name: String(editForm.name)
         })
@@ -260,7 +262,7 @@ export function useCatalogEdit({
       setSelectedFile(null)
     } catch (error: unknown) {
       toast({
-        title: 'FATAL: update_failed',
+        title: getDiagnosticTitle('fatal', 'update_failed'),
         description: t('catalog.editFlow.failedToUpdate', 'Failed to update: {error}', {
           error: String(error)
         }),
@@ -296,7 +298,7 @@ export function useCatalogEdit({
           }
         }))
         toast({
-          title: 'SYSTEM: config_linked',
+          title: getDiagnosticTitle('system', 'config_linked'),
           description: t(
             'catalog.editFlow.configTemplateLinked',
             'Config template linked: {name}',
@@ -307,7 +309,7 @@ export function useCatalogEdit({
     } catch (error: unknown) {
       log.error('Failed to browse config file:', error)
       toast({
-        title: 'FATAL: config_link_failed',
+        title: getDiagnosticTitle('fatal', 'config_link_failed'),
         description: t(
           'catalog.editFlow.failedToLinkConfigFile',
           'Failed to link config file: {error}',

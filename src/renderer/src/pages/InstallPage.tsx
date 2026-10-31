@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { T, useTranslate } from '@tolgee/react'
 import { getTranslate } from '@/lib/i18n'
 import React, { useState, useEffect, useMemo } from 'react'
@@ -171,7 +172,7 @@ export const InstallPage: React.FC = () => {
     })
       .then(async () => {
         toast({
-          title: 'SYSTEM: registry_import',
+          title: getDiagnosticTitle('system', 'registry_import'),
           description: t(
             'install.page.importedFromTheRegistryReviewThenCreate',
             'Imported "{title}" from the registry — review, then create.',
@@ -196,7 +197,7 @@ export const InstallPage: React.FC = () => {
       .catch((err: unknown) => {
         log.error('Failed to apply registry import:', err)
         toast({
-          title: 'FATAL: registry_import_failed',
+          title: getDiagnosticTitle('fatal', 'registry_import_failed'),
           description: t(
             'install.page.failedToApplyTheRegistryProtocol',
             'Failed to apply the registry protocol.'
@@ -244,7 +245,7 @@ export const InstallPage: React.FC = () => {
     }) => api.createProtocol(data.protocol, data.files),
     onSuccess: async () => {
       toast({
-        title: 'SYSTEM: params_accepted',
+        title: getDiagnosticTitle('system', 'params_accepted'),
         description: t(
           'install.page.successfullyAddedNewLaunchConfiguration',
           'Successfully added new launch configuration.'
@@ -286,7 +287,7 @@ export const InstallPage: React.FC = () => {
     },
     onError: (error) => {
       toast({
-        title: 'FATAL: install_failed',
+        title: getDiagnosticTitle('fatal', 'install_failed'),
         description: t('install.page.failedToInstallMod', 'Failed to install mod: {error}', {
           error: String(error)
         }),
@@ -471,7 +472,7 @@ export const InstallPage: React.FC = () => {
         protocol.protocolConfig = { configFile: result.configFile }
       } catch (error: unknown) {
         toast({
-          title: 'FATAL: config_create_failed',
+          title: getDiagnosticTitle('fatal', 'config_create_failed'),
           description: t(
             'install.page.failedToCreateIsolatedConfig',
             'Failed to create isolated config: {error}',
@@ -489,7 +490,7 @@ export const InstallPage: React.FC = () => {
         )
         protocol.protocolConfig = protocolConfig
         toast({
-          title: 'SYSTEM: config_seeded',
+          title: getDiagnosticTitle('system', 'config_seeded'),
           description: t('install.page.seededConfigFrom', 'Seeded config from "{name}"', {
             name: String(templateFile.name || templateFile.fileName || 'unknown')
           })

@@ -316,5 +316,18 @@
   "crash.signalToast": "Spilprocessen blev afsluttet af et signal efter {seconds, number} s spilletid.",
   "crash.exitToast": "Spilprocessen blev afsluttet med afslutningskode {code, number} efter {seconds, number} s spilletid.",
   "notFound.title": "404 Siden blev ikke fundet",
-  "notFound.description": "Vi kunne ikke finde den side, du bad om."
+  "notFound.description": "Vi kunne ikke finde den side, du bad om.",
+  "api.error.status": "API-fejl: {status}",
+  "api.error.deleteVersion": "Kunne ikke slette versionen: {status}",
+  "notifications.status.warning": "Advarsel!",
+  "notifications.status.system": "SYSTEM: {code}",
+  "notifications.status.caution": "ADVARSEL: {code}",
+  "notifications.status.fatal": "KRITISK: {code}",
+  "ui.toast.notification": "Meddelelse",
+  "ui.toast.viewport": "Meddelelser ({hotkey})",
+  "ui.toast.close": "Luk meddelelse",
+  "icons.game": "{game}-ikon",
+  "icons.defaultWad": "Standardikon til WAD",
+  "icons.customWad": "Brugerdefineret WAD-ikon",
+  "icons.launcher": "Doom-launcher"
 }

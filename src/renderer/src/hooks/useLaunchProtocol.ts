@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { useTranslate } from '@tolgee/react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api'
@@ -30,7 +31,7 @@ export function useLaunchProtocol(protocol: IProtocol): {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/protocols'] })
       toast({
-        title: 'SYSTEM: launch_protocol',
+        title: getDiagnosticTitle('system', 'launch_protocol'),
         description: t('library.launch.launched', '{title} launched.', {
           title: String(protocol.title)
         })
@@ -56,7 +57,7 @@ export function useLaunchProtocol(protocol: IProtocol): {
     },
     onError: (error) => {
       toast({
-        title: 'FATAL: launch_failed',
+        title: getDiagnosticTitle('fatal', 'launch_failed'),
         description: t('library.launch.couldNotLaunch', 'Could not launch {title}: {error}', {
           title: String(protocol.title),
           error: String(error)

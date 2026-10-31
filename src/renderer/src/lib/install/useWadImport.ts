@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { useTranslate } from '@tolgee/react'
 import { getTranslate } from '@/lib/i18n'
 import { useState, useCallback } from 'react'
@@ -30,7 +31,12 @@ export interface WadImportHandlers {
 }
 
 interface ToastLike {
-  (opts: { title: string; description: string; variant?: 'destructive' }): void
+  (opts: {
+    title: string
+    description: string
+    variant?: 'destructive'
+    historyKind?: NotificationKind
+  }): void
   (opts: {
     title: string
     description: string
@@ -59,7 +65,8 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
 
       if (!fileName.toLowerCase().endsWith('.wad')) {
         toast({
-          title: 'WARNING: invalid_file',
+          title: getDiagnosticTitle('warning', 'invalid_file'),
+          historyKind: 'warning',
           description: t(
             'install.wadImport.notAUacSupportedFileWad',
             'Not a UAC supported file (.wad)'
@@ -84,7 +91,7 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
         })
       } catch (error: unknown) {
         toast({
-          title: 'FATAL: err_139',
+          title: getDiagnosticTitle('fatal', 'err_139'),
           description: t(
             'install.wadImport.failedToPrepareWadImport',
             'Failed to prepare WAD import: {error}',
@@ -118,7 +125,9 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
     mutationFn: (sourcePath: string) => api.importWadFile(sourcePath),
     onSuccess: (result) => {
       toast({
-        title: result.alreadyExists ? 'SYSTEM: wad_exists' : 'SYSTEM: wad_imported',
+        title: result.alreadyExists
+          ? getDiagnosticTitle('system', 'wad_exists')
+          : getDiagnosticTitle('system', 'wad_imported'),
         description: result.alreadyExists
           ? t(
               'install.wadImport.isAlreadyInYourWadLibraryYouCanMake',
@@ -158,7 +167,7 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
     },
     onError: (error) => {
       toast({
-        title: 'FATAL: err_482',
+        title: getDiagnosticTitle('fatal', 'err_482'),
         description: t('install.wadImport.failedToImportWad', 'Failed to import WAD: {error}', {
           error: String(error)
         }),

@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { getTranslate } from '@/lib/i18n'
 // Shared "apply a uac-modpack JSON to the install form" logic — used both by
 // the install page's JSON drop (useJsonDrop) and by the registry handoff
@@ -153,7 +154,7 @@ export async function applyModpackImport(
     }
     if (entries.length > 0) {
       toast({
-        title: 'SYSTEM: configs_imported',
+        title: getDiagnosticTitle('system', 'configs_imported'),
         description: t(
           'install.modpack.configsWritten',
           '{count, plural, one {# config file written.} other {# config files written.}}',
@@ -196,7 +197,7 @@ export async function applyModpackImport(
       // that).
       log.warn('Failed to import screenshot:', err)
       toast({
-        title: 'SYSTEM: screenshot_import_failed',
+        title: getDiagnosticTitle('system', 'screenshot_import_failed'),
         description: t(
           'install.modpack.screenshotCouldNotBeSaved',
           'Screenshot could not be saved: {error}',
@@ -219,7 +220,7 @@ export async function applyModpackImport(
     // Never leave the form sitting on an unrelated default: the launch would
     // quietly use the wrong IWAD.
     toast({
-      title: 'SYSTEM: base_wad_unmatched',
+      title: getDiagnosticTitle('system', 'base_wad_unmatched'),
       description: t(
         'install.modpack.noLocalWadMatchesPickTheBaseWadBy',
         'No local WAD matches "{doomVersionSlug}" — pick the base WAD by hand.',
@@ -241,7 +242,7 @@ export async function applyModpackImport(
 
   if (missingCount > 0) {
     toast({
-      title: 'SYSTEM: failed_successfully',
+      title: getDiagnosticTitle('system', 'failed_successfully'),
       description: t(
         'install.modpack.filesMatchedMissingShownInRed',
         '{matchedCount, plural, one {# file matched, {missingCount, number} missing (shown in red)} other {# files matched, {missingCount, number} missing (shown in red)}}',
@@ -250,7 +251,7 @@ export async function applyModpackImport(
     })
   } else {
     toast({
-      title: 'SYSTEM: import_success',
+      title: getDiagnosticTitle('system', 'import_success'),
       description: t('install.modpack.allFilesMatchedFromCatalog', 'All files matched from catalog')
     })
   }

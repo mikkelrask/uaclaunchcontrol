@@ -19,7 +19,7 @@ export type NotificationAction =
   | { kind: 'view-update' }
   | { kind: 'restart-update' }
 
-export type NotificationKind = 'achievement' | 'rank' | 'update'
+export type NotificationKind = 'achievement' | 'rank' | 'update' | 'warning'
 
 export interface INotification {
   kind?: NotificationKind
@@ -70,7 +70,8 @@ function shouldRecord(
   variant: 'default' | 'destructive',
   kind?: NotificationKind
 ): boolean {
-  if (kind === 'achievement' || kind === 'rank' || kind === 'update') return true
+  if (kind === 'achievement' || kind === 'rank' || kind === 'update' || kind === 'warning')
+    return true
   if (variant === 'destructive') return true
   if (title.startsWith('WARNING:')) return true
   if (title.endsWith('" Unlocked!') || title === 'RANK ADVANCEMENT') return true

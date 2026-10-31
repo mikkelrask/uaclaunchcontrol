@@ -1,3 +1,4 @@
+import { getTranslate } from '@/lib/i18n'
 import {
   IModFile,
   IProtocol,
@@ -129,7 +130,8 @@ export interface SaveDialogReturn {
 async function handleApiResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get('content-type')
   if (!response.ok) {
-    let errorMessage = `API error: ${response.status}`
+    const { t } = getTranslate('desktop')
+    let errorMessage = t('api.error.status', 'API error: {status}', { status: response.status })
     try {
       if (contentType && contentType.includes('application/json')) {
         const errorData = await response.json()
@@ -475,7 +477,12 @@ export const api = {
   deleteDoomVersion: async (id: string): Promise<void> => {
     const response = await fetch(`${API_BASE}/api/versions/${id}`, { method: 'DELETE' })
     if (!response.ok) {
-      throw new Error(`Failed to delete version: ${response.status}`)
+      const { t } = getTranslate('desktop')
+      throw new Error(
+        t('api.error.deleteVersion', 'Failed to delete version: {status}', {
+          status: response.status
+        })
+      )
     }
   },
 

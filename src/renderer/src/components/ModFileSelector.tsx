@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { useTranslate } from '@tolgee/react'
 import { getTranslate } from '@/lib/i18n'
 import { Fragment, useEffect } from 'react'
@@ -229,7 +230,7 @@ export function ModFileSelector({
 
     if (deduped.length < filesToInsert.length) {
       toast({
-        title: 'SYSTEM: dupe_skipped',
+        title: getDiagnosticTitle('system', 'dupe_skipped'),
         description:
           filesToInsert.length === 1
             ? t(
@@ -306,7 +307,7 @@ export function ModFileSelector({
             `[DEBUG] Duplicate file detected by hash ${fileHashValue}, using existing catalog entry ${existingEntry.id}`
           )
           toast({
-            title: 'SYSTEM: already_in_catalog',
+            title: getDiagnosticTitle('system', 'already_in_catalog'),
             description: t(
               'install.selector.existsInCatalogUsingExistingEntry',
               '"{name}" exists in catalog. Using existing entry.',
@@ -328,7 +329,7 @@ export function ModFileSelector({
             fileToUse = { ...fileToUse, ...savedCatalogFile }
             loadCatalogFiles()
             toast({
-              title: 'SYSTEM: copy_done',
+              title: getDiagnosticTitle('system', 'copy_done'),
               description: t(
                 'install.selector.modFileCopiedToYourModsDirectory',
                 'Mod file copied to your mods directory.'
@@ -349,7 +350,7 @@ export function ModFileSelector({
 
         if (isDuplicateFile(value, index, { hashValue: resolvedHash, filePath: resolvedPath })) {
           toast({
-            title: 'SYSTEM: dupe_skipped',
+            title: getDiagnosticTitle('system', 'dupe_skipped'),
             description: t(
               'install.selector.thatFileIsAlreadyInThisProtocol',
               'That file is already in this protocol.'
@@ -380,7 +381,7 @@ export function ModFileSelector({
       const err = error as Error
       log.error('Failed to open file dialog:', error)
       toast({
-        title: 'FATAL: dialog_err',
+        title: getDiagnosticTitle('fatal', 'dialog_err'),
         description:
           err.message || t('install.selector.failedToOpenFileDialog', 'Failed to open file dialog'),
         variant: 'destructive'

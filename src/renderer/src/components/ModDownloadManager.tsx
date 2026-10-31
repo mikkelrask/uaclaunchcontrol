@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { useTranslate, useTolgee } from '@tolgee/react'
 import { getDownloadText } from '@/lib/i18n/download-messages'
 import { useEffect, useRef, useState } from 'react'
@@ -85,7 +86,7 @@ export function ModDownloadManager({ modDownloads }: ModDownloadManagerProps): R
   ): Promise<void> => {
     try {
       toast({
-        title: 'SYSTEM: decompressing',
+        title: getDiagnosticTitle('system', 'decompressing'),
         description: t('downloads.archive.analyzing', 'Analyzing archive contents.')
       })
       const scan = (await api.archiveScan(filePath)) as ArchiveScanResult
@@ -93,7 +94,7 @@ export function ModDownloadManager({ modDownloads }: ModDownloadManagerProps): R
     } catch (error: unknown) {
       log.error(error)
       toast({
-        title: 'FATAL: archive_scan_failed',
+        title: getDiagnosticTitle('fatal', 'archive_scan_failed'),
         description:
           error instanceof Error
             ? error.message

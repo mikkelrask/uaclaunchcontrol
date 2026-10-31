@@ -504,8 +504,38 @@ app
             window,
             `document.querySelector('[role="dialog"]')?.textContent.includes(${JSON.stringify(message('catalog.fields.category'))})`
           )
-          window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
-          window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+          // A real catalog validation warning exercises translated diagnostic headings,
+          // history classification and the shared notification accessibility defaults.
+          await window.webContents.executeJavaScript(`(() => {
+            const input = document.querySelector('#edit-name');
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '');
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+          })()`)
+          await clickSelector(window, '[role="dialog"] button', message('catalog.edit.saveChanges'))
+          const warningTitle = message('notifications.status.caution', { code: 'name_required' })
+          await waitFor(
+            window,
+            `document.body.textContent.includes(${JSON.stringify(warningTitle)})`
+          )
+          const warningHistory = await window.webContents.executeJavaScript(
+            `JSON.parse(localStorage.getItem('uac:notifications') || '[]')`
+          )
+          assert(
+            warningHistory.some((item) => item.kind === 'warning' && item.title === warningTitle)
+          )
+          await waitFor(
+            window,
+            `!!document.querySelector('button[aria-label=' + ${JSON.stringify(JSON.stringify(message('ui.toast.close')))} + ']')`
+          )
+          const regionLabel = await window.webContents.executeJavaScript(
+            `document.querySelector('ol[tabindex="-1"]')?.parentElement.getAttribute('aria-label')`
+          )
+          assert.equal(regionLabel, message('ui.toast.viewport', { hotkey: 'F8' }))
+          await clickSelector(
+            window,
+            `button[aria-label=${JSON.stringify(message('ui.toast.close'))}]`
+          )
+          await clickSelector(window, '[role="dialog"] button', message('catalog.edit.cancel'))
           await waitFor(window, `!document.querySelector('[role="dialog"]')`)
         }
       }

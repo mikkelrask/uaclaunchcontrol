@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { getCategoryLabel } from '@/lib/i18n/catalog-labels'
 import { T, useTranslate } from '@tolgee/react'
 import { getTranslate } from '@/lib/i18n'
@@ -342,7 +343,7 @@ export function ArchiveImportModal({
         toast(
           existing
             ? {
-                title: 'SYSTEM: already_in_catalog',
+                title: getDiagnosticTitle('system', 'already_in_catalog'),
                 description: t(
                   'install.archive.isAlreadyInYourCatalogNothingWasAdded',
                   '"{fileName}" is already in your catalog — nothing was added.',
@@ -351,7 +352,7 @@ export function ArchiveImportModal({
                 variant: 'default'
               }
             : {
-                title: 'SYSTEM: archive_accepted',
+                title: getDiagnosticTitle('system', 'archive_accepted'),
                 description: t(
                   'install.archive.addedToCatalog',
                   '"{importNameValue}" added to catalog.',
@@ -400,7 +401,7 @@ export function ArchiveImportModal({
         }
 
         toast({
-          title: 'SYSTEM: archive_extracted',
+          title: getDiagnosticTitle('system', 'archive_extracted'),
           description: t(
             'install.archive.importComplete',
             '{count, plural, one {# file added to catalog.} other {# files added to catalog.}}',
@@ -413,7 +414,7 @@ export function ArchiveImportModal({
       onOpenChange(false)
     } catch (e: unknown) {
       toast({
-        title: 'FATAL: err_586',
+        title: getDiagnosticTitle('fatal', 'err_586'),
         description: (e as Error).message,
         variant: 'destructive'
       })

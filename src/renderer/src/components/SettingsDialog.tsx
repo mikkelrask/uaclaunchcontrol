@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { T, useTranslate } from '@tolgee/react'
 import React, { useState, useEffect, useId, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -124,7 +125,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       })
       .catch(() => {
         toast({
-          title: 'FATAL: cfg_load_err',
+          title: getDiagnosticTitle('fatal', 'cfg_load_err'),
           description: t('settings.load.failed', 'Failed to load settings'),
           variant: 'destructive'
         })
@@ -139,7 +140,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       } catch {
         log.error('[settings] Failed to load doom versions')
         toast({
-          title: 'FATAL: version_load_err',
+          title: getDiagnosticTitle('fatal', 'version_load_err'),
           description: t('settings.versions.failed', 'Failed to load doom versions'),
           variant: 'destructive'
         })
@@ -201,7 +202,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
           await api.moveFile(selectedIconPath, destPath)
           handleVersionChange(index, 'icon', destPath)
           toast({
-            title: 'SYSTEM: icon_relocated',
+            title: getDiagnosticTitle('system', 'icon_relocated'),
             description: t('settings.icon.moved', 'Icon moved to {path}', { path: destPath })
           })
         } catch {
@@ -225,7 +226,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       // (queryCacheContracts: downloadFreedoom → /api/versions).
       queryClient.invalidateQueries({ queryKey: ['/api/versions'] })
       toast({
-        title: 'SYSTEM: freedoom_installed',
+        title: getDiagnosticTitle('system', 'freedoom_installed'),
         description: t('settings.freedoom.installed', 'Installed: {names}', {
           names: result.installed.join(', ')
         })
@@ -368,13 +369,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
       }
 
       toast({
-        title: 'SYSTEM: core_settings',
+        title: getDiagnosticTitle('system', 'core_settings'),
         description: t('settings.save.success', 'Your changes have been approved.')
       })
       onClose()
     } catch {
       toast({
-        title: 'SYSTEM: core_settings',
+        title: getDiagnosticTitle('system', 'core_settings'),
         description: t(
           'settings.save.failed',
           'No changes have been applied. Could not save settings.'

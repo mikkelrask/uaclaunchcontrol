@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { useTranslate } from '@tolgee/react'
 import { getTranslate } from '@/lib/i18n'
 import { useState } from 'react'
@@ -55,7 +56,7 @@ export function useProtocolActions({
     }) => api.updateProtocol(id, protocol, files),
     onSuccess: async (updatedProtocol, variables) => {
       toast({
-        title: 'SYSTEM: protocol_saved',
+        title: getDiagnosticTitle('system', 'protocol_saved'),
         description: t(
           'library.actions.protocolSettingsSuccessfullySaved',
           'Protocol settings successfully saved.'
@@ -93,7 +94,7 @@ export function useProtocolActions({
     },
     onError: (error) => {
       toast({
-        title: 'FATAL: settings.save()',
+        title: getDiagnosticTitle('fatal', 'settings.save()'),
         description: t('library.actions.failedToSaveChanges', 'Failed to save changes: {error}', {
           error: String(error)
         }),
@@ -106,7 +107,7 @@ export function useProtocolActions({
     mutationFn: (id: string) => api.deleteProtocol(id),
     onSuccess: () => {
       toast({
-        title: 'SYSTEM: delete_protocol',
+        title: getDiagnosticTitle('system', 'delete_protocol'),
         description: t(
           'library.actions.protocolDeletedSuccessfully',
           'Protocol deleted successfully'
@@ -117,7 +118,7 @@ export function useProtocolActions({
     },
     onError: (error) => {
       toast({
-        title: 'FATAL: delete_failed',
+        title: getDiagnosticTitle('fatal', 'delete_failed'),
         description: t(
           'library.actions.failedToDeleteProtocol',
           'Failed to delete protocol: {error}',
@@ -135,7 +136,7 @@ export function useProtocolActions({
     mutationFn: () => api.testLaunch(protocol, files),
     onSuccess: () => {
       toast({
-        title: 'SYSTEM: launch_protocol',
+        title: getDiagnosticTitle('system', 'launch_protocol'),
         description: t('library.actions.processIsNowRunning', 'Process "{title}" is now running', {
           title: String(protocol.title)
         })
@@ -143,7 +144,7 @@ export function useProtocolActions({
     },
     onError: (error) => {
       toast({
-        title: 'FATAL: launch_protocol',
+        title: getDiagnosticTitle('fatal', 'launch_protocol'),
         description: t(
           'library.actions.failedToLaunchProtocol',
           'Failed to launch protocol: "{error}"',
@@ -192,7 +193,7 @@ export function useProtocolActions({
       const result = await api.createBlankConfig(protocolId)
       onConfigCreated(result)
       toast({
-        title: 'SYSTEM: config_created',
+        title: getDiagnosticTitle('system', 'config_created'),
         description: t(
           'library.actions.freshIsolatedConfigCreatedClickSaveChangesToApply',
           'Fresh isolated config created. Click Save Changes to apply.'
@@ -200,7 +201,7 @@ export function useProtocolActions({
       })
     } catch (error: unknown) {
       toast({
-        title: 'FATAL: config_create_failed',
+        title: getDiagnosticTitle('fatal', 'config_create_failed'),
         description: t('library.actions.failedToCreateConfig', 'Failed to create config: {error}', {
           error: String(error)
         }),

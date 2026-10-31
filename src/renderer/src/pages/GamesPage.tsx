@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { T, useTranslate } from '@tolgee/react'
 import { getTranslate } from '@/lib/i18n'
 import React, { useState, useEffect } from 'react'
@@ -158,7 +159,7 @@ export const GamesPage: React.FC = () => {
     }
 
     toast({
-      title: 'SYSTEM: transfer_started',
+      title: getDiagnosticTitle('system', 'transfer_started'),
       description: t('library.games.downloadingFrom', '{title} — downloading from {domain}', {
         title: String(mod.title),
         domain: String(link.domain)
@@ -168,7 +169,7 @@ export const GamesPage: React.FC = () => {
     try {
       const result = await api.downloadIdgamesFile(url, mod.title)
       toast({
-        title: 'SYSTEM: transfer_complete',
+        title: getDiagnosticTitle('system', 'transfer_complete'),
         description: t('library.games.processing', '{fileName} — processing…', {
           fileName: String(result.fileName)
         })
@@ -200,7 +201,7 @@ export const GamesPage: React.FC = () => {
       }
     } catch {
       toast({
-        title: 'FATAL: transfer_failed',
+        title: getDiagnosticTitle('fatal', 'transfer_failed'),
         description: t(
           'library.games.couldNotDownloadFromIdgames',
           'Could not download from idgames'
@@ -225,7 +226,7 @@ export const GamesPage: React.FC = () => {
       toast(
         existing
           ? {
-              title: 'SYSTEM: already_in_catalog',
+              title: getDiagnosticTitle('system', 'already_in_catalog'),
               description: t(
                 'library.games.isAlreadyInYourCatalogNothingWasAdded',
                 '{fileName} is already in your catalog — nothing was added.',
@@ -233,7 +234,7 @@ export const GamesPage: React.FC = () => {
               )
             }
           : {
-              title: 'SYSTEM: import_success',
+              title: getDiagnosticTitle('system', 'import_success'),
               description: t('library.games.addedToModsFolder', '{fileName} added to mods folder', {
                 fileName: String(importFile.fileName)
               })
@@ -244,7 +245,7 @@ export const GamesPage: React.FC = () => {
       queryClient.invalidateQueries()
     } catch {
       toast({
-        title: 'FATAL: import_failed',
+        title: getDiagnosticTitle('fatal', 'import_failed'),
         description: t('library.games.couldNotImportTheFile', 'Could not import the file'),
         variant: 'destructive'
       })
@@ -261,7 +262,7 @@ export const GamesPage: React.FC = () => {
     const { t } = getTranslate('desktop')
 
     toast({
-      title: 'SYSTEM: access_denied',
+      title: getDiagnosticTitle('system', 'access_denied'),
       description: t(
         'library.games.blueKeycardRequiredReportToYourCommandingOfficer',
         'Blue keycard required. Report to your commanding officer.'

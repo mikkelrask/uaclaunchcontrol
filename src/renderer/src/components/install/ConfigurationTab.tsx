@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { T, useTranslate } from '@tolgee/react'
 import React, { useState } from 'react'
 import type { UseMutationResult } from '@tanstack/react-query'
@@ -169,7 +170,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                               const { fileName } = await api.uploadScreenshot(result.filePaths[0])
                               field.onChange(fileName)
                               toast({
-                                title: 'SYSTEM: image_ul',
+                                title: getDiagnosticTitle('system', 'image_ul'),
                                 description: t(
                                   'install.configuration.imageAddedSuccessfully',
                                   'Image added successfully.'
@@ -177,7 +178,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                               })
                             } catch (error: unknown) {
                               toast({
-                                title: 'FATAL: err_284',
+                                title: getDiagnosticTitle('fatal', 'err_284'),
                                 description: t(
                                   'install.configuration.failedToUploadImage',
                                   'Failed to upload image: {error}',
@@ -444,7 +445,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                   files
                 )
                 toast({
-                  title: 'SYSTEM: test_launch',
+                  title: getDiagnosticTitle('system', 'test_launch'),
                   description: t(
                     'install.configuration.gameLaunchedCloseItToReturnHere',
                     'Game launched. Close it to return here.'
@@ -452,7 +453,7 @@ export const ConfigurationTab: React.FC<ConfigurationTabProps> = ({
                 })
               } catch (err: unknown) {
                 toast({
-                  title: 'FATAL: test_failed',
+                  title: getDiagnosticTitle('fatal', 'test_failed'),
                   description: String(err),
                   variant: 'destructive'
                 })

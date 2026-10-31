@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { getCatalogColumnLabel } from '@/lib/i18n/catalog-labels'
 import { getCategoryLabel } from '@/lib/i18n/catalog-labels'
 import { useTranslate } from '@tolgee/react'
@@ -47,7 +48,7 @@ function deleteOutcomeToast(
 
   if (fileOutcome === 'deleted') {
     return {
-      title: 'SYSTEM: remove_success',
+      title: getDiagnosticTitle('system', 'remove_success'),
       description: t(
         'catalog.deletion.deleted',
         'Removed "{name}" from your mod file catalog and deleted its file from disk.',
@@ -58,7 +59,7 @@ function deleteOutcomeToast(
   }
   if (fileOutcome === 'already-absent') {
     return {
-      title: 'SYSTEM: remove_success',
+      title: getDiagnosticTitle('system', 'remove_success'),
       description: t(
         'catalog.deletion.alreadyAbsent',
         'Removed "{name}" from your mod file catalog. Its file was already gone from disk.',
@@ -69,7 +70,7 @@ function deleteOutcomeToast(
   }
   if (fileOutcome === 'failed') {
     return {
-      title: 'SYSTEM: file_delete_failed',
+      title: getDiagnosticTitle('system', 'file_delete_failed'),
       description: t(
         'catalog.deletion.failed',
         'Removed "{name}" from your mod file catalog, but its file could not be deleted from disk — remove it manually.',
@@ -79,7 +80,7 @@ function deleteOutcomeToast(
     }
   }
   return {
-    title: 'SYSTEM: remove_success',
+    title: getDiagnosticTitle('system', 'remove_success'),
     description: t('catalog.deletion.removed', 'Removed "{name}" from your mod file catalog.', {
       name: label
     }),
@@ -170,7 +171,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     const validExtensions = ['WAD', 'PK3', 'PK7', 'IPK3', 'DEH', 'BEX', 'BAT']
     if (!ext || !validExtensions.includes(ext)) {
       toast({
-        title: 'FATAL: type_unknow',
+        title: getDiagnosticTitle('fatal', 'type_unknow'),
         description: t(
           'catalog.manager.pleaseOnlyUseSupportedFiles',
           'Please only use supported files: {extensions}',
@@ -196,7 +197,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
 
         if (resolvedFiles.length === 0) {
           toast({
-            title: 'FATAL: bat_no_files',
+            title: getDiagnosticTitle('fatal', 'bat_no_files'),
             description: t(
               'catalog.manager.noFileEntriesFoundInBatFile',
               'No -file entries found in .bat file'
@@ -228,7 +229,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
       } catch (error: unknown) {
         log.error('Failed to parse .bat:', error)
         toast({
-          title: 'FATAL: bat_parse_failed',
+          title: getDiagnosticTitle('fatal', 'bat_parse_failed'),
           description: t('catalog.manager.failedToParseBatFile', 'Failed to parse .bat file'),
           variant: 'destructive'
         })
@@ -267,7 +268,7 @@ export function CatalogManager({ files, onChange }: CatalogManagerProps): React.
     } catch {
       handleRemoveFile(file.id)
       toast({
-        title: 'SYSTEM: Warning!',
+        title: getDiagnosticTitle('system', t('notifications.status.warning', 'Warning!')),
         description: t(
           'catalog.manager.fileRemovedFromViewMayNeedManualDeletionFrom',
           'File "{fileName}" removed from view (may need manual deletion from catalog)',

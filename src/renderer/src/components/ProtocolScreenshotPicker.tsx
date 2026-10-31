@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { useTranslate } from '@tolgee/react'
 import { getTranslate } from '@/lib/i18n'
 import { Label } from '@/components/ui/label'
@@ -39,7 +40,7 @@ export function ProtocolScreenshotPicker({
         const { fileName } = await api.uploadScreenshot(result.filePaths[0])
         onScreenshotChange(fileName)
         toast({
-          title: 'SYSTEM: screenshot_saved',
+          title: getDiagnosticTitle('system', 'screenshot_saved'),
           description: t(
             'library.screenshot.newScreenshotSavedClickSaveToApply',
             'New screenshot saved. Click Save to apply.'
@@ -47,7 +48,7 @@ export function ProtocolScreenshotPicker({
         })
       } catch (error: unknown) {
         toast({
-          title: 'FATAL: upload_failed',
+          title: getDiagnosticTitle('fatal', 'upload_failed'),
           description: t(
             'library.screenshot.failedToUploadScreenshot',
             'Failed to upload screenshot: {error}',

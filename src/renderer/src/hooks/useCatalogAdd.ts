@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { getTranslate } from '@/lib/i18n'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -134,7 +135,7 @@ export function useCatalogAdd({
       const duplicate = catalogFiles.find((f) => f.hashValue === hashValue)
       if (duplicate) {
         toast({
-          title: 'SYSTEM: already_in_catalog',
+          title: getDiagnosticTitle('system', 'already_in_catalog'),
           description: t(
             'catalog.addFlow.isAlreadyInYourCatalogNothingWasAdded',
             '"{fileName}" is already in your catalog — nothing was added.',
@@ -150,7 +151,7 @@ export function useCatalogAdd({
       )
       if (selfRefCheck) {
         toast({
-          title: 'SYSTEM: circular_ref',
+          title: getDiagnosticTitle('system', 'circular_ref'),
           description: t('catalog.addFlow.aModCannotRequireItself', 'A mod cannot require itself'),
           variant: 'destructive'
         })
@@ -182,7 +183,7 @@ export function useCatalogAdd({
 
       if (existing) {
         toast({
-          title: 'SYSTEM: already_in_catalog',
+          title: getDiagnosticTitle('system', 'already_in_catalog'),
           description: t(
             'catalog.addFlow.isAlreadyInYourCatalogNothingWasAdded',
             '"{fileName}" is already in your catalog — nothing was added.',
@@ -254,7 +255,7 @@ export function useCatalogAdd({
       }
 
       toast({
-        title: 'SYSTEM: add_success',
+        title: getDiagnosticTitle('system', 'add_success'),
         description: t(
           'catalog.addFlow.addedToYourModFileCatalog',
           'Added "{prettyName}" to your mod file catalog.',
@@ -286,7 +287,7 @@ export function useCatalogAdd({
       onChange(freshCatalog)
     } catch (error: unknown) {
       toast({
-        title: 'FATAL: add_failed',
+        title: getDiagnosticTitle('fatal', 'add_failed'),
         description: t('catalog.addFlow.failedToAddFile', 'Failed to add file: {error}', {
           error: String(error)
         }),
@@ -307,7 +308,7 @@ export function useCatalogAdd({
     const fileType = deriveFileType(fileName.split('.').pop()?.toUpperCase() || '')
 
     const hashingToast = toast({
-      title: 'SYSTEM: hashing',
+      title: getDiagnosticTitle('system', 'hashing'),
       description: t(
         'catalog.addFlow.hashingThisCanTakeAWhileForLargeFiles',
         'Hashing {fileName} — this can take a while for large files.',
@@ -445,7 +446,7 @@ export function useCatalogAdd({
 
             if (resolvedFiles.length === 0) {
               toast({
-                title: 'FATAL: bat_no_files',
+                title: getDiagnosticTitle('fatal', 'bat_no_files'),
                 description: t(
                   'catalog.addFlow.noFileEntriesFoundInBatFile',
                   'No -file entries found in .bat file'
@@ -477,7 +478,7 @@ export function useCatalogAdd({
           } catch (error: unknown) {
             log.error('Failed to parse .bat:', error)
             toast({
-              title: 'FATAL: bat_parse_failed',
+              title: getDiagnosticTitle('fatal', 'bat_parse_failed'),
               description: t('catalog.addFlow.failedToParseBatFile', 'Failed to parse .bat file'),
               variant: 'destructive'
             })
@@ -523,7 +524,7 @@ export function useCatalogAdd({
           }
         }))
         toast({
-          title: 'SYSTEM: config_linked',
+          title: getDiagnosticTitle('system', 'config_linked'),
           description: t('catalog.addFlow.configTemplateLinked', 'Config template linked: {name}', {
             name: String(configPath.split(/[\\/]/).pop())
           })
@@ -532,7 +533,7 @@ export function useCatalogAdd({
     } catch (error: unknown) {
       log.error('Failed to browse config file:', error)
       toast({
-        title: 'FATAL: config_link_failed',
+        title: getDiagnosticTitle('fatal', 'config_link_failed'),
         description: t(
           'catalog.addFlow.failedToLinkConfigFile',
           'Failed to link config file: {error}',

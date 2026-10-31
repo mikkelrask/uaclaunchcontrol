@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { getTranslate } from '@/lib/i18n'
 import { api } from '@/api'
 import { useToast } from '@/hooks/use-toast'
@@ -112,7 +113,7 @@ export function useExportModpack(
       screenshot ? t('library.export.screenshot', 'screenshot') : null
     ].filter(Boolean)
     toast({
-      title: 'SYSTEM: export_done',
+      title: getDiagnosticTitle('system', 'export_done'),
       description:
         extras.length > 0
           ? t('library.export.withExtras', 'Modpack downloaded with {extras}', {

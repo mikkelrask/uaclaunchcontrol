@@ -1,3 +1,4 @@
+import { getDiagnosticTitle } from '@/lib/i18n/diagnostic-messages'
 import { getTranslate } from '@/lib/i18n'
 import { useState, useCallback } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
@@ -119,7 +120,7 @@ async function importFromBatFile(
 
   if (parsed.modFiles.length === 0) {
     toast({
-      title: 'SYSTEM: bat_parsed',
+      title: getDiagnosticTitle('system', 'bat_parsed'),
       description: t(
         'install.drop.noFileEntriesFoundInBatFile',
         'No -file entries found in .bat file.'
@@ -127,7 +128,7 @@ async function importFromBatFile(
     })
   } else {
     toast({
-      title: 'SYSTEM: bat_parsed',
+      title: getDiagnosticTitle('system', 'bat_parsed'),
       description: t(
         'install.drop.prepopulatedFromBat',
         '{count, plural, one {Prepopulated from .bat: # mod file.} other {Prepopulated from .bat: # mod files.}}',
@@ -154,7 +155,7 @@ async function importFromJsonFile(
 
   if (importData.format !== 'uac-modpack') {
     toast({
-      title: 'FATAL: format_unknown',
+      title: getDiagnosticTitle('fatal', 'format_unknown'),
       description: t(
         'install.drop.providedFileIsNotAUacExportJson',
         'Provided file is not a UAC Export JSON'
@@ -207,7 +208,7 @@ export function useJsonDrop({
 
         if (!fileName.endsWith('.json')) {
           toast({
-            title: 'FATAL: corrupt_file',
+            title: getDiagnosticTitle('fatal', 'corrupt_file'),
             description: t(
               'install.drop.pleaseDropAValidJsonOrBatFile',
               'Please drop a valid JSON or .bat file'
@@ -222,7 +223,9 @@ export function useJsonDrop({
         const isJson = fileName.endsWith('.json')
         log.error(`Failed to parse ${isJson ? 'JSON' : '.bat'}:`, error)
         toast({
-          title: isJson ? 'FATAL: import_failed' : 'FATAL: bat_parse_failed',
+          title: isJson
+            ? getDiagnosticTitle('fatal', 'import_failed')
+            : getDiagnosticTitle('fatal', 'bat_parse_failed'),
           description: isJson
             ? t(
                 'install.drop.invalidJsonFormatPleaseCheckForErrors',
