@@ -23,7 +23,11 @@ import {
 import { DoomVersionIcon } from '@/icons/DoomIcons'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
-import { isLanguagePreference } from '@shared/locales'
+import {
+  isLanguagePreference,
+  INTERFACE_LANGUAGE_OPTIONS,
+  selectableLanguagePreference
+} from '@shared/locales'
 import { applyLanguage } from '@/lib/i18n'
 import uacLogo from '@/assets/UAC Logo.svg'
 
@@ -40,7 +44,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const { toast } = useToast()
   const id = useId()
   const [settings, setSettings] = useState<IAppSettings>({
-    language: 'system',
+    language: 'en',
     sourcePorts: [],
     defaultSourcePortId: undefined,
     defaultDoomVersionId: undefined,
@@ -110,7 +114,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
             uiScale: data.uiScale ?? 100
           }
           initialWadDirRef.current = data.wadFilesDirectory || ''
-          setSettings((prev) => ({ ...prev, ...data }))
+          setSettings((prev) => ({
+            ...prev,
+            ...data,
+            language: selectableLanguagePreference(data.language)
+          }))
           fetchedRef.current = true
           // Capture initial source port state for achievement tracking
           const activePorts = (data.sourcePorts || []).filter(
@@ -294,7 +302,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
   const handleSave = async (): Promise<void> => {
     try {
       const payload = {
-        language: settings.language ?? 'system',
+        language: settings.language ?? 'en',
         sourcePorts: settings.sourcePorts,
         defaultSourcePortId: settings.defaultSourcePortId,
         defaultDoomVersionId: settings.defaultDoomVersionId,
@@ -480,7 +488,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                     </p>
                   </div>
                   <Select
-                    value={settings.language ?? 'system'}
+                    value={selectableLanguagePreference(settings.language)}
                     onValueChange={(language) => {
                       if (isLanguagePreference(language)) setSettings((s) => ({ ...s, language }))
                     }}
@@ -495,9 +503,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose 
                       <SelectItem value="system">
                         {t('settings.language.system', 'System language')}
                       </SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="da-DK">Dansk</SelectItem>
-                      <SelectItem value="es-ES">Español</SelectItem>
+                      {INTERFACE_LANGUAGE_OPTIONS.map(({ value, label }) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

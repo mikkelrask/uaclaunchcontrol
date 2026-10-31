@@ -28,7 +28,6 @@ const DEFAULT_DATABASE_LINKS: IDatabaseLink[] = [
 ]
 
 const DEFAULT_SETTINGS: IAppSettings = {
-  language: 'system',
   sourcePorts: [],
   defaultSourcePortId: undefined,
   defaultDoomVersionId: undefined,
@@ -201,7 +200,7 @@ export async function getSettings(): Promise<IAppSettings> {
     const settings: IAppSettings = { ...DEFAULT_SETTINGS, ...settingsData }
     const resolvedSettings: IAppSettings = {
       ...settings,
-      language: isLanguagePreference(settings.language) ? settings.language : 'system',
+      language: isLanguagePreference(settings.language) ? settings.language : undefined,
       configPath: CONFIG_DIR,
       sourcePorts: settings.sourcePorts.map((p) => ({
         ...p,

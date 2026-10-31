@@ -329,5 +329,12 @@
   "icons.game": "{game}-ikon",
   "icons.defaultWad": "Standardikon til WAD",
   "icons.customWad": "Brugerdefineret WAD-ikon",
-  "icons.launcher": "Doom-launcher"
+  "icons.launcher": "Doom-launcher",
+  "languageStartup.title": "Vælg dit sprog",
+  "languageStartup.description": "UAC Launch Control starter på engelsk. Vælg et sprog for at fortsætte.",
+  "languageStartup.systemDescription": "Følg enhedens sprog. I øjeblikket: {languageName}.",
+  "languageStartup.changeLater": "Du kan ændre sproget senere i Indstillinger. Tekst, der ikke er oversat, vises på engelsk.",
+  "languageStartup.saveFailed": "Kunne ikke gemme dit sprogvalg. Prøv igen. {error}",
+  "languageStartup.saving": "Gemmer…",
+  "languageStartup.continue": "Fortsæt"
 }

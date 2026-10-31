@@ -20,7 +20,7 @@ async function applyThemeFromSettings(): Promise<void> {
     }
   } catch (error: unknown) {
     log.error('Failed to load theme from settings:', error)
-    await applyLanguage('system')
+    await applyLanguage('en')
   }
 }
 

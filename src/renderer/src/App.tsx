@@ -27,6 +27,8 @@ import { OnboardingWizard } from '@/components/Onboarding'
 import { CrashLogDialog, type CrashLogData } from '@/components/CrashLogDialog'
 import { ToastAction } from '@/components/ui/toast'
 import { applyLanguage } from '@/lib/i18n'
+import { isLanguagePreference } from '@shared/locales'
+import { StartupLanguageDialog } from '@/components/StartupLanguageDialog'
 
 import { createLogger } from '@shared/logger'
 
@@ -77,7 +79,7 @@ const App: React.FC = () => {
   }, [])
 
   // Global settings query for theme sync
-  const { data: settings } = useQuery<IAppSettings>({
+  const { data: settings, isPending: settingsPending } = useQuery<IAppSettings>({
     queryKey: ['/api/settings'],
     queryFn: api.getSettings
   })
@@ -318,7 +320,11 @@ const App: React.FC = () => {
         installType={installType}
       />
       <ErrorBoundary>
-        {isFirstRun ? (
+        {settingsPending ? (
+          <div className="min-h-screen bg-app-primary" aria-busy="true" />
+        ) : settings && !isLanguagePreference(settings.language) ? (
+          <StartupLanguageDialog />
+        ) : isFirstRun ? (
           <OnboardingWizard autoActivate onFinished={() => setIsFirstRun(false)} />
         ) : (
           <>

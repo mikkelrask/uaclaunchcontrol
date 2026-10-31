@@ -104,8 +104,11 @@ async function clickSelector(window, selector, text) {
   window.webContents.sendInputEvent({ type: 'mouseUp', button: 'left', clickCount: 1, ...point })
 }
 
+let fixtureFirstRun = false
+let settingsFailures = 0
+let settingsWrites = 0
 ipcMain.on('get-first-run', (event) => {
-  event.returnValue = false
+  event.returnValue = fixtureFirstRun
 })
 ipcMain.handle('get-app-version', () => '1.0.0')
 let fixtureInstallType = { isAppImage: true, isSystemInstalled: false }
@@ -142,7 +145,18 @@ app
       assert.equal(url.origin, 'http://localhost:7666')
       let result = []
       if (url.pathname === '/api/settings') {
-        if (request.method === 'PUT') settings = { ...settings, ...(await request.json()) }
+        if (request.method === 'PUT') {
+          settingsWrites++
+          const payload = await request.json()
+          if (settingsFailures > 0) {
+            settingsFailures--
+            return new Response(JSON.stringify({ message: 'fixture_save_failed' }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            })
+          }
+          settings = { ...settings, ...payload }
+        }
         result = settings
       } else if (url.pathname === '/api/protocols') result = [protocolFixture]
       else if (url.pathname === '/api/protocols/localisation-fixture')
@@ -217,7 +231,147 @@ app
     )
 
     await translations.run()
-    for (const locale of ['da-DK', 'es-ES', 'en']) {
+    // Missing preferences stay English, even before the first-run boot sequence.
+    for (const [choice, firstRun] of [
+      ['en', false],
+      ['system', false],
+      ['da-DK', true]
+    ]) {
+      delete settings.language
+      fixtureFirstRun = firstRun
+      const beforeChoice = { ...settings }
+      const writesBefore = settingsWrites
+      await window.loadFile(renderer)
+      await waitFor(
+        window,
+        `document.querySelector('[role="dialog"]')?.textContent.includes(${JSON.stringify(catalogs.en['languageStartup.title'])})`
+      )
+      assert.equal(
+        await window.webContents.executeJavaScript('document.documentElement.lang'),
+        'en'
+      )
+      assert.deepEqual(
+        await window.webContents.executeJavaScript(
+          `[...document.querySelectorAll('input[name="startup-language"]')].map(el => el.value)`
+        ),
+        ['system', 'en', 'da-DK']
+      )
+      assert.equal(settingsWrites, writesBefore)
+      const initialDeviceLanguages =
+        await window.webContents.executeJavaScript('navigator.languages')
+      const initialMatch = initialDeviceLanguages.find((tag) => /^(en|da)(-|_|$)/i.test(tag))
+      const initialSystemName = initialMatch?.toLowerCase().startsWith('da') ? 'Dansk' : 'English'
+      const systemDescription = catalogs.en['languageStartup.systemDescription'].replace(
+        '{languageName}',
+        initialSystemName
+      )
+      assert(
+        (
+          await window.webContents.executeJavaScript(
+            `document.querySelector('[role="dialog"]').textContent`
+          )
+        ).includes(systemDescription)
+      )
+      assert(!(await window.webContents.executeJavaScript(`!!document.querySelector('nav')`)))
+      window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      assert(
+        await window.webContents.executeJavaScript(
+          `!!document.querySelector('input[name="startup-language"]')`
+        )
+      )
+      if (choice !== 'en')
+        await clickSelector(window, `input[name="startup-language"][value="${choice}"]`)
+      if (choice === 'en') {
+        settingsFailures = 1
+        await clickSelector(window, 'button', catalogs.en['languageStartup.continue'])
+        await waitFor(
+          window,
+          `document.querySelector('[role="alert"]')?.textContent.includes('fixture_save_failed')`
+        )
+        assert.equal(settings.language, undefined)
+        assert.equal(
+          await window.webContents.executeJavaScript('document.documentElement.lang'),
+          'en'
+        )
+      }
+      if (choice === 'da-DK' && process.env.UAC_I18N_LANGUAGE_SCREENSHOT) {
+        await pause(200)
+        fs.writeFileSync(
+          process.env.UAC_I18N_LANGUAGE_SCREENSHOT,
+          (await window.webContents.capturePage()).toPNG()
+        )
+      }
+      if (firstRun) {
+        window.setSize(640, 480)
+        await pause(50)
+        await waitFor(
+          window,
+          `[...document.querySelector('[role="dialog"]').getAnimations()].every(animation => animation.playState !== 'running')`
+        )
+        const bounds = await window.webContents.executeJavaScript(`(() => {
+          const el = document.querySelector('[role="dialog"]');
+          const rect = el.getBoundingClientRect();
+          return { top: rect.top, bottom: rect.bottom, height: innerHeight, right: rect.right, width: innerWidth, maxHeight: getComputedStyle(el).maxHeight };
+        })()`)
+        assert(
+          bounds.top >= 0 && bounds.bottom <= bounds.height && bounds.right <= bounds.width,
+          JSON.stringify(bounds)
+        )
+        window.setSize(1280, 900)
+        await pause(100)
+      }
+      await clickSelector(window, 'button', catalogs.en['languageStartup.continue'])
+      const deviceLanguages = await window.webContents.executeJavaScript('navigator.languages')
+      const matched = deviceLanguages.find((tag) => /^(en|da)(-|_|$)/i.test(tag))
+      const expected =
+        choice === 'system' ? (matched?.toLowerCase().startsWith('da') ? 'da-DK' : 'en') : choice
+      await waitFor(
+        window,
+        `document.documentElement.lang === ${JSON.stringify(expected)} && !document.querySelector('input[name="startup-language"]')`
+      )
+      assert.deepEqual(settings, { ...beforeChoice, language: choice })
+      await translations.changeLanguage(expected)
+      if (firstRun) {
+        await waitFor(
+          window,
+          `document.body.textContent.includes(${JSON.stringify(translations.t('onboarding.welcome.title'))})`
+        )
+        assert(!(await window.webContents.executeJavaScript(`!!document.querySelector('nav')`)))
+      } else {
+        await waitFor(window, `!!document.querySelector('nav')`)
+      }
+      // An explicit choice, including System and English, survives a renderer restart.
+      await window.loadFile(renderer)
+      await waitFor(
+        window,
+        `document.documentElement.lang === ${JSON.stringify(expected)} && !!document.querySelector('${firstRun ? 'body' : 'nav'}')`
+      )
+      assert(
+        !(await window.webContents.executeJavaScript(
+          `!!document.querySelector('input[name="startup-language"]')`
+        ))
+      )
+      console.log(
+        `PASS startup language choice: ${choice}; firstRun=${firstRun}; persistence/retry`
+      )
+    }
+    fixtureFirstRun = false
+    // An old Spanish preference remains valid data and displays English until released.
+    settings.language = 'es-ES'
+    await window.loadFile(renderer)
+    await waitFor(
+      window,
+      `document.documentElement.lang === 'en' && !!document.querySelector('nav')`
+    )
+    assert(
+      !(await window.webContents.executeJavaScript(
+        `!!document.querySelector('input[name="startup-language"]')`
+      ))
+    )
+    assert.equal(settings.language, 'es-ES')
+
+    for (const locale of ['da-DK', 'en']) {
       await translations.changeLanguage(locale)
       const message = (key, params) => translations.t(key, params)
       const launch = message('navigation.launch')
@@ -282,6 +436,17 @@ app
         window,
         `!!document.querySelector('[role="dialog"]') && document.querySelector('[role="dialog"]').textContent.includes(${JSON.stringify(label)})`
       )
+      await clickSelector(window, 'button[id$="-language"]')
+      await waitFor(window, `document.querySelectorAll('[role="option"]').length === 3`)
+      const languageOptions = await window.webContents.executeJavaScript(
+        `[...document.querySelectorAll('[role="option"]')].map(el => el.textContent)`
+      )
+      assert(languageOptions.includes('English'))
+      assert(languageOptions.includes('Dansk'))
+      assert(!languageOptions.some((label) => label.includes('Español')))
+      window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await waitFor(window, `!document.querySelector('[role="option"]')`)
       const csp = await window.webContents.executeJavaScript(
         `document.querySelector('meta[http-equiv="Content-Security-Policy"]').content`
       )

@@ -28,13 +28,20 @@ afterAll(() => {
 })
 
 describe('language settings persistence', () => {
-  it('loads older settings with a system-language default', async () => {
+  it('creates new settings without silently selecting System', async () => {
+    expect((await core.getSettings()).language).toBeUndefined()
+    expect(await fs.readJSON(settingsFile)).not.toHaveProperty('language')
+  })
+  it('keeps older settings unset until the user chooses a language', async () => {
     await fs.writeJSON(settingsFile, {
       sourcePorts: [],
       theme: 'terminal',
       registryUuid: 'keep-me'
     })
-    expect(await core.getSettings()).toMatchObject({ language: 'system', theme: 'terminal' })
+    expect(await core.getSettings()).toMatchObject({ language: undefined, theme: 'terminal' })
+    await core.saveSettings({ uiScale: 110 })
+    expect((await core.getSettings()).language).toBeUndefined()
+    expect(await fs.readJSON(settingsFile)).not.toHaveProperty('language')
   })
 
   it('round trips the saved language while preserving other settings and partial updates', async () => {
@@ -51,9 +58,19 @@ describe('language settings persistence', () => {
 
   it('recovers invalid on-disk language values without rewriting the file', async () => {
     await fs.writeJSON(settingsFile, { sourcePorts: [], language: 'unsupported' })
-    expect((await core.getSettings()).language).toBe('system')
+    expect((await core.getSettings()).language).toBeUndefined()
     expect((await fs.readJSON(settingsFile)).language).toBe('unsupported')
   })
+
+  it.each(['en', 'system', 'es-ES'] as const)(
+    'preserves an explicit %s choice through unrelated saves',
+    async (language) => {
+      await core.saveSettings({ language })
+      await core.saveSettings({ uiScale: 120 })
+      expect((await core.getSettings()).language).toBe(language)
+      expect((await fs.readJSON(settingsFile)).language).toBe(language)
+    }
+  )
 
   it('rejects invalid runtime input before writing anything', async () => {
     const before = await fs.readFile(settingsFile, 'utf8')

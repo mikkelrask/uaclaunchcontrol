@@ -157,7 +157,7 @@ export interface ModProtocolConfig {
 }
 
 export interface IAppSettings {
-  /** Absent in older settings: follow the supported system language. */
+  /** Absent until the user explicitly chooses a language; start in English and offer the chooser. */
   language?: LanguagePreference
   sourcePorts: ISourcePort[]
   defaultSourcePortId?: string

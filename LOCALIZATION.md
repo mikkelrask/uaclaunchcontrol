@@ -10,7 +10,7 @@ unchanged. This is the first desktop pilot, not the completion of issue #78.
 The settings dialog (General, Paths, WAD configuration and custom-theme help),
 source-port management/downloads, keyboard shortcuts, header/navigation/drawer,
 sidebar loading/accessibility text, complete guided setup, and the library and
-installation flows now use **777 English source keys in this branch**. The fourth batch adds 390
+installation flows now use **784 English source keys in this branch**. The fourth batch adds 390
 messages covering all three library views, protocol settings/delete/discard dialogs,
 installation/configuration/WAD tabs, archive/JSON/batch imports, the shared mod
 catalog, file selectors, validation, status descriptions and shared controls.
@@ -63,8 +63,8 @@ engine diagnostics, logging/developer errors and legacy history matching. The ol
 English date/playtime helpers in `lib/utils.ts` and sidecar explanation constant
 have no callers; active screens use the translated replacements. This is source
 coverage, not translation completeness or a guarantee that no runtime edge case
-remains. The public/embedded registry, startup language choice and release QA are
-still pending.
+remains. The public/embedded registry and release QA remain pending; startup language
+choice is implemented below.
 
 Source-port scan counts use ICU plurals; custom-theme instructions use named React
 placeholders so translators can move complete code examples and links without
@@ -87,22 +87,33 @@ history eligibility. Warning callers use explicit metadata rather than English h
 
 ## Language behaviour
 
-Settings → General → Language offers System language, English, Dansk and Español.
-Apply Changes saves the choice in `settings.json` and switches the interface without
-a restart; Abort does not change the active/saved language. The settings query is
-invalidated so other consumers refresh as well. Startup chooses the saved language,
-then the first supported browser/system preference, then English. Missing strings
-also fall back to English. Old settings files need no migration; invalid saved values
-are treated as System language, and invalid writes are rejected.
+Settings → General → Language offers System language, English and Dansk.
+Spanish is temporarily hidden from frontend choices and system-language detection
+until reviewed by a Spanish speaker. Its Tolgee project language, bundled catalog
+and stored tag remain valid. A previously saved Spanish preference displays English;
+applying Settings normalizes that hidden choice to English.
 
-Before publication, issue #78 requires a startup language-choice modal when the
-persisted configuration has no language preference: keep English until a user
-explicitly chooses English, System language, or an available translation. This is a
-pending requirement; the current pilot's automatic system-language default still
-needs to be replaced for that case.
+When settings have no valid language preference, startup stays in English and shows
+a language-choice dialog before mounting either the shell or first-run guided setup.
+English is selected initially. The user can explicitly keep English, follow System
+language (with the supported language shown), or choose Dansk. Continue saves only
+the language field, switches the interface and refreshes the settings cache. A save
+failure stays in the dialog with a retryable error. Escape and outside clicks do not
+silently dismiss the decision. Existing saved choices, including System, skip it.
+The first-run sentinel is independent; choosing a language never dismisses setup.
+
+Settings Apply Changes saves and switches language without a restart; Abort leaves
+the active/saved language unchanged. Explicit System preferences negotiate supported
+browser/device languages and fall back to English. Missing translations also fall
+back to English. New and old settings retain an absent language field until a choice
+is saved; invalid stored values are treated as unset without rewriting the file on
+read, and invalid language writes are rejected. Unrelated partial settings updates
+preserve the absence, so they cannot accidentally suppress the startup chooser.
 
 Canonical tags match the existing Tolgee project: `en`, `da-DK`, `es-ES`. Regional
-system preferences such as `da`, `da-DK`, or `es-MX` resolve to the supported catalog.
+system preferences such as `da` and `da-DK` resolve to Danish; unsupported locales
+(including Spanish while it is hidden) fall back to English when no published
+preference matches.
 The HTML document language follows the selected language.
 
 ## Translator workflow
@@ -227,7 +238,7 @@ loading in all three languages under file:// with no external requests/CSP error
 and no API key or Tolgee editing-tools chunk in the renderer output. Unit tests
 cover saved settings round trips, invalid preferences, browser language detection,
 fallback, ICU/plural validation and escaping, and React line-break placeholders.
-268 tests pass; the existing dependency-audit test fails as described above. Windows
+273 tests pass; the existing dependency-audit test fails as described above. Windows
 and macOS packaging and a full translated layout pass remain follow-up QA.
 
 The third batch also validates a completion sentence with independent source-port
@@ -270,3 +281,12 @@ adapter, unchanged game titles/custom icon paths, and notification accessibility
 labels with Radix hotkeys and caller overrides. The Electron fixture triggers an
 actual catalog validation warning and verifies its translated heading/history,
 notification region and close button in all three languages.
+
+The ninth batch adds seven English messages and seven Danish drafts for startup
+language selection (784 English keys and 338 Danish entries locally). It verifies
+fresh/old/invalid settings, explicit English/System/Dansk choices, partial-update
+persistence, hidden Spanish data compatibility, and initial English independently of
+the device locale. The production Electron fixture checks the dialog before guided
+setup, save failure/retry, unchanged unrelated settings, persistence across reloads,
+legacy Spanish fallback and the published options in Settings. Current frontend
+smokes cover English and Danish; Spanish catalog fallback remains unit-tested.
