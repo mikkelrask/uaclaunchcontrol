@@ -1,16 +1,11 @@
+import { formatNotificationTime } from '@/lib/i18n/notification-formatters'
+import { useTranslate, useTolgee } from '@tolgee/react'
 import React, { useState } from 'react'
 import { Bell } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useNotifications, markAllRead, type NotificationAction } from '@/lib/notifications'
-import { formatRelativeTime } from '@/lib/utils'
 import { api } from '@/api'
-
-const ACTION_LABELS: Record<NotificationAction['kind'], string> = {
-  'view-crash-log': 'View Log',
-  'view-update': 'View Update',
-  'restart-update': 'Restart Now'
-}
 
 function runNotificationAction(action: NotificationAction): void {
   switch (action.kind) {
@@ -37,6 +32,14 @@ interface NotificationsPopoverProps {
  * Opening the tray marks everything currently listed as read.
  */
 export const NotificationsPopover: React.FC<NotificationsPopoverProps> = ({ children }) => {
+  const { t } = useTranslate('desktop')
+  const tolgee = useTolgee(['language'])
+  const locale = tolgee.getLanguage() ?? 'en'
+  const actionLabels: Record<NotificationAction['kind'], string> = {
+    'view-crash-log': t('notifications.action.viewLog', 'View Log'),
+    'view-update': t('notifications.action.viewUpdate', 'View Update'),
+    'restart-update': t('notifications.action.restart', 'Restart Now')
+  }
   const [open, setOpen] = useState(false)
   const { notifications, unreadCount } = useNotifications()
 
@@ -61,10 +64,10 @@ export const NotificationsPopover: React.FC<NotificationsPopoverProps> = ({ chil
           </div>
           <div>
             <h4 className="text-lg font-bold tracking-tight text-app-primary lowercase">
-              Notifications
+              {t('notifications.title', 'Notifications')}
             </h4>
             <p className="text-[0.625rem] font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-              UAC Launch Control // Notifications
+              {t('notifications.subtitle', 'UAC Launch Control // Notifications')}
             </p>
           </div>
         </div>
@@ -72,7 +75,9 @@ export const NotificationsPopover: React.FC<NotificationsPopoverProps> = ({ chil
         <ScrollArea className="h-[360px]">
           <div className="p-2 space-y-1">
             {notifications.length === 0 && (
-              <p className="text-xs text-app-muted text-center py-8">No notifications yet.</p>
+              <p className="text-xs text-app-muted text-center py-8">
+                {t('notifications.empty', 'No notifications yet.')}
+              </p>
             )}
             {notifications.map((n) => (
               <div
@@ -84,7 +89,7 @@ export const NotificationsPopover: React.FC<NotificationsPopoverProps> = ({ chil
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium text-app-primary truncate">{n.title}</span>
                   <span className="text-[10px] text-app-muted shrink-0">
-                    {formatRelativeTime(n.createdAt)}
+                    {formatNotificationTime(n.createdAt, locale)}
                   </span>
                 </div>
                 {n.description && (
@@ -98,7 +103,7 @@ export const NotificationsPopover: React.FC<NotificationsPopoverProps> = ({ chil
                       runNotificationAction(n.action!)
                     }}
                   >
-                    {ACTION_LABELS[n.action.kind]}
+                    {actionLabels[n.action.kind]}
                   </button>
                 )}
               </div>

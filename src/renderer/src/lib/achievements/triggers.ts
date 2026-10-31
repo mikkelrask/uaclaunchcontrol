@@ -1,3 +1,6 @@
+import { getTranslate } from '@/lib/i18n'
+import type { NotificationKind } from '@/lib/notifications'
+import { getAchievementText } from './messages'
 import { api } from '@/api'
 import { queryClient } from '@/lib/queryClient'
 import type { IPlayerData, IPlayerStats } from '@shared/schema'
@@ -195,12 +198,20 @@ async function dispatchAchievementEventUnqueued(event: AchievementEvent): Promis
  */
 export function buildUnlockToasts(
   result: DispatchResult
-): Array<{ id: string; title: string; description: string; duration: number }> {
+): Array<{
+  id: string
+  title: string
+  description: string
+  duration: number
+  historyKind: NotificationKind
+}> {
+  const { t } = getTranslate('desktop')
   const toasts: Array<{
     id: string
     title: string
     description: string
     duration: number
+    historyKind: NotificationKind
   }> = []
 
   for (const unlock of result.newUnlocks) {
@@ -211,15 +222,18 @@ export function buildUnlockToasts(
       const rankTitle = getRankTitle(result.newRank)
       toasts.push({
         id: `rank-${result.newRank}`,
-        title: 'RANK ADVANCEMENT',
-        description: `Promoted to ${rankTitle}!`,
+        historyKind: 'rank',
+        title: t('achievements.toast.rankTitle', 'RANK ADVANCEMENT'),
+        description: t('achievements.toast.promoted', 'Promoted to {rank}!', { rank: rankTitle }),
         duration: 8000
       })
     } else {
+      const text = getAchievementText(def)
       toasts.push({
         id: `achiev-${def.id}`,
-        title: `"${def.title}" Unlocked!`,
-        description: def.description,
+        historyKind: 'achievement',
+        title: t('achievements.toast.unlocked', '"{title}" Unlocked!', { title: text.title }),
+        description: text.description,
         duration: 6000
       })
     }

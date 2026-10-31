@@ -10,13 +10,34 @@ unchanged. This is the first desktop pilot, not the completion of issue #78.
 The settings dialog (General, Paths, WAD configuration and custom-theme help),
 source-port management/downloads, keyboard shortcuts, header/navigation/drawer,
 sidebar loading/accessibility text, complete guided setup, and the library and
-installation flows now use **600 English source keys**. The fourth batch adds 390
+installation flows now use **727 English source keys in this branch**. The fourth batch adds 390
 messages covering all three library views, protocol settings/delete/discard dialogs,
 installation/configuration/WAD tabs, archive/JSON/batch imports, the shared mod
 catalog, file selectors, validation, status descriptions and shared controls.
-The maintainer's 154 Danish translations remain bundled locally. New English-only
-messages fall back to English until translations are explicitly exported from Tolgee;
-this batch does not generate Danish or Spanish translations.
+The fifth batch adds 89 English messages for all 23 achievement titles/descriptions,
+rank titles, operator profile/category/stat labels, unlock notifications and the
+notification tray. Display text resolves at call time; achievement IDs, conditions,
+hidden goals, rank grants and persisted player data remain unchanged.
+
+The maintainer's 154 bundled Danish translations are preserved. At the maintainer's
+request, this fifth batch also bundles 89 Danish drafts for review, giving 243 local
+Danish entries before the sixth batch. Missing older messages still fall back to English. Spanish is
+unchanged. The 89 new English messages and translator notes are uploaded to Tolgee.
+The initial combined English/Danish import was rejected with
+`plan_translation_limit_exceeded` under the legacy plan; the English-only import
+succeeded. After the account migration on 2026-10-30, all 89 Danish drafts were
+uploaded successfully, filling only missing entries. Existing translations were
+verified unchanged.
+Existing remote English, Danish and Spanish entries were compared before/after and
+preserved; other branches' keys were retained.
+
+The sixth batch adds 38 English messages and 38 Danish drafts for update dialogs,
+update notifications/actions, mod download cards, progress, cancellation, known
+browser fallbacks and archive-scan notices. These are uploaded to Tolgee; the local
+Danish catalog now contains 281 entries. Release-note Markdown, release versions,
+filenames, download URLs, raw diagnostics and IPC identifiers remain unchanged.
+The Danish achievement title `Knee Deep` is preserved in English because it refers
+to `Knee Deep in the Dead`; a translator note records the reference.
 
 Source-port scan counts use ICU plurals; custom-theme instructions use named React
 placeholders so translators can move complete code examples and links without
@@ -24,16 +45,18 @@ changing their contents. Download dates and sizes follow the selected UI locale.
 Native file-picker filter labels are marked; paths, source-port family values,
 executable names, commands, CSS examples and shortcut bindings remain unchanged.
 
-Achievements/ranks, remaining notifications and native dialogs, and the
-public/embedded registry still need migration. The app does
+Remaining notifications and native dialogs, and the public/embedded registry still
+need migration. The app does
 not yet pass its language to the registry iframe. Registry descriptions are separate
 database content, as described in #78.
 
-Technical toast titles used by notification classification are unchanged. Migrated
-error toasts retain their original variant and history eligibility, and their history
-stores the rendered message. Library/install status descriptions are marked, while
-their technical titles remain unchanged. Decouple history eligibility from English
-titles before migrating those titles; preserve old saved history.
+Achievement/rank/update toasts now carry stable `historyKind` metadata through the toast
+adapter. Notification history uses this metadata to record their translated titles,
+while retaining legacy English-title matching for older/unmigrated callers. Existing
+saved history and replay actions are kept as rendered snapshots; switching languages
+does not rewrite old entries. Other diagnostic toast titles are unchanged. Migrated
+error toasts retain their original variants and history eligibility. Decouple the
+remaining warning callers from English titles before migrating those titles.
 
 ## Language behaviour
 
@@ -62,7 +85,8 @@ uses the `desktop` namespace. Namespaces must be enabled in project settings. Th
 future registry repository owns a separate `registry` namespace in the same project.
 English is the base language. The Danish catalog contains the maintainer's
 translations for the first 154 messages; synchronization does not generate translations
-or change their review state.
+or change their review state. The fifth batch has additional Danish drafts bundled
+locally and available in Tolgee for review, as noted above.
 Each migrated key has a translator description in Tolgee, including placeholder context.
 
 For contributors who synchronise catalogs, copy `.env.example` to `.env` and supply
@@ -92,7 +116,12 @@ never pulls from the service, so a server-side edit cannot change an existing re
 The CLI has an upstream empty-project edge case in `compare` (it expects an embedded
 key list); the initial additive import works, and comparison works after that import.
 Do not add deletion flags such as `sync --remove-unused` or `push --remove-other-keys`.
-One repository is not a complete inventory of the shared Tolgee project.
+One repository is not a complete inventory of the shared Tolgee project. When the
+shared project has newer English edits or other branches' keys, upload only the new
+batch using a temporary `{namespace}/{languageTag}.json` file template and
+`NO_FORCE`; preserve existing remote wording and keys. A full export may contain
+messages this branch does not yet use. Review language catalogs against the current
+branch's English keys before copying an export into the application.
 
 ## Adding messages
 
@@ -117,9 +146,9 @@ CLI extracts marked SDK calls, not arbitrary hardcoded English: migrating a new
 screen requires reviewing and replacing its text, accessibility labels and states.
 
 Keep mod names, user content, IDs, hashes, paths, source-port slugs, CLI arguments,
-URLs and import/export fields unchanged. Resolve module-level achievement/rank/crash
-text at display time in the later migration so language changes do not leave stale
-labels. Do not translate crash-log matching expressions.
+URLs and import/export fields unchanged. Achievement/rank display text lives in `lib/achievements/messages.ts` and resolves
+at display time. Add matching entries there when adding achievement definitions.
+Remaining crash text must also resolve at display time when it is migrated. Do not translate crash-log matching expressions.
 
 ## Short glossary and voice
 
@@ -131,6 +160,10 @@ labels. Do not translate crash-log matching expressions.
 - **Registry**: the public UAC mod/protocol catalog; Danish draft: _register_.
 - **UAC voice**: concise fictional terminal/corporate language. Preserve proper names
   such as UAC, Phobos, MAYKR, FreeDoom and Plutonia; translate surrounding explanation.
+- **Doom references**: keep established game/episode titles, character names and
+  intentional references in their original form. `Knee Deep` references
+  `Knee Deep in the Dead`; a literal Danish rendering loses the reference. When
+  uncertain, preserve the name and ask the maintainer rather than inventing a title.
 
 ## Remaining pilot checks
 
@@ -150,7 +183,9 @@ CSP, a disposable profile, and intercepted localhost API responses. External HTT
 is blocked. It checks all settings tabs, source-port scan/release fixtures, keyboard shortcuts,
 rich text, all five onboarding screens and their boot sequence, all three library
 views, the protocol editor and cancellation of deletion, installation tabs/form
-validation, catalog editing, the Danish catalog, and English fallback for untranslated messages. Expected translated labels come from the catalogs so wording edits do not
+validation, catalog editing, all achievement category labels/hidden placeholders,
+the notification tray, translated update dialogs/actions/history, download
+progress/cancellation/fallbacks, Danish drafts, and English fallback for untranslated messages. Expected translated labels come from the catalogs so wording edits do not
 require rewriting the tests. It does not start the backend or touch real application data.
 
 On Linux/Xwayland, run `npm run i18n:smoke -- --ozone-platform=x11` if needed. To test
@@ -164,7 +199,7 @@ loading in all three languages under file:// with no external requests/CSP error
 and no API key or Tolgee editing-tools chunk in the renderer output. Unit tests
 cover saved settings round trips, invalid preferences, browser language detection,
 fallback, ICU/plural validation and escaping, and React line-break placeholders.
-241 tests pass; the existing dependency-audit test fails as described above. Windows
+255 tests pass; the existing dependency-audit test fails as described above. Windows
 and macOS packaging and a full translated layout pass remain follow-up QA.
 
 The third batch also validates a completion sentence with independent source-port
@@ -180,3 +215,17 @@ unchanged launch commands and schema payloads, and locale-aware library dates/pl
 English uploads are additive, with translator descriptions for all new keys. The
 remote Danish catalog is compared before/after uploading; the local Danish and
 Spanish catalogs remain untouched. No new application-data migrations are needed.
+
+The fifth batch adds regression coverage for language changes without altering
+achievement unlock decisions, hidden achievement/compound-condition secrecy,
+translated rank/unlock toast history through the real toast adapter, unchanged legacy
+history/actions, and locale-aware progress/time formatting. A disposable Electron
+screenshot confirms Danish profile/category labels fit the existing layout.
+
+The sixth batch records update history with `historyKind: 'update'`, retaining
+legacy callers and the previous quiet/manual-check behavior. Download events add
+optional phase/reason metadata for localized presentation without parsing backend
+English. Unrecognized legacy events preserve their original text/details. Progress
+updates retain the selected release version and release notes. The smoke test
+uses mocked install/download/cancel IPC handlers; no actual update or mod transfer
+runs, and system-installed builds retain their GitHub-only update behavior.

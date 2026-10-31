@@ -1,7 +1,11 @@
 import * as React from 'react'
 
 import type { ToastActionElement, ToastProps } from '@/components/ui/toast'
-import { recordNotification, type NotificationAction } from '@/lib/notifications'
+import {
+  recordNotification,
+  type NotificationAction,
+  type NotificationKind
+} from '@/lib/notifications'
 
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 5000 // 5 seconds
@@ -15,6 +19,7 @@ type ToasterToast = ToastProps & {
   // replay later — `action` itself is a live React element/closure and
   // can't survive a localStorage round-trip. Not rendered by <Toaster />.
   historyAction?: NotificationAction
+  historyKind?: NotificationKind
 }
 
 const actionTypes = {
@@ -137,7 +142,7 @@ function dispatch(action: Action): void {
 
 type Toast = Omit<ToasterToast, 'id'>
 
-function toast({ historyAction, ...props }: Toast): {
+function toast({ historyAction, historyKind, ...props }: Toast): {
   id: string
   dismiss: () => void
   update: (props: ToasterToast) => void
@@ -168,7 +173,8 @@ function toast({ historyAction, ...props }: Toast): {
     title: props.title,
     description: props.description,
     variant: props.variant ?? undefined,
-    action: historyAction
+    action: historyAction,
+    kind: historyKind
   })
 
   return {

@@ -204,3 +204,38 @@ describe('markRead / markAllRead', () => {
     expect(readStored().find((n) => n.id === 'expired')?.read).toBe(false)
   })
 })
+
+describe('translated notification metadata', () => {
+  it.each(['achievement', 'rank', 'update'] as const)(
+    'records %s without English title matching',
+    async (kind) => {
+      vi.stubGlobal('localStorage', createMemoryStorage())
+      vi.resetModules()
+      const { recordNotification } = await import('./notifications')
+      recordNotification({
+        id: 'translated',
+        title: 'Helt anden ordlyd',
+        description: 'Besked',
+        kind
+      })
+      expect(readStored()).toMatchObject([{ id: 'translated', title: 'Helt anden ordlyd', kind }])
+    }
+  )
+  it('keeps legacy saved history and replay actions unchanged when a translated event is added', async () => {
+    vi.stubGlobal('localStorage', createMemoryStorage())
+    const legacy = {
+      id: 'old',
+      title: 'SYSTEM: Update Ready',
+      description: 'Original English text',
+      variant: 'default',
+      createdAt: '2026-10-25T12:00:00Z',
+      read: false,
+      action: { kind: 'restart-update' }
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([legacy]))
+    vi.resetModules()
+    const { recordNotification } = await import('./notifications')
+    recordNotification({ id: 'new', title: 'Forfremmelse', kind: 'rank' })
+    expect(readStored()[1]).toEqual(legacy)
+  })
+})

@@ -1,3 +1,5 @@
+import { useTranslate, useTolgee } from '@tolgee/react'
+import { getDownloadText } from '@/lib/i18n/download-messages'
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
@@ -34,9 +36,8 @@ interface ModDownloadManagerProps {
  * The download cards themselves render in the Toaster, stacked with the
  * regular toast notifications in one bottom-right column.
  */
-export function ModDownloadManager({
-  modDownloads
-}: ModDownloadManagerProps): React.ReactElement {
+export function ModDownloadManager({ modDownloads }: ModDownloadManagerProps): React.ReactElement {
+  const { t } = useTranslate('desktop')
   const { downloads, dismiss } = modDownloads
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -83,14 +84,20 @@ export function ModDownloadManager({
     registryMeta?: ModDownloadRegistryMeta
   ): Promise<void> => {
     try {
-      toast({ title: 'SYSTEM: decompressing', description: 'Analyzing archive contents.' })
+      toast({
+        title: 'SYSTEM: decompressing',
+        description: t('downloads.archive.analyzing', 'Analyzing archive contents.')
+      })
       const scan = (await api.archiveScan(filePath)) as ArchiveScanResult
       setArchiveImport({ scanResult: scan, filePath, registryMeta })
     } catch (error: unknown) {
       log.error(error)
       toast({
         title: 'FATAL: archive_scan_failed',
-        description: error instanceof Error ? error.message : 'Failed to scan archive',
+        description:
+          error instanceof Error
+            ? error.message
+            : t('downloads.archive.scanFailed', 'Failed to scan archive'),
         variant: 'destructive'
       })
     }
@@ -132,23 +139,12 @@ export function DownloadCard({
   onCancel: () => void
   onDismiss: () => void
 }): React.ReactElement {
+  const { t } = useTranslate('desktop')
+  const tolgee = useTolgee(['language'])
+  const { title, error } = getDownloadText(event, fileName)
   const active =
     event.state === 'preparing' || event.state === 'started' || event.state === 'progress'
   const transferring = event.state === 'started' || event.state === 'progress'
-
-  let title: string
-  if (event.state === 'preparing') {
-    title = event.message
-  } else if (event.state === 'completed') {
-    if (event.filePath) title = 'Download complete'
-    else title = event.alreadyInCatalog ? 'Already in catalog' : 'Added to catalog'
-  } else if (event.state === 'cancelled') {
-    title = 'Download cancelled'
-  } else if (event.state === 'error') {
-    title = 'Download failed'
-  } else {
-    title = fileName || 'Downloading…'
-  }
 
   return (
     <Card className="shadow-lg">
@@ -156,9 +152,7 @@ export function DownloadCard({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{title}</p>
-            {event.state === 'error' && (
-              <p className="mt-0.5 text-xs text-destructive">{event.message}</p>
-            )}
+            {event.state === 'error' && <p className="mt-0.5 text-xs text-destructive">{error}</p>}
             {event.state === 'completed' && event.catalogEntry?.name && (
               <p className="mt-0.5 truncate text-xs text-muted-foreground">
                 {event.catalogEntry.name}
@@ -167,12 +161,16 @@ export function DownloadCard({
             {transferring && (
               <div className="mt-2 flex items-center gap-2">
                 <Progress
+                  aria-label={t('downloads.progress', 'Download progress')}
                   value={event.state === 'progress' ? event.percent : 0}
                   className="h-2 flex-1"
                 />
                 {event.state === 'progress' && (
                   <span className="shrink-0 text-xs text-muted-foreground">
-                    {Math.round(event.percent)}%
+                    {new Intl.NumberFormat(tolgee.getLanguage(), {
+                      style: 'percent',
+                      maximumFractionDigits: 0
+                    }).format(event.percent / 100)}
                   </span>
                 )}
               </div>
@@ -181,11 +179,16 @@ export function DownloadCard({
           <div className="flex shrink-0 items-center gap-1">
             {active && (
               <Button variant="outline" size="sm" onClick={onCancel}>
-                Cancel
+                {t('downloads.cancel', 'Cancel')}
               </Button>
             )}
             {!active && (
-              <Button variant="ghost" size="icon" onClick={onDismiss} aria-label="Dismiss">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onDismiss}
+                aria-label={t('downloads.dismiss', 'Dismiss')}
+              >
                 <X />
               </Button>
             )}

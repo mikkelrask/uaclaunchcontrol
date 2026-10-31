@@ -108,7 +108,21 @@ ipcMain.on('get-first-run', (event) => {
   event.returnValue = false
 })
 ipcMain.handle('get-app-version', () => '1.0.0')
-ipcMain.handle('get-install-type', () => ({ isAppImage: false, isSystemInstalled: true }))
+let fixtureInstallType = { isAppImage: true, isSystemInstalled: false }
+const updateCalls = { downloads: 0, installs: 0, cancellations: 0 }
+ipcMain.handle('get-install-type', () => fixtureInstallType)
+ipcMain.handle('check-for-updates', () => {})
+ipcMain.handle('download-update', (event) => {
+  updateCalls.downloads++
+  event.sender.send('update-status', { status: 'downloading', percent: 42.5 })
+})
+ipcMain.handle('install-update', () => {
+  updateCalls.installs++
+})
+ipcMain.handle('cancel-mod-download', (event, id) => {
+  updateCalls.cancellations++
+  event.sender.send('mod-download-status', { state: 'cancelled', id })
+})
 ipcMain.handle('set-zoom-factor', () => {})
 
 app
@@ -216,6 +230,51 @@ app
         window,
         `document.documentElement.lang === ${JSON.stringify(locale)} && [...document.querySelectorAll('nav a')].some(el => el.textContent.trim() === ${JSON.stringify(launch)})`
       )
+
+      await clickSelector(window, 'header button:has(img)')
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('achievements.profile.title'))})`
+      )
+      for (const [category, expected] of [
+        ['progression', message('achievements.items.first-protocol.title')],
+        ['collection', message('achievements.items.mod-collector.title')],
+        ['combat', message('achievements.items.first-blood.title')],
+        ['exploration', message('achievements.items.world-traveler.title')],
+        ['secret', message('achievements.card.secretHint')]
+      ]) {
+        await waitFor(
+          window,
+          `document.querySelector('[role="tab"][id$="-trigger-${category}"]').textContent.trim() === ${JSON.stringify(message('achievements.category.' + category))}`
+        )
+        await clickSelector(window, `[role="tab"][id$="-trigger-${category}"]`)
+        await waitFor(
+          window,
+          `document.querySelector('[role="tabpanel"][data-state="active"]').textContent.includes(${JSON.stringify(expected)})`
+        )
+      }
+      if (locale === 'da-DK' && process.env.UAC_I18N_PROFILE_SCREENSHOT) {
+        await clickSelector(window, '[role="tab"][id$="-trigger-progression"]')
+        await pause(200)
+        fs.writeFileSync(
+          process.env.UAC_I18N_PROFILE_SCREENSHOT,
+          (await window.webContents.capturePage()).toPNG()
+        )
+      }
+      window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await waitFor(window, `!document.querySelector('[role="dialog"]')`)
+      await clickSelector(
+        window,
+        `button[aria-label=${JSON.stringify(message('navigation.notifications'))}]`
+      )
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('notifications.empty'))})`
+      )
+      window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
+      window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
+      await waitFor(window, `!document.querySelector('[role="dialog"]')`)
       // Exercise the application's existing Settings shortcut in the isolated fixture.
       window.webContents.sendInputEvent({ type: 'keyDown', keyCode: '.', modifiers: ['control'] })
       window.webContents.sendInputEvent({ type: 'keyUp', keyCode: '.', modifiers: ['control'] })
@@ -440,8 +499,210 @@ app
           await waitFor(window, `!document.querySelector('[role="dialog"]')`)
         }
       }
+
+      // Exercise production update/download IPC with fixture-only handlers. No real installs or transfers.
+      const callsBefore = { ...updateCalls }
+      window.webContents.send('update-status', {
+        status: 'available',
+        version: '9.9.1-fixture',
+        releaseNotes: '# Knee Deep in the Dead\n\nKeep GZDoom and UZDoom names.'
+      })
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('updates.notice.available', { version: '9.9.1-fixture' }))})`
+      )
+      await clickSelector(window, 'button', message('updates.action.view'))
+      await waitFor(
+        window,
+        `document.querySelector('[role="dialog"]')?.textContent.includes(${JSON.stringify(message('updates.dialog.title'))})`
+      )
+      const updateBody = await window.webContents.executeJavaScript(
+        `document.querySelector('[role="dialog"]').textContent`
+      )
+      assert(updateBody.includes('9.9.1-fixture'))
+      assert(updateBody.includes('Knee Deep in the Dead'))
+      assert(updateBody.includes('GZDoom and UZDoom'))
+      if (locale === 'da-DK' && process.env.UAC_I18N_UPDATE_SCREENSHOT) {
+        await pause(200)
+        fs.writeFileSync(
+          process.env.UAC_I18N_UPDATE_SCREENSHOT,
+          (await window.webContents.capturePage()).toPNG()
+        )
+      }
+      await clickSelector(window, '[role="dialog"] button', message('updates.dialog.download'))
+      const percent = new Intl.NumberFormat(locale, {
+        style: 'percent',
+        maximumFractionDigits: 0
+      }).format(0.425)
+      await waitFor(
+        window,
+        `document.querySelector('[role="dialog"]').textContent.includes(${JSON.stringify(percent)})`
+      )
+      const progressBody = await window.webContents.executeJavaScript(
+        `document.querySelector('[role="dialog"]').textContent`
+      )
+      assert(progressBody.includes('9.9.1-fixture'), 'Progress must retain the release version')
+      assert(progressBody.includes('Knee Deep in the Dead'), 'Progress must retain release notes')
+      window.webContents.send('update-status', { status: 'downloaded', version: '9.9.1-fixture' })
+      await waitFor(
+        window,
+        `document.querySelector('[role="dialog"]').textContent.includes(${JSON.stringify(message('updates.dialog.install'))})`
+      )
+      await clickSelector(window, '[role="dialog"] button', message('updates.dialog.install'))
+      await waitFor(window, 'true')
+      assert.equal(updateCalls.downloads, callsBefore.downloads + 1)
+      assert.equal(updateCalls.installs, callsBefore.installs + 1)
+      await clickSelector(window, '[role="dialog"] button', message('ui.dialog.close'))
+      await waitFor(window, `!document.querySelector('[role="dialog"]')`)
+      const history = await window.webContents.executeJavaScript(
+        `JSON.parse(localStorage.getItem('uac:notifications') || '[]')`
+      )
+      assert(
+        history.some(
+          (entry) =>
+            entry.kind === 'update' &&
+            entry.title === message('updates.notice.availableTitle') &&
+            entry.action?.kind === 'view-update'
+        )
+      )
+      assert(
+        history.some(
+          (entry) =>
+            entry.kind === 'update' &&
+            entry.title === message('updates.notice.readyTitle') &&
+            entry.action?.kind === 'restart-update'
+        )
+      )
+
+      window.webContents.send('mod-download-status', {
+        state: 'preparing',
+        id: 'fixture-wait',
+        message: 'opaque backend phase',
+        phase: 'waiting-for-moddb'
+      })
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('downloads.waitingForModdb'))})`
+      )
+      await clickSelector(window, 'button', message('downloads.cancel'))
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('downloads.cancelled'))})`
+      )
+      assert.equal(updateCalls.cancellations, callsBefore.cancellations + 1)
+      await clickSelector(
+        window,
+        `button[aria-label=${JSON.stringify(message('downloads.dismiss'))}]`
+      )
+      await waitFor(
+        window,
+        `!document.body.textContent.includes(${JSON.stringify(message('downloads.cancelled'))})`
+      )
+      window.webContents.send('mod-download-status', {
+        state: 'started',
+        id: 'fixture-progress',
+        fileName: 'Knee Deep {release}.pk3',
+        source: 'github'
+      })
+      window.webContents.send('mod-download-status', {
+        state: 'progress',
+        id: 'fixture-progress',
+        percent: 42.5,
+        receivedBytes: 425,
+        totalBytes: 1000
+      })
+      await waitFor(
+        window,
+        `document.body.textContent.includes('Knee Deep {release}.pk3') && document.body.textContent.includes(${JSON.stringify(percent)})`
+      )
+      window.webContents.send('mod-download-status', {
+        state: 'completed',
+        id: 'fixture-progress',
+        filePath: '',
+        alreadyInCatalog: true
+      })
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('downloads.alreadyCataloged'))})`
+      )
+      await clickSelector(
+        window,
+        `button[aria-label=${JSON.stringify(message('downloads.dismiss'))}]`
+      )
+      await waitFor(
+        window,
+        `!document.body.textContent.includes(${JSON.stringify(message('downloads.alreadyCataloged'))})`
+      )
+      window.webContents.send('mod-download-status', {
+        state: 'error',
+        id: 'fixture-fallback',
+        message: 'opaque backend failure',
+        reason: { code: 'browser-fallback' }
+      })
+      await waitFor(
+        window,
+        `document.body.textContent.includes(${JSON.stringify(message('downloads.browserFallback'))})`
+      )
+      const fallbackBody = await window.webContents.executeJavaScript(`document.body.textContent`)
+      assert(!fallbackBody.includes('opaque backend failure'))
+      if (locale === 'da-DK' && process.env.UAC_I18N_DOWNLOAD_SCREENSHOT) {
+        await pause(200)
+        fs.writeFileSync(
+          process.env.UAC_I18N_DOWNLOAD_SCREENSHOT,
+          (await window.webContents.capturePage()).toPNG()
+        )
+      }
+      await clickSelector(
+        window,
+        `button[aria-label=${JSON.stringify(message('downloads.dismiss'))}]`
+      )
+      await waitFor(
+        window,
+        `!document.body.textContent.includes(${JSON.stringify(message('downloads.browserFallback'))})`
+      )
+      if (locale === 'en') {
+        // System package installs offer the release link, without self-update actions.
+        fixtureInstallType = { isAppImage: false, isSystemInstalled: true }
+        await window.loadFile(renderer)
+        await waitFor(
+          window,
+          `document.documentElement.lang === 'en' && !!document.querySelector('nav a')`
+        )
+        window.webContents.send('update-status', {
+          status: 'available',
+          version: '9.9.2-system-fixture'
+        })
+        await waitFor(
+          window,
+          `document.body.textContent.includes(${JSON.stringify(message('updates.notice.available', { version: '9.9.2-system-fixture' }))})`
+        )
+        await clickSelector(window, 'button', message('updates.action.view'))
+        await waitFor(
+          window,
+          `!!document.querySelector('[role="dialog"]') && ![...document.querySelectorAll('[role="dialog"] button')].some(button => button.textContent.trim() === ${JSON.stringify(message('updates.dialog.download'))})`
+        )
+        window.webContents.send('update-status', {
+          status: 'downloaded',
+          version: '9.9.2-system-fixture'
+        })
+        await waitFor(
+          window,
+          `document.body.textContent.includes(${JSON.stringify(message('updates.notice.ready', { version: '9.9.2-system-fixture' }))})`
+        )
+        assert(
+          !(await window.webContents.executeJavaScript(
+            `[...document.querySelectorAll('[role="dialog"] button')].some(button => button.textContent.trim() === ${JSON.stringify(message('updates.dialog.install'))})`
+          ))
+        )
+        await clickSelector(window, '[role="dialog"] button', message('ui.dialog.close'))
+        await waitFor(window, `!document.querySelector('[role="dialog"]')`)
+        assert.equal(updateCalls.downloads, callsBefore.downloads + 1)
+        assert.equal(updateCalls.installs, callsBefore.installs + 1)
+      }
+      // Each locale reload should start with an empty notification-history fixture.
+      await window.webContents.executeJavaScript(`localStorage.removeItem('uac:notifications')`)
       console.log(
-        `PASS file:// renderer: ${locale}; settings, downloads, shortcuts, complete onboarding/boot, library views/editor/delete cancellation, install tabs/validation, CSP, sandbox`
+        `PASS file:// renderer: ${locale}; updates/actions/history, download progress/cancellation/fallback, profile, settings, onboarding, library/install, CSP, sandbox`
       )
     }
     assert(

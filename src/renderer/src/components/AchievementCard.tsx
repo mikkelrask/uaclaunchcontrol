@@ -1,3 +1,9 @@
+import { useTranslate } from '@tolgee/react'
+import {
+  getAchievementText,
+  getAchievementStatLabel,
+  formatAchievementStat
+} from '@/lib/achievements/messages'
 import React from 'react'
 import type { IAchievementDefinition } from '@/lib/achievements'
 import type { IAchievementState, IPlayerStats } from '@shared/schema'
@@ -15,22 +21,6 @@ interface AchievementCardProps {
 }
 
 /**
- * Human-readable labels for each stat key shown in compound achievement conditions.
- */
-const STAT_LABELS: Record<string, string> = {
-  totalProtocolsCreated: 'Protocols Created',
-  totalProtocolsLaunched: 'Protocols Launched',
-  totalModFilesAdded: 'Mod Files Added',
-  totalWadsImported: 'WADs Imported',
-  totalPlaytimeSeconds: 'Playtime',
-  totalCatalogFilesManaged: 'Files Cataloged',
-  protocolsLaunchedThisSession: 'This Session',
-  distinctProtocolsLaunched: 'Unique Protocols',
-  maxModFilesInSingleProtocol: 'Max Files/Protocol',
-  reachedIconOfSin: `Romero's head on a stick`
-}
-
-/**
  * Extract a numeric value from a stat, handling array-typed stats
  * like `distinctProtocolsLaunched` by using `.length`.
  */
@@ -41,42 +31,6 @@ function getStatValue(stats: IPlayerStats, key: string): number {
 }
 
 /**
- * Format a stat value for display — special handling for playtime seconds
- * (shows only hours, no minutes).
- */
-function formatStatValue(key: string, value: number): string {
-  if (key === 'totalPlaytimeSeconds') {
-    const hours = Math.floor(value / 3600)
-    return `${hours}h`
-  }
-  return String(Math.floor(value))
-}
-
-/**
- * Format a value for the single progress bar display, using the
- * achievement's first condition to determine the stat type.
- */
-function formatDisplayProgress(def: IAchievementDefinition, value: number): string {
-  const statKey = def.conditions[0]?.stat
-  if (statKey === 'totalPlaytimeSeconds') {
-    const hours = Math.floor(value / 3600)
-    return `${hours}h`
-  }
-  return String(Math.floor(value))
-}
-
-/**
- * Format a threshold value for display.
- */
-function formatThreshold(key: string, value: number): string {
-  if (key === 'totalPlaytimeSeconds') {
-    const hours = Math.floor(value / 3600)
-    return `${hours}h`
-  }
-  return String(value)
-}
-
-/**
  * Renders a single achievement row with icon, title, description,
  * progress bar(s), and locked/unlocked badge.
  *
@@ -84,6 +38,9 @@ function formatThreshold(key: string, value: number): string {
  * instead of a single aggregated percentage.
  */
 export const AchievementCard: React.FC<AchievementCardProps> = ({ definition, state, stats }) => {
+  const { t } = useTranslate('desktop')
+  const text = getAchievementText(definition)
+  const progressStat = definition.conditions[0]?.stat ?? ''
   // Dynamically resolve the Lucide icon by name
   const IconComponent =
     (LucideIcons as unknown as Record<string, LucideIcon>)[definition.icon] ?? HelpCircle
@@ -104,10 +61,12 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({ definition, st
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-medium text-app-muted">???</span>
             <Badge variant="outline" className="shrink-0 text-xs">
-              Locked
+              {t('achievements.card.locked', 'Locked')}
             </Badge>
           </div>
-          <p className="text-xs text-app-muted mt-0.5">Secret achievement — keep going</p>
+          <p className="text-xs text-app-muted mt-0.5">
+            {t('achievements.card.secretHint', 'Secret achievement — keep going')}
+          </p>
         </div>
       </div>
     )
@@ -122,21 +81,21 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({ definition, st
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium truncate text-app-primary">{definition.title}</span>
+          <span className="text-sm font-medium truncate text-app-primary">{text.title}</span>
           {state.unlocked ? (
             <Badge className="shrink-0 bg-accent-highlight text-white text-[0.625rem] border-0">
-              Unlocked
+              {t('achievements.card.unlocked', 'Unlocked')}
             </Badge>
           ) : (
             <Badge
               variant="outline"
               className="shrink-0 text-[0.625rem] text-app-muted border-app-muted/30"
             >
-              Locked
+              {t('achievements.card.locked', 'Locked')}
             </Badge>
           )}
         </div>
-        <p className="text-xs text-app-muted mt-0.5 leading-relaxed">{definition.description}</p>
+        <p className="text-xs text-app-muted mt-0.5 leading-relaxed">{text.description}</p>
 
         {/* Per-condition progress for compound achievements */}
         {definition.type === 'compound' && stats && !state.unlocked && (
@@ -154,13 +113,13 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({ definition, st
                     <div className="w-3.5 h-3.5 shrink-0" />
                   )}
                   <span className="text-[0.625rem] text-app-muted font-mono min-w-[90px] shrink-0">
-                    {obscure ? '????' : (STAT_LABELS[condition.stat] ?? condition.stat)}
+                    {obscure ? '????' : getAchievementStatLabel(condition.stat)}
                   </span>
                   <Progress value={obscure ? 0 : pct} className="h-1.5 bg-app-primary flex-1" />
                   <span className="text-[0.625rem] text-app-muted font-mono shrink-0 w-20 text-right tabular-nums">
                     {obscure
                       ? '?? / ??'
-                      : `${formatStatValue(condition.stat, currentVal)} / ${formatThreshold(condition.stat, condition.min)}`}
+                      : `${formatAchievementStat(condition.stat, currentVal)} / ${formatAchievementStat(condition.stat, condition.min)}`}
                   </span>
                 </div>
               )
@@ -174,8 +133,8 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({ definition, st
             <Progress value={progressPct} className="h-1.5 bg-app-primary" />
             <span className="text-[0.625rem] text-app-muted font-mono shrink-0 tabular-nums">
               {state.unlocked
-                ? `${formatDisplayProgress(definition, state.target)} / ${formatDisplayProgress(definition, state.target)}`
-                : `${formatDisplayProgress(definition, state.progress)} / ${formatDisplayProgress(definition, state.target)}`}
+                ? `${formatAchievementStat(progressStat, state.target)} / ${formatAchievementStat(progressStat, state.target)}`
+                : `${formatAchievementStat(progressStat, state.progress)} / ${formatAchievementStat(progressStat, state.target)}`}
             </span>
           </div>
         )}

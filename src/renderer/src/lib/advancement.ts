@@ -1,3 +1,5 @@
+import { getTranslate } from '@/lib/i18n'
+
 /**
  * Advancement rank definitions for the UAC operator ladder.
  *
@@ -24,6 +26,15 @@ export const ADVANCEMENT_RANKS: AdvancementRank[] = [
  * Look up the display title for a given rank id.
  */
 export function getRankTitle(rankId?: string): string {
-  const rank = ADVANCEMENT_RANKS.find((r) => r.id === rankId)
-  return rank?.title ?? 'Cadet'
+  const { t } = getTranslate('desktop')
+  switch (rankId) {
+    case 'marine':
+      return t('ranks.marine.title', 'Marine')
+    case 'sergeant':
+      return t('ranks.sergeant.title', 'Sergeant')
+    case 'slayer':
+      return t('ranks.slayer.title', 'Doom Slayer')
+    default:
+      return t('ranks.cadet.title', 'Cadet')
+  }
 }

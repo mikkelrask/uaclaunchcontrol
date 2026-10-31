@@ -19,7 +19,11 @@ import { getModFileCatalog, addModFileToCatalog } from '../storage/mod-catalog'
 import { computeFileHashOrThrow, getSettings } from '../storage/core'
 import { REGISTRY_API_URL } from '@shared/registry-config'
 import type { ModDownloadEvent, ModDownloadRegistryMeta } from '@shared/modDownload'
-import { isGithubArchiveUrl, isGithubReleaseAsset, isModdbStartPage } from '@shared/mod-download-url'
+import {
+  isGithubArchiveUrl,
+  isGithubReleaseAsset,
+  isModdbStartPage
+} from '@shared/mod-download-url'
 import { getArchiveExtension } from '@shared/archive'
 import { debug } from '@shared/debug'
 import { createLogger } from '@shared/logger'
@@ -197,7 +201,8 @@ function startModdbWindow(task: DownloadTask): void {
   sendStatus({
     state: 'preparing',
     id: task.id,
-    message: 'Waiting for ModDB to start the download…'
+    message: 'Waiting for ModDB to start the download…',
+    phase: 'waiting-for-moddb'
   })
   win.loadURL(task.url).catch((err: unknown) => {
     log.error('ModDB start page failed to load:', err)
@@ -262,7 +267,8 @@ function handleWillDownload(
       sendStatus({
         state: 'error',
         id: task.id,
-        message: `Download interrupted (${state})`
+        message: `Download interrupted (${state})`,
+        reason: { code: 'interrupted', state }
       })
       shell.openExternal(task.url).catch(() => {})
       cleanupTask(task)
@@ -294,7 +300,8 @@ function guardTimeout(task: DownloadTask): void {
   sendStatus({
     state: 'error',
     id: task.id,
-    message: 'Download did not start — opening in your browser instead'
+    message: 'Download did not start — opening in your browser instead',
+    reason: { code: 'browser-fallback' }
   })
   shell.openExternal(task.url).catch(() => {})
   cleanupTask(task)

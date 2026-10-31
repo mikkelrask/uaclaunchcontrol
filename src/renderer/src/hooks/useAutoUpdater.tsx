@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast'
 import { api } from '@/api'
 import { ToastAction } from '@/components/ui/toast'
 import { IUpdateInfo } from '@shared/schema'
+import { getUpdateNotice } from '@/lib/i18n/update-messages'
 
 export function useAutoUpdater(): {
   updateInfo: IUpdateInfo | null
@@ -12,83 +13,38 @@ export function useAutoUpdater(): {
 } {
   const { toast } = useToast()
   const [updateInfo, setUpdateInfo] = useState<IUpdateInfo | null>(null)
-
   useEffect(() => {
     api.onUpdateStatus((data: IUpdateInfo) => {
-      setUpdateInfo(data)
-
-      switch (data.status) {
-        case 'available':
-          toast({
-            title: 'SYSTEM: Update Pending',
-            description: `Version ${data.version} is now available. Click to view release notes.`,
-            action: (
-              <ToastAction
-                altText="View Update"
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent('show-update-modal', { detail: data }))
-                }}
-              >
-                View
-              </ToastAction>
-            ),
-            // No payload: UpdateModal reads live updateInfo state, not the
-            // event detail, so recalling this later just reflects whatever
-            // update status is current when it's clicked.
-            historyAction: { kind: 'view-update' }
-          })
-          break
-        case 'not-available':
-          if (data.isManual) {
-            toast({
-              title: 'SYSTEM: Up-to-Date',
-              description: `Latest version (${data.version || 'unknown'}) is installed.`
-            })
-          }
-          break
-        case 'downloading':
-          break
-        case 'downloaded':
-          toast({
-            title: 'SYSTEM: Update Ready',
-            description: `Version ${data.version} has been downloaded. Click Restart to apply.`,
-            action: (
-              <ToastAction altText="Restart Now" onClick={() => api.installUpdate()}>
-                Restart
-              </ToastAction>
-            ),
-            historyAction: { kind: 'restart-update' }
-          })
-          break
-        case 'error':
-          toast({
-            title: 'SYSTEM: Update failure',
-            description:
-              data.error ||
-              'Could not reach UAC data centers. Contact Sam Grimm at UAC, Phobos facility if the issue persists.',
-            variant: 'destructive'
-          })
-          break
-      }
+      // Progress events carry only status/percent; retain the release identity and notes.
+      setUpdateInfo((previous) => ({ ...previous, ...data }))
+      const notice = getUpdateNotice(data)
+      if (!notice) return
+      const { actionLabel, actionAltText, ...props } = notice
+      toast({
+        ...props,
+        ...(notice.historyAction
+          ? {
+              action: (
+                <ToastAction
+                  altText={actionAltText!}
+                  onClick={() => {
+                    if (notice.historyAction?.kind === 'restart-update') api.installUpdate()
+                    else
+                      window.dispatchEvent(new CustomEvent('show-update-modal', { detail: data }))
+                  }}
+                >
+                  {actionLabel}
+                </ToastAction>
+              )
+            }
+          : {})
+      })
     })
   }, [toast])
-
-  const checkForUpdates = (): void => {
-    api.checkForUpdates()
-  }
-
-  const downloadUpdate = (): void => {
-    api.downloadUpdate()
-  }
-
-  const installUpdate = (): void => {
-    api.installUpdate()
-  }
-
   return {
     updateInfo,
-    checkForUpdates,
-    downloadUpdate,
-    installUpdate
+    checkForUpdates: () => api.checkForUpdates(),
+    downloadUpdate: () => api.downloadUpdate(),
+    installUpdate: () => api.installUpdate()
   }
 }

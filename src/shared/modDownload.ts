@@ -10,7 +10,7 @@ export interface ModDownloadRegistryMeta {
 }
 
 export type ModDownloadEvent =
-  | { state: 'preparing'; id: string; message: string }
+  | { state: 'preparing'; id: string; message: string; phase?: 'waiting-for-moddb' }
   | { state: 'started'; id: string; fileName: string; source: 'github' | 'moddb' }
   | {
       state: 'progress'
@@ -29,4 +29,10 @@ export type ModDownloadEvent =
       registry?: ModDownloadRegistryMeta
     }
   | { state: 'cancelled'; id: string }
-  | { state: 'error'; id: string; message: string }
+  | {
+      state: 'error'
+      id: string
+      message: string
+      /** Stable presentation metadata; raw diagnostics remain available for older consumers. */
+      reason?: { code: 'interrupted'; state: string } | { code: 'browser-fallback' }
+    }

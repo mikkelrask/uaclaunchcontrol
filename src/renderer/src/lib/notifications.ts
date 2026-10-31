@@ -19,7 +19,10 @@ export type NotificationAction =
   | { kind: 'view-update' }
   | { kind: 'restart-update' }
 
+export type NotificationKind = 'achievement' | 'rank' | 'update'
+
 export interface INotification {
+  kind?: NotificationKind
   id: string
   title: string
   description: string
@@ -62,7 +65,12 @@ function emit(): void {
 // Only persist toasts worth finding again later: errors, warnings,
 // achievement/rank unlocks, and update status — the things that can happen
 // while you're not looking (e.g. full-screen in a game).
-function shouldRecord(title: string, variant: 'default' | 'destructive'): boolean {
+function shouldRecord(
+  title: string,
+  variant: 'default' | 'destructive',
+  kind?: NotificationKind
+): boolean {
+  if (kind === 'achievement' || kind === 'rank' || kind === 'update') return true
   if (variant === 'destructive') return true
   if (title.startsWith('WARNING:')) return true
   if (title.endsWith('" Unlocked!') || title === 'RANK ADVANCEMENT') return true
@@ -76,6 +84,7 @@ export function recordNotification(input: {
   description?: React.ReactNode
   variant?: 'default' | 'destructive'
   action?: NotificationAction
+  kind?: NotificationKind
 }): void {
   // 96 existing call sites all pass plain strings today (verified) - this
   // guards the rare/future case of something richer being passed in.
@@ -85,7 +94,7 @@ export function recordNotification(input: {
   if (!title && !description) return
 
   const variant = input.variant ?? 'default'
-  if (!shouldRecord(title, variant)) return
+  if (!shouldRecord(title, variant, input.kind)) return
 
   notifications = [
     {
@@ -94,6 +103,7 @@ export function recordNotification(input: {
       id: input.id ?? crypto.randomUUID(),
       title,
       description,
+      ...(input.kind ? { kind: input.kind } : {}),
       variant,
       createdAt: new Date().toISOString(),
       read: false,

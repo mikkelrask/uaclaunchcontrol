@@ -1,3 +1,4 @@
+import { useTranslate, useTolgee } from '@tolgee/react'
 import React from 'react'
 import { ReleaseNotes } from './ReleaseNotes'
 import {
@@ -29,6 +30,8 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
   updateInfo,
   installType
 }) => {
+  const { t } = useTranslate('desktop')
+  const tolgee = useTolgee(['language'])
   const isSystemInstalled = installType?.isSystemInstalled ?? false
   const isDownloading = updateInfo?.status === 'downloading'
   const downloadProgress = updateInfo?.percent || 0
@@ -60,10 +63,10 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             </div>
             <div>
               <DialogTitle className="text-xl font-bold tracking-tight text-app-primary lowercase">
-                update_available
+                {t('updates.dialog.title', 'update_available')}
               </DialogTitle>
               <DialogDescription className="text-xs font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                UAC Launch Control // Software Update
+                {t('updates.dialog.subtitle', 'UAC Launch Control // Software Update')}
               </DialogDescription>
             </div>
           </div>
@@ -71,7 +74,9 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
 
         <div className="space-y-4 p-4">
           <div className="flex items-center justify-between p-3 bg-app-primary rounded-lg border border-app">
-            <Label className="text-sm text-app-muted">New Version</Label>
+            <Label className="text-sm text-app-muted">
+              {t('updates.dialog.newVersion', 'New Version')}
+            </Label>
             <span className="text-sm font-mono text-accent-highlight font-bold">
               v{updateInfo.version}
             </span>
@@ -80,7 +85,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           {updateInfo.releaseNotes && (
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-widest text-app-muted font-mono font-bold">
-                Release Notes
+                {t('updates.dialog.releaseNotes', 'Release Notes')}
               </Label>
               <ScrollArea className="h-96 rounded-md border border-app bg-app-primary p-4">
                 <ReleaseNotes markdown={updateInfo.releaseNotes} />
@@ -91,12 +96,21 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           {isDownloading && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-xs text-app-muted">Downloading...</Label>
+                <Label className="text-xs text-app-muted">
+                  {t('updates.dialog.downloading', 'Downloading...')}
+                </Label>
                 <span className="text-xs font-mono text-app-muted">
-                  {Math.round(downloadProgress)}%
+                  {new Intl.NumberFormat(tolgee.getLanguage(), {
+                    style: 'percent',
+                    maximumFractionDigits: 0
+                  }).format(downloadProgress / 100)}
                 </span>
               </div>
-              <Progress value={downloadProgress} className="h-2 bg-app-primary" />
+              <Progress
+                aria-label={t('updates.dialog.progress', 'Update download progress')}
+                value={downloadProgress}
+                className="h-2 bg-app-primary"
+              />
             </div>
           )}
         </div>
@@ -108,7 +122,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             className="bg-app-primary hover:bg-app-hover text-app-primary border-app"
           >
             <ExternalLink className="w-4 h-4 mr-2" />
-            View on GitHub
+            {t('updates.dialog.github', 'View on GitHub')}
           </Button>
 
           {updateInfo.status === 'available' && !isDownloading && !isSystemInstalled && (
@@ -117,7 +131,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               className="bg-accent-highlight hover:opacity-90 text-white"
             >
               <Download className="w-4 h-4 mr-2" />
-              Download Update
+              {t('updates.dialog.download', 'Download Update')}
             </Button>
           )}
 
@@ -127,7 +141,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               className="bg-accent-highlight hover:opacity-90 text-white"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Restart & Install
+              {t('updates.dialog.install', 'Restart & Install')}
             </Button>
           )}
         </DialogFooter>

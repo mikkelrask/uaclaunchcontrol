@@ -125,7 +125,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ autoActivate
               toast({
                 title: t.title,
                 description: t.description,
-                duration: t.duration as 6000 | 8000
+                duration: t.duration as 6000 | 8000,
+                historyKind: t.historyKind
               })
             }
           })

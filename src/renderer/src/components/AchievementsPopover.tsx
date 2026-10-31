@@ -1,3 +1,9 @@
+import { useTranslate } from '@tolgee/react'
+import {
+  getAchievementText,
+  getAchievementCategoryLabel,
+  formatAchievementStat
+} from '@/lib/achievements/messages'
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api'
@@ -32,6 +38,7 @@ interface AchievementsPopoverProps {
  * grouped by category with progress bars.
  */
 export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ children }) => {
+  const { t } = useTranslate('desktop')
   const [open, setOpen] = useState(false)
 
   // Fetch player data for achievement states + rank
@@ -79,10 +86,10 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
             </div>
             <div>
               <h4 className="text-lg font-bold tracking-tight text-app-primary lowercase">
-                Operator Profile
+                {t('achievements.profile.title', 'Operator Profile')}
               </h4>
               <p className="text-[0.625rem] font-semibold font-mono text-app-muted uppercase tracking-widest opacity-80">
-                UAC Launch Control // Personnel File
+                {t('achievements.profile.subtitle', 'UAC Launch Control // Personnel File')}
               </p>
             </div>
           </div>
@@ -99,12 +106,20 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
         {/* ── Profile Preview ── */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-app/50 bg-app-secondary/30">
           <div className="w-10 h-10 rounded bg-accent-highlight flex items-center justify-center text-white shrink-0 overflow-hidden">
-            <img src={rankImage(playerData?.rank)} alt="Operator" className="w-10 h-10 rounded" />
+            <img
+              src={rankImage(playerData?.rank)}
+              alt={t('achievements.profile.operator', 'Operator')}
+              className="w-10 h-10 rounded"
+            />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold text-app-primary">Guy, Doom</div>
             <div className="text-xs text-app-muted">
-              {unlockedCount}/{totalAchievements} achievements unlocked
+              {t(
+                'achievements.profile.unlockedCount',
+                '{count, number}/{total, number} achievements unlocked',
+                { count: unlockedCount, total: totalAchievements }
+              )}
             </div>
           </div>
         </div>
@@ -113,7 +128,7 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
         {recentUnlocks.length > 0 && (
           <div className="px-4 pt-3 pb-1 border-b border-app/30">
             <h5 className="text-[0.625rem] font-bold text-app-muted uppercase tracking-widest mb-1">
-              Recently Unlocked
+              {t('achievements.profile.recent', 'Recently Unlocked')}
             </h5>
             <div className="flex flex-wrap gap-2">
               {recentUnlocks.map(([id]) => {
@@ -124,7 +139,7 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
                     key={id}
                     className="bg-accent-highlight/15 text-accent-highlight border border-accent-highlight/30 text-[0.625rem]"
                   >
-                    {def.title}
+                    {getAchievementText(def).title}
                   </Badge>
                 )
               })}
@@ -142,7 +157,7 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
                   value={cat}
                   className="flex-1 text-[0.625rem] uppercase tracking-wider data-[state=active]:bg-accent-highlight data-[state=active]:text-white"
                 >
-                  {cat}
+                  {getAchievementCategoryLabel(cat)}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -219,13 +234,22 @@ export const AchievementsPopover: React.FC<AchievementsPopoverProps> = ({ childr
         {/* ── Footer Stats ── */}
         <div className="flex items-center justify-between px-4 py-2 border-t border-app bg-app-secondary/50">
           <span className="text-[0.625rem] font-mono text-app-muted uppercase tracking-wider">
-            Total Protocol Count: {playerData?.stats?.totalProtocolsCreated ?? 0}
+            {t('achievements.profile.protocolCount', 'Total Protocol Count: {count, number}', {
+              count: playerData?.stats?.totalProtocolsCreated ?? 0
+            })}
           </span>
           <span className="text-[0.625rem] font-mono text-app-muted uppercase tracking-wider">
-            Total Playtime:{' '}
-            {(playerData?.stats?.totalPlaytimeSeconds ?? 0) >= 3600
-              ? `${Math.floor((playerData?.stats?.totalPlaytimeSeconds ?? 0) / 3600)}h`
-              : `${Math.floor((playerData?.stats?.totalPlaytimeSeconds ?? 0) / 60)}m`}
+            {t('achievements.profile.playtime', 'Total Playtime: {time}', {
+              time:
+                (playerData?.stats?.totalPlaytimeSeconds ?? 0) >= 3600
+                  ? formatAchievementStat(
+                      'totalPlaytimeSeconds',
+                      playerData?.stats?.totalPlaytimeSeconds ?? 0
+                    )
+                  : t('achievements.time.minutes', '{count, number}m', {
+                      count: Math.floor((playerData?.stats?.totalPlaytimeSeconds ?? 0) / 60)
+                    })
+            })}
           </span>
         </div>
       </PopoverContent>

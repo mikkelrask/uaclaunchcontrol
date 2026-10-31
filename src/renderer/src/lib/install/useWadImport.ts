@@ -6,6 +6,7 @@ import type { IAppSettings } from '@shared/schema'
 import { api } from '@/api'
 import { createLogger } from '@shared/logger'
 import { dispatchAchievementEvent, buildUnlockToasts } from '@/lib/achievements'
+import type { NotificationKind } from '@/lib/notifications'
 import { buildHashFileName } from '@/lib/install/parsers'
 
 const log = createLogger('install/useWadImport')
@@ -30,7 +31,12 @@ export interface WadImportHandlers {
 
 interface ToastLike {
   (opts: { title: string; description: string; variant?: 'destructive' }): void
-  (opts: { title: string; description: string; duration: number }): void
+  (opts: {
+    title: string
+    description: string
+    duration: number
+    historyKind?: NotificationKind
+  }): void
 }
 
 /**
@@ -140,7 +146,8 @@ export function useWadImport(settings: IAppSettings, toast: ToastLike): WadImpor
               toast({
                 title: t.title,
                 description: t.description,
-                duration: t.duration as 6000 | 8000
+                duration: t.duration as 6000 | 8000,
+                historyKind: t.historyKind
               })
             }
           })
