@@ -1,6 +1,6 @@
 import { Tolgee } from '@tolgee/react'
 import { FormatIcu } from '@tolgee/format-icu'
-import { APP_LANGUAGES, resolveLanguage } from '@shared/locales'
+import { APP_LANGUAGES, resolveReleaseLanguage } from '@shared/locales'
 import en from './locales/desktop/en.json'
 import da from './locales/desktop/da-DK.json'
 import es from './locales/desktop/es-ES.json'
@@ -25,7 +25,7 @@ export const i18n = createI18n()
 export const getTranslate = (_namespace: 'desktop') => ({ t: i18n.t })
 
 export async function applyLanguage(preference: unknown): Promise<void> {
-  const language = resolveLanguage(preference, navigator.languages)
+  const language = resolveReleaseLanguage(preference, navigator.languages)
   await i18n.changeLanguage(language)
   document.documentElement.lang = language
 }

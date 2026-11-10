@@ -26,7 +26,7 @@ const defaultPaths = {
 }
 let settings = {
   ...defaultPaths,
-  language: 'en',
+  language: 'da-DK',
   theme: 'dark',
   sourcePorts: Array.from({ length: 28 }, (_, index) => ({
     id: `port-${index}`,
@@ -148,7 +148,7 @@ async function openSettings() {
   window.webContents.sendInputEvent({ type: 'keyDown', keyCode: '.', modifiers: ['control'] })
   window.webContents.sendInputEvent({ type: 'keyUp', keyCode: '.', modifiers: ['control'] })
   await waitFor(`!!document.querySelector(${JSON.stringify(dialog)})`)
-  await waitFor(`!!document.querySelector(${JSON.stringify(`${dialog} [id$="-language"]`)})`)
+  await waitFor(`!!document.querySelector(${JSON.stringify(`${dialog} [id$="-theme"]`)})`)
 }
 async function selectTab(tab) {
   const selector = `${dialog} [role="tab"][id$="-trigger-${tab}"]`
@@ -520,17 +520,15 @@ app
     }
     assert.equal(settings.uiScale, 100)
 
-    // Language choices are staged; Cancel preserves the active and persisted locale.
+    // English is enforced while the stored translation preference remains untouched.
     await selectTab('general')
-    await click(`${dialog} [id$="-language"]`)
-    await click('[role="option"]', 'Dansk')
-    await waitFor(`!document.querySelector('[role="listbox"]')`)
+    assert.equal(await evaluate(`!!document.querySelector('${dialog} [id$="-language"]')`), false)
     assert.equal(await evaluate('document.documentElement.lang'), 'en')
     await click(`${dialog} [data-settings-cancel]`)
     await waitFor(`!document.querySelector(${JSON.stringify(dialog)})`)
     await waitFor(`document.documentElement.classList.contains('dark')`)
     assert.equal(window.webContents.getZoomFactor(), 1)
-    assert.equal(settings.language, 'en')
+    assert.equal(settings.language, 'da-DK')
     assert.equal(settings.screenshotsPath, defaultPaths.screenshotsPath)
     assert.equal(writes.length, 0)
 
@@ -544,12 +542,10 @@ app
     await fill(`${editorSelector} input[name="name"]`, 'Persisted base game')
     await click(`${editorSelector} [data-settings-default]`)
     await selectTab('general')
-    await click(`${dialog} [id$="-language"]`)
-    await click('[role="option"]', 'Dansk')
-    await waitFor(`!document.querySelector('[role="listbox"]')`)
+    assert.equal(await evaluate(`!!document.querySelector('${dialog} [id$="-language"]')`), false)
     await click(`${dialog} [data-settings-apply]`)
     await waitFor(
-      `!document.querySelector(${JSON.stringify(dialog)}) && document.documentElement.lang === 'da-DK'`
+      `!document.querySelector(${JSON.stringify(dialog)}) && document.documentElement.lang === 'en'`
     )
     assert.equal(settings.language, 'da-DK')
     assert.equal(settings.defaultSourcePortId, 'port-27')
@@ -559,7 +555,7 @@ app
     assert.equal(versions[27].args, '-iwad "/fixture/wads/Game 28.wad"')
 
     await openSettings()
-    await capture('danish-general')
+    await capture('english-general')
     window.setSize(1100, 650)
     await selectTab('source-ports')
     await click(`${listSelector} [data-settings-resource-id="port-27"]`)
@@ -622,16 +618,11 @@ app
     await waitFor(`!document.querySelector(${JSON.stringify(dialog)})`)
 
     // Settings may save while the separate WAD metadata request fails. Cancel must
-    // preserve the successfully saved language/theme and discard only the failed draft.
+    // preserve the successfully saved theme and discard only the failed draft.
     await openSettings()
-    await click(`${dialog} [id$="-language"]`)
-    await click('[role="option"]', 'English')
-    await waitFor(`!document.querySelector('[role="listbox"]')`)
+    assert.equal(await evaluate(`!!document.querySelector('${dialog} [id$="-language"]')`), false)
     await click(`${dialog} [id$="-theme"]`)
-    const danishLightTheme = require('../../src/renderer/src/lib/i18n/locales/desktop/da-DK.json')[
-      'settings.theme.light'
-    ]
-    await click('[role="option"]', danishLightTheme || 'MAYKR — Bright argent energy')
+    await click('[role="option"]', 'MAYKR — Bright argent energy')
     await waitFor(
       `!document.querySelector('[role="listbox"]') && document.documentElement.classList.contains('light')`
     )
@@ -644,7 +635,7 @@ app
       `document.documentElement.lang === 'en' && document.body.textContent.includes('Could not save all changes. Please try again.') && !document.querySelector(${JSON.stringify(`${dialog} [data-settings-apply]`)})?.disabled`
     )
     assert.equal(injectedFailures, 1)
-    assert.equal(settings.language, 'en')
+    assert.equal(settings.language, 'da-DK')
     assert.equal(settings.theme, 'light')
     assert.equal(versions[27].name, 'Persisted base game')
     assert(
@@ -680,7 +671,7 @@ app
       JSON.stringify(requests)
     )
     console.log(
-      'PASS settings workbench: long inventories, stable editor/default geometry, drafts, narrow Back, paths, theme/zoom preview reversal, language Apply/Cancel, short dialog, absent defaults, partial-save recovery, sandbox/CSP and offline renderer'
+      'PASS settings workbench: long inventories, stable editor/default geometry, drafts, narrow Back, paths, theme/zoom preview reversal, English release policy, short dialog, absent defaults, partial-save recovery, sandbox/CSP and offline renderer'
     )
     clearTimeout(deadline)
     window.destroy()

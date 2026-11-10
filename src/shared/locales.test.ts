@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isLanguagePreference, resolveLanguage } from './locales'
+import { isLanguagePreference, resolveLanguage, resolveReleaseLanguage } from './locales'
 
 describe('language selection', () => {
   it('prefers the saved choice to the system language', () => {
@@ -24,6 +24,14 @@ describe('language selection', () => {
       expect(isLanguagePreference(value)).toBe(true)
     for (const value of [null, 42, {}, 'DA', 'da', 'fr', '']) {
       expect(isLanguagePreference(value)).toBe(false)
+    }
+  })
+})
+
+describe('English release policy', () => {
+  it('overrides saved and system languages without changing persisted preferences', () => {
+    for (const preference of ['da-DK', 'es-ES', 'system', 'en', undefined, 'invalid']) {
+      expect(resolveReleaseLanguage(preference, ['da-DK', 'es-MX'])).toBe('en')
     }
   })
 })

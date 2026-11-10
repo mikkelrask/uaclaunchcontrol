@@ -1,3 +1,12 @@
+> Release policy: multilingual UI is paused. Public builds always use English,
+> including when a saved preference or system language is Danish or Spanish.
+> The language selector is hidden. Existing preferences, catalogs, and Tolgee
+> translations are retained; no remote translations are removed or overwritten.
+> `MULTILINGUAL_RELEASE` in `src/shared/locales.ts` controls this policy. The
+> pilot behavior described below applies when multilingual support is re-enabled.
+> Runtime smoke tests currently verify English under non-English preferences;
+> unit tests continue validating the retained translation catalogs and formatters.
+
 # Localisation: first desktop pilot (issue #78)
 
 The desktop renderer uses Tolgee React with ICU messages and **eager, committed JSON

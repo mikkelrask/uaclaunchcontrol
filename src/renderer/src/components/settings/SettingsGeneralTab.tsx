@@ -2,7 +2,7 @@ import { useId, type Dispatch, type SetStateAction } from 'react'
 import { T, useTranslate } from '@tolgee/react'
 import { BookOpen, LayoutGrid, List } from 'lucide-react'
 import type { IAppSettings } from '@shared/schema'
-import { isLanguagePreference } from '@shared/locales'
+import { isLanguagePreference, MULTILINGUAL_RELEASE } from '@shared/locales'
 import { api } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -43,39 +43,41 @@ export function SettingsGeneralTab({
 
       <section className="settings-group" aria-labelledby={`${id}-appearance`}>
         <h3 id={`${id}-appearance`}>{t('settings.general.appearance', 'Appearance')}</h3>
-        <div className="settings-row">
-          <div>
-            <Label htmlFor={`${id}-language`}>{t('settings.language.label', 'Language')}</Label>
-            <p id={`${id}-language-description`}>
-              {t(
-                'settings.language.description',
-                'Choose the interface language. Untranslated text is shown in English.'
-              )}
-            </p>
-          </div>
-          <Select
-            value={settings.language ?? 'system'}
-            onValueChange={(language) => {
-              if (isLanguagePreference(language)) setSettings((s) => ({ ...s, language }))
-            }}
-          >
-            <SelectTrigger
-              id={`${id}-language`}
-              aria-describedby={`${id}-language-description`}
-              className="settings-control"
+        {MULTILINGUAL_RELEASE && (
+          <div className="settings-row">
+            <div>
+              <Label htmlFor={`${id}-language`}>{t('settings.language.label', 'Language')}</Label>
+              <p id={`${id}-language-description`}>
+                {t(
+                  'settings.language.description',
+                  'Choose the interface language. Untranslated text is shown in English.'
+                )}
+              </p>
+            </div>
+            <Select
+              value={settings.language ?? 'system'}
+              onValueChange={(language) => {
+                if (isLanguagePreference(language)) setSettings((s) => ({ ...s, language }))
+              }}
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-app-secondary border-app text-app-primary">
-              <SelectItem value="system">
-                {t('settings.language.system', 'System language')}
-              </SelectItem>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="da-DK">Dansk</SelectItem>
-              <SelectItem value="es-ES">Español</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+              <SelectTrigger
+                id={`${id}-language`}
+                aria-describedby={`${id}-language-description`}
+                className="settings-control"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-app-secondary border-app text-app-primary">
+                <SelectItem value="system">
+                  {t('settings.language.system', 'System language')}
+                </SelectItem>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="da-DK">Dansk</SelectItem>
+                <SelectItem value="es-ES">Español</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="settings-row">
           <div>

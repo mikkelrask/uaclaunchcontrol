@@ -21,3 +21,13 @@ export function resolveLanguage(
   }
   return 'en'
 }
+
+/** Translations remain available for development, but public releases use English. */
+export const MULTILINGUAL_RELEASE = false
+
+export function resolveReleaseLanguage(
+  preference: unknown,
+  browserLanguages: readonly string[]
+): AppLanguage {
+  return MULTILINGUAL_RELEASE ? resolveLanguage(preference, browserLanguages) : 'en'
+}

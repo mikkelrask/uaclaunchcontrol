@@ -213,14 +213,15 @@ app
     )
 
     await translations.run()
-    for (const locale of ['da-DK', 'es-ES', 'en']) {
+    for (const preference of ['da-DK', 'es-ES', 'system']) {
+      const locale = 'en'
       await translations.changeLanguage(locale)
       const message = (key, params) => translations.t(key, params)
       const launch = message('navigation.launch')
-      const label = message('settings.language.label')
-      language = locale
+      const label = message('settings.theme.label')
+      language = preference
       settings.language = language
-      console.log('Loading fixture language:', locale)
+      console.log('Checking English with saved preference:', preference)
       await window.loadFile(renderer)
       await waitFor(
         window,
@@ -233,6 +234,10 @@ app
         window,
         `!!document.querySelector('[role="dialog"]') && document.querySelector('[role="dialog"]').textContent.includes(${JSON.stringify(label)})`
       )
+      assert.equal(
+        await window.webContents.executeJavaScript(`!!document.querySelector('[id$="-language"]')`),
+        false
+      )
       const csp = await window.webContents.executeJavaScript(
         `document.querySelector('meta[http-equiv="Content-Security-Policy"]').content`
       )
@@ -242,7 +247,7 @@ app
         `document.querySelector('[role="dialog"]').textContent`
       )
       assert(!placeholderText.includes('{br}'))
-      if (locale === 'da-DK' && process.env.UAC_I18N_SCREENSHOT) {
+      if (preference === 'da-DK' && process.env.UAC_I18N_SCREENSHOT) {
         await pause(300)
         fs.writeFileSync(
           process.env.UAC_I18N_SCREENSHOT,
