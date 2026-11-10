@@ -22,3 +22,6 @@ Thumbs.db
 
 # Local code graphs
 graphify-out/
+
+# Local translation working notes
+/LOCALIZATION.md
