@@ -695,5 +695,6 @@
   "onboarding.sourcePorts.useDefault": "Use {name} by default",
   "onboarding.sourcePorts.editName": "Edit {name}",
   "onboarding.sourcePorts.duplicatePath": "This executable is already added.",
-  "onboarding.sourcePorts.noNewPorts": "No new source ports found."
+  "onboarding.sourcePorts.noNewPorts": "No new source ports found.",
+  "settings.customTheme.documentationGuide": "Theming guide"
 }

@@ -128,12 +128,12 @@ export function SettingsThemeTab({
               params={{
                 guide: (
                   <a
-                    href="https://github.com/mikkelrask/uaclaunchcontrol/wiki/Theming#custom-theme"
+                    href="https://uac-soft.online/reference/theming/#custom-theme"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline underline-offset-2 hover:text-accent-highlight transition-colors"
                   >
-                    {t('settings.customTheme.guide', 'Theming guide on GitHub')}
+                    {t('settings.customTheme.documentationGuide', 'Theming guide')}
                   </a>
                 )
               }}
